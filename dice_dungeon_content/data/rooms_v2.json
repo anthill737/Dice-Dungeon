@@ -1,0 +1,3280 @@
+[
+  {
+    "id": 1,
+    "name": "Whispering Antechamber",
+    "difficulty": "Easy",
+    "threats": [
+      "Rat Swarm",
+      "Giant Centipede"
+    ],
+    "history": "Once a greeting hall to a forgotten guild.",
+    "flavor": "Soft murmurs ride the dust as if the walls are practicing your name.",
+    "discoverables": [
+      "Leather Pouch",
+      "Hidden Nook"
+    ],
+    "tags": [
+      "event",
+      "lore"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "crit_bonus": 0.02
+      },
+      "on_clear": {
+        "item": "Cracked Map Scrap"
+      }
+    }
+  },
+  {
+    "id": 2,
+    "name": "Mosslight Grotto",
+    "difficulty": "Easy",
+    "threats": [
+      "Cave Salamander",
+      "Glowspores"
+    ],
+    "history": "A collapsed well chamber fed by an underground spring.",
+    "flavor": "Bioluminescent moss paints your boots green.",
+    "discoverables": [
+      "Dusty Chest",
+      "Old Crate"
+    ],
+    "tags": [
+      "environment",
+      "rest"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "heal": 8
+      },
+      "on_clear": {
+        "gold_flat": 2
+      }
+    }
+  },
+  {
+    "id": 3,
+    "name": "Abandoned Guard Post",
+    "difficulty": "Easy",
+    "threats": [
+      "Rabid Dog",
+      "Sleepy Goblin"
+    ],
+    "history": "Last held during the Siege of Ironsky.",
+    "flavor": "A dented helm still sits at attention on a spear.",
+    "discoverables": [
+      "Hidden Nook",
+      "Hidden Nook"
+    ],
+    "tags": [
+      "lore",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Rust Trap",
+      "on_clear": {
+        "item": "Old Key"
+      }
+    }
+  },
+  {
+    "id": 4,
+    "name": "Dice-etched Alcove",
+    "difficulty": "Easy",
+    "threats": [
+      "Stone Beetle",
+      "Cave Cricket"
+    ],
+    "history": "Gamblers carved odds into the stone to \u00e2\u20ac\u02dctilt fate.\u00e2\u20ac\u2122",
+    "flavor": "Numerals and pips swirl into lucky spirals.",
+    "discoverables": [
+      "Dusty Chest",
+      "Weapon Rack"
+    ],
+    "tags": [
+      "lore",
+      "puzzle"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "crit_bonus": 0.01
+      },
+      "on_clear": {
+        "item": "Lucky Chip"
+      }
+    }
+  },
+  {
+    "id": 5,
+    "name": "Lantern Row",
+    "difficulty": "Easy",
+    "threats": [
+      "Shadow Imp",
+      "Soot Sprite"
+    ],
+    "history": "Miners lined their path here to count shifts.",
+    "flavor": "Lanterns sputter in sequence, like a heartbeat.",
+    "discoverables": [
+      "Leather Pouch",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "environment"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "extra_rolls": 1
+      },
+      "on_fail": {
+        "status": "soot-choke"
+      }
+    }
+  },
+  {
+    "id": 6,
+    "name": "Scribe's Niche",
+    "difficulty": "Easy",
+    "threats": [
+      "Book Mite",
+      "Startled Bat"
+    ],
+    "history": "A clerk hid tax ledgers from a corrupt baron.",
+    "flavor": "The ink still smells faintly of vinegar.",
+    "discoverables": [
+      "Hidden Nook",
+      "Old Crate"
+    ],
+    "tags": [
+      "event",
+      "lore"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "item": "Old Key"
+      }
+    }
+  },
+  {
+    "id": 7,
+    "name": "Pilgrim's Rest",
+    "difficulty": "Easy",
+    "threats": [
+      "Dozing Slime",
+      "Lurking Spider"
+    ],
+    "history": "Travelers once doled bread and stories here.",
+    "flavor": "Someone embroidered a crude sun on a pillow.",
+    "discoverables": [
+      "Supply Cabinet",
+      "Burial Niche"
+    ],
+    "tags": [
+      "rest"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "heal": 10
+      }
+    }
+  },
+  {
+    "id": 104,
+    "name": "Forgotten Armory",
+    "difficulty": "Easy",
+    "threats": [
+      "Rust Monster",
+      "Web Spider"
+    ],
+    "history": "Weapons meant for a war that never came.",
+    "flavor": "Dust dances in shafts of light through cracked stone.",
+    "discoverables": [
+      "Wooden Barrel",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "combat",
+      "environment"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "item": "Weighted Die"
+      }
+    }
+  },
+  {
+    "id": 105,
+    "name": "Honey Cellar",
+    "difficulty": "Easy",
+    "threats": [
+      "Agitated Bees",
+      "Angry Swarm"
+    ],
+    "history": "Beekeepers stored winter reserves here.",
+    "flavor": "The air tastes golden and thick.",
+    "discoverables": [
+      "Dusty Chest",
+      "Old Crate"
+    ],
+    "tags": [
+      "environment",
+      "rest"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "item": "Honey Jar"
+      }
+    }
+  },
+  {
+    "id": 106,
+    "name": "Merchant's Cache",
+    "difficulty": "Easy",
+    "threats": [
+      "Pack Rat",
+      "Startled Rat"
+    ],
+    "history": "A trader's emergency stash, long forgotten.",
+    "flavor": "Someone carved 'FOR LEAN TIMES' into the wall.",
+    "discoverables": [
+      "Dusty Chest",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "event"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "item": "Old Key"
+      }
+    }
+  },
+  {
+    "id": 107,
+    "name": "Apprentice Workshop",
+    "difficulty": "Easy",
+    "threats": [
+      "Wood Termites",
+      "Tool Gremlin"
+    ],
+    "history": "Where young craftsmen learned their trade.",
+    "flavor": "Half-finished projects sit waiting for hands that won't return.",
+    "discoverables": [
+      "Old Crate",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "environment"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "item": "Lockpick Kit"
+      }
+    }
+  },
+  {
+    "id": 108,
+    "name": "Wine Storage",
+    "difficulty": "Easy",
+    "threats": [
+      "Glass Wasp",
+      "Drunk Sprite"
+    ],
+    "history": "The castle's finest vintages aged in darkness.",
+    "flavor": "Spilled wine stains the floor like old blood.",
+    "discoverables": [
+      "Dusty Chest",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "environment",
+      "rest"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "heal": 5
+      },
+      "on_clear": {
+        "gold_flat": 3
+      }
+    }
+  },
+  {
+    "id": 109,
+    "name": "Crystal Shrine",
+    "difficulty": "Easy",
+    "threats": [
+      "Light Wisp",
+      "Praying Mantis"
+    ],
+    "history": "Travelers left offerings for safe passage.",
+    "flavor": "Crystals hum with faint, forgotten prayers.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "event",
+      "rest"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "item": "Blue Quartz"
+      }
+    }
+  },
+  {
+    "id": 110,
+    "name": "Servant's Quarters",
+    "difficulty": "Easy",
+    "threats": [
+      "Poltergeist",
+      "Bitter Ghost"
+    ],
+    "history": "Where the castle's staff rested between duties.",
+    "flavor": "Personal effects lie scattered as if the owners just stepped out.",
+    "discoverables": [
+      "Leather Pouch",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "environment"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "gold_flat": 4
+      }
+    }
+  },
+  {
+    "id": 111,
+    "name": "Root Cellar",
+    "difficulty": "Easy",
+    "threats": [
+      "Spore Beetle",
+      "Vine Creeper"
+    ],
+    "history": "Preserved foods sustained the castle through sieges.",
+    "flavor": "The earthy smell is oddly comforting.",
+    "discoverables": [
+      "Dusty Chest",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "environment",
+      "rest"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "item": "Antivenom Leaf"
+      }
+    }
+  },
+  {
+    "id": 112,
+    "name": "Stable Ruins",
+    "difficulty": "Easy",
+    "threats": [
+      "Giant Flea",
+      "Spooked Horse Spirit"
+    ],
+    "history": "Where warhorses rested between campaigns.",
+    "flavor": "Horseshoes still hang on rusted nails.",
+    "discoverables": [
+      "Dusty Chest",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "environment"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "gold_flat": 3
+      }
+    }
+  },
+  {
+    "id": 113,
+    "name": "Baker's Oven",
+    "difficulty": "Easy",
+    "threats": [
+      "Fire Beetle",
+      "Ash Elemental"
+    ],
+    "history": "Bread fed an army; the ovens never cooled.",
+    "flavor": "The scent of phantom loaves lingers.",
+    "discoverables": [
+      "Supply Cabinet",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "environment",
+      "rest"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "heal": 6
+      },
+      "on_clear": {
+        "gold_flat": 2
+      }
+    }
+  },
+  {
+    "id": 114,
+    "name": "Laundry Pit",
+    "difficulty": "Easy",
+    "threats": [
+      "Soap Ooze",
+      "Animated Linens"
+    ],
+    "history": "Servants scrubbed noble linens in scalding lye.",
+    "flavor": "Ghostly handprints mark wet stone.",
+    "discoverables": [
+      "Dusty Chest",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "environment"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "item": "Soap Bar"
+      }
+    }
+  },
+  {
+    "id": 115,
+    "name": "Candle Workshop",
+    "difficulty": "Easy",
+    "threats": [
+      "Wax Beetle",
+      "Shadow Moth"
+    ],
+    "history": "Candles lit every corner of the castle.",
+    "flavor": "Melted wax forms strange faces on the floor.",
+    "discoverables": [
+      "Leather Pouch",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "environment"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "gold_flat": 3
+      }
+    }
+  },
+  {
+    "id": 116,
+    "name": "Study Nook",
+    "difficulty": "Easy",
+    "threats": [
+      "Dust Devil",
+      "Book Mite"
+    ],
+    "history": "A scholar's private reading corner.",
+    "flavor": "Books still open to their last-read pages.",
+    "discoverables": [
+      "Scholar's Desk",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "event",
+      "lore"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "gold_flat": 2
+      }
+    }
+  },
+  {
+    "id": 117,
+    "name": "Garden Storage",
+    "difficulty": "Easy",
+    "threats": [
+      "Thorn Creeper",
+      "Garden Snake"
+    ],
+    "history": "Tools and seeds for the castle gardens.",
+    "flavor": "Dried flowers crumble at your touch.",
+    "discoverables": [
+      "Leather Pouch",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "environment"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "item": "Garden Shears"
+      }
+    }
+  },
+  {
+    "id": 118,
+    "name": "Toy Chest Room",
+    "difficulty": "Easy",
+    "threats": [
+      "Animated Puppet",
+      "Toy Soldier"
+    ],
+    "history": "Where noble children's toys were stored.",
+    "flavor": "A wooden horse rocks slowly on its own.",
+    "discoverables": [
+      "Toy Chest",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "event"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "gold_flat": 4
+      }
+    }
+  },
+  {
+    "id": 119,
+    "name": "Music Chamber",
+    "difficulty": "Easy",
+    "threats": [
+      "Banshee Wail",
+      "String Imp"
+    ],
+    "history": "Musicians practiced away from noble ears.",
+    "flavor": "The walls remember every wrong note.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "environment"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "gold_flat": 3
+      }
+    }
+  },
+  {
+    "id": 120,
+    "name": "Hunting Trophy Hall",
+    "difficulty": "Easy",
+    "threats": [
+      "Trophy Beast",
+      "Dust Elemental"
+    ],
+    "history": "Nobles displayed their conquests here.",
+    "flavor": "Glass eyes follow your every step.",
+    "discoverables": [
+      "Old Crate",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "combat",
+      "environment"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "gold_flat": 5
+      }
+    }
+  },
+  {
+    "id": 121,
+    "name": "Sewing Circle",
+    "difficulty": "Easy",
+    "threats": [
+      "Needle Imp",
+      "Thread Wyrm"
+    ],
+    "history": "Where seamstresses gossiped and worked.",
+    "flavor": "Half-finished garments drape over chairs.",
+    "discoverables": [
+      "Leather Pouch",
+      "Old Crate"
+    ],
+    "tags": [
+      "environment"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "gold_flat": 2
+      }
+    }
+  },
+  {
+    "id": 122,
+    "name": "Scullery",
+    "difficulty": "Easy",
+    "threats": [
+      "Grease Ooze",
+      "Dish Gremlin"
+    ],
+    "history": "The dirtiest work happened in this room.",
+    "flavor": "Stacked plates tower precariously.",
+    "discoverables": [
+      "Leather Pouch",
+      "Old Crate"
+    ],
+    "tags": [
+      "environment"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "gold_flat": 2
+      }
+    }
+  },
+  {
+    "id": 123,
+    "name": "Messenger's Roost",
+    "difficulty": "Easy",
+    "threats": [
+      "Crow Swarm",
+      "Carrier Pigeon"
+    ],
+    "history": "Carrier birds delivered urgent news.",
+    "flavor": "Feathers drift down like snow.",
+    "discoverables": [
+      "Hidden Nook",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "event",
+      "lore"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "gold_flat": 3
+      }
+    }
+  },
+  {
+    "id": 124,
+    "name": "Herb Drying Room",
+    "difficulty": "Easy",
+    "threats": [
+      "Pollen Sprite",
+      "Creeping Vine"
+    ],
+    "history": "Medicinal herbs hung to preserve.",
+    "flavor": "Faded scents of mint and rosemary.",
+    "discoverables": [
+      "Alchemist's Case",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "environment",
+      "rest"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "heal": 7
+      },
+      "on_clear": {
+        "gold_flat": 2
+      }
+    }
+  },
+  {
+    "id": 125,
+    "name": "Boot Cleaning Station",
+    "difficulty": "Easy",
+    "threats": [
+      "Mud Elemental",
+      "Brush Beetle"
+    ],
+    "history": "Guards cleaned their boots before entering.",
+    "flavor": "Boot prints lead in circles.",
+    "discoverables": [
+      "Wooden Barrel",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "environment"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "gold_flat": 1
+      }
+    }
+  },
+  {
+    "id": 8,
+    "name": "Spider Silk Hall",
+    "difficulty": "Medium",
+    "threats": [
+      "Spinner Spider",
+      "Broodling Swarm"
+    ],
+    "history": "Silkers domesticated spiders for thread until\u00e2\u20ac\u00a6 dinner flipped.",
+    "flavor": "Threads vibrate with your every breath.",
+    "discoverables": [
+      "Dusty Chest",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "combat",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Web Snare",
+      "on_clear": {
+        "item": "Silk Bundle"
+      }
+    }
+  },
+  {
+    "id": 9,
+    "name": "Echoing cistern",
+    "difficulty": "Medium",
+    "threats": [
+      "Water Serpent",
+      "Leech",
+      "Chain Wraith"
+    ],
+    "history": "Rainworks of an ancient city-state.",
+    "flavor": "Drops tick time in perfect sixes.",
+    "discoverables": [
+      "Leather Pouch",
+      "Alchemist's Case"
+    ],
+    "tags": [
+      "environment",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Deep Water",
+      "on_enter": {
+        "shield": 5
+      },
+      "on_clear": {
+        "heal": 6
+      }
+    }
+  },
+  {
+    "id": 10,
+    "name": "Runebreak Stair",
+    "difficulty": "Medium",
+    "threats": [
+      "Boulder Beetle",
+      "Rune Sprite"
+    ],
+    "history": "A trap stair for tax-evaders and thieves.",
+    "flavor": "Steps hum when your foot hovers above them.",
+    "discoverables": [
+      "Dusty Chest",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "puzzle",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Rune Shock",
+      "on_clear": {
+        "disarm_token": true
+      }
+    }
+  },
+  {
+    "id": 11,
+    "name": "Fungal Pantry",
+    "difficulty": "Medium",
+    "threats": [
+      "Toxic Mushroom",
+      "Shroomling"
+    ],
+    "history": "Chefs cultured edible caps before the rot war.",
+    "flavor": "The air tastes like pepper and earth.",
+    "discoverables": [
+      "Dusty Chest",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "combat",
+      "environment"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "mild-poison"
+      },
+      "on_clear": {
+        "item": "Spore Vial"
+      }
+    }
+  },
+  {
+    "id": 12,
+    "name": "Bellfounder's Forge",
+    "difficulty": "Medium",
+    "threats": [
+      "Soot Elemental",
+      "Coal Imp"
+    ],
+    "history": "Bells once tolled across four provinces.",
+    "flavor": "A mute bell hangs, thirsty for a strike.",
+    "discoverables": [
+      "Leather Pouch",
+      "Weapon Rack"
+    ],
+    "tags": [
+      "combat",
+      "lore"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "damage_bonus": 2,
+        "item": "Tuner's Hammer"
+      }
+    }
+  },
+  {
+    "id": 13,
+    "name": "Shifting Tiles",
+    "difficulty": "Medium",
+    "threats": [
+      "Floor Mimic",
+      "Blade Imp"
+    ],
+    "history": "An exam for recruits to learn footwork.",
+    "flavor": "The floor clicks even when you do not move.",
+    "discoverables": [
+      "Dusty Chest",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "puzzle",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Sliding Floor",
+      "on_enter": {
+        "extra_rolls": 1
+      }
+    }
+  },
+  {
+    "id": 14,
+    "name": "Frost-bitten Gallery",
+    "difficulty": "Medium",
+    "threats": [
+      "Frost Sprite",
+      "Chill Wisp"
+    ],
+    "history": "Paintings were preserved here\u00e2\u20ac\u201dso were thieves.",
+    "flavor": "Your breath makes ghosts applaud.",
+    "discoverables": [
+      "Wooden Barrel",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "combat",
+      "environment"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "shield": 6
+      },
+      "on_clear": {
+        "item": "Blue Quartz"
+      }
+    }
+  },
+  {
+    "id": 15,
+    "name": "Mud Idol Pit",
+    "difficulty": "Medium",
+    "threats": [
+      "Mud Lurker",
+      "Cursed Idol"
+    ],
+    "history": "Peasants sculpted a rain-god that learned hunger.",
+    "flavor": "The mud burps like a sated beast.",
+    "discoverables": [
+      "Dusty Chest",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "event",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Idol Curse",
+      "on_clear": {
+        "status": "boon-or-bane"
+      }
+    }
+  },
+  {
+    "id": 16,
+    "name": "Broken Menagerie",
+    "difficulty": "Medium",
+    "threats": [
+      "Escaped Jackalope",
+      "Crate Rat"
+    ],
+    "history": "A noble kept \u00e2\u20ac\u02dccuriosities\u00e2\u20ac\u2122 below court.",
+    "flavor": "Feathers and scales crunch beneath each step.",
+    "discoverables": [
+      "Old Crate",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "combat",
+      "lore"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "gold_flat": 4
+      }
+    }
+  },
+  {
+    "id": 17,
+    "name": "Wishing Drain",
+    "difficulty": "Medium",
+    "threats": [
+      "Greed Wisp",
+      "Gold Golem"
+    ],
+    "history": "A drain swallowed wishes; some spat back angry.",
+    "flavor": "The grate glitter-stares up like a dragon\u00e2\u20ac\u2122s eye.",
+    "discoverables": [
+      "Leather Pouch",
+      "Old Crate"
+    ],
+    "tags": [
+      "event",
+      "lore"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "gold_flat": 6,
+        "extra_rolls": 1
+      }
+    }
+  },
+  {
+    "id": 18,
+    "name": "Ropewalk Tunnel",
+    "difficulty": "Medium",
+    "threats": [
+      "Rope Worm",
+      "Trip Vine"
+    ],
+    "history": "Rope was spun here for siege engines.",
+    "flavor": "Humming fibers sing bass notes when plucked.",
+    "discoverables": [
+      "Supply Cabinet",
+      "Old Crate"
+    ],
+    "tags": [
+      "environment",
+      "trap"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "item": "Coil of Rope"
+      }
+    }
+  },
+  {
+    "id": 19,
+    "name": "Candlemaker\u00e2\u20ac\u2122s Vault",
+    "difficulty": "Medium",
+    "threats": [
+      "Wax Elemental",
+      "Firefly Swarm"
+    ],
+    "history": "Taxes dodged by melting records into candles.",
+    "flavor": "Wax stalagmites crowd like frozen screams.",
+    "discoverables": [
+      "Supply Cabinet",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "event",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Wax Slide",
+      "on_clear": {
+        "item": "Scented Taper"
+      }
+    }
+  },
+  {
+    "id": 20,
+    "name": "Smuggler\u00e2\u20ac\u2122s Cut",
+    "difficulty": "Medium",
+    "threats": [
+      "Tripwire Spider",
+      "Ambusher"
+    ],
+    "history": "Hidden artery between city and river.",
+    "flavor": "Bootprints head both ways in nervous clusters.",
+    "discoverables": [
+      "Wooden Barrel",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "combat",
+      "event"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "gold_mult": 1.15
+      },
+      "on_clear": {
+        "gold_flat": 5
+      }
+    }
+  },
+  {
+    "id": 21,
+    "name": "Sunken Oratory",
+    "difficulty": "Medium",
+    "threats": [
+      "Zealot Shade",
+      "Frost Spirit"
+    ],
+    "history": "A cult prayed underwater to hear truer echoes.",
+    "flavor": "Whispers drag like kelp across your mind.",
+    "discoverables": [
+      "Dusty Chest",
+      "Offering Bowl"
+    ],
+    "tags": [
+      "lore",
+      "rest"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "cleanse": true
+      },
+      "on_clear": {
+        "item": "Blessed Pebble"
+      }
+    }
+  },
+  {
+    "id": 22,
+    "name": "Thresher Corridor",
+    "difficulty": "Hard",
+    "threats": [
+      "Blade Demon",
+      "Puzzle Golem"
+    ],
+    "history": "A miller\u00e2\u20ac\u2122s revenge on tax collectors.",
+    "flavor": "The floor etches tally marks in blood brown.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Scholar's Desk"
+    ],
+    "tags": [
+      "puzzle",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Scything Blades",
+      "on_clear": {
+        "disarm_token": true
+      }
+    }
+  },
+  {
+    "id": 23,
+    "name": "Mirror Crypt",
+    "difficulty": "Hard",
+    "threats": [
+      "Doppelganger",
+      "Light Phantom"
+    ],
+    "history": "Nobles trapped reflections of rivals within.",
+    "flavor": "You catch yourself moving before you do.",
+    "discoverables": [
+      "Dusty Chest",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "combat",
+      "puzzle"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "mirror-duel"
+      },
+      "on_clear": {
+        "crit_bonus": 0.03
+      }
+    }
+  },
+  {
+    "id": 24,
+    "name": "Gravestitch Ward",
+    "difficulty": "Hard",
+    "threats": [
+      "Stitched Ghoul",
+      "Needle Beast"
+    ],
+    "history": "Physickers tested resurrection seams here.",
+    "flavor": "Thread trails retreat into the dark, tugging back.",
+    "discoverables": [
+      "Supply Cabinet",
+      "Iron Lockbox"
+    ],
+    "tags": [
+      "combat",
+      "lore"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "bleed-risk"
+      },
+      "on_clear": {
+        "item": "Bone Needle"
+      }
+    }
+  },
+  {
+    "id": 25,
+    "name": "Ashfall Colonnade",
+    "difficulty": "Hard",
+    "threats": [
+      "Cinder Wraith",
+      "Soot Elemental"
+    ],
+    "history": "Volcanic ash sealed a banquet mid-toast.",
+    "flavor": "Footprints appear and vanish beside yours.",
+    "discoverables": [
+      "Treasure Chest",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "combat",
+      "environment"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "choking-soot"
+      },
+      "on_clear": {
+        "crit_bonus": 0.02
+      }
+    }
+  },
+  {
+    "id": 26,
+    "name": "Tide-locked Door",
+    "difficulty": "Hard",
+    "threats": [
+      "Surge Elemental",
+      "Barnacle Crawler"
+    ],
+    "history": "A sea gate pulses with lunar chains.",
+    "flavor": "Salt writes lace on the iron bands.",
+    "discoverables": [
+      "Dusty Chest",
+      "Hidden Nook"
+    ],
+    "tags": [
+      "puzzle",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Rising Surge",
+      "on_clear": {
+        "item": "Coral Key"
+      }
+    }
+  },
+  {
+    "id": 27,
+    "name": "Clockwork Passage",
+    "difficulty": "Hard",
+    "threats": [
+      "Gear Golem",
+      "Clockwork Beetles"
+    ],
+    "history": "An engineer tried to replace guards with gears.",
+    "flavor": "Every click dares your heartbeat to sync.",
+    "discoverables": [
+      "Treasure Chest",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "combat",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Gear Crush",
+      "on_clear": {
+        "damage_bonus": 3
+      }
+    }
+  },
+  {
+    "id": 28,
+    "name": "Redcap Nursery",
+    "difficulty": "Hard",
+    "threats": [
+      "Redcap Brute",
+      "Blood Sprite"
+    ],
+    "history": "Murder sprites sprout where battles festered.",
+    "flavor": "Hats drip, never drying.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Old Crate"
+    ],
+    "tags": [
+      "combat"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "bleed-risk"
+      },
+      "on_clear": {
+        "item": "Bottle of Lye"
+      }
+    }
+  },
+  {
+    "id": 29,
+    "name": "Gallows Library",
+    "difficulty": "Hard",
+    "threats": [
+      "Hangman Spirit",
+      "Vengeful Archivist"
+    ],
+    "history": "Banned books hung from ropes to \u00e2\u20ac\u02dcair out sin.\u00e2\u20ac\u2122",
+    "flavor": "The shelves lean like tired jurors.",
+    "discoverables": [
+      "Scholar's Desk",
+      "Old Crate"
+    ],
+    "tags": [
+      "lore",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Noose Trap",
+      "on_clear": {
+        "escape_token": true
+      }
+    }
+  },
+  {
+    "id": 30,
+    "name": "Oracle\u00e2\u20ac\u2122s Shardroom",
+    "difficulty": "Hard",
+    "threats": [
+      "Glass Elemental",
+      "Echo Phantom"
+    ],
+    "history": "Prophecies were shattered to mute a war.",
+    "flavor": "Shards show you winning and losing at once.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "lore",
+      "puzzle"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "extra_rolls": 1
+      },
+      "on_clear": {
+        "item": "Shard of Certainty"
+      }
+    }
+  },
+  {
+    "id": 31,
+    "name": "Salt Bridge",
+    "difficulty": "Hard",
+    "threats": [
+      "Bridge Troll",
+      "Salt Serpent"
+    ],
+    "history": "Smugglers hauled evaporate-pans across here.",
+    "flavor": "Crystals crunch like snow under steel.",
+    "discoverables": [
+      "Treasure Chest",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "combat",
+      "environment"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "shield": 4
+      },
+      "on_clear": {
+        "gold_flat": 4
+      }
+    }
+  },
+  {
+    "id": 32,
+    "name": "Warden\u00e2\u20ac\u2122s Pantry",
+    "difficulty": "Hard",
+    "threats": [
+      "Poison Rat",
+      "Hungry Specter"
+    ],
+    "history": "The warden hoarded both rations and souls.",
+    "flavor": "Padlocks still chew on broken hasps.",
+    "discoverables": [
+      "Alchemist's Case",
+      "Iron Lockbox"
+    ],
+    "tags": [
+      "combat",
+      "event"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "hunger"
+      },
+      "on_clear": {
+        "item": "Skeleton Key Fragment"
+      }
+    }
+  },
+  {
+    "id": 33,
+    "name": "Thunder Cage",
+    "difficulty": "Elite",
+    "threats": [
+      "Storm Elemental",
+      "Lightning Warden"
+    ],
+    "history": "A mage bottled weather; it learned to pace.",
+    "flavor": "Hair lifts. Taste iron, then thunder answers.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Iron Lockbox"
+    ],
+    "tags": [
+      "combat",
+      "elite",
+      "environment"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "shield": 10
+      },
+      "on_clear": {
+        "item": "Conductor Rod"
+      }
+    }
+  },
+  {
+    "id": 34,
+    "name": "Bone Orchard",
+    "difficulty": "Elite",
+    "threats": [
+      "Bone Reaper",
+      "Corpse Flower"
+    ],
+    "history": "A battlefield replanted itself with men.",
+    "flavor": "Wind chimes made of dog-tags and teeth.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Iron Lockbox"
+    ],
+    "tags": [
+      "combat",
+      "elite"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "grave-rot"
+      },
+      "on_clear": {
+        "item": "Grave Resin"
+      }
+    }
+  },
+  {
+    "id": 35,
+    "name": "Ember Choir",
+    "difficulty": "Elite",
+    "threats": [
+      "Choir Wraiths",
+      "Heat Phantom"
+    ],
+    "history": "Singers were walled in to \u00e2\u20ac\u02dcperfect\u00e2\u20ac\u2122 a hymn.",
+    "flavor": "Ash mouths try to form your name in harmony.",
+    "discoverables": [
+      "Treasure Chest",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "combat",
+      "elite"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "heat"
+      },
+      "on_clear": {
+        "gold_mult": 1.2
+      }
+    }
+  },
+  {
+    "id": 36,
+    "name": "Sapphire Sluice",
+    "difficulty": "Elite",
+    "threats": [
+      "Gem Golem",
+      "Water Blade"
+    ],
+    "history": "A royal wash channel for raw stones.",
+    "flavor": "Walls glitter like a thief\u00e2\u20ac\u2122s grin.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Supply Cabinet"
+    ],
+    "tags": [
+      "combat",
+      "elite"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "item": "Raw Sapphire"
+      }
+    }
+  },
+  {
+    "id": 37,
+    "name": "Vein of Whispers",
+    "difficulty": "Elite",
+    "threats": [
+      "Mind Eel",
+      "Echo Beast"
+    ],
+    "history": "Miners hit a talking ore that lied sweetly.",
+    "flavor": "The rock suggests easier paths you shouldn\u00e2\u20ac\u2122t take.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "elite",
+      "event"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "mind-whisper"
+      },
+      "on_clear": {
+        "crit_bonus": 0.04
+      }
+    }
+  },
+  {
+    "id": 38,
+    "name": "Censer Labyrinth",
+    "difficulty": "Elite",
+    "threats": [
+      "Incense Spirit",
+      "Blind Sentinel"
+    ],
+    "history": "Priests drugged intruders with perfumed fog.",
+    "flavor": "Smell tastes purple then goes black.",
+    "discoverables": [
+      "Merchant's Strongbox",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "elite",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Choking Incense",
+      "on_enter": {
+        "cleanse": true
+      }
+    }
+  },
+  {
+    "id": 39,
+    "name": "Crucible Steps",
+    "difficulty": "Elite",
+    "threats": [
+      "Lava Ooze",
+      "Forge Spirit"
+    ],
+    "history": "Initiates ascended by carrying iron barefoot.",
+    "flavor": "Footprints are glass where they failed.",
+    "discoverables": [
+      "Supply Cabinet",
+      "Merchant's Strongbox"
+    ],
+    "tags": [
+      "elite",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Molten Drip",
+      "on_clear": {
+        "damage_bonus": 4
+      }
+    }
+  },
+  {
+    "id": 40,
+    "name": "Quiet Barracks",
+    "difficulty": "Elite",
+    "threats": [
+      "Phantom Phalanx",
+      "Arrow Demon"
+    ],
+    "history": "A regiment vowed silence until victory; it never came.",
+    "flavor": "Cots made tight as shield walls.",
+    "discoverables": [
+      "Merchant's Strongbox",
+      "Scholar's Desk"
+    ],
+    "tags": [
+      "combat",
+      "elite"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "shield": 8
+      },
+      "on_clear": {
+        "gold_flat": 8
+      }
+    }
+  },
+  {
+    "id": 41,
+    "name": "The Taxidermy",
+    "difficulty": "Elite",
+    "threats": [
+      "Stitched Chimera",
+      "Needle Swarm"
+    ],
+    "history": "A collector preferred pets that never left.",
+    "flavor": "Glass eyes follow like gnats.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Merchant's Strongbox"
+    ],
+    "tags": [
+      "combat",
+      "elite"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "item": "Preserving Salts"
+      }
+    }
+  },
+  {
+    "id": 42,
+    "name": "Verdigris Vault",
+    "difficulty": "Elite",
+    "threats": [
+      "Acid Slime",
+      "Copper Sentinel"
+    ],
+    "history": "Coin dies stored with corrosive proofings.",
+    "flavor": "Green tears streak coin faces on the wall.",
+    "discoverables": [
+      "Merchant's Strongbox",
+      "Iron Lockbox"
+    ],
+    "tags": [
+      "elite",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Acid Drip",
+      "on_enter": {
+        "shield": 6
+      }
+    }
+  },
+  {
+    "id": 43,
+    "name": "Hush Canal",
+    "difficulty": "Elite",
+    "threats": [
+      "Drowned Noble",
+      "Dark Current"
+    ],
+    "history": "Silent boats ferried bribes under city hall.",
+    "flavor": "Water refuses to make a sound.",
+    "discoverables": [
+      "Treasure Chest",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "elite",
+      "environment"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "cleanse": true
+      },
+      "on_clear": {
+        "item": "Seal Ring"
+      }
+    }
+  },
+  {
+    "id": 44,
+    "name": "Rafter of Knives",
+    "difficulty": "Elite",
+    "threats": [
+      "Cleaver Spirit",
+      "Butcher Shade"
+    ],
+    "history": "Guild enforcers meted \u00e2\u20ac\u02dcmarket corrections.\u00e2\u20ac\u2122",
+    "flavor": "Hooks sway to a heartbeat not yours.",
+    "discoverables": [
+      "Old Crate",
+      "Crystal Pedestal"
+    ],
+    "tags": [
+      "combat",
+      "elite",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Falling Cleavers",
+      "on_clear": {
+        "item": "Meat Hook"
+      }
+    }
+  },
+  {
+    "id": 45,
+    "name": "Needle Compass",
+    "difficulty": "Elite",
+    "threats": [
+      "Magnet Elemental",
+      "Iron Beetles"
+    ],
+    "history": "Navigators aligned journeys by a living loadstone.",
+    "flavor": "Your gear tugs toward a wrong north.",
+    "discoverables": [
+      "Ornate Urn",
+      "Iron Lockbox"
+    ],
+    "tags": [
+      "elite",
+      "event"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "magnetized"
+      },
+      "on_clear": {
+        "gold_mult": 1.1
+      }
+    }
+  },
+  {
+    "id": 46,
+    "name": "Chapel of Revoked Saints",
+    "difficulty": "Elite",
+    "threats": [
+      "Fallen Icon",
+      "Cursed Angel"
+    ],
+    "history": "Patrons were unmade for political weather.",
+    "flavor": "Halos are scratched out with knives.",
+    "discoverables": [
+      "Treasure Chest",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "elite",
+      "lore"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "crit_bonus": 0.02
+      },
+      "on_clear": {
+        "item": "Black Candle"
+      }
+    }
+  },
+  {
+    "id": 47,
+    "name": "Mire of Hourglasses",
+    "difficulty": "Elite",
+    "threats": [
+      "Time Elemental",
+      "Sand Wraith"
+    ],
+    "history": "A wizard tried to slow aging; time drowned him.",
+    "flavor": "Grains flow upward in defiance.",
+    "discoverables": [
+      "Crystal Pedestal",
+      "Scholar's Desk"
+    ],
+    "tags": [
+      "elite",
+      "event"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "extra_rolls": 1
+      },
+      "on_clear": {
+        "item": "Hourglass Shard"
+      }
+    }
+  },
+  {
+    "id": 48,
+    "name": "The Crooked Court",
+    "difficulty": "Elite",
+    "threats": [
+      "Jury of Crows",
+      "Judge Golem"
+    ],
+    "history": "Trials held for show; verdicts sold cheap.",
+    "flavor": "Benches lean toward bribery.",
+    "discoverables": [
+      "Merchant's Strongbox",
+      "Iron Lockbox"
+    ],
+    "tags": [
+      "elite",
+      "event"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "escape_token": true,
+        "gold_flat": 10
+      }
+    }
+  },
+  {
+    "id": 49,
+    "name": "Witch-Bottle Gallery",
+    "difficulty": "Elite",
+    "threats": [
+      "Hex Elemental",
+      "Glass Spirit"
+    ],
+    "history": "Curses were bottled, most without lids.",
+    "flavor": "Bottles hum names you don\u00e2\u20ac\u2122t own.",
+    "discoverables": [
+      "Merchant's Strongbox",
+      "Merchant's Strongbox"
+    ],
+    "tags": [
+      "elite",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Hex Burst",
+      "on_clear": {
+        "cleanse": true
+      }
+    }
+  },
+  {
+    "id": 50,
+    "name": "Starless Observatory",
+    "difficulty": "Elite",
+    "threats": [
+      "Star Golem",
+      "Void Phantom"
+    ],
+    "history": "Astrologers charted underground skies.",
+    "flavor": "Constellations drawn with chalk and regret.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "elite",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Void Mote",
+      "on_enter": {
+        "shield": 8
+      }
+    }
+  },
+  {
+    "id": 51,
+    "name": "Mason\u00e2\u20ac\u2122s Ossuary",
+    "difficulty": "Hard",
+    "threats": [
+      "Bone Worm",
+      "Sarcophan"
+    ],
+    "history": "Builders buried comrades with their tools.",
+    "flavor": "Chisels rest like flowers in ribcages.",
+    "discoverables": [
+      "Supply Cabinet",
+      "Iron Lockbox"
+    ],
+    "tags": [
+      "combat",
+      "lore"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "item": "Stone Chisel"
+      }
+    }
+  },
+  {
+    "id": 52,
+    "name": "Gutter of Coins",
+    "difficulty": "Hard",
+    "threats": [
+      "Cutpurse Shade",
+      "Grease Elemental"
+    ],
+    "history": "A flood pushed a market\u00e2\u20ac\u2122s tills down here.",
+    "flavor": "Every step clinks like a confession.",
+    "discoverables": [
+      "Merchant's Strongbox",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "event"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "gold_mult": 1.15
+      },
+      "on_clear": {
+        "gold_flat": 6
+      }
+    }
+  },
+  {
+    "id": 53,
+    "name": "The Chalk Maze",
+    "difficulty": "Hard",
+    "threats": [
+      "Wall Mimic",
+      "Maze Hound"
+    ],
+    "history": "Engineers practiced siege layouts here.",
+    "flavor": "Fresh chalk lines appear at your approach.",
+    "discoverables": [
+      "Treasure Chest",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "puzzle",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Maze Shift",
+      "on_enter": {
+        "extra_rolls": 1
+      }
+    }
+  },
+  {
+    "id": 54,
+    "name": "Crate Cathedral",
+    "difficulty": "Hard",
+    "threats": [
+      "Crate Golem",
+      "Crate Mimic"
+    ],
+    "history": "Smugglers disguised shrines as storage.",
+    "flavor": "A perfume of pine and secrets.",
+    "discoverables": [
+      "Old Crate",
+      "Supply Cabinet"
+    ],
+    "tags": [
+      "event",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Topple Trap",
+      "on_clear": {
+        "item": "Crowbar"
+      }
+    }
+  },
+  {
+    "id": 55,
+    "name": "Pitch-Black Dock",
+    "difficulty": "Hard",
+    "threats": [
+      "Blind Lurker",
+      "Tar Beast"
+    ],
+    "history": "A clandestine pier for night courts.",
+    "flavor": "The dark sticks to your hands like guilt.",
+    "discoverables": [
+      "Old Crate",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "combat",
+      "environment"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "blinded"
+      },
+      "on_clear": {
+        "item": "Tar Rag"
+      }
+    }
+  },
+  {
+    "id": 56,
+    "name": "Driftbone Pier",
+    "difficulty": "Hard",
+    "threats": [
+      "Bone Eel",
+      "Wood Spirit"
+    ],
+    "history": "Built from shipwreck ribs to mock the sea.",
+    "flavor": "Boards creak sea-songs without water.",
+    "discoverables": [
+      "Old Crate",
+      "Scholar's Desk"
+    ],
+    "tags": [
+      "combat",
+      "environment"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "shield": 4
+      },
+      "on_clear": {
+        "item": "Barnacle Knife"
+      }
+    }
+  },
+  {
+    "id": 57,
+    "name": "Lattice of Chains",
+    "difficulty": "Hard",
+    "threats": [
+      "Chain Beast",
+      "Jailer Wraith"
+    ],
+    "history": "Prisoners braided chains into ladders that failed.",
+    "flavor": "Cold links remember wrists.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Abandoned Backpack"
+    ],
+    "tags": [
+      "combat",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Chain Bind",
+      "on_clear": {
+        "item": "Lockpick Kit"
+      }
+    }
+  },
+  {
+    "id": 58,
+    "name": "Poppy Still",
+    "difficulty": "Hard",
+    "threats": [
+      "Dream Mist",
+      "Addled Cultist"
+    ],
+    "history": "Dream-brewers sold visions to nobles.",
+    "flavor": "Sweetness hides a bitter afterbite.",
+    "discoverables": [
+      "Old Crate",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "combat",
+      "event"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "sleepy"
+      },
+      "on_clear": {
+        "item": "Vial of Calm"
+      }
+    }
+  },
+  {
+    "id": 59,
+    "name": "Soot Chapel",
+    "difficulty": "Hard",
+    "threats": [
+      "Ash Angel",
+      "Candle Spirit"
+    ],
+    "history": "Miners prayed here with blackened hands.",
+    "flavor": "Soot thumbprints make a galaxy on the wall.",
+    "discoverables": [
+      "Treasure Chest",
+      "Crystal Pedestal"
+    ],
+    "tags": [
+      "combat",
+      "lore"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "cleanse": true
+      },
+      "on_clear": {
+        "item": "Pick Charm"
+      }
+    }
+  },
+  {
+    "id": 60,
+    "name": "Tinkerer's Yard",
+    "difficulty": "Hard",
+    "threats": [
+      "Spring Beast",
+      "Saw Toy"
+    ],
+    "history": "Children's toys were weapon prototypes.",
+    "flavor": "Wind-up soldiers patrol in perfect loops.",
+    "discoverables": [
+      "Old Crate",
+      "Old Crate"
+    ],
+    "tags": [
+      "combat",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Spring Trap",
+      "on_clear": {
+        "damage_bonus": 2
+      }
+    }
+  },
+  {
+    "id": 61,
+    "name": "Siren Cavity",
+    "difficulty": "Hard",
+    "threats": [
+      "Siren",
+      "Stone Bat"
+    ],
+    "history": "Cave singers practiced echoes to hunt.",
+    "flavor": "Your name returns sweeter and wronger.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "environment",
+      "trap"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "charmed-risk"
+      },
+      "on_clear": {
+        "item": "Ear Stitch"
+      }
+    }
+  },
+  {
+    "id": 62,
+    "name": "Thorn Archive",
+    "difficulty": "Hard",
+    "threats": [
+      "Thorn Beast",
+      "Paper Wasp"
+    ],
+    "history": "Books were bound in living hedges.",
+    "flavor": "Leaves whisper indexing codes.",
+    "discoverables": [
+      "Old Crate",
+      "Old Crate"
+    ],
+    "tags": [
+      "lore",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Bramble Net",
+      "on_clear": {
+        "item": "Pruning Hook"
+      }
+    }
+  },
+  {
+    "id": 63,
+    "name": "Caltrop Orchard",
+    "difficulty": "Hard",
+    "threats": [
+      "Spike Beast",
+      "Bandit Archer"
+    ],
+    "history": "A warlord sowed iron seeds for cavalry.",
+    "flavor": "Fruit crates hide teeth of iron.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Hidden Nook"
+    ],
+    "tags": [
+      "combat",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Caltrops",
+      "on_clear": {
+        "item": "Sack of Caltrops"
+      }
+    }
+  },
+  {
+    "id": 64,
+    "name": "The Hollow Drum",
+    "difficulty": "Hard",
+    "threats": [
+      "Sound Elemental",
+      "Drum Warden"
+    ],
+    "history": "Messages thundered through hollow pillars.",
+    "flavor": "Every step answers, louder than it should.",
+    "discoverables": [
+      "Old Crate",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "event",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Sound Burst",
+      "on_enter": {
+        "shield": 5
+      }
+    }
+  },
+  {
+    "id": 65,
+    "name": "Gambler\u00e2\u20ac\u2122s Wake",
+    "difficulty": "Hard",
+    "threats": [
+      "Cheat Shade",
+      "Dice Golem"
+    ],
+    "history": "A legendary cheater drowned in winnings.",
+    "flavor": "Cards float on puddles like lilies.",
+    "discoverables": [
+      "Treasure Chest",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "event",
+      "lore"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "crit_bonus": 0.03
+      },
+      "on_clear": {
+        "item": "Weighted Die"
+      }
+    }
+  },
+  {
+    "id": 66,
+    "name": "Alabaster Ward",
+    "difficulty": "Hard",
+    "threats": [
+      "Plaster Golem",
+      "Dust Wraith"
+    ],
+    "history": "Plague walls sealed the sick in gleaming stone.",
+    "flavor": "White dust coats your tongue like chalk.",
+    "discoverables": [
+      "Abandoned Backpack",
+      "Hidden Nook"
+    ],
+    "tags": [
+      "combat",
+      "environment"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "dust-cough"
+      },
+      "on_clear": {
+        "item": "Surgeon\u00e2\u20ac\u2122s Note"
+      }
+    }
+  },
+  {
+    "id": 67,
+    "name": "Lanternfish Den",
+    "difficulty": "Hard",
+    "threats": [
+      "Angler Slime",
+      "Dark Water"
+    ],
+    "history": "Biolights were farmed then ate the farmers.",
+    "flavor": "False lanterns blink in hunting rhythm.",
+    "discoverables": [
+      "Treasure Chest",
+      "Supply Cabinet"
+    ],
+    "tags": [
+      "combat",
+      "environment"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "darkwater"
+      },
+      "on_clear": {
+        "item": "Biolight Vial"
+      }
+    }
+  },
+  {
+    "id": 68,
+    "name": "Riddle Mill",
+    "difficulty": "Hard",
+    "threats": [
+      "Logic Spirit",
+      "Grindstone Golem"
+    ],
+    "history": "Wheat and minds were ground alike here.",
+    "flavor": "The stone asks questions with every turn.",
+    "discoverables": [
+      "Leather Pouch",
+      "Scholar's Desk"
+    ],
+    "tags": [
+      "combat",
+      "puzzle"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "extra_rolls": 1
+      },
+      "on_clear": {
+        "gold_flat": 5
+      }
+    }
+  },
+  {
+    "id": 69,
+    "name": "Needlefall Court",
+    "difficulty": "Hard",
+    "threats": [
+      "Pin Beast",
+      "Tailor Wraith"
+    ],
+    "history": "Tailors judged stitches with lethal standards.",
+    "flavor": "A red thread runs through everything.",
+    "discoverables": [
+      "Crystal Pedestal",
+      "Old Crate"
+    ],
+    "tags": [
+      "combat",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Pin Storm",
+      "on_clear": {
+        "item": "Thimble Charm"
+      }
+    }
+  },
+  {
+    "id": 70,
+    "name": "The Floodgate",
+    "difficulty": "Hard",
+    "threats": [
+      "Water Titan",
+      "Gate Golem"
+    ],
+    "history": "A city\u00e2\u20ac\u2122s life hinged on this crank.",
+    "flavor": "The wheel begs to be turned and dares you.",
+    "discoverables": [
+      "Supply Cabinet",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "event",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Sudden Deluge",
+      "on_clear": {
+        "item": "Gate Wedge"
+      }
+    }
+  },
+  {
+    "id": 71,
+    "name": "Copper Choir Loft",
+    "difficulty": "Medium",
+    "threats": [
+      "Echo Imp",
+      "Pipe Rats"
+    ],
+    "history": "Pipes once sang; now they bite ears.",
+    "flavor": "Footfalls come back as music in minor keys.",
+    "discoverables": [
+      "Supply Cabinet",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "environment",
+      "lore"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "ringing"
+      },
+      "on_clear": {
+        "item": "Pipe Reed"
+      }
+    }
+  },
+  {
+    "id": 72,
+    "name": "Gloam Garden",
+    "difficulty": "Medium",
+    "threats": [
+      "Shade Vine",
+      "Root Wyrm"
+    ],
+    "history": "A botanist bred plants to drink lanternlight.",
+    "flavor": "Leaves curl to sip your shadow.",
+    "discoverables": [
+      "Alchemist's Case",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "environment",
+      "rest"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "heal": 6
+      },
+      "on_clear": {
+        "item": "Botanist Pin"
+      }
+    }
+  },
+  {
+    "id": 73,
+    "name": "Pickpocket Chapel",
+    "difficulty": "Medium",
+    "threats": [
+      "Shadow Thief",
+      "Coin Mimic"
+    ],
+    "history": "Thieves tithed to luck and took it back.",
+    "flavor": "Saints display hollow palms.",
+    "discoverables": [
+      "Leather Pouch",
+      "Ornate Urn"
+    ],
+    "tags": [
+      "event",
+      "lore"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "gold_mult": 1.1
+      },
+      "on_clear": {
+        "crit_bonus": 0.01
+      }
+    }
+  },
+  {
+    "id": 74,
+    "name": "Ink-Well",
+    "difficulty": "Medium",
+    "threats": [
+      "Ink Elemental",
+      "Ink Spirit"
+    ],
+    "history": "Scribes dumped failures into a bottomless jar.",
+    "flavor": "Letters crawl up your boots then think better.",
+    "discoverables": [
+      "Supply Cabinet",
+      "Old Crate"
+    ],
+    "tags": [
+      "lore",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Ink Ooze",
+      "on_clear": {
+        "item": "Quill Knife"
+      }
+    }
+  },
+  {
+    "id": 75,
+    "name": "Glass Tread",
+    "difficulty": "Medium",
+    "threats": [
+      "Glass Imp",
+      "Glass Beetle"
+    ],
+    "history": "A showcase floor to wow patrons.",
+    "flavor": "Skeletons grin from far below the clear pane.",
+    "discoverables": [
+      "Dusty Chest",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "environment",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Crack Step",
+      "on_enter": {
+        "shield": 4
+      }
+    }
+  },
+  {
+    "id": 76,
+    "name": "Charcoal Kiln",
+    "difficulty": "Medium",
+    "threats": [
+      "Ash Imp",
+      "Smolder Imp"
+    ],
+    "history": "Fuel for forges; also for arson.",
+    "flavor": "Heat hovers like a waiting slap.",
+    "discoverables": [
+      "Wooden Barrel",
+      "Old Crate"
+    ],
+    "tags": [
+      "combat",
+      "environment"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "heat"
+      },
+      "on_clear": {
+        "item": "Char Lump"
+      }
+    }
+  },
+  {
+    "id": 77,
+    "name": "Turnkey Theater",
+    "difficulty": "Medium",
+    "threats": [
+      "Door Mimic",
+      "Actor Shade"
+    ],
+    "history": "Mock trials became real with time.",
+    "flavor": "Masks hang with mouths forever open.",
+    "discoverables": [
+      "Weapon Rack",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "combat",
+      "event"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "mock-trial"
+      },
+      "on_clear": {
+        "gold_flat": 4
+      }
+    }
+  },
+  {
+    "id": 78,
+    "name": "Beekeeper\u00e2\u20ac\u2122s Nave",
+    "difficulty": "Medium",
+    "threats": [
+      "Hive Guardian",
+      "Honey Ooze"
+    ],
+    "history": "Sweet offerings to a hungry god-queen.",
+    "flavor": "Honeycomb walls buzz like gossip.",
+    "discoverables": [
+      "Dusty Chest",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "environment",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Hive Burst",
+      "on_clear": {
+        "item": "Smoke Pot"
+      }
+    }
+  },
+  {
+    "id": 79,
+    "name": "Stargazer\u00e2\u20ac\u2122s Sump",
+    "difficulty": "Medium",
+    "threats": [
+      "Bioluminescent Leech",
+      "Muck Beast"
+    ],
+    "history": "A failed underground planetarium flooded.",
+    "flavor": "Stars ripple in puddles when you move.",
+    "discoverables": [
+      "Leather Pouch",
+      "Old Crate"
+    ],
+    "tags": [
+      "environment",
+      "lore"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "extra_rolls": 1
+      },
+      "on_clear": {
+        "item": "Star Chart Scrap"
+      }
+    }
+  },
+  {
+    "id": 80,
+    "name": "Kobold Tollbooth",
+    "difficulty": "Medium",
+    "threats": [
+      "Tax Goblin",
+      "Kobold Sapper"
+    ],
+    "history": "Travelers paid in trinkets or blood.",
+    "flavor": "A sign reads: \u00e2\u20ac\u02dcExact Change Only.\u00e2\u20ac\u2122",
+    "discoverables": [
+      "Dusty Chest",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "combat",
+      "event",
+      "trap"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "gold_mult": 1.1
+      },
+      "on_clear": {
+        "item": "Sapper\u00e2\u20ac\u2122s Spikes"
+      }
+    }
+  },
+  {
+    "id": 81,
+    "name": "The Quiet Market",
+    "difficulty": "Medium",
+    "threats": [
+      "Merchant Spirit",
+      "Pickpocket"
+    ],
+    "history": "Vendors swore silence to hear liars better.",
+    "flavor": "Hands speak louder than mouths here.",
+    "discoverables": [
+      "Wooden Barrel",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "event",
+      "shop"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "shop_discount": 0.1
+      },
+      "on_clear": {
+        "gold_flat": 3
+      }
+    }
+  },
+  {
+    "id": 82,
+    "name": "Well of Names",
+    "difficulty": "Medium",
+    "threats": [
+      "Name Leech",
+      "Echo Wraith"
+    ],
+    "history": "Names thrown in for luck could be stolen back.",
+    "flavor": "Your name sounds lighter the longer you stay.",
+    "discoverables": [
+      "Dusty Chest",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "event",
+      "lore"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "cleanse": true
+      },
+      "on_clear": {
+        "item": "Returned Name"
+      }
+    }
+  },
+  {
+    "id": 83,
+    "name": "Charmer\u00e2\u20ac\u2122s Den",
+    "difficulty": "Medium",
+    "threats": [
+      "Basket Serpent",
+      "Charmer's Serpent"
+    ],
+    "history": "Entertainers taught serpents new tricks.",
+    "flavor": "The floor warms and slithers slightly.",
+    "discoverables": [
+      "Leather Pouch",
+      "Old Crate"
+    ],
+    "tags": [
+      "combat",
+      "event"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "hypnotic-tone"
+      },
+      "on_clear": {
+        "item": "Antivenom Leaf"
+      }
+    }
+  },
+  {
+    "id": 84,
+    "name": "Mortar Ward",
+    "difficulty": "Medium",
+    "threats": [
+      "Stone Crusher",
+      "Stone Sprite"
+    ],
+    "history": "Herbalists ground cures and poisons alike.",
+    "flavor": "Pistons breathe in slow, stony sighs.",
+    "discoverables": [
+      "Dusty Chest",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "environment",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Crush Piston",
+      "on_enter": {
+        "shield": 5
+      }
+    }
+  },
+  {
+    "id": 85,
+    "name": "Lantern Lottery",
+    "difficulty": "Medium",
+    "threats": [
+      "Fate Imp",
+      "Lantern Wisp"
+    ],
+    "history": "Miners gambled shifts by lantern draw.",
+    "flavor": "One lantern burns too bright to trust.",
+    "discoverables": [
+      "Ornate Urn",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "event",
+      "trap"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "crit_bonus": 0.02
+      },
+      "on_fail": {
+        "status": "bad-luck"
+      }
+    }
+  },
+  {
+    "id": 86,
+    "name": "The Low Choir",
+    "difficulty": "Medium",
+    "threats": [
+      "Drone Spirit",
+      "Harmonic Beast"
+    ],
+    "history": "Tonal therapy for prisoners went wrong.",
+    "flavor": "Your bones hum a note you can\u00e2\u20ac\u2122t stop.",
+    "discoverables": [
+      "Old Crate",
+      "Leather Pouch"
+    ],
+    "tags": [
+      "environment",
+      "event"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "bone-drone"
+      },
+      "on_clear": {
+        "item": "Ear Cone"
+      }
+    }
+  },
+  {
+    "id": 87,
+    "name": "Mudglass Studio",
+    "difficulty": "Medium",
+    "threats": [
+      "Glass Golem",
+      "Kiln Spirit"
+    ],
+    "history": "Alchemists fused mud to glass windows of power.",
+    "flavor": "Rainbow knives in the air, pretending to be light.",
+    "discoverables": [
+      "Old Crate",
+      "Dusty Chest"
+    ],
+    "tags": [
+      "environment",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Glass Spray",
+      "on_clear": {
+        "item": "Goggles"
+      }
+    }
+  },
+  {
+    "id": 88,
+    "name": "Wagon Bone Yard",
+    "difficulty": "Medium",
+    "threats": [
+      "Wheel Golem",
+      "Scavenger"
+    ],
+    "history": "Caravans cannibalized for spare parts.",
+    "flavor": "A wheel spins gently without wind.",
+    "discoverables": [
+      "Old Crate",
+      "Old Crate"
+    ],
+    "tags": [
+      "environment",
+      "event"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "gold_flat": 4
+      }
+    }
+  },
+  {
+    "id": 89,
+    "name": "Guild of Knots",
+    "difficulty": "Medium",
+    "threats": [
+      "Rope Elemental",
+      "Rope Wraith"
+    ],
+    "history": "Contract disputes settled by literal bindings.",
+    "flavor": "Ropes twitch like cats dreaming.",
+    "discoverables": [
+      "Leather Pouch",
+      "Abandoned Backpack"
+    ],
+    "tags": [
+      "puzzle",
+      "trap"
+    ],
+    "mechanics": {
+      "on_clear": {
+        "item": "Cutting Knife"
+      }
+    }
+  },
+  {
+    "id": 90,
+    "name": "Tinfall Gate",
+    "difficulty": "Medium",
+    "threats": [
+      "Tin Elemental",
+      "Sound Imp"
+    ],
+    "history": "A cheap fortress made of tin and bravado.",
+    "flavor": "Every breeze writes you a headache.",
+    "discoverables": [
+      "Dusty Chest",
+      "Wooden Barrel"
+    ],
+    "tags": [
+      "environment",
+      "trap"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "clang-daze"
+      },
+      "on_clear": {
+        "item": "Ear Pad"
+      }
+    }
+  },
+  {
+    "id": 91,
+    "name": "Dragon\u00e2\u20ac\u2122s Casting",
+    "difficulty": "Boss",
+    "threats": [
+      "Ancient Dragon",
+      "Lava Serpent",
+      "Wind Spirit"
+    ],
+    "history": "A dragon forged its crown here between wars.",
+    "flavor": "Claw-gouges read like royal decrees.",
+    "discoverables": [
+      "Treasure Chest",
+      "Iron Lockbox"
+    ],
+    "tags": [
+      "boss",
+      "combat",
+      "environment"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "shield": 15
+      },
+      "on_clear": {
+        "gold_mult": 1.3,
+        "item": "Molten Crown Shard"
+      }
+    }
+  },
+  {
+    "id": 92,
+    "name": "Demon Tribunal",
+    "difficulty": "Boss",
+    "threats": [
+      "Infernal Judge",
+      "Hellfire Imp"
+    ],
+    "history": "Demons tried themselves to justify cruelty.",
+    "flavor": "The verdict is always \u00e2\u20ac\u02dcmore.\u00e2\u20ac\u2122",
+    "discoverables": [
+      "Merchant's Strongbox",
+      "Merchant's Strongbox"
+    ],
+    "tags": [
+      "boss",
+      "combat",
+      "event"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "infernal-judgment"
+      },
+      "on_clear": {
+        "escape_token": true,
+        "gold_flat": 20
+      }
+    }
+  },
+  {
+    "id": 93,
+    "name": "Hydra Sump",
+    "difficulty": "Boss",
+    "threats": [
+      "Hydra",
+      "Toxic Ooze"
+    ],
+    "history": "A city\u00e2\u20ac\u2122s drains converged; a god-beast nested.",
+    "flavor": "Bubbles pop with tiny hisses of hate.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Iron Lockbox"
+    ],
+    "tags": [
+      "boss",
+      "combat",
+      "environment"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "toxic-runoff"
+      },
+      "on_clear": {
+        "item": "Glistening Scale"
+      }
+    }
+  },
+  {
+    "id": 94,
+    "name": "Lich Auditor\u00e2\u20ac\u2122s Vault",
+    "difficulty": "Boss",
+    "threats": [
+      "Lich",
+      "Soul Collector"
+    ],
+    "history": "Death\u00e2\u20ac\u2122s accountant balanced lives owed.",
+    "flavor": "Abacus beads click on your spine.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Merchant's Strongbox"
+    ],
+    "tags": [
+      "boss",
+      "combat",
+      "lore"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "soul-tax"
+      },
+      "on_clear": {
+        "item": "Phylactery Dust"
+      }
+    }
+  },
+  {
+    "id": 95,
+    "name": "Troll Kiln",
+    "difficulty": "Boss",
+    "threats": [
+      "Regenerating Troll",
+      "Fire Elemental"
+    ],
+    "history": "Trolls cured their hides like leather here.",
+    "flavor": "Wet stone smells like burnt hair.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Abandoned Backpack"
+    ],
+    "tags": [
+      "boss",
+      "combat"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "regen-foe"
+      },
+      "on_clear": {
+        "damage_bonus": 5
+      }
+    }
+  },
+  {
+    "id": 96,
+    "name": "Orc War Pulpit",
+    "difficulty": "Boss",
+    "threats": [
+      "Warchief",
+      "Drum Golem",
+      "Shadow Archers"
+    ],
+    "history": "An orc prophet preached iron futures.",
+    "flavor": "The floor is tattooed with bootprints.",
+    "discoverables": [
+      "Merchant's Strongbox",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "boss",
+      "combat"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "war-drums"
+      },
+      "on_clear": {
+        "crit_bonus": 0.05
+      }
+    }
+  },
+  {
+    "id": 97,
+    "name": "Gilded Hydra Hatchery",
+    "difficulty": "Boss",
+    "threats": [
+      "Hatchlings",
+      "Acid Hydra"
+    ],
+    "history": "A mad duke plated eggs to buy loyalty.",
+    "flavor": "Eggshells glitter and cut like knives.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "boss",
+      "combat",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Gold Acid",
+      "on_clear": {
+        "item": "Alchemical Neutralizer"
+      }
+    }
+  },
+  {
+    "id": 98,
+    "name": "Knight-Engine Reliquary",
+    "difficulty": "Boss",
+    "threats": [
+      "Clockwork Knight",
+      "Blade Angel"
+    ],
+    "history": "Sainted armor given gears and bad ideas.",
+    "flavor": "Prayers etched where oil now bleeds.",
+    "discoverables": [
+      "Merchant's Strongbox",
+      "Supply Cabinet"
+    ],
+    "tags": [
+      "boss",
+      "combat"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "shield": 12
+      },
+      "on_clear": {
+        "item": "Winding Core"
+      }
+    }
+  },
+  {
+    "id": 99,
+    "name": "The Demon\u00e2\u20ac\u2122s Ledger",
+    "difficulty": "Boss",
+    "threats": [
+      "Contract Fiend",
+      "Contract Demon"
+    ],
+    "history": "Every deal written here ends in fire.",
+    "flavor": "Pages turn themselves to your most expensive page.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Merchant's Strongbox"
+    ],
+    "tags": [
+      "boss",
+      "event",
+      "trap"
+    ],
+    "mechanics": {
+      "hazard": "Binding Clause",
+      "on_clear": {
+        "cleanse": true,
+        "item": "Loophole Slip"
+      }
+    }
+  },
+  {
+    "id": 100,
+    "name": "Crown of the Underking",
+    "difficulty": "Boss",
+    "threats": [
+      "Underking",
+      "Throne Guardian",
+      "Stone Sentinel"
+    ],
+    "history": "The first digger crowned himself king and never left.",
+    "flavor": "A throne grown from the cave\u00e2\u20ac\u2122s own ribs.",
+    "discoverables": [
+      "Iron Lockbox",
+      "Merchant's Strongbox"
+    ],
+    "tags": [
+      "boss",
+      "combat",
+      "lore"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "shield": 10
+      },
+      "on_clear": {
+        "gold_mult": 1.25,
+        "item": "Underking's Crest"
+      }
+    }
+  },
+  {
+    "id": 101,
+    "name": "Slime Pit",
+    "difficulty": "Elite",
+    "threats": [
+      "Gelatinous Slime"
+    ],
+    "history": "Alchemical waste pooled here and gained hunger.",
+    "flavor": "Bubbling masses pulse with mindless appetite.",
+    "discoverables": [
+      "Alchemist's Case",
+      "Hidden Compartment"
+    ],
+    "tags": [
+      "combat",
+      "elite",
+      "splits"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "slime-coating"
+      },
+      "on_clear": {
+        "item": "Slime Sample"
+      }
+    }
+  },
+  {
+    "id": 102,
+    "name": "Necromancer's Sanctum",
+    "difficulty": "Elite",
+    "threats": [
+      "Necromancer"
+    ],
+    "history": "Death magic echoes where rituals never finished.",
+    "flavor": "Candles burn with cold light. Bones stir in piles.",
+    "discoverables": [
+      "Scholar's Desk",
+      "Burial Niche"
+    ],
+    "tags": [
+      "combat",
+      "elite",
+      "spawns",
+      "undead"
+    ],
+    "mechanics": {
+      "hazard": "Reanimation Circle",
+      "on_clear": {
+        "item": "Necromantic Tome"
+      }
+    }
+  },
+  {
+    "id": 103,
+    "name": "Hydra's Lair",
+    "difficulty": "Elite",
+    "threats": [
+      "Shadow Hydra"
+    ],
+    "history": "A beast born from nightmares, heads multiplying endlessly.",
+    "flavor": "Multiple serpentine heads writhe in the darkness.",
+    "discoverables": [
+      "Treasure Chest",
+      "Iron Lockbox"
+    ],
+    "tags": [
+      "combat",
+      "elite",
+      "spawns",
+      "beast"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "status": "multi-headed-fear"
+      },
+      "on_clear": {
+        "item": "Hydra Scale"
+      }
+    }
+  },
+  {
+    "id": 104,
+    "name": "Demon Portal",
+    "difficulty": "Elite",
+    "threats": [
+      "Demon Lord"
+    ],
+    "history": "A rift to the abyss, summoning fiends eternally.",
+    "flavor": "The portal pulses, spawning demons with each beat.",
+    "discoverables": [
+      "Crystal Pedestal",
+      "Hidden Compartment"
+    ],
+    "tags": [
+      "combat",
+      "elite",
+      "spawns",
+      "demon"
+    ],
+    "mechanics": {
+      "hazard": "Demonic Aura",
+      "on_clear": {
+        "item": "Portal Shard"
+      }
+    }
+  },
+  {
+    "id": 105,
+    "name": "Crystal Cavern",
+    "difficulty": "Elite",
+    "threats": [
+      "Crystal Golem"
+    ],
+    "history": "Crystalline guardians formed from the cave itself.",
+    "flavor": "Shattered crystal shards reform into smaller guardians.",
+    "discoverables": [
+      "Crystal Pedestal",
+      "Treasure Chest"
+    ],
+    "tags": [
+      "combat",
+      "elite",
+      "splits",
+      "construct"
+    ],
+    "mechanics": {
+      "on_enter": {
+        "shield": 5
+      },
+      "on_clear": {
+        "item": "Perfect Crystal"
+      }
+    }
+  }
+]

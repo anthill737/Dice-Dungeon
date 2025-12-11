@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rooms_v2.schema.json",
+  "title": "DiceDungeon Room",
+  "type": "object",
+  "required": ["id","name","difficulty","threats","history","flavor","discoverables"],
+  "properties": {
+    "id": { "type": "integer", "minimum": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "difficulty": { "type": "string", "enum": ["Easy","Medium","Hard","Elite","Boss"] },
+    "threats": { "type": "array", "items": { "type": "string" } },
+    "history": { "type": "string" },
+    "flavor": { "type": "string" },
+    "discoverables": { "type": "array", "items": { "type": "string" } },
+    "tags": { "type": "array", "items": { "$ref": "#/$defs/Tag" }, "default": [] },
+    "mechanics": { "$ref": "room_mechanics.schema.json" }
+  },
+  "$defs": {
+    "Tag": {
+      "type": "string",
+      "enum": ["combat","trap","puzzle","event","shop","rest","lore","environment","boss","elite"]
+    }
+  }
+}

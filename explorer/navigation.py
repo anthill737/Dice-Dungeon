@@ -1,0 +1,699 @@
+"""
+Navigation Manager
+
+Handles all room navigation and exploration logic including:
+- Room movement and direction exploration
+- Room entry with key validation (boss/mini-boss rooms)
+- Floor transitions and initialization
+- Exploration UI and ground loot generation
+- Special room spawning (boss, mini-boss, stairs, store)
+"""
+
+import random
+import tkinter as tk
+from tkinter import messagebox
+
+# Import content engine functions
+try:
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+    from dice_dungeon_content.engine.integration_hooks import (
+        apply_on_enter, on_floor_transition, apply_effective_modifiers
+    )
+    from dice_dungeon_content.engine.rooms_loader import pick_room_for_floor
+    from explorer.rooms import Room
+except ImportError:
+    # Fallback if content engine unavailable
+    def apply_on_enter(game, room_data, log_func): pass
+    def on_floor_transition(game): pass
+    def apply_effective_modifiers(game): pass
+    def pick_room_for_floor(rooms, floor): return {}
+    class Room: pass
+
+
+class NavigationManager:
+    """Manages room navigation, exploration, and floor transitions"""
+    
+    def __init__(self, game):
+        """Initialize with reference to main game instance"""
+        self.game = game
+    
+    def explore_direction(self, direction):
+        """Move in a direction"""
+        # Don't allow movement while typewriter is active
+        if hasattr(self.game, 'typewriter_active') and self.game.typewriter_active:
+            return
+        
+        # Reset environmental hazard penalties when leaving a room
+        self.game.combat_accuracy_penalty = 0.0
+        if hasattr(self.game, 'combat_crit_penalty'):
+            self.game.combat_crit_penalty = 0
+        if hasattr(self.game, 'combat_fumble_chance'):
+            self.game.combat_fumble_chance = 0
+        if hasattr(self.game, 'combat_enemy_damage_boost'):
+            self.game.combat_enemy_damage_boost = 0
+        if hasattr(self.game, 'combat_poison_damage'):
+            self.game.combat_poison_damage = 0
+        
+        # Check if direction is blocked from current room
+        if direction in self.game.current_room.blocked_exits:
+            self.game.log("That path is blocked!", 'system')
+            return
+        
+        # Also check traditional exits system
+        if not self.game.current_room.exits.get(direction, True):
+            self.game.log("That direction is blocked!", 'system')
+            return
+        
+        new_pos = self.get_adjacent_pos(direction)
+        
+        # Check if trying to enter through a blocked exit from the other side
+        opposite = {'N': 'S', 'S': 'N', 'E': 'W', 'W': 'E'}
+        if new_pos in self.game.dungeon:
+            destination_room = self.game.dungeon[new_pos]
+            if opposite[direction] in destination_room.blocked_exits:
+                self.game.log("That path is blocked from the other side!", 'system')
+                return
+        
+        # CRITICAL: Check if there's a locked room blocking this direction
+        # This prevents players from creating rooms beyond locked rooms
+        if new_pos in self.game.special_rooms and new_pos not in self.game.unlocked_rooms:
+            room_type = self.game.special_rooms[new_pos]
+            
+            if room_type == 'mini_boss':
+                if "Old Key" not in self.game.inventory:
+                    self.game.log("⚡ [ELITE ROOM] A locked door blocks your path!", 'enemy')
+                    self.game.log("[BLOCKED] You need an Old Key to proceed.", 'enemy')
+                    return
+            elif room_type == 'boss':
+                fragments_have = getattr(self.game, 'key_fragments_collected', 0)
+                if fragments_have < 3:
+                    self.game.log("☠ [BOSS ROOM] A sealed boss door blocks your path!", 'enemy')
+                    self.game.log(f"[BLOCKED] You need 3 key fragments. You have {fragments_have}.", 'enemy')
+                    return
+        
+        # Check if already explored
+        if new_pos in self.game.dungeon:
+            existing_room = self.game.dungeon[new_pos]
+            
+            # Restore special room flags if this is a locked special room
+            if new_pos in self.game.special_rooms and new_pos not in self.game.unlocked_rooms:
+                room_type = self.game.special_rooms[new_pos]
+                if room_type == 'mini_boss':
+                    existing_room.is_mini_boss_room = True
+                elif room_type == 'boss':
+                    existing_room.is_boss_room = True
+            
+            # Don't update position yet - enter_room will do it after key validation
+            self.enter_room(existing_room, new_pos=new_pos)
+            return
+        
+        # Increment rooms explored
+        self.game.rooms_explored_on_floor += 1
+        
+        # Determine if this should be a special room (boss or mini-boss)
+        should_be_mini_boss = False
+        should_be_boss = False
+        
+        # Mini-boss spawn logic: spawn at random intervals (8-12 rooms), max 3 per floor
+        if self.game.mini_bosses_spawned_this_floor < 3 and self.game.rooms_explored_on_floor >= self.game.next_mini_boss_at:
+            should_be_mini_boss = True
+            self.game.mini_bosses_spawned_this_floor += 1
+            # Set next mini-boss target for the next one (will be used after current one is defeated)
+            self.game.next_mini_boss_at = self.game.rooms_explored_on_floor + random.randint(6, 10)
+        
+        # Boss spawn logic: 
+        # - Boss spawns 5-8 rooms after defeating all 3 mini-bosses
+        # - next_boss_at is set when the 3rd mini-boss is defeated
+        # - Only spawn ONE boss per floor
+        if not self.game.boss_spawned_this_floor:
+            # Check if we have a boss spawn target set and reached it
+            if self.game.next_boss_at is not None and self.game.rooms_explored_on_floor >= self.game.next_boss_at:
+                should_be_boss = True
+                self.game.boss_spawned_this_floor = True
+        
+        # Select appropriate room based on special room determination
+        if should_be_boss:
+            # Force Boss difficulty room
+            boss_rooms = [r for r in self.game._rooms if r.get('difficulty') == 'Boss']
+            if boss_rooms:
+                room_data = random.choice(boss_rooms)
+            else:
+                room_data = pick_room_for_floor(self.game._rooms, self.game.floor)
+        elif should_be_mini_boss:
+            # Force Elite difficulty room for mini-boss
+            elite_rooms = [r for r in self.game._rooms if r.get('difficulty') == 'Elite']
+            if elite_rooms:
+                room_data = random.choice(elite_rooms)
+            else:
+                room_data = pick_room_for_floor(self.game._rooms, self.game.floor)
+        else:
+            # Normal room selection
+            room_data = pick_room_for_floor(self.game._rooms, self.game.floor)
+        
+        new_room = Room(room_data, new_pos[0], new_pos[1])
+        
+        # Randomly block some exits (30% chance per direction)
+        for dir in ['N', 'S', 'E', 'W']:
+            if random.random() < 0.3:
+                new_room.exits[dir] = False
+                new_room.blocked_exits.append(dir)
+        
+        # Ensure we can go back
+        opposite = {'N': 'S', 'S': 'N', 'E': 'W', 'W': 'E'}
+        new_room.exits[opposite[direction]] = True
+        if opposite[direction] in new_room.blocked_exits:
+            new_room.blocked_exits.remove(opposite[direction])
+        
+        # Ensure at least 1 other exit (besides the one we came from)
+        other_exits = [d for d in ['N', 'S', 'E', 'W'] if d != opposite[direction]]
+        open_other = [d for d in other_exits if new_room.exits[d]]
+        if len(open_other) == 0:
+            # Force open one random direction
+            to_open = random.choice(other_exits)
+            new_room.exits[to_open] = True
+            if to_open in new_room.blocked_exits:
+                new_room.blocked_exits.remove(to_open)
+        
+        self.game.dungeon[new_pos] = new_room
+        
+        # Mark room as special based on our spawn logic or room data
+        if should_be_boss or room_data.get('difficulty') == 'Boss' or 'boss' in room_data.get('tags', []):
+            new_room.is_boss_room = True
+            self.game.special_rooms[new_pos] = 'boss'
+            new_room.has_combat = True  # Boss rooms always have combat
+        elif should_be_mini_boss or room_data.get('difficulty') == 'Elite':
+            # Elite rooms have a chance to be mini-bosses
+            new_room.is_mini_boss_room = True
+            self.game.special_rooms[new_pos] = 'mini_boss'
+            new_room.has_combat = True  # Mini-boss rooms always have combat
+        else:
+            # Normal rooms: 40% chance of combat (decided once at creation)
+            threats = room_data.get('threats', [])
+            has_combat_tag = 'combat' in room_data.get('tags', [])
+            if threats or has_combat_tag:
+                new_room.has_combat = random.random() < 0.4
+            else:
+                new_room.has_combat = False
+        
+        # Enter new room - will set current_pos if entry is successful
+        self.enter_room(new_room, new_pos=new_pos)
+    
+    def get_adjacent_pos(self, direction):
+        """Get position in direction"""
+        x, y = self.game.current_pos
+        moves = {'N': (0, 1), 'S': (0, -1), 'E': (1, 0), 'W': (-1, 0)}
+        dx, dy = moves[direction]
+        return (x + dx, y + dy)
+    
+    def enter_room(self, room, is_first=False, skip_effects=False, new_pos=None):
+        """Enter a room and process events"""
+        
+        # Determine which position to check for special room flags
+        # Use new_pos if entering a new room, otherwise use current_pos for re-entry
+        check_pos = new_pos if new_pos else self.game.current_pos
+        
+        # Restore special room flags if needed (for re-entry scenarios)
+        # This ensures the flag is correct even if it was temporarily disabled
+        if check_pos in self.game.special_rooms and check_pos not in self.game.unlocked_rooms:
+            room_type = self.game.special_rooms[check_pos]
+            if room_type == 'mini_boss':
+                room.is_mini_boss_room = True
+            elif room_type == 'boss':
+                room.is_boss_room = True
+        
+        # Check for boss/mini-boss rooms BEFORE entering
+        # This way we can block entry if the player doesn't have/use the key
+        if getattr(room, 'is_boss_room', False) and not skip_effects:
+            # Check if this room has already been unlocked
+            if check_pos not in self.game.unlocked_rooms:
+                # Initialize key_fragments_collected if missing (for old saves)
+                if not hasattr(self.game, 'key_fragments_collected'):
+                    self.game.key_fragments_collected = 0
+                
+                # Room is locked - check for key
+                if self.game.key_fragments_collected >= 3:
+                    # Show in-game dialog for boss key usage
+                    def on_boss_key_decision(use_key):
+                        if use_key:
+                            self.game.key_fragments_collected = 0  # Consume the fragments
+                            self.game.unlocked_rooms.add(new_pos if new_pos else self.game.current_pos)  # Mark room as unlocked
+                            self.game.log(f"[BOSS KEY FORGED] The 3 fragments merge into a complete key!", 'success')
+                            self.game.log(f"[UNLOCKED] The massive boss door grinds open!", 'success')
+                            # Now actually enter the room
+                            self._complete_room_entry(room, is_first, skip_effects, new_pos)
+                        else:
+                            self.game.log("[KEY SAVED] You decide to prepare more before facing the boss.", 'system')
+                            self.game.log("[BLOCKED] You turn back. The boss room remains sealed.", 'enemy')
+                            # Don't enter - update display and go back to previous room
+                            self.game.update_display()
+                            self.show_exploration_options()
+                    
+                    # Show the dialog and return - callback will handle entry
+                    self.game.log("☠ [BOSS ROOM] An enormous sealed door looms before you! ☠", 'enemy')
+                    self.game.log("[LOCKED] Three keyhole slots glow faintly in the door.", 'system')
+                    self.game.show_key_usage_dialog("Boss Key", on_boss_key_decision)
+                    return  # Exit here, callback will continue
+                else:
+                    # Not enough fragments
+                    fragments_needed = 3 - self.game.key_fragments_collected
+                    self.game.log("☠ [BOSS ROOM] An enormous sealed door looms before you! ☠", 'enemy')
+                    self.game.log(f"[LOCKED] The door has 3 keyhole slots. You have {self.game.key_fragments_collected} fragment(s).", 'system')
+                    self.game.log(f"[BLOCKED] You need {fragments_needed} more key fragment(s) to unlock this door!", 'enemy')
+                    # Don't enter - show exploration options
+                    self.show_exploration_options()
+                    return
+        
+        elif getattr(room, 'is_mini_boss_room', False) and not skip_effects:
+            # Check if this room has already been unlocked
+            if check_pos not in self.game.unlocked_rooms:
+                # Room is locked - check for key
+                if "Old Key" in self.game.inventory:
+                    # Show in-game dialog for old key usage
+                    def on_old_key_decision(use_key):
+                        if use_key:
+                            self.game.inventory.remove("Old Key")
+                            self.game.unlocked_rooms.add(new_pos if new_pos else self.game.current_pos)  # Mark room as unlocked
+                            self.game.log("[KEY USED] The Old Key turns in the lock with a satisfying click!", 'success')
+                            self.game.log("[UNLOCKED] The elite room door swings open!", 'success')
+                            # Now actually enter the room
+                            self._complete_room_entry(room, is_first, skip_effects, new_pos)
+                        else:
+                            self.game.log("[KEY KEPT] You decide to save your Old Key for later.", 'system')
+                            self.game.log("[BLOCKED] You turn back. The elite room remains locked.", 'enemy')
+                            # Don't enter - update display and go back to previous room
+                            self.game.update_display()
+                            self.show_exploration_options()
+                    
+                    # Show the dialog and return - callback will handle entry
+                    self.game.log("⚡ [ELITE ROOM] A reinforced door blocks your path! ⚡", 'enemy')
+                    self.game.log("[LOCKED] The door is sealed with an ornate lock.", 'system')
+                    self.game.show_key_usage_dialog("Old Key", on_old_key_decision)
+                    return  # Exit here, callback will continue
+                else:
+                    # No Old Key
+                    self.game.log("⚡ [ELITE ROOM] A reinforced door blocks your path! ⚡", 'enemy')
+                    self.game.log("[LOCKED] The door is sealed with an ornate lock.", 'system')
+                    self.game.log("[BLOCKED] You need an Old Key to unlock this door.", 'enemy')
+                    # Don't enter - show exploration options
+                    self.show_exploration_options()
+                    return
+        
+        # If we get here, the room can be entered normally
+        self._complete_room_entry(room, is_first, skip_effects, new_pos)
+    
+    def _complete_room_entry(self, room, is_first, skip_effects, new_pos=None):
+        """Complete the room entry after key checks"""
+        # Track if this is the first visit to this room
+        is_first_visit = not room.visited
+        
+        # Set instant text mode for revisited rooms (text displays instantly)
+        # New rooms get the typing effect
+        self.game.instant_text_mode = not is_first_visit
+        
+        # Update current position - this is when we officially move into the room
+        if new_pos:
+            self.game.current_pos = new_pos
+        
+        self.game.current_room = room
+        self.game._current_room = room.data
+        room.visited = True
+        
+        # Only increment rooms_explored counter on first visit (not starting room)
+        if not is_first and is_first_visit:
+            self.game.rooms_explored += 1
+            
+            # Track first 3 rooms as safe starter rooms (no combat ever)
+            if self.game.rooms_explored <= 3 and self.game.floor == 1:
+                self.game.starter_rooms.add(self.game.current_pos)
+        
+        # Decrement rest cooldown only when exploring NEW rooms
+        if is_first_visit and self.game.rest_cooldown > 0:
+            self.game.rest_cooldown -= 1
+        
+        # Update UI
+        self.game.room_title.config(text=f"{room.data['name']}")
+        self.game.room_desc.config(text=room.data['flavor'])
+        
+        # Log entry
+        self.game.log(f"\n{'='*50}", 'system')
+        self.game.log(f"Entered: {room.data['name']}", 'system')
+        
+        # Continue with normal room entry, passing first visit flag
+        self._continue_room_entry(room, skip_effects, is_first_visit)
+    
+    def _continue_room_entry(self, room, skip_effects, is_first_visit):
+        """Continue room entry after key decisions"""
+        self.game.log(room.data['flavor'], 'system')
+        
+        # Generate ground loot on first visit
+        if is_first_visit and not skip_effects:
+            self.generate_ground_loot(room)
+        
+        # Show what's on the ground
+        self.describe_ground_items(room)
+        
+        # Apply room entry effects ONLY on first visit (unless loading a save)
+        if not skip_effects and is_first_visit:
+            apply_on_enter(self.game, room.data, self.game.log)
+            apply_effective_modifiers(self.game)
+        
+        # Randomly add stairs (10% chance in any room after 3+ rooms explored) - ONLY on first visit
+        if not skip_effects and is_first_visit and not self.game.stairs_found and self.game.rooms_explored >= 3 and random.random() < 0.1:
+            room.has_stairs = True
+            self.game.stairs_found = True
+            self.game.log("[STAIRS] You found stairs to the next floor!", 'success')
+        
+        # Randomly add store (15% chance in any room after 2+ rooms explored, once per floor) - ONLY on first visit
+        if not skip_effects and is_first_visit and not self.game.store_found and self.game.rooms_explored >= 2 and random.random() < 0.15:
+            self.game.store_found = True
+            self.game.store_position = self.game.current_pos
+            self.game.store_room = room
+            self.game.log("You discovered a mysterious shop!", 'loot')
+        
+        # Randomly add chest (20% chance, only in unvisited rooms)
+        if not skip_effects and not room.has_chest and not room.visited and random.random() < 0.2:
+            room.has_chest = True
+            self.game.log("[CHEST] There's a chest here!", 'loot')
+        
+        # Update display and minimap BEFORE checking for combat
+        # This ensures the player sees their position update even when combat starts
+        self.game.update_display()
+        self.game.draw_minimap()
+        
+        # Trigger combat if applicable
+        # Check if combat should happen based on room's pre-rolled combat flag
+        # Skip combat in starter rooms (first 3 rooms on floor 1)
+        # ALSO skip combat if enemies have already been defeated in this room
+        is_starter_room = self.game.current_pos in self.game.starter_rooms
+        
+        # Pre-fetch combat info for both combat and peaceful paths
+        combat_threats = room.data.get('threats', [])
+        has_combat_tag = 'combat' in room.data.get('tags', [])
+        
+        # Only trigger combat if: room has combat AND enemies haven't been defeated yet
+        if not is_starter_room and room.has_combat and not room.enemies_defeated and not skip_effects:
+            # Check room type for special enemy selection
+            is_boss = getattr(room, 'is_boss_room', False)
+            is_mini_boss = getattr(room, 'is_mini_boss_room', False) and not is_boss
+            
+            if combat_threats:
+                enemy_name = random.choice(combat_threats)
+            else:
+                enemy_name = "Monster"
+            
+            if not skip_effects:
+                self.game.trigger_combat(enemy_name, is_mini_boss=is_mini_boss, is_boss=is_boss)
+                return  # Combat UI will be shown, don't show exploration options yet
+            else:
+                # If loading, just show options without triggering combat
+                self.show_exploration_options()
+        else:
+            # No combat - peaceful exploration
+            if combat_threats or has_combat_tag:
+                # Room had potential threats but they were avoided
+                peaceful_messages = [
+                    "The room is quiet. You explore cautiously...",
+                    "You sense danger but nothing attacks.",
+                    "The threats here seem to have moved on.",
+                    "You carefully avoid any lurking dangers.",
+                    "The room appears safe for now."
+                ]
+                self.game.log(random.choice(peaceful_messages), 'system')
+            
+            # Show exploration options
+            self.show_exploration_options()
+    
+    def show_exploration_options(self):
+        """Show options for exploring - new layout"""
+        # Skip if combat is still active to avoid collapsing the panel mid-fight
+        if getattr(self.game, 'in_combat', False):
+            if hasattr(self.game, 'debug_logger'):
+                self.game.debug_logger.ui("show_exploration_options skipped (in combat)")
+            return
+
+        # Hide entire action panel during exploration (contains combat UI)
+        if hasattr(self.game, 'action_panel'):
+            self.game.action_panel.pack_forget()
+            if hasattr(self.game, 'debug_logger'):
+                self.game.debug_logger.ui("action_panel hidden for exploration")
+        
+        # Hide dice section, enemy column, and player sprite box during exploration
+        if hasattr(self.game, 'dice_section'):
+            self.game.dice_section.pack_forget()
+        if hasattr(self.game, 'enemy_column'):
+            self.game.enemy_column.pack_forget()
+        if hasattr(self.game, 'player_sprite_box'):
+            self.game.player_sprite_box.pack_forget()
+        
+        # Clear action buttons strip
+        for widget in self.game.action_buttons_strip.winfo_children():
+            widget.destroy()
+        
+        # Hide enemy info in action panel
+        if self.game.action_panel_enemy_hp:
+            self.game.action_panel_enemy_hp.pack_forget()
+        self.game.action_panel_enemy_label.config(text="---")
+        if hasattr(self.game, 'enemy_sprite_area'):
+            self.game.enemy_sprite_area.pack_forget()
+            # Only update sprite label if it still exists
+            if hasattr(self.game, 'enemy_sprite_label') and self.game.enemy_sprite_label.winfo_exists():
+                self.game.enemy_sprite_label.config(text="Enemy\nSprite")
+        
+        # Hide enemy dice
+        if hasattr(self.game, 'enemy_dice_frame'):
+            self.game.enemy_dice_frame.pack_forget()
+        
+        # === UTILITY BUTTONS directly in strip ===
+        if self.game.current_room.has_chest and not self.game.current_room.chest_looted:
+            tk.Button(self.game.action_buttons_strip, text="Chest",
+                     command=self.game.open_chest,
+                     font=('Arial', self.game.scale_font(8), 'bold'), 
+                     bg=self.game.current_colors["text_purple"], fg='#ffffff',
+                     width=7, height=1).pack(side=tk.LEFT, padx=1)
+        
+        # Check Ground button (if items exist)
+        ground_items_exist = (
+            (self.game.current_room.ground_container and not self.game.current_room.container_searched) or
+            self.game.current_room.ground_gold > 0 or
+            len(self.game.current_room.ground_items) > 0 or
+            (hasattr(self.game.current_room, 'uncollected_items') and self.game.current_room.uncollected_items) or
+            (hasattr(self.game.current_room, 'dropped_items') and self.game.current_room.dropped_items)
+        )
+        
+        if ground_items_exist:
+            # Count total items on ground
+            total_ground_items = 0
+            if self.game.current_room.ground_container and not self.game.current_room.container_searched:
+                total_ground_items += 1
+            if self.game.current_room.ground_gold > 0:
+                total_ground_items += 1
+            total_ground_items += len(self.game.current_room.ground_items)
+            if hasattr(self.game.current_room, 'uncollected_items'):
+                total_ground_items += len(self.game.current_room.uncollected_items)
+            if hasattr(self.game.current_room, 'dropped_items'):
+                total_ground_items += len(self.game.current_room.dropped_items)
+            
+            item_word = "item" if total_ground_items == 1 else "items"
+            tk.Button(self.game.action_buttons_strip, text=f"{total_ground_items} {item_word}",
+                     command=self.game.show_ground_items,
+                     font=('Arial', self.game.scale_font(8), 'bold'), 
+                     bg=self.game.current_colors["text_orange"], fg='#ffffff',
+                     width=9, height=1).pack(side=tk.LEFT, padx=1)
+        
+        # Rest button with cooldown indicator
+        rest_text = "Rest"
+        rest_bg = self.game.current_colors["button_secondary"]
+        rest_state = tk.NORMAL
+        if self.game.rest_cooldown > 0:
+            rest_text = f"Rest ({self.game.rest_cooldown})"
+            rest_bg = '#666666'  # Grey instead of black
+            rest_state = tk.DISABLED  # Disable button when on cooldown
+        
+        tk.Button(self.game.action_buttons_strip, text=rest_text,
+                 command=self.game.rest,
+                 font=('Arial', self.game.scale_font(8), 'bold'), bg=rest_bg, fg='#000000',
+                 width=7, height=1, state=rest_state).pack(side=tk.LEFT, padx=1)
+        
+        tk.Button(self.game.action_buttons_strip, text="Inv",
+                 command=self.game.show_inventory,
+                 font=('Arial', self.game.scale_font(8), 'bold'), 
+                 bg=self.game.current_colors["button_secondary"], fg='#000000',
+                 width=5, height=1).pack(side=tk.LEFT, padx=1)
+        
+        # Store button - show if store has been found on this floor
+        if self.game.store_found:
+            if self.game.current_pos == self.game.store_position:
+                # At store location - show "Browse Store"
+                tk.Button(self.game.action_buttons_strip, text="Store",
+                         command=self.game.show_store,
+                         font=('Arial', self.game.scale_font(8), 'bold'), 
+                         bg=self.game.current_colors["text_gold"], fg='#000000',
+                         width=7, height=1).pack(side=tk.LEFT, padx=1)
+            else:
+                # Away from store - show "Travel to Store"
+                tk.Button(self.game.action_buttons_strip, text="→Store",
+                         command=self.game.travel_to_store,
+                         font=('Arial', self.game.scale_font(8), 'bold'), 
+                         bg=self.game.current_colors["text_purple"], fg='#ffffff',
+                         width=7, height=1).pack(side=tk.LEFT, padx=1)
+        
+        if self.game.current_room.has_stairs:
+            stairs_btn = tk.Button(self.game.action_buttons_strip, text="Stairs",
+                     command=self.descend_floor,
+                     font=('Arial', self.game.scale_font(8), 'bold'), 
+                     bg=self.game.current_colors["text_gold"], fg='#000000',
+                     width=7, height=1)
+            stairs_btn.pack(side=tk.LEFT, padx=1)
+            
+            # Disable button if boss not defeated
+            if not self.game.boss_defeated:
+                stairs_btn.config(state=tk.DISABLED, bg='#666666', fg='#333333')
+        
+        # Update scroll region to ensure all content is visible
+        self.game.update_scroll_region()
+    
+    def generate_ground_loot(self, room):
+        """Generate what spawns on the ground when first entering a room"""
+        # Mini-boss rooms ALWAYS have containers (guaranteed loot)
+        is_mini_boss = getattr(room, 'is_mini_boss_room', False)
+        
+        # Container spawn logic
+        if room.data.get('discoverables'):
+            if is_mini_boss:
+                # 100% container spawn for mini-boss rooms
+                room.ground_container = random.choice(room.data['discoverables'])
+            elif random.random() < 0.6:
+                # 60% chance for normal rooms
+                room.ground_container = random.choice(room.data['discoverables'])
+            
+            # 30% chance for container to be locked on floor 2+
+            if room.ground_container and self.game.floor >= 2 and random.random() < 0.30:
+                room.container_locked = True
+        
+        # 40% chance for loose items/gold to spawn directly on ground (not for mini-boss rooms)
+        if not is_mini_boss and random.random() < 0.4:
+            # 50/50 split between gold or items
+            if random.random() < 0.5:
+                # Loose gold
+                room.ground_gold = random.randint(5, 20)
+            else:
+                # Loose items - pick 1-2 random items
+                num_items = random.randint(1, 2)
+                available_items = ['Health Potion', 'Weighted Die', 'Lucky Chip', 'Honey Jar', 
+                                 'Lockpick Kit', 'Antivenom Leaf', 'Silk Bundle']
+                for _ in range(num_items):
+                    item = random.choice(available_items)
+                    room.ground_items.append(item)
+    
+    def describe_ground_items(self, room):
+        """Show player what's on the ground"""
+        things_noticed = []
+        
+        # Only show container if it exists AND hasn't been searched
+        if room.ground_container and not room.container_searched:
+            things_noticed.append(f"a {room.ground_container}")
+        
+        # Only show gold if there's actually gold remaining
+        if room.ground_gold > 0:
+            things_noticed.append(f"{room.ground_gold} gold coins")
+        
+        # Only show items that are still there
+        if room.ground_items:
+            for item in room.ground_items:
+                things_noticed.append(item)
+        
+        # Only log if there's actually something to notice
+        if things_noticed:
+            self.game.log(f"You notice on the ground: {', '.join(things_noticed)}", 'system')
+    
+    def start_new_floor(self):
+        """Initialize a new floor"""
+        self.game.dungeon = {}
+        self.game.current_pos = (0, 0)
+        self.game.stairs_found = False
+        self.game.in_combat = False
+        self.game.in_interaction = False
+        self.game.combat_accuracy_penalty = 0.0  # Reset hazard penalties for new floor
+        
+        # Reset boss system for new floor
+        self.game.key_fragments_collected = 0
+        self.game.mini_bosses_defeated = 0
+        self.game.boss_defeated = False
+        self.game.mini_bosses_spawned_this_floor = 0  # Reset floor spawn counter
+        self.game.boss_spawned_this_floor = False  # Reset floor spawn flag
+        self.game.special_rooms = {}
+        self.game.locked_rooms = set()
+        self.game.unlocked_rooms = set()
+        self.game.is_boss_fight = False
+        self.game.rooms_explored_on_floor = 0  # Track rooms explored to trigger boss spawns
+        self.game.next_mini_boss_at = random.randint(6, 10)  # Random target for first mini-boss
+        self.game.next_boss_at = random.randint(20, 30) if self.game.floor >= 5 else None  # Random target for boss
+        
+        # Reset store tracking for new floor
+        self.game.store_found = False
+        self.game.store_position = None
+        self.game.store_room = None
+        self.game.floor_store_inventory = None  # Reset for new floor
+        
+        # Pick entrance room
+        room_data = pick_room_for_floor(self.game._rooms, self.game.floor)
+        entrance = Room(room_data, 0, 0)
+        entrance.visited = True
+        entrance.has_combat = False  # Entrance never has combat
+        
+        # Randomly block some exits to create dead ends (30% chance per direction)
+        for direction in ['N', 'S', 'E', 'W']:
+            if random.random() < 0.3:
+                entrance.exits[direction] = False
+                entrance.blocked_exits.append(direction)
+        
+        # Ensure at least 2 exits are open
+        open_exits = [d for d in ['N', 'S', 'E', 'W'] if entrance.exits[d]]
+        if len(open_exits) < 2:
+            # Randomly open a blocked exit
+            blocked = [d for d in ['N', 'S', 'E', 'W'] if not entrance.exits[d]]
+            if blocked:
+                to_open = random.choice(blocked)
+                entrance.exits[to_open] = True
+                if to_open in entrance.blocked_exits:
+                    entrance.blocked_exits.remove(to_open)
+        
+        self.game.dungeon[(0, 0)] = entrance
+        self.game.current_room = entrance
+        self.game._current_room = room_data
+        
+        # Mark starting position as a starter room (no combat)
+        if self.game.floor == 1:
+            self.game.starter_rooms.add((0, 0))
+        
+        # Setup UI
+        self.game.setup_game_ui()
+        
+        # Apply floor transition
+        on_floor_transition(self.game)
+        
+        # Enter first room
+        self.enter_room(entrance, is_first=True)
+    
+    def descend_floor(self):
+        """Go to next floor"""
+        if not self.game.current_room.has_stairs:
+            self.game.log("No stairs here! Keep exploring.", 'system')
+            return
+        
+        if not self.game.boss_defeated:
+            msg = "The stairs are blocked by a mysterious force.\n\nYou must defeat the floor boss first!"
+            self.game.log(msg.replace('\n\n', ' '), 'system')
+            messagebox.showwarning("Stairs Blocked", msg)
+            return
+        
+        self.game.floor += 1
+        self.game.run_score += 100 * self.game.floor
+        
+        # Reset floor-specific trackers
+        self.game.purchased_upgrades_this_floor.clear()
+        
+        self.game.log(f"\n[STAIRS] Descending to Floor {self.game.floor}...", 'success')
+        self.start_new_floor()

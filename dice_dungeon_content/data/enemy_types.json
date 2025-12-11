@@ -1,0 +1,61 @@
+{
+  "Gelatinous Slime": {
+    "splits_on_death": true,
+    "split_into_type": "Slime Blob",
+    "split_count": 3,
+    "split_hp_percent": 0.4,
+    "split_dice": -1
+  },
+  "Slime Blob": {
+    "splits_on_death": false
+  },
+  "Necromancer": {
+    "can_spawn": true,
+    "spawn_trigger": "hp_thresholds",
+    "spawn_hp_thresholds": [0.75, 0.5, 0.25],
+    "max_spawns": 3,
+    "spawn_count": 2,
+    "spawn_type": "Skeleton",
+    "spawn_hp_mult": 0.3,
+    "spawn_dice": 2
+  },
+  "Skeleton": {
+    "can_spawn": false
+  },
+  "Shadow Hydra": {
+    "can_spawn": true,
+    "spawn_trigger": "hp_threshold",
+    "spawn_hp_threshold": 0.3,
+    "max_spawns": 2,
+    "spawn_count": 2,
+    "spawn_type": "Shadow Head",
+    "spawn_hp_mult": 0.35,
+    "spawn_dice": 2
+  },
+  "Shadow Head": {
+    "can_spawn": false
+  },
+  "Demon Lord": {
+    "can_spawn": true,
+    "spawn_trigger": "turn_count",
+    "spawn_turn_interval": 3,
+    "max_spawns": 4,
+    "spawn_count": 1,
+    "spawn_type": "Imp",
+    "spawn_hp_mult": 0.25,
+    "spawn_dice": 2
+  },
+  "Imp": {
+    "can_spawn": false
+  },
+  "Crystal Golem": {
+    "splits_on_death": true,
+    "split_into_type": "Crystal Shard",
+    "split_count": 4,
+    "split_hp_percent": 0.3,
+    "split_dice": -2
+  },
+  "Crystal Shard": {
+    "can_spawn": false
+  }
+}

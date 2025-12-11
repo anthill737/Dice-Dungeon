@@ -1,0 +1,187 @@
+{
+  "Old Crate": {
+    "description": "A weathered wooden crate with rusted hinges",
+    "loot_table": ["common_item", "gold", "nothing"],
+    "weights": [0.3, 0.5, 0.2],
+    "loot_pools": {
+      "common_item": ["Lockpick Kit", "Rope Bundle", "Torch", "Bandages", "Waterskin"],
+      "gold": {"min": 3, "max": 10}
+    }
+  },
+  "Dusty Chest": {
+    "description": "A small chest covered in dust and cobwebs",
+    "loot_table": ["item", "lore", "gold", "nothing"],
+    "weights": [0.3, 0.15, 0.4, 0.15],
+    "loot_pools": {
+      "item": ["Health Potion", "Antivenom Leaf", "Lucky Chip", "Weighted Die", "Silk Bundle"],
+      "lore": ["Guard Journal", "Quest Notice", "Scrawled Note", "Training Manual Page", "Pressed Page", "Surgeon's Note", "Puzzle Note", "Cracked Map Scrap", "Star Chart Scrap", "Prayer Strip"],
+      "gold": {"min": 5, "max": 15}
+    }
+  },
+  "Wooden Barrel": {
+    "description": "A sturdy oak barrel, sealed but unlocked",
+    "loot_table": ["supplies", "gold", "nothing"],
+    "weights": [0.25, 0.5, 0.25],
+    "loot_pools": {
+      "supplies": ["Honey Jar", "Trail Rations", "Ale Flask", "Preserved Meat"],
+      "gold": {"min": 2, "max": 8}
+    }
+  },
+  "Iron Lockbox": {
+    "description": "A heavy iron box with a simple lock",
+    "loot_table": ["valuable", "gold", "nothing"],
+    "weights": [0.4, 0.45, 0.15],
+    "loot_pools": {
+      "valuable": ["Blue Quartz", "Silver Ring", "Ancient Coin", "Gemstone Shard", "Blessed Charm"],
+      "gold": {"min": 8, "max": 20}
+    }
+  },
+  "Hidden Nook": {
+    "description": "A concealed alcove in the wall",
+    "loot_table": ["secret", "lore", "gold", "nothing"],
+    "weights": [0.2, 0.2, 0.35, 0.25],
+    "loot_pools": {
+      "secret": ["Map Scrap", "Old Letter", "Mysterious Key", "Coded Journal", "Faded Scroll"],
+      "lore": ["Guard Journal", "Quest Notice", "Scrawled Note", "Training Manual Page", "Pressed Page", "Surgeon's Note", "Puzzle Note", "Cracked Map Scrap", "Star Chart Scrap", "Prayer Strip"],
+      "gold": {"min": 5, "max": 12}
+    }
+  },
+  "Ornate Urn": {
+    "description": "A decorative urn with intricate carvings",
+    "loot_table": ["trinket", "gold", "nothing"],
+    "weights": [0.35, 0.4, 0.25],
+    "loot_pools": {
+      "trinket": ["Lucky Coin", "Jade Figurine", "Crystal Shard", "Amber Pendant", "Ivory Dice"],
+      "gold": {"min": 6, "max": 15}
+    }
+  },
+  "Leather Pouch": {
+    "description": "A small pouch tied with a leather cord",
+    "loot_table": ["small_item", "gold", "nothing"],
+    "weights": [0.3, 0.6, 0.1],
+    "loot_pools": {
+      "small_item": ["Lucky Chip", "Shiny Pebble", "Herb Bundle", "Flint and Steel"],
+      "gold": {"min": 2, "max": 6}
+    }
+  },
+  "Abandoned Backpack": {
+    "description": "A traveler's pack, left behind in haste",
+    "loot_table": ["equipment", "gold", "nothing"],
+    "weights": [0.35, 0.45, 0.2],
+    "loot_pools": {
+      "equipment": ["Lockpick Kit", "Rope", "Lantern Oil", "Climbing Gear", "Bedroll"],
+      "gold": {"min": 4, "max": 12}
+    }
+  },
+  "Treasure Chest": {
+    "description": "A sturdy chest bound with iron",
+    "loot_table": ["treasure", "gold", "nothing"],
+    "weights": [0.4, 0.5, 0.1],
+    "loot_pools": {
+      "treasure": ["Hourglass Shard", "Conductor Rod", "Tuner's Hammer", "Blue Quartz", "Blessed Charm", "Enchanted Ring"],
+      "gold": {"min": 10, "max": 25}
+    }
+  },
+  "Weapon Rack": {
+    "description": "A wooden rack holding old weapons",
+    "loot_table": ["weapon", "gold", "nothing"],
+    "weights": [0.35, 0.35, 0.3],
+    "loot_pools": {
+      "weapon": ["Dagger", "Short Sword", "Hand Axe", "Mace", "Spear"],
+      "gold": {"min": 3, "max": 10}
+    }
+  },
+  "Burial Niche": {
+    "description": "A small alcove containing funeral offerings",
+    "loot_table": ["offering", "lore", "gold", "nothing"],
+    "weights": [0.25, 0.15, 0.4, 0.2],
+    "loot_pools": {
+      "offering": ["Ancient Coin", "Blessed Charm", "Sacred Oil", "Prayer Beads", "Incense"],
+      "lore": ["Prayer Strip"],
+      "gold": {"min": 5, "max": 15}
+    }
+  },
+  "Supply Cabinet": {
+    "description": "A tall cabinet with several drawers",
+    "loot_table": ["supplies", "gold", "nothing"],
+    "weights": [0.4, 0.4, 0.2],
+    "loot_pools": {
+      "supplies": ["Bandages", "Health Potion", "Antivenom Leaf", "Torch", "Rope"],
+      "gold": {"min": 4, "max": 12}
+    }
+  },
+  "Toy Chest": {
+    "description": "A wooden chest filled with old toys",
+    "loot_table": ["toy", "gold", "nothing"],
+    "weights": [0.3, 0.45, 0.25],
+    "loot_pools": {
+      "toy": ["Wooden Toy", "Tin Soldier", "Spinning Top", "Stuffed Bear", "Toy Boat"],
+      "gold": {"min": 6, "max": 12}
+    }
+  },
+  "Alchemist's Case": {
+    "description": "A leather case containing glass vials",
+    "loot_table": ["potion", "gold", "nothing"],
+    "weights": [0.4, 0.4, 0.2],
+    "loot_pools": {
+      "potion": ["Health Potion", "Antivenom Leaf", "Strength Elixir", "Liquid Courage", "Healing Salve"],
+      "gold": {"min": 8, "max": 18}
+    }
+  },
+  "Hidden Compartment": {
+    "description": "A secret space behind a loose panel",
+    "loot_table": ["hidden_treasure", "gold", "nothing"],
+    "weights": [0.35, 0.5, 0.15],
+    "loot_pools": {
+      "hidden_treasure": ["Map Fragment", "Encryption Key", "Smuggler's Note", "Hidden Stash Map", "Secret Ledger"],
+      "gold": {"min": 7, "max": 20}
+    }
+  },
+  "Offering Bowl": {
+    "description": "A stone bowl used for ritual offerings",
+    "loot_table": ["ritual_item", "lore", "gold", "nothing"],
+    "weights": [0.25, 0.15, 0.45, 0.15],
+    "loot_pools": {
+      "ritual_item": ["Blessed Water", "Sacred Incense", "Prayer Scroll", "Holy Symbol", "Ritual Candle"],
+      "lore": ["Prayer Strip"],
+      "gold": {"min": 4, "max": 10}
+    }
+  },
+  "Merchant's Strongbox": {
+    "description": "A reinforced box with merchant marks",
+    "loot_table": ["valuable", "gold", "nothing"],
+    "weights": [0.35, 0.55, 0.1],
+    "loot_pools": {
+      "valuable": ["Gemstone", "Trade Contract", "Valuable Spices", "Silk Cloth", "Exotic Coin"],
+      "gold": {"min": 12, "max": 30}
+    }
+  },
+  "Scholar's Desk": {
+    "description": "A writing desk with scattered papers",
+    "loot_table": ["scholarly", "lore", "gold", "nothing"],
+    "weights": [0.25, 0.25, 0.3, 0.2],
+    "loot_pools": {
+      "scholarly": ["Ancient Tome", "Research Notes", "Star Chart Scrap", "Decoded Manuscript", "Philosopher's Stone Fragment"],
+      "lore": ["Guard Journal", "Quest Notice", "Scrawled Note", "Training Manual Page", "Pressed Page", "Surgeon's Note", "Puzzle Note", "Cracked Map Scrap", "Star Chart Scrap"],
+      "gold": {"min": 5, "max": 15}
+    }
+  },
+  "Rotten Sack": {
+    "description": "A decaying sack with unknown contents",
+    "loot_table": ["junk", "gold", "nothing"],
+    "weights": [0.2, 0.5, 0.3],
+    "loot_pools": {
+      "junk": ["Rusty Nails", "Broken Tool", "Moldy Bread", "Tattered Cloth", "Worthless Trinket"],
+      "gold": {"min": 1, "max": 5}
+    }
+  },
+  "Crystal Pedestal": {
+    "description": "A stone pedestal with a glowing crystal on top",
+    "loot_table": ["magic_item", "gold", "nothing"],
+    "weights": [0.45, 0.4, 0.15],
+    "loot_pools": {
+      "magic_item": ["Blue Quartz", "Crystal Shard", "Enchanted Amulet", "Mana Stone", "Arcane Focus"],
+      "gold": {"min": 10, "max": 25}
+    }
+  }
+}

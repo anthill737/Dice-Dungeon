@@ -1,0 +1,131 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "note": "Combat flavor text for player actions and enemy reactions"
+  },
+  
+  "player_attacks": [
+    "You strike!",
+    "You attack!",
+    "Your weapon finds its mark!",
+    "You lunge forward!",
+    "A calculated strike!",
+    "You press the attack!",
+    "Swift and deadly!",
+    "Your blade cuts true!",
+    "A powerful blow!",
+    "You strike with precision!"
+  ],
+  
+  "player_crits": [
+    "💥 CRITICAL HIT!",
+    "⚡ DEVASTATING STRIKE!",
+    "🔥 PERFECT SHOT!",
+    "✨ MASTERFUL BLOW!",
+    "💫 FLAWLESS EXECUTION!",
+    "⭐ LEGENDARY HIT!",
+    "🎯 BULLS-EYE!",
+    "💢 CRUSHING IMPACT!",
+    "⚔️ LETHAL PRECISION!",
+    "🌟 CRITICAL SUCCESS!"
+  ],
+  
+  "enemy_taunts": {
+    "Rat Swarm": [
+      "The rats chittering grows louder...",
+      "Beady eyes gleam in the darkness!",
+      "The swarm circles hungrily!",
+      "Tiny teeth gnash in anticipation!"
+    ],
+    "Shadow Beast": [
+      "The shadow coalesces, hungering...",
+      "Darkness writhes with malevolent intent!",
+      "The beast's form flickers menacingly!",
+      "Cold dread emanates from the shadows!"
+    ],
+    "Goblin Scout": [
+      "The goblin cackles wickedly!",
+      "'I'll wear yer bones!' it shrieks!",
+      "It dances tauntingly just out of reach!",
+      "The scout signals for reinforcements!"
+    ],
+    "Skeleton Warrior": [
+      "Bones rattle with ancient fury!",
+      "The skeleton advances, undaunted by death!",
+      "Empty eye sockets burn with unlife!",
+      "Its blade scrapes against bone ominously!"
+    ],
+    "Slime": [
+      "The slime bubbles menacingly!",
+      "It oozes forward, corrosive and hungry!",
+      "The gelatinous mass quivers!",
+      "Acidic droplets sizzle on the floor!"
+    ]
+  },
+  
+  "enemy_hurt": {
+    "Rat Swarm": [
+      "Rats scatter, squealing in pain!",
+      "The swarm recoils from your blow!",
+      "Rats fall, twitching!",
+      "The swarm thins out!"
+    ],
+    "Shadow Beast": [
+      "The shadow recoils, hissing!",
+      "Darkness dissipates where you struck!",
+      "The beast's form wavers!",
+      "Your weapon passes through, but leaves a wound!"
+    ],
+    "Goblin Scout": [
+      "The goblin yelps in pain!",
+      "'That hurt!' it whines!",
+      "Blood spatters from the wound!",
+      "It staggers backward!"
+    ],
+    "Skeleton Warrior": [
+      "Bones crack and splinter!",
+      "The skeleton's guard breaks!",
+      "Fragments of bone scatter!",
+      "It staggers, ribs cracked!"
+    ],
+    "Slime": [
+      "The slime's membrane ruptures!",
+      "Goo splatters everywhere!",
+      "It quivers, losing cohesion!",
+      "The slime splits momentarily!"
+    ]
+  },
+  
+  "enemy_death": {
+    "Rat Swarm": [
+      "The last rats flee into the shadows!",
+      "The swarm is destroyed!",
+      "Rat corpses litter the floor!",
+      "The chittering falls silent!"
+    ],
+    "Shadow Beast": [
+      "The shadow dissipates into nothingness!",
+      "Darkness fades, defeated!",
+      "The beast returns to the void!",
+      "Its form unravels into smoke!"
+    ],
+    "Goblin Scout": [
+      "The goblin falls with a final curse!",
+      "It collapses, dead!",
+      "The scout's eyes glaze over!",
+      "'No... not like this...' it gasps!"
+    ],
+    "Skeleton Warrior": [
+      "The skeleton crumbles to dust!",
+      "Its bones clatter to the floor!",
+      "The warrior falls, finally at rest!",
+      "The unlife fades from its form!"
+    ],
+    "Slime": [
+      "The slime puddles, inert!",
+      "It dissolves into harmless goo!",
+      "The slime's core shatters!",
+      "It evaporates with a hiss!"
+    ]
+  }
+}

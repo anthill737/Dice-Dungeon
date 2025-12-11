@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "room_mechanics.schema.json",
+  "title": "Room Mechanics",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "hazard": { "type": "string" },
+    "on_enter": { "$ref": "#/$defs/EffectBundle" },
+    "on_clear": { "$ref": "#/$defs/EffectBundle" },
+    "on_fail": { "$ref": "#/$defs/EffectBundle" }
+  },
+  "$defs": {
+    "EffectBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "heal": { "type": "integer", "minimum": 0 },
+        "extra_rolls": { "type": "integer", "minimum": 0 },
+        "crit_bonus": { "type": "number" },
+        "damage_bonus": { "type": "integer" },
+        "gold_mult": { "type": "number" },
+        "gold_flat": { "type": "integer" },
+        "shop_discount": { "type": "number" },
+        "shield": { "type": "integer" },
+        "cleanse": { "type": "boolean" },
+        "disarm_token": { "type": "boolean" },
+        "escape_token": { "type": "boolean" },
+        "item": { "type": "string" },
+        "status": { "type": "string" },
+        "duration": { "type": "string", "enum": ["combat","floor","run"] }
+      }
+    }
+  }
+}

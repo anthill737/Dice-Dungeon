@@ -1,0 +1,21 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "note": "Authoritative effect keys used by mechanics."
+  },
+
+  "heal": "Restores this much HP immediately.",
+  "extra_rolls": "Adds this many extra rerolls for the current encounter (unless a duration is specified).",
+  "crit_bonus": "Adds directly to crit chance; e.g., 0.05 = +5% absolute.",
+  "damage_bonus": "Flat damage added after dice combos and item bonuses.",
+  "gold_mult": "Multiplies gold earned by (1 + value) for the given duration.",
+  "gold_flat": "Adds this many gold immediately.",
+  "shop_discount": "Reduces shop prices by this fraction; e.g., 0.10 = 10% off.",
+  "shield": "Temporary HP consumed before normal HP.",
+  "cleanse": "Removes all negative statuses currently on the player.",
+  "disarm_token": "Stores one automatic pass for the next 'trap' hazard.",
+  "escape_token": "Prevents one death; on lethal damage set HP to 1 and consume.",
+  "item": "Grants an inventory item by name; see items_definitions.json.",
+  "status": "Applies a named status (negative or positive); see statuses_catalog.json.",
+  "duration": "Optional: 'combat', 'floor', or 'run' to set how long the temp effect lasts."
+}
