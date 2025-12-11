@@ -51,9 +51,20 @@ class StoreManager:
                 font=('Arial', 20, 'bold'), bg=self.game.current_colors["bg_panel"], 
                 fg=self.game.current_colors["text_gold"], pady=10).pack()
         
-        tk.Label(self.game.dialog_frame, text=f"Your Gold: {self.game.gold}", 
+        # Red X close button (top right corner)
+        close_btn = tk.Label(self.game.dialog_frame, text="✕", font=('Arial', 16, 'bold'),
+                            bg=self.game.current_colors["bg_panel"], fg='#ff4444',
+                            cursor="hand2", padx=5)
+        close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=5)
+        close_btn.bind('<Button-1>', lambda e: self.game.close_dialog())
+        close_btn.bind('<Enter>', lambda e: close_btn.config(fg='#ff0000'))
+        close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
+        
+        # Gold label that we can update without refreshing
+        self.gold_label = tk.Label(self.game.dialog_frame, text=f"Your Gold: {self.game.gold}", 
                 font=('Arial', 12, 'bold'), bg=self.game.current_colors["bg_panel"], 
-                fg=self.game.current_colors["text_gold"], pady=5).pack()
+                fg=self.game.current_colors["text_gold"], pady=5)
+        self.gold_label.pack()
         
         # Create notebook for tabs
         notebook = tk.Frame(self.game.dialog_frame, bg=self.game.current_colors["bg_panel"])
@@ -66,6 +77,9 @@ class StoreManager:
         # Container for tab content
         content_frame = tk.Frame(notebook, bg=self.game.current_colors["bg_panel"])
         content_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Save reference for updating sell tab without full refresh
+        self.sell_content_frame = content_frame
         
         # State to track current tab
         current_tab = {'value': active_tab}
@@ -222,8 +236,11 @@ class StoreManager:
                 bind_mousewheel_to_tree(child)
         bind_mousewheel_to_tree(scroll_frame)
         
-        # Restore scroll position after a brief delay (allows canvas to configure)
-        self.game.root.after(10, lambda: canvas.yview_moveto(self.scroll_position['sell']))
+        # Restore scroll position after canvas fully configures
+        def restore_scroll():
+            canvas.update_idletasks()  # Force layout update
+            canvas.yview_moveto(self.scroll_position['sell'])
+        self.game.root.after(50, restore_scroll)
     
     def _generate_store_inventory(self):
         """Generate store inventory based on floor level - all items shown (no randomization)"""
@@ -518,11 +535,113 @@ class StoreManager:
                      font=('Arial', 9, 'bold'), bg=self.game.current_colors["button_primary"], 
                      fg='#000000', width=10, pady=5, state=btn_state).pack(pady=3)
         else:
-            # Sell button
+            # Sell button - store reference to item_frame for removal
             tk.Button(action_frame, text="Sell", 
-                     command=lambda: self._sell_item(item_idx, price),
+                     command=lambda f=item_frame: self._show_sell_confirmation(item_name, item_idx, price, f),
                      font=('Arial', 9, 'bold'), bg=self.game.current_colors["text_purple"], 
                      fg='#ffffff', width=10, pady=5).pack(pady=3)
+    
+    def _show_sell_confirmation(self, item_name, item_idx, price, item_frame):
+        """Show confirmation popup for selling an item"""
+        # Check quantity of this item in inventory
+        item_count = self.game.inventory.count(item_name)
+        
+        # Create confirmation popup
+        popup = tk.Toplevel(self.game.root)
+        popup.title("Confirm Sale")
+        popup.configure(bg=self.game.current_colors["bg_primary"])
+        
+        # Adjust size based on whether we need a slider
+        if item_count > 1:
+            popup.geometry("400x280")
+        else:
+            popup.geometry("400x200")
+        
+        popup.transient(self.game.root)
+        popup.grab_set()
+        
+        # Center the popup
+        popup.update_idletasks()
+        x = self.game.root.winfo_x() + (self.game.root.winfo_width() // 2) - (popup.winfo_width() // 2)
+        y = self.game.root.winfo_y() + (self.game.root.winfo_height() // 2) - (popup.winfo_height() // 2)
+        popup.geometry(f"+{x}+{y}")
+        
+        # Message
+        tk.Label(popup, text="Confirm Sale", font=('Arial', 14, 'bold'),
+                bg=self.game.current_colors["bg_primary"], 
+                fg=self.game.current_colors["text_gold"]).pack(pady=20)
+        
+        # Quantity selection if multiple items
+        quantity_var = tk.IntVar(value=1)
+        total_price_var = tk.IntVar(value=price)
+        
+        if item_count > 1:
+            tk.Label(popup, text=f"You have {item_count} {item_name}", font=('Arial', 10),
+                    bg=self.game.current_colors["bg_primary"], 
+                    fg=self.game.current_colors["text_secondary"]).pack(pady=5)
+            
+            # Quantity selector frame
+            qty_frame = tk.Frame(popup, bg=self.game.current_colors["bg_primary"])
+            qty_frame.pack(pady=10)
+            
+            tk.Label(qty_frame, text="Quantity to sell:", font=('Arial', 10),
+                    bg=self.game.current_colors["bg_primary"], 
+                    fg=self.game.current_colors["text_primary"]).pack()
+            
+            # Slider frame with value display
+            slider_frame = tk.Frame(qty_frame, bg=self.game.current_colors["bg_primary"])
+            slider_frame.pack(pady=5)
+            
+            quantity_label = tk.Label(slider_frame, text="1", font=('Arial', 12, 'bold'),
+                    bg=self.game.current_colors["bg_primary"], 
+                    fg=self.game.current_colors["text_gold"], width=3)
+            quantity_label.pack(side=tk.LEFT, padx=5)
+            
+            def update_quantity(val):
+                qty = int(float(val))
+                quantity_var.set(qty)
+                quantity_label.config(text=str(qty))
+                total = qty * price
+                total_price_var.set(total)
+                price_label.config(text=f"Total: {total} gold")
+            
+            slider = tk.Scale(slider_frame, from_=1, to=item_count, orient=tk.HORIZONTAL,
+                            command=update_quantity, length=200,
+                            bg=self.game.current_colors["bg_secondary"],
+                            fg=self.game.current_colors["text_primary"],
+                            troughcolor=self.game.current_colors["bg_dark"],
+                            highlightthickness=0)
+            slider.pack(side=tk.LEFT)
+            
+            price_label = tk.Label(popup, text=f"Total: {price} gold", font=('Arial', 11, 'bold'),
+                    bg=self.game.current_colors["bg_primary"], 
+                    fg=self.game.current_colors["text_primary"])
+            price_label.pack(pady=5)
+        else:
+            tk.Label(popup, text=f"Sell {item_name} for {price} gold?", font=('Arial', 11),
+                    bg=self.game.current_colors["bg_primary"], 
+                    fg=self.game.current_colors["text_primary"]).pack(pady=10)
+        
+        # Buttons
+        btn_frame = tk.Frame(popup, bg=self.game.current_colors["bg_primary"])
+        btn_frame.pack(pady=20)
+        
+        def confirm_sale():
+            qty = quantity_var.get()
+            total = total_price_var.get()
+            popup.destroy()
+            self._sell_item(item_idx, price, item_frame, quantity=qty)
+        
+        def cancel_sale():
+            popup.destroy()
+        
+        tk.Button(btn_frame, text="Sell", command=confirm_sale,
+                 font=('Arial', 11, 'bold'), bg=self.game.current_colors["text_purple"], 
+                 fg='#ffffff', width=12, pady=5).pack(side=tk.LEFT, padx=10)
+        
+        tk.Button(btn_frame, text="Cancel", command=cancel_sale,
+                 font=('Arial', 11, 'bold'), bg=self.game.current_colors["bg_dark"], 
+                 fg='#ffffff', width=12, pady=5).pack(side=tk.LEFT, padx=10)
     
     def _buy_item(self, item_name, price):
         """Purchase an item from the store"""
@@ -638,15 +757,12 @@ class StoreManager:
         
         self.game.update_display()
         
-        # Save scroll position before refresh
-        if hasattr(self, 'buy_canvas') and self.buy_canvas.winfo_exists():
-            self.scroll_position['buy'] = self.buy_canvas.yview()[0]
-        
-        # Refresh store display
-        self.show_store()
+        # Update gold label without refreshing entire store
+        if hasattr(self, 'gold_label') and self.gold_label.winfo_exists():
+            self.gold_label.config(text=f"Your Gold: {self.game.gold}")
     
-    def _sell_item(self, item_idx, price):
-        """Sell an item from inventory"""
+    def _sell_item(self, item_idx, price, item_frame=None, quantity=1):
+        """Sell one or more items from inventory"""
         if item_idx >= len(self.game.inventory):
             return
         
@@ -659,33 +775,66 @@ class StoreManager:
         item_count = self.game.inventory.count(item_name)
         is_equipped = item_name in self.game.equipped_items.values()
         
-        if is_equipped and item_count == 1:
+        if is_equipped and item_count <= quantity:
             self.game.log(f"Cannot sell equipped item! Unequip {item_name} first.", 'system')
             return
+        
+        # Calculate total sale value
+        total_price = price * quantity
         
         # Handle quest items (bounty posters) with special rewards
         if item_type == 'quest_item':
             quest_reward = item_def.get('gold_reward', price)
-            self.game.inventory.pop(item_idx)
-            self.game.gold += quest_reward
-            self.game.total_gold_earned += quest_reward
-            self.game.log(f"Turned in {item_name}! Claimed {quest_reward} gold reward!", 'success')
+            total_reward = quest_reward * quantity
+            
+            # Remove the specified quantity from inventory
+            for _ in range(quantity):
+                if item_name in self.game.inventory:
+                    self.game.inventory.remove(item_name)
+            
+            self.game.gold += total_reward
+            self.game.total_gold_earned += total_reward
+            
+            if quantity > 1:
+                self.game.log(f"Turned in {quantity}x {item_name}! Claimed {total_reward} gold reward!", 'success')
+            else:
+                self.game.log(f"Turned in {item_name}! Claimed {total_reward} gold reward!", 'success')
         else:
-            # Normal item sale
-            self.game.inventory.pop(item_idx)
-            self.game.gold += price
-            self.game.total_gold_earned += price
+            # Normal item sale - remove the specified quantity
+            for _ in range(quantity):
+                if item_name in self.game.inventory:
+                    self.game.inventory.remove(item_name)
+            
+            self.game.gold += total_price
+            self.game.total_gold_earned += total_price
             
             # Track stats
-            self.game.stats["items_sold"] += 1
+            self.game.stats["items_sold"] += quantity
             
-            self.game.log(f"Sold {item_name} for {price} gold!", 'loot')
+            if quantity > 1:
+                self.game.log(f"Sold {quantity}x {item_name} for {total_price} gold!", 'loot')
+            else:
+                self.game.log(f"Sold {item_name} for {total_price} gold!", 'loot')
         
         self.game.update_display()
         
-        # Save scroll position before refresh
-        if hasattr(self, 'sell_canvas') and self.sell_canvas.winfo_exists():
-            self.scroll_position['sell'] = self.sell_canvas.yview()[0]
+        # Update gold label without refreshing entire store
+        if hasattr(self, 'gold_label') and self.gold_label.winfo_exists():
+            self.gold_label.config(text=f"Your Gold: {self.game.gold}")
         
-        # Refresh store display - stay on sell tab
-        self.show_store(active_tab='sell')
+        # Check if there are any items left
+        remaining_count = self.game.inventory.count(item_name)
+        
+        if remaining_count == 0:
+            # Remove the item row from the display if all sold
+            if item_frame and item_frame.winfo_exists():
+                item_frame.destroy()
+        else:
+            # Update the quantity display if items remain
+            # Save scroll position before refreshing
+            if hasattr(self, 'sell_canvas') and self.sell_canvas.winfo_exists():
+                self.scroll_position['sell'] = self.sell_canvas.yview()[0]
+            
+            # Refresh the sell content to update counts
+            if hasattr(self, 'sell_content_frame') and self.sell_content_frame.winfo_exists():
+                self._show_store_sell_content(self.sell_content_frame)
