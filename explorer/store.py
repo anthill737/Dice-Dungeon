@@ -21,6 +21,7 @@ class StoreManager:
             game: Reference to the main DiceDungeonExplorer instance
         """
         self.game = game
+        self.scroll_position = {'buy': 0.0, 'sell': 0.0}  # Track scroll positions for each tab
     
     def show_store(self, active_tab='buy'):
         """Display the store interface"""
@@ -128,6 +129,9 @@ class StoreManager:
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
         
+        # Store canvas reference for scroll position restoration
+        self.buy_canvas = canvas
+        
         # Use the floor's store inventory (generated once per floor)
         store_items = self.game.floor_store_inventory
         
@@ -147,6 +151,9 @@ class StoreManager:
             for child in widget.winfo_children():
                 bind_mousewheel_to_tree(child)
         bind_mousewheel_to_tree(scroll_frame)
+        
+        # Restore scroll position after a brief delay (allows canvas to configure)
+        self.game.root.after(10, lambda: canvas.yview_moveto(self.scroll_position['buy']))
     
     def _show_store_sell_content(self, parent):
         """Show the sell tab content"""
@@ -174,6 +181,9 @@ class StoreManager:
         
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+        
+        # Store canvas reference for scroll position restoration
+        self.sell_canvas = canvas
         
         tk.Label(scroll_frame, text="Your Inventory:", font=('Arial', 12, 'bold'),
                 bg=self.game.current_colors["bg_primary"], fg=self.game.current_colors["text_cyan"],
@@ -211,6 +221,9 @@ class StoreManager:
             for child in widget.winfo_children():
                 bind_mousewheel_to_tree(child)
         bind_mousewheel_to_tree(scroll_frame)
+        
+        # Restore scroll position after a brief delay (allows canvas to configure)
+        self.game.root.after(10, lambda: canvas.yview_moveto(self.scroll_position['sell']))
     
     def _generate_store_inventory(self):
         """Generate store inventory based on floor level - all items shown (no randomization)"""
@@ -625,6 +638,10 @@ class StoreManager:
         
         self.game.update_display()
         
+        # Save scroll position before refresh
+        if hasattr(self, 'buy_canvas') and self.buy_canvas.winfo_exists():
+            self.scroll_position['buy'] = self.buy_canvas.yview()[0]
+        
         # Refresh store display
         self.show_store()
     
@@ -665,6 +682,10 @@ class StoreManager:
             self.game.log(f"Sold {item_name} for {price} gold!", 'loot')
         
         self.game.update_display()
+        
+        # Save scroll position before refresh
+        if hasattr(self, 'sell_canvas') and self.sell_canvas.winfo_exists():
+            self.scroll_position['sell'] = self.sell_canvas.yview()[0]
         
         # Refresh store display - stay on sell tab
         self.show_store(active_tab='sell')

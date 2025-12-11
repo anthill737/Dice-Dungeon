@@ -1940,9 +1940,10 @@ class CombatManager:
         enemy_name = roll_result['name']
         enemy_dice = roll_result['dice']
         
-        # Log the dice roll
-        dice_str = ", ".join(str(d) for d in enemy_dice)
-        self.game.log(f"{enemy_name} rolls: [{dice_str}]", 'enemy')
+        # Log the dice roll (skip first enemy since it was already logged during animation)
+        if enemy_index > 0:
+            dice_str = ", ".join(str(d) for d in enemy_dice)
+            self.game.log(f"{enemy_name} rolls: [{dice_str}]", 'enemy')
         
         # Calculate damage for this enemy
         enemy = roll_result.get('enemy_ref')

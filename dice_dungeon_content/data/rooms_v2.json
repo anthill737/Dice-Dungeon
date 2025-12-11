@@ -509,7 +509,7 @@
     ],
     "mechanics": {
       "on_clear": {
-        "item": "Garden Shears"
+        "gold_flat": 15
       }
     }
   },

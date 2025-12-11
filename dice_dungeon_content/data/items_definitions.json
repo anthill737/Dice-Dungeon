@@ -195,7 +195,6 @@
   "Exotic Coin": { "type": "sellable", "sell_value": 15, "desc": "A rare coin from a distant land." },
   "Faded Scroll": { "type": "lore", "desc": "An old scroll with faded text. Barely readable." },
   "Fire Potion": { "type": "combat_consumable", "desc": "Throw at an enemy to inflict burn damage. Burns deal initial damage and diminish over several turns." },
-  "Garden Shears": { "type": "tool", "disarm_token": true, "desc": "Sharp shears for cutting through vines and plant hazards." },
   "Gemstone": { "type": "sellable", "sell_value": 20, "desc": "A polished gemstone of considerable value." },
   "Gemstone Shard": { "type": "sellable", "sell_value": 10, "desc": "A fragment of a larger gemstone. Still valuable." },
   "Grave Resin": { "type": "utility", "desc": "Sticky resin from grave trees. Used in burial rites." },
