@@ -44,14 +44,14 @@
     "starter_chests": [
       {
         "id": 1,
-        "description": "A small wooden chest with geometric carvings. It's warm to the touch.",
+        "description": "Carved wooden chest",
         "items": ["Healing Poultice", "Lucky Chip"],
         "gold": 15,
         "lore": "Someone left this for you. Or maybe you left it for yourself on another timeline."
       },
       {
         "id": 2,
-        "description": "A stone coffer sealed with wax. The wax shows strange handprints.",
+        "description": "Sealed stone coffer",
         "items": ["Healing Poultice", "Hourglass Shard"],
         "gold": 15,
         "lore": "The Calculators left marks wherever they went. Some say their hands had too many fingers. Others say too few."

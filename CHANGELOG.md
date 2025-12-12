@@ -3,6 +3,10 @@
 ## [Unreleased] - 2025-12-11
 
 ### Added
+- **Architecture Rules Documentation**: Created `ARCHITECTURE_RULES.md`
+  - WHY: Need formal guidelines to enforce manager pattern and prevent main file bloat
+  - CONTENT: Documents manager organization, when to use managers, code review checklist
+  - Serves as reference for all future development work
 - **UI Dialogs Manager**: Created new manager for settings and high scores
   - WHY: Following manager architecture pattern to keep main file clean
   - TECHNICAL IMPLEMENTATION:
@@ -27,6 +31,48 @@
     - Cancel/Save & Back buttons work from both contexts (main menu and in-game)
   - Now works reliably from both main menu and in-game pause menu
   - Follows proper manager architecture (no bloat in main file)
+- **Threshold Chamber UX Issues**: Fixed flashing and improved UI clarity
+  - WHY: User reported excessive flashing when opening chests and unclear button labels
+  - PROBLEM SOLVED: 
+    - Entire UI was rebuilding on chest open causing flash
+    - Buttons showed chest descriptions instead of simple labels
+    - No visual feedback when chest was already opened
+  - TECHNICAL IMPLEMENTATION:
+    - Migrated starter area to `NavigationManager` following architecture pattern
+    - Main file delegation: `show_starter_area()` → `navigation_manager.show_starter_area()`
+    - Main file delegation: `open_starter_chest()` → `navigation_manager.open_starter_chest()`
+    - Created `_render_chest_buttons()` method to update only chest buttons, not entire UI
+    - Created `_close_chest_dialog()` method that calls `_render_chest_buttons()` instead of rebuilding
+    - Chest buttons now show "Chest 1", "Chest 2" etc. (simple labels)
+    - Chest descriptions moved to dialog that appears when opening
+    - Opened chests display as "Chest X (already looted)" in grayed text
+    - Removed "[Read]" and "[Open]" prefixes from all buttons
+    - Increased description text size by 30% (font 11 → 14)
+    - Changed chest button labels to use descriptive text from chest descriptions
+    - Simplified chest descriptions: "Carved wooden chest" and "Sealed stone coffer"
+    - Removed brackets from "CHEST OPENED" dialog header
+    - Removed brackets from "ENTER THE DUNGEON - FLOOR 1" button
+    - Changed intro text to welcoming message: "Welcome, Adventurer. Study these teachings before your journey begins."
+  - No more flashing, cleaner UI, better user feedback
+- **Minimap Legend**: Fixed visited/unvisited color labels and symbols
+  - WHY: Legend showed blue for visited but actual visited tiles use gray color
+  - PROBLEM SOLVED: Removed "Unvisited" label, changed "Visited" to use gray color (#555555)
+  - Updated stairs symbol in legend to match actual icon (∩ = Stairs)
+  - Now legend accurately reflects minimap colors and symbols
+- **Minimap Boss Icons**: Improved boss room visibility
+  - WHY: Mini-boss icon "L" was unclear, skull and crossbones too hard to see
+  - PROBLEM SOLVED: Changed both mini-boss and floor boss icons to skull emoji (💀)
+  - Since mini-boss and floor boss never appear on same floor, using same icon causes no confusion
+  - Updated legend to show "💀 = Boss" (covering both types)
+  - Icons now clearly visible and immediately recognizable
+- **Spawned Enemy Health**: Fixed scaling for summoned/split enemies
+  - WHY: Spawned enemies inherited percentage of parent health, making them too strong
+  - PROBLEM SOLVED: All spawned/split enemies now use base 30 HP + floor scaling (30 + floor * 10)
+  - TECHNICAL IMPLEMENTATION:
+    - Updated `spawn_additional_enemy()` in combat.py to use base health formula
+    - Updated `split_enemy()` in combat.py to use same base health formula
+    - Enemies like Necromancer's skeletons and Gelatinous Slime's blobs now have consistent health
+  - Spawned enemies now have appropriate health for their floor level
 - **Enemy Target Selection Sprite**: Sprite now updates when selecting different enemies
   - Technical: Added sprite update in `select_target()` method (combat.py lines 699-703)
   - When clicking spawned/summoned enemies during combat, their sprite now appears in sprite box

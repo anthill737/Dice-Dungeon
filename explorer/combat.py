@@ -462,8 +462,9 @@ class CombatManager:
     # ======================================================================
     def spawn_additional_enemy(self, spawner_enemy, spawn_type, hp_mult, dice_count):
         """Spawn an additional enemy during combat"""
-        # Calculate spawned enemy stats based on spawner
-        spawn_hp = int(spawner_enemy["max_health"] * hp_mult)
+        # Calculate spawned enemy stats with base 30 HP + floor scaling
+        base_hp = 30 + (self.game.floor * 10)
+        spawn_hp = base_hp
         
         # Apply difficulty multiplier
         difficulty = self.game.settings.get("difficulty", "Normal")
@@ -504,8 +505,9 @@ class CombatManager:
     # ======================================================================
     def split_enemy(self, enemy, split_type, split_count, hp_percent, dice_modifier=0):
         """Split an enemy into smaller enemies"""
-        # Calculate split enemy stats
-        split_hp = int(enemy["max_health"] * hp_percent)
+        # Calculate split enemy stats with base 30 HP + floor scaling
+        base_hp = 30 + (self.game.floor * 10)
+        split_hp = base_hp
         split_dice = enemy["num_dice"] + dice_modifier  # dice_modifier is usually negative
         split_dice = max(1, split_dice)  # Minimum 1 die
         

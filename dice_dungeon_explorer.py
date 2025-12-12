@@ -2021,9 +2021,6 @@ class DiceDungeonExplorer:
                 fg='#d4af37').pack(anchor='w', pady=0)
         tk.Label(legend_inner, text="● Visited", font=('Arial', 8),
                 bg=self.current_colors["bg_panel"], 
-                fg='#5fa5a5').pack(anchor='w', pady=0)
-        tk.Label(legend_inner, text="● Unvisited", font=('Arial', 8),
-                bg=self.current_colors["bg_panel"], 
                 fg='#555555').pack(anchor='w', pady=0)
         
         # Separator
@@ -2031,16 +2028,13 @@ class DiceDungeonExplorer:
         sep.pack(fill=tk.X, pady=2)
         
         # Symbol legend
-        tk.Label(legend_inner, text="S = Stairs", font=('Arial', 8),
+        tk.Label(legend_inner, text="∩ = Stairs", font=('Arial', 8),
                 bg=self.current_colors["bg_panel"], 
                 fg=self.current_colors["text_secondary"]).pack(anchor='w', pady=0)
         tk.Label(legend_inner, text="$ = Store", font=('Arial', 8),
                 bg=self.current_colors["bg_panel"], 
                 fg=self.current_colors["text_secondary"]).pack(anchor='w', pady=0)
-        tk.Label(legend_inner, text="⚡ = Elite", font=('Arial', 8),
-                bg=self.current_colors["bg_panel"], 
-                fg=self.current_colors["text_secondary"]).pack(anchor='w', pady=0)
-        tk.Label(legend_inner, text="☠ = Boss", font=('Arial', 8),
+        tk.Label(legend_inner, text="💀 = Boss", font=('Arial', 8),
                 bg=self.current_colors["bg_panel"], 
                 fg=self.current_colors["text_secondary"]).pack(anchor='w', pady=0)
         
@@ -2295,8 +2289,8 @@ class DiceDungeonExplorer:
                 # Show lock if not yet unlocked
                 if pos in self.special_rooms and pos not in self.unlocked_rooms:
                     self.minimap_canvas.create_text(
-                        x, y, text="L", fill='#ff3333',
-                        font=('Arial', max(10, int(14 * self.minimap_zoom)), 'bold')
+                        x, y, text="💀", fill='#ff3333',
+                        font=('Arial', max(10, int(16 * self.minimap_zoom)), 'bold')
                     )
                 elif room.visited:
                     # Show defeated indicator if boss was defeated
@@ -2307,8 +2301,8 @@ class DiceDungeonExplorer:
                         )
                     else:
                         self.minimap_canvas.create_text(
-                            x, y, text="⚡", fill='#9370db',
-                            font=('Arial', max(10, int(14 * self.minimap_zoom)), 'bold')
+                            x, y, text="💀", fill='#ff0000',
+                            font=('Arial', max(10, int(16 * self.minimap_zoom)), 'bold')
                         )
             
             # Mark main boss room
@@ -2316,7 +2310,7 @@ class DiceDungeonExplorer:
                 # Show lock if not yet unlocked
                 if pos in self.special_rooms and pos not in self.unlocked_rooms:
                     self.minimap_canvas.create_text(
-                        x, y, text="L", fill='#ff3333',
+                        x, y, text="💀", fill='#ff3333',
                         font=('Arial', max(10, int(14 * self.minimap_zoom)), 'bold')
                     )
                 elif room.visited:
@@ -2327,9 +2321,9 @@ class DiceDungeonExplorer:
                             font=('Arial', max(10, int(14 * self.minimap_zoom)), 'bold')
                         )
                     else:
-                        # Use B for boss room
+                        # Use skull for boss room
                         self.minimap_canvas.create_text(
-                            x, y, text="B", fill='#ff0000',
+                            x, y, text="💀", fill='#ff0000',
                             font=('Arial', max(10, int(16 * self.minimap_zoom)), 'bold')
                         )
             
@@ -3089,6 +3083,10 @@ class DiceDungeonExplorer:
                     button.config(state=tk.NORMAL, bg=self.current_colors["button_primary"], fg='#000000')
     
     def show_starter_area(self):
+        """Display the tutorial/starter area - delegates to NavigationManager"""
+        self.navigation_manager.show_starter_area()
+    
+    def _show_starter_area_old(self):
         """Display the tutorial/starter area"""
         self.in_starter_area = True
         self.floor = 0
@@ -3190,7 +3188,7 @@ class DiceDungeonExplorer:
         title.pack(pady=self.scale_padding(20))
         
         desc = tk.Label(main_area, text=starter_data['description'],
-                       font=('Arial', self.scale_font(11)), bg=self.current_colors["bg_primary"], fg=self.current_colors["text_primary"],
+                       font=('Arial', self.scale_font(14)), bg=self.current_colors["bg_primary"], fg=self.current_colors["text_primary"],
                        wraplength=self.get_scaled_wraplength(700), justify=tk.LEFT)
         desc.pack(pady=self.scale_padding(10), padx=self.scale_padding(30))
         
@@ -3207,8 +3205,9 @@ class DiceDungeonExplorer:
         interact_frame = tk.Frame(interact_container, bg=self.current_colors["bg_secondary"], relief=tk.RAISED, borderwidth=2)
         interact_frame.pack(fill=tk.BOTH, expand=True, padx=self.scale_padding(50))
         
-        tk.Label(interact_frame, text="[EXPLORE THE THRESHOLD]",
-                font=('Arial', self.scale_font(14), 'bold'), bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"]).pack(pady=self.scale_padding(10))
+        tk.Label(interact_frame, text="Welcome, Adventurer. Study these teachings before your journey begins.",
+                font=('Arial', self.scale_font(12)), bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"],
+                wraplength=self.get_scaled_wraplength(600), justify=tk.CENTER).pack(pady=self.scale_padding(10))
         
         # Signs
         signs_frame = tk.Frame(interact_frame, bg=self.current_colors["bg_secondary"])
@@ -3218,7 +3217,7 @@ class DiceDungeonExplorer:
                 font=('Arial', self.scale_font(11), 'bold'), bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_primary"]).pack(anchor='w')
         
         for i, sign in enumerate(starter_data['signs']):
-            sign_btn = tk.Button(signs_frame, text=f"[Read] {sign['title']}",
+            sign_btn = tk.Button(signs_frame, text=f"{sign['title']}",
                                command=lambda s=sign: self.read_sign(s),
                                font=('Arial', self.scale_font(10)), bg=self.current_colors["button_primary"], fg='#000000',
                                anchor='w')
@@ -3238,7 +3237,7 @@ class DiceDungeonExplorer:
                                       anchor='w')
                 chest_label.pack(fill=tk.X, pady=self.scale_padding(3), padx=self.scale_padding(10))
             else:
-                chest_btn = tk.Button(chests_frame, text=f"[Open] {chest['description']}",
+                chest_btn = tk.Button(chests_frame, text=f"{chest['description']}",
                                     command=lambda c=chest: self.open_starter_chest(c),
                                     font=('Arial', self.scale_font(10)), bg=self.current_colors["button_secondary"], fg='#000000',
                                     anchor='w')
@@ -3314,6 +3313,10 @@ class DiceDungeonExplorer:
         text_widget.config(state=tk.DISABLED)
     
     def open_starter_chest(self, chest):
+        """Open a starter area chest - delegates to NavigationManager"""
+        self.navigation_manager.open_starter_chest(chest)
+    
+    def _open_starter_chest_old(self, chest):
         """Open a starter area chest"""
         if chest['id'] in self.starter_chests_opened:
             return
@@ -3349,7 +3352,7 @@ class DiceDungeonExplorer:
         close_btn = tk.Label(header, text="✕", font=('Arial', 16, 'bold'),
                             bg='#1a0f08', fg='#ff4444', cursor="hand2", padx=5)
         close_btn.pack(side=tk.RIGHT, padx=5)
-        close_btn.bind('<Button-1>', lambda e: [self.close_dialog(), self.show_starter_area()])
+        close_btn.bind('<Button-1>', lambda e: [self.close_dialog(), self.update_display()])
         close_btn.bind('<Enter>', lambda e: close_btn.config(fg='#ff0000'))
         close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
         
@@ -3375,13 +3378,17 @@ class DiceDungeonExplorer:
                 font=('Arial', 9, 'italic'), bg='#1a0f08', fg='#888888',
                 wraplength=450, pady=10).pack()
         
-        tk.Button(self.dialog_frame, text="Continue", command=lambda: [self.close_dialog(), self.show_starter_area()],
+        tk.Button(self.dialog_frame, text="Continue", command=lambda: [self.close_dialog(), self.update_display()],
                  font=('Arial', 12, 'bold'), bg='#4ecdc4', fg='#000000',
                  width=15, pady=10).pack(pady=10)
         
         self.update_display()
     
     def enter_dungeon_from_starter(self):
+        """Enter the main dungeon from starter area - delegates to NavigationManager"""
+        self.navigation_manager.enter_dungeon_from_starter()
+    
+    def _enter_dungeon_from_starter_old(self):
         """Leave starter area and begin floor 1"""
         self.in_starter_area = False
         self.floor = 1
