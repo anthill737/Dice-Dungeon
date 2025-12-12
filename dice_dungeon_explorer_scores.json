@@ -1,0 +1,56 @@
+[
+  {
+    "score": 840,
+    "floor": 1,
+    "rooms": 17,
+    "gold": 456,
+    "kills": 7,
+    "stats": {
+      "enemies_encountered": 0,
+      "enemies_defeated": 7,
+      "mini_bosses_defeated": 0,
+      "bosses_defeated": 0,
+      "total_damage_dealt": 620,
+      "total_damage_taken": 282,
+      "highest_single_damage": 60,
+      "critical_hits": 1,
+      "gold_found": 297,
+      "gold_spent": 337,
+      "items_purchased": 6,
+      "items_sold": 3,
+      "items_found": 7,
+      "items_used": 13,
+      "potions_used": 10,
+      "containers_searched": 8,
+      "weapons_broken": 0,
+      "armor_broken": 0,
+      "weapons_repaired": 0,
+      "armor_repaired": 0,
+      "lore_found": {
+        "Guard Journal": 0,
+        "Quest Notice": 0,
+        "Scrawled Note": 0,
+        "Training Manual Page": 0,
+        "Pressed Page": 0,
+        "Surgeon's Note": 0,
+        "Puzzle Note": 0,
+        "Cracked Map Scrap": 0,
+        "Star Chart": 0,
+        "Prayer Strip": 0
+      },
+      "enemy_kills": {
+        "Pollen Sprite": 1,
+        "Lurking Spider": 1,
+        "Startled Rat": 1,
+        "Agitated Bees": 1,
+        "Dozing Slime": 1,
+        "Glass Wasp": 1,
+        "Garden Snake": 1
+      },
+      "most_damaged_enemy": {
+        "name": "",
+        "damage": 0
+      }
+    }
+  }
+]

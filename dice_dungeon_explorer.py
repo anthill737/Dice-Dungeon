@@ -636,6 +636,10 @@ class DiceDungeonExplorer:
         self.save_system = SaveSystem(self)
         self.quest_manager = QuestManager(self)
         
+        # Import and initialize UI dialogs manager
+        from explorer.ui_dialogs import UIDialogsManager
+        self.ui_dialogs_manager = UIDialogsManager(self)
+        
         # Register default quests
         self.quest_manager.register_default_quests(create_default_quests())
         
@@ -6243,151 +6247,46 @@ Final Score: {self.run_score}
             print(f"Error saving score: {e}")
     
     def show_high_scores(self):
-        """Show high scores"""
-        if not os.path.exists(self.scores_file):
-            messagebox.showinfo("High Scores", "No high scores yet!")
-            return
-        
-        try:
-            with open(self.scores_file, 'r') as f:
-                scores = json.load(f)
-        except:
-            messagebox.showinfo("High Scores", "No high scores yet!")
-            return
-        
-        # Close existing dialog if any
-        if self.dialog_frame and self.dialog_frame.winfo_exists():
-            self.dialog_frame.destroy()
-            self.dialog_frame = None
-        
-        # Create dialog
-        dialog_width, dialog_height = self.get_responsive_dialog_size(800, 650, 0.8, 0.85)
-        
-        # Check if game_frame still exists before creating dialog
-        if not hasattr(self, 'game_frame') or not self.game_frame.winfo_exists():
-            return
-        
-        self.dialog_frame = tk.Frame(self.game_frame, bg=self.current_colors["bg_primary"], 
-                                      relief=tk.RIDGE, borderwidth=3)
-        self.dialog_frame.place(relx=0.5, rely=0.5, anchor='center', 
-                                width=dialog_width, height=dialog_height)
-        
-        # Red X close button (top right corner)
-        close_btn = tk.Label(self.dialog_frame, text="✕", font=('Arial', 16, 'bold'),
-                            bg=self.current_colors["bg_primary"], fg='#ff4444', cursor="hand2", padx=5)
-        close_btn.place(relx=0.98, rely=0.02, anchor='ne')
-        close_btn.bind('<Button-1>', lambda e: self.close_dialog())
-        close_btn.bind('<Enter>', lambda e: close_btn.config(fg='#ff0000'))
-        close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
-        
-        # Title
-        tk.Label(self.dialog_frame, text="⚔ HIGH SCORES ⚔", font=('Arial', 20, 'bold'),
-                bg=self.current_colors["bg_primary"], fg=self.current_colors["text_gold"], 
-                pady=15).pack()
-        
-        # Create scrollable frame for scores
-        canvas = tk.Canvas(self.dialog_frame, bg=self.current_colors["bg_secondary"], highlightthickness=0)
-        scrollbar = tk.Scrollbar(self.dialog_frame, orient="vertical", command=canvas.yview, width=10,
-                                bg=self.current_colors["bg_secondary"], troughcolor=self.current_colors["bg_dark"])
-        scores_frame = tk.Frame(canvas, bg=self.current_colors["bg_secondary"])
-        
-        scores_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        
-        def update_width(event=None):
-            canvas.itemconfig(canvas_window, width=canvas.winfo_width()-10)
-        
-        canvas_window = canvas.create_window((0, 0), window=scores_frame, anchor="nw")
-        canvas.bind("<Configure>", update_width)
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        canvas.pack(side="left", fill="both", expand=True, padx=20, pady=10)
-        scrollbar.pack(side="right", fill="y")
-        
-        # Score entries
-        for i, score in enumerate(scores[:10], 1):
-            entry_frame = tk.Frame(scores_frame, bg=self.current_colors["bg_panel"], 
-                                  relief=tk.RIDGE, borderwidth=2)
-            entry_frame.pack(fill=tk.X, padx=10, pady=5)
-            
-            # Create grid layout for aligned columns
-            content = tk.Frame(entry_frame, bg=self.current_colors["bg_panel"])
-            content.pack(fill=tk.BOTH, expand=True, padx=10, pady=8)
-            
-            # Rank
-            tk.Label(content, text=f"{i}.", font=('Arial', 12, 'bold'),
-                    bg=self.current_colors["bg_panel"], fg=self.current_colors["text_gold"],
-                    width=3, anchor='e').grid(row=0, column=0, sticky='e', padx=5)
-            
-            # Score
-            tk.Label(content, text=f"{score['score']:,}", font=('Arial', 12, 'bold'),
-                    bg=self.current_colors["bg_panel"], fg='#00ff00',
-                    width=8, anchor='e').grid(row=0, column=1, sticky='e', padx=5)
-            
-            # Floor
-            tk.Label(content, text=f"Floor {score['floor']}", font=('Arial', 11),
-                    bg=self.current_colors["bg_panel"], fg=self.current_colors["text_cyan"],
-                    width=8, anchor='w').grid(row=0, column=2, sticky='w', padx=5)
-            
-            # Rooms
-            tk.Label(content, text=f"{score['rooms']} rooms", font=('Arial', 11),
-                    bg=self.current_colors["bg_panel"], fg=self.current_colors["text_secondary"],
-                    width=10, anchor='w').grid(row=0, column=3, sticky='w', padx=5)
-            
-            # Gold
-            tk.Label(content, text=f"{score['gold']:,}g", font=('Arial', 11),
-                    bg=self.current_colors["bg_panel"], fg=self.current_colors["text_gold"],
-                    width=10, anchor='w').grid(row=0, column=4, sticky='w', padx=5)
-            
-            # Kills
-            tk.Label(content, text=f"{score['kills']} kills", font=('Arial', 11),
-                    bg=self.current_colors["bg_panel"], fg=self.current_colors["text_secondary"],
-                    width=10, anchor='w').grid(row=0, column=5, sticky='w', padx=5)
-            
-            # Stats button
-            if 'stats' in score:
-                tk.Button(content, text="Stats",
-                         command=lambda s=score: self.show_stats(s.get('stats', {}), self.show_high_scores),
-                         font=('Arial', 9, 'bold'), bg=self.current_colors["button_primary"], 
-                         fg='#000000', width=8, pady=3).grid(row=0, column=6, padx=10)
-        
-        # Setup mousewheel scrolling AFTER all widgets are added
-        self.setup_mousewheel_scrolling(canvas)
+        """Show high scores - delegates to UI manager"""
+        self.ui_dialogs_manager.show_high_scores()
     
     def show_settings(self, return_to=None):
-        """Show settings dialog as a popup window"""
-        # Close any existing dialog
-        if hasattr(self, 'dialog_frame') and self.dialog_frame:
-            self.dialog_frame.destroy()
-        
+        """Show settings - delegates to UI manager"""
+        self.ui_dialogs_manager.show_settings(return_to)
+    
+    def _show_settings_implementation(self, return_to=None):
+        """Show settings as submenu (works from main menu or in-game) - implementation"""
         # Store return location and original settings
         self.settings_return_to = return_to or 'main_menu'
         self.original_settings = json.dumps(self.settings)
         self.settings_modified = False
         
-        # Create popup window
-        dialog_width = min(800, int(self.root.winfo_width() * 0.8))
-        dialog_height = min(600, int(self.root.winfo_height() * 0.85))
+        # Determine parent: use game_frame if in-game, otherwise use root (for main menu)
+        parent = self.root
+        in_game = False
+        if hasattr(self, 'game_frame') and self.game_frame is not None and self.game_frame.winfo_exists():
+            parent = self.game_frame
+            in_game = True
         
-        self.dialog_frame = tk.Toplevel(self.root)
-        self.dialog_frame.title("Settings")
-        self.dialog_frame.geometry(f"{dialog_width}x{dialog_height}")
-        self.dialog_frame.transient(self.root)
-        self.dialog_frame.grab_set()
+        # Clear action buttons strip for submenu (only if in-game)
+        if in_game and hasattr(self, 'action_buttons_strip') and self.action_buttons_strip:
+            for widget in self.action_buttons_strip.winfo_children():
+                widget.destroy()
         
-        # Center the dialog
-        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - (dialog_width // 2)
-        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - (dialog_height // 2)
-        self.dialog_frame.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
-        
-        # Bind escape key to close dialog
-        self.dialog_frame.bind('<Escape>', lambda e: self.close_settings_dialog())
-        self.dialog_frame.protocol("WM_DELETE_WINDOW", self.close_settings_dialog)
+        # Close existing dialog if any
+        if hasattr(self, 'dialog_frame') and self.dialog_frame and self.dialog_frame.winfo_exists():
+            self.dialog_frame.destroy()
+            self.dialog_frame = None
         
         # Configure colors
         bg_color = self.current_colors["bg_primary"]
-        self.dialog_frame.configure(bg=bg_color)
         
-        # Create main container
+        # Create main dialog frame
+        dialog_width, dialog_height = self.get_responsive_dialog_size(750, 650)
+        self.dialog_frame = tk.Frame(parent, bg=bg_color, relief=tk.RAISED, borderwidth=3)
+        self.dialog_frame.place(relx=0.5, rely=0.5, anchor='center', width=dialog_width, height=dialog_height)
+        
+        # Create main container in dialog
         main_frame = tk.Frame(self.dialog_frame, bg=bg_color)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
@@ -6879,15 +6778,23 @@ Final Score: {self.run_score}
                                      width=15, pady=8, state=save_state)
         self.save_button.grid(row=0, column=0, padx=(0, 10))
         
-        # Close button (save and close)
-        tk.Button(button_container, text="Close", command=self.save_and_close_settings_dialog,
+        # Save & Back button (save and close)
+        tk.Button(button_container, text="Save & Back", command=self.save_and_close_settings,
                  font=('Arial', 13, 'bold'), bg=self.current_colors["button_secondary"], fg='#000000',
                  width=15, pady=8).grid(row=0, column=1, padx=(5, 5))
         
         # Cancel button (close without saving)
-        tk.Button(button_container, text="Cancel", command=self.close_settings_dialog,
+        tk.Button(button_container, text="Cancel", command=self.cancel_settings,
                  font=('Arial', 13, 'bold'), bg='#ff6b6b', fg='#ffffff',
                  width=15, pady=8).grid(row=0, column=2, padx=(10, 0))
+        
+        # Red X close button (top right corner) - saves changes automatically
+        close_btn = tk.Label(main_frame, text="✕", font=('Arial', 16, 'bold'),
+                            bg=bg_color, fg='#ff4444', cursor="hand2", padx=5)
+        close_btn.place(relx=0.98, rely=0.02, anchor='ne')
+        close_btn.bind('<Button-1>', lambda e: self.save_and_close_settings())
+        close_btn.bind('<Enter>', lambda e: close_btn.config(fg='#ff0000'))
+        close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
         
         # Setup mousewheel scrolling - bind to canvas and all children in content_frame
         # This ensures scrolling works when hovering over any widget in the settings
@@ -6903,40 +6810,47 @@ Final Score: {self.run_score}
         # Bind to canvas and all widgets in content_frame
         canvas.bind("<MouseWheel>", _on_mousewheel, add='+')
         bind_tree(content_frame)
-    
-    def close_settings_dialog(self):
-        """Close settings dialog without saving"""
-        if hasattr(self, 'dialog_frame') and self.dialog_frame:
-            # Restore original settings if modified (force Classic)
-            if self.settings_modified:
-                self.settings = json.loads(self.original_settings)
-                self.settings["color_scheme"] = "Classic"
-                self.current_colors = self.color_schemes["Classic"]
-            
-            self.dialog_frame.destroy()
-            self.dialog_frame = None
-            self.settings_modified = False
-            
-            # Clean up
-            if hasattr(self, 'original_settings'):
-                delattr(self, 'original_settings')
-    
-    def save_and_close_settings_dialog(self):
-        """Save settings and close dialog"""
-        if self.settings_modified:
-            self.save_settings()
-            # Refresh the underlying screen to show color changes
-            self.refresh_ui_colors()
         
-        if hasattr(self, 'dialog_frame') and self.dialog_frame:
-            self.dialog_frame.destroy()
-            self.dialog_frame = None
-            
+        # Bind Escape key to save and close
+        main_frame.bind('<Escape>', lambda e: self.save_and_close_settings() or "break")
+        main_frame.focus_set()
+    
+    def cancel_settings(self):
+        """Close settings submenu without saving"""
+        # Restore original settings if modified
+        if self.settings_modified:
+            self.settings = json.loads(self.original_settings)
+            self.settings["color_scheme"] = "Classic"
+            self.current_colors = self.color_schemes["Classic"]
+        
         self.settings_modified = False
         
         # Clean up
         if hasattr(self, 'original_settings'):
             delattr(self, 'original_settings')
+        
+        # Close submenu and restore action buttons (only if in-game)
+        self.close_dialog()
+        if hasattr(self, 'game_frame') and self.game_frame is not None and self.game_frame.winfo_exists():
+            self.setup_action_buttons()
+    
+    def save_and_close_settings(self):
+        """Save settings and close submenu"""
+        if self.settings_modified:
+            self.save_settings()
+            # Refresh the underlying screen to show color changes
+            self.refresh_ui_colors()
+        
+        self.settings_modified = False
+        
+        # Clean up
+        if hasattr(self, 'original_settings'):
+            delattr(self, 'original_settings')
+        
+        # Close submenu and restore action buttons (only if in-game)
+        self.close_dialog()
+        if hasattr(self, 'game_frame') and self.game_frame is not None and self.game_frame.winfo_exists():
+            self.setup_action_buttons()
     
     def refresh_ui_colors(self):
         """Refresh the main UI colors when settings change"""
