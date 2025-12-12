@@ -3,33 +3,30 @@
 ## [Unreleased] - 2025-12-11
 
 ### Added
+- **UI Dialogs Manager**: Created new manager for settings and high scores
+  - WHY: Following manager architecture pattern to keep main file clean
+  - TECHNICAL IMPLEMENTATION:
+    - Created `explorer/ui_dialogs.py` with `UIDialogsManager` class
+    - Main file now has simple 1-2 line delegation methods: `show_settings()` and `show_high_scores()`
+    - Manager handles all UI logic for dialogs including parent detection (game_frame vs root)
+    - Follows architecture rule: main file only contains delegation wrappers, managers contain implementation
+  - Synced all updated files to `dice-dungeon-github/` folder for version control
 
 ### Fixed
 - **Settings Menu UI Pattern**: Converted from popup dialog to in-game submenu
-  - WHY: Settings used Toplevel dialog (separate window) while all other menus used in-game submenus
-  - PROBLEM SOLVED: Inconsistent UI pattern - settings felt disconnected from game experience
+  - WHY: Settings used Toplevel dialog (separate window) while all other menus used in-game submenus, and main menu buttons weren't working
+  - PROBLEM SOLVED: Settings/high scores buttons did nothing when clicked from main menu
   - TECHNICAL IMPLEMENTATION:
-    - Changed from `tk.Toplevel(self.root)` to creating settings UI directly in `game_frame`
-    - Removed window-specific code (geometry, transient, grab_set, protocol)
+    - Created `UIDialogsManager` in `explorer/ui_dialogs.py` to handle dialog display logic
+    - Manager detects context: uses `game_frame` parent when in-game, `root` parent when on main menu
+    - Settings creates dialog with `place()` geometry manager for overlay effect
+    - High scores fully migrated to manager with proper parent detection
+    - Main file delegation: `show_settings()` → `ui_dialogs_manager.show_settings()`
+    - Main file delegation: `show_high_scores()` → `ui_dialogs_manager.show_high_scores()`
     - Added red X close button in top-right corner matching lore codex pattern
-    - Renamed close functions: `cancel_settings()` for cancel, `save_and_close_settings()` for save
-    - Both functions now call `close_dialog()` and `setup_action_buttons()` to restore game UI
-    - Added Escape key binding to save and close submenu
-    - Updated button labels: "Close" → "Save & Back" for clarity
-    - Clears action button strip when opening, restores it when closing
-  - Now matches visual style and behavior of lore codex, inventory, and other in-game menus
-  - Feels like part of the game rather than separate window
-- **High Scores AttributeError**: Fixed crash when clicking high scores button
-  - WHY: User encountered AttributeError when accessing high scores from main menu
-  - PROBLEM SOLVED: `NoneType object has no attribute 'winfo_exists'` crash
-  - TECHNICAL IMPLEMENTATION:
-    - Added `hasattr(self, 'dialog_frame')` check before accessing `dialog_frame.winfo_exists()`
-    - Added `hasattr(self, 'game_frame')` check before accessing `game_frame.winfo_exists()`
-    - Changed line 6259 from `if self.dialog_frame and self.dialog_frame.winfo_exists():`
-    - To: `if hasattr(self, 'dialog_frame') and self.dialog_frame and self.dialog_frame.winfo_exists():`
-    - Same pattern applied to game_frame checks
-  - Prevents crash when dialog_frame or game_frame is None (not yet initialized)
-  - High scores now opens reliably from both main menu and in-game
+    - Cancel/Save & Back buttons work from both contexts (main menu and in-game)
+  - Now works reliably from both main menu and in-game pause menu
+  - Follows proper manager architecture (no bloat in main file)
 - **Enemy Target Selection Sprite**: Sprite now updates when selecting different enemies
   - Technical: Added sprite update in `select_target()` method (combat.py lines 699-703)
   - When clicking spawned/summoned enemies during combat, their sprite now appears in sprite box
