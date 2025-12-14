@@ -2,6 +2,56 @@
 
 ## [Unreleased] - 2025-12-14
 
+### Added
+- **Professional Splash Screen with Loading Animation**: Polished startup experience with DD Logo and animated loading sequence
+  - WHY: Game lacked professional startup branding and visual polish
+  - PROBLEM SOLVED: Created animated 5-second splash screen with DD Logo, loading messages, and animated dots
+  - TECHNICAL IMPLEMENTATION:
+    - New `SplashScreen` class with 650x450 borderless window centered on screen
+    - DD Logo displays from assets/DD Logo.png (120x120 with PIL scaling)
+    - Animated loading sequence: "Loading game engine....Starting adventure!"
+    - 4-dot animation cycles at end of each message line every 100ms
+    - Messages spread evenly across 5-second duration with proper timing
+    - Graceful fallbacks: Text "DD" logo if PIL unavailable or logo missing
+    - Proper window icon integration with DD Logo
+    - Clean launch sequence: Splash → Main Game Window
+
+- **DD Logo Integration Across UI**: Added professional branding with actual logo image throughout interface
+  - WHY: Game used text-only branding instead of utilizing existing professional logo asset
+  - PROBLEM SOLVED: Integrated DD Logo.png across window icons and main menu for consistent branding
+  - TECHNICAL IMPLEMENTATION:
+    - **Window Icon**: Added DD Logo as window/taskbar icon with PhotoImage loading and error handling
+    - **Main Menu Logo**: Displays actual DD Logo (80-120px scaled) above game title
+    - **Responsive Sizing**: Logo scales with window size while maintaining aspect ratio
+    - **Memory Management**: Proper image reference storage prevents garbage collection
+    - **Fallback System**: Falls back to "DD" text if logo unavailable
+    - **Layout Optimization**: Adjusted spacing and font sizes to accommodate logo without overflow
+
+### Enhanced
+- **Main Menu Visual Layout**: Optimized spacing and sizing to fit properly on all screen sizes
+  - WHY: Main menu elements were overflowing and not fitting on smaller screens
+  - PROBLEM SOLVED: Comprehensive spacing reduction and responsive sizing adjustments
+  - TECHNICAL IMPLEMENTATION:
+    - **Size Reductions**: Logo (80-120px), title font (22pt), subtitle (14pt), fallback text (32pt)
+    - **Spacing Optimization**: Reduced padding throughout (logo: 15px, title: 8px, buttons: 25px)
+    - **Button Spacing**: Reduced internal button padding (8px) and external spacing (5px)
+    - **Responsive Design**: All elements scale with window size using scale_factor
+    - **Professional Layout**: Logo → Title → Subtitle → Buttons maintains visual hierarchy
+    - Menu now fits comfortably on standard screen sizes while maintaining visual appeal
+
+- **Splash Screen Animation Polish**: Refined loading animation for better visual feedback and timing
+  - WHY: Initial 3-second splash with separate dots felt rushed and visually disconnected
+  - PROBLEM SOLVED: Enhanced to 5-second duration with inline dot animation at end of text
+  - TECHNICAL IMPLEMENTATION:
+    - **Extended Duration**: Increased from 3 to 5 seconds for better logo visibility
+    - **Inline Animation**: Dots now appear at end of loading text using horizontal frame layout
+    - **Improved Timing**: Messages distribute evenly across 5-second duration
+    - **Enhanced Animation**: 4-dot cycling (....to.) for smoother visual effect
+    - **Better Completion**: "Ready!" with exclamation mark for clear completion state
+    - **Layout Fix**: Increased window size (650x450) and improved text positioning
+    - **Text Clarity**: Removed "..." from messages since animation provides feedback
+    - Loading sequence feels more polished and professional
+
 ### Fixed
 - **Crystal Golem Dice Lock Ability**: Complete overhaul of boss ability system for proper dice locking
   - WHY: Multiple issues caused dice lock to fail - timing, value preservation, visual display, and turn counting

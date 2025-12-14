@@ -73,6 +73,26 @@ class DiceDungeonExplorer:
     def __init__(self, root):
         self.root = root
         self.root.title("Dice Dungeon Explorer")
+        
+        # Set window and taskbar icon
+        try:
+            import os
+            icon_path = os.path.join(os.path.dirname(__file__), "assets", "DD Logo.png")
+            if os.path.exists(icon_path):
+                # Create PhotoImage for the icon
+                icon = tk.PhotoImage(file=icon_path)
+                # Store reference to prevent garbage collection
+                self.root.icon_image = icon
+                # Set icon for window and taskbar (True makes it default for all windows)
+                self.root.iconphoto(True, icon)
+        except Exception as e:
+            print(f"Could not load window icon: {e}")
+            # Fallback to default icon
+            try:
+                self.root.iconphoto(False, tk.PhotoImage())
+            except:
+                pass  # If fallback also fails, just continue without icon
+        
         self.root.geometry("1000x750")
         self.root.minsize(950, 700)  # Increased minimum height to ensure movement controls visible
         self.root.configure(bg='#2c1810')
@@ -1282,46 +1302,78 @@ class DiceDungeonExplorer:
         self.main_frame = tk.Frame(self.root, bg=bg_color)
         self.main_frame.pack(fill=tk.BOTH, expand=True)
         
+        # Logo section
+        logo_frame = tk.Frame(self.main_frame, bg=bg_color)
+        logo_frame.pack(pady=int(15 * self.scale_factor))
+        
+        # Load and display DD Logo
+        try:
+            import os
+            from PIL import Image, ImageTk
+            logo_path = os.path.join(os.path.dirname(__file__), "assets", "DD Logo.png")
+            if os.path.exists(logo_path):
+                # Load and scale logo - smaller size to fit screen
+                img = Image.open(logo_path)
+                logo_size = max(80, min(120, int(100 * self.scale_factor)))
+                img = img.resize((logo_size, logo_size), Image.LANCZOS)
+                self.menu_logo_image = ImageTk.PhotoImage(img)
+                
+                logo_label = tk.Label(logo_frame, image=self.menu_logo_image, bg=bg_color)
+                logo_label.pack(pady=int(5 * self.scale_factor))
+            else:
+                # Fallback to text if logo not found
+                tk.Label(logo_frame, text="DD", 
+                        font=('Arial', self.scale_font(32), 'bold'), 
+                        bg=bg_color, fg=self.current_colors["text_gold"],
+                        pady=int(5 * self.scale_factor)).pack()
+        except Exception as e:
+            # Fallback to text if PIL not available or other error
+            tk.Label(logo_frame, text="DD", 
+                    font=('Arial', self.scale_font(32), 'bold'), 
+                    bg=bg_color, fg=self.current_colors["text_gold"],
+                    pady=int(5 * self.scale_factor)).pack()
+        
+        # Game title (smaller and less padding)
         tk.Label(self.main_frame, text="DICE DUNGEON EXPLORER", 
-                font=('Arial', self.scale_font(32), 'bold'), bg=bg_color, fg=self.current_colors["text_gold"],
-                pady=int(30 * self.scale_factor)).pack()
+                font=('Arial', self.scale_font(22), 'bold'), bg=bg_color, fg=self.current_colors["text_gold"],
+                pady=int(8 * self.scale_factor)).pack()
         
         tk.Label(self.main_frame, text="Explore • Fight • Loot • Survive", 
-                font=('Arial', self.scale_font(16)), bg=bg_color, fg=self.current_colors["text_primary"],
-                pady=int(10 * self.scale_factor)).pack()
+                font=('Arial', self.scale_font(14)), bg=bg_color, fg=self.current_colors["text_primary"],
+                pady=int(5 * self.scale_factor)).pack()
         
         btn_frame = tk.Frame(self.main_frame, bg=bg_color)
-        btn_frame.pack(pady=int(50 * self.scale_factor))
+        btn_frame.pack(pady=int(25 * self.scale_factor))
         
-        # All buttons same size for consistent UI
+        # All buttons same size for consistent UI - reduced padding for better fit
         btn_width = 20
         btn_font = ('Arial', self.scale_font(14), 'bold')
-        btn_pady = int(12 * self.scale_factor)
+        btn_pady = int(8 * self.scale_factor)
         
         tk.Button(btn_frame, text="START ADVENTURE", 
                  command=self.start_new_game,
                  font=btn_font, bg=self.current_colors["button_primary"], fg='#000000',
-                 width=btn_width, pady=btn_pady).pack(pady=8)
+                 width=btn_width, pady=btn_pady).pack(pady=5)
         
         tk.Button(btn_frame, text="SAVE/LOAD GAME", 
                  command=self.load_game,
                  font=btn_font, bg=self.current_colors["button_secondary"], fg='#000000',
-                 width=btn_width, pady=btn_pady).pack(pady=8)
+                 width=btn_width, pady=btn_pady).pack(pady=5)
         
         tk.Button(btn_frame, text="SETTINGS", 
                  command=self.show_settings,
                  font=btn_font, bg=self.current_colors["text_purple"], fg='#ffffff',
-                 width=btn_width, pady=btn_pady).pack(pady=8)
+                 width=btn_width, pady=btn_pady).pack(pady=5)
         
         tk.Button(btn_frame, text="HIGH SCORES", 
                  command=self.show_high_scores,
                  font=btn_font, bg=self.current_colors["text_gold"], fg='#000000',
-                 width=btn_width, pady=btn_pady).pack(pady=8)
+                 width=btn_width, pady=btn_pady).pack(pady=5)
         
         tk.Button(btn_frame, text="QUIT", 
                  command=self.root.quit,
                  font=btn_font, bg='#ff6b6b', fg='#000000',
-                 width=btn_width, pady=btn_pady).pack(pady=8)
+                 width=btn_width, pady=btn_pady).pack(pady=5)
     
     # ========== UI STYLING HELPER METHODS ==========
     
@@ -8431,6 +8483,136 @@ Backpack: {self.equipped_items.get('backpack', 'None')}
                  bg='#3498db', fg='#ffffff', font=('Arial', 10, 'bold')).pack(pady=10)
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = DiceDungeonExplorer(root)
-    root.mainloop()
+    # Import required modules for splash screen
+    import threading
+    import time
+    
+    class SplashScreen:
+        def __init__(self):
+            self.splash = tk.Tk()
+            self.splash.title("Dice Dungeon Explorer")
+            self.splash.resizable(False, False)
+            self.splash.configure(bg='#0a0604')
+            
+            # Calculate center position - increased size for better text visibility
+            width = 650
+            height = 450
+            x = (self.splash.winfo_screenwidth() // 2) - (width // 2)
+            y = (self.splash.winfo_screenheight() // 2) - (height // 2)
+            self.splash.geometry(f'{width}x{height}+{x}+{y}')
+            
+            # Remove window decorations for true splash screen effect
+            self.splash.overrideredirect(True)
+            
+            # Set window icon
+            try:
+                import os
+                icon_path = os.path.join(os.path.dirname(__file__), "assets", "DD Logo.png")
+                if os.path.exists(icon_path):
+                    icon = tk.PhotoImage(file=icon_path)
+                    self.splash.iconphoto(True, icon)
+            except:
+                pass
+            
+            # Create main frame
+            main_frame = tk.Frame(self.splash, bg='#0a0604', relief=tk.RAISED, borderwidth=3)
+            main_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+            
+            # Logo - smaller to leave more room for text
+            try:
+                logo_path = os.path.join(os.path.dirname(__file__), "assets", "DD Logo.png")
+                if os.path.exists(logo_path):
+                    # Load and resize logo - slightly smaller
+                    from PIL import Image, ImageTk
+                    img = Image.open(logo_path)
+                    img = img.resize((120, 120), Image.LANCZOS)
+                    self.logo_image = ImageTk.PhotoImage(img)
+                    
+                    logo_label = tk.Label(main_frame, image=self.logo_image, bg='#0a0604')
+                    logo_label.pack(pady=(30, 15))
+                else:
+                    # Fallback text logo
+                    tk.Label(main_frame, text="DD", font=('Arial', 42, 'bold'), 
+                            bg='#0a0604', fg='#d4af37').pack(pady=(40, 15))
+            except Exception as e:
+                # Fallback text logo if PIL not available
+                tk.Label(main_frame, text="DD", font=('Arial', 42, 'bold'), 
+                        bg='#0a0604', fg='#d4af37').pack(pady=(40, 15))
+            
+            # Game title
+            tk.Label(main_frame, text="DICE DUNGEON EXPLORER", 
+                    font=('Arial', 22, 'bold'), bg='#0a0604', fg='#d4af37').pack(pady=8)
+            
+            # Subtitle
+            tk.Label(main_frame, text="Explore • Fight • Loot • Survive", 
+                    font=('Arial', 12, 'italic'), bg='#0a0604', fg='#8b7355').pack(pady=5)
+            
+            # Loading area - more space and better positioning
+            loading_frame = tk.Frame(main_frame, bg='#0a0604')
+            loading_frame.pack(pady=(30, 30), expand=True)
+            
+            # Loading text with dots on same line
+            text_frame = tk.Frame(loading_frame, bg='#0a0604')
+            text_frame.pack()
+            
+            self.loading_label = tk.Label(text_frame, text="Loading...", 
+                                        font=('Arial', 14), bg='#0a0604', fg='#e8dcc4')
+            self.loading_label.pack(side=tk.LEFT)
+            
+            # Animated loading dots - on same line as text
+            self.dots_label = tk.Label(text_frame, text="", 
+                                     font=('Arial', 14), bg='#0a0604', fg='#d4af37')
+            self.dots_label.pack(side=tk.LEFT)
+            
+            # Progress tracking - adjusted for 5 seconds
+            self.progress = 0
+            self.max_progress = 50  # About 5 seconds at 100ms intervals
+            self.loading_messages = [
+                "Loading game engine",
+                "Loading content system",
+                "Initializing dice mechanics",
+                "Loading enemy data",
+                "Loading item definitions",
+                "Preparing world lore",
+                "Starting adventure"
+            ]
+            self.message_index = 0
+            
+            # Start loading animation
+            self.animate_loading()
+            
+            # Start the main application after delay
+            self.splash.after(5000, self.launch_game)  # 5 second splash
+        
+        def animate_loading(self):
+            """Animate the loading screen"""
+            if self.progress < self.max_progress:
+                # Update dots animation
+                dots = "." * ((self.progress % 4) + 1)  # Cycle through 1-4 dots
+                self.dots_label.config(text=dots)
+                
+                # Update loading message occasionally - spread across 5 seconds
+                message_interval = self.max_progress // len(self.loading_messages)
+                if self.progress % message_interval == 0 and self.message_index < len(self.loading_messages):
+                    self.loading_label.config(text=self.loading_messages[self.message_index])
+                    self.message_index += 1
+                
+                self.progress += 1
+                self.splash.after(100, self.animate_loading)  # 100ms intervals
+            else:
+                # Loading complete
+                self.loading_label.config(text="Ready")
+                self.dots_label.config(text="!")
+        
+        def launch_game(self):
+            """Close splash and launch main game"""
+            self.splash.destroy()
+            
+            # Now launch the main game
+            root = tk.Tk()
+            app = DiceDungeonExplorer(root)
+            root.mainloop()
+    
+    # Show splash screen
+    splash = SplashScreen()
+    splash.splash.mainloop()
