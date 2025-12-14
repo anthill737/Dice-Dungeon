@@ -333,13 +333,13 @@ class InventoryPickupManager:
             self.game.inventory.append(item_name)
             self.game.current_room.uncollected_items.remove(item_name)
             self.game.stats["items_found"] += 1
-            self.game.log(f"▢ [PICKUP] Picked up {item_name}! ({len(self.game.inventory)}/{self.game.max_inventory} slots)", 'loot')
+            self.game.log(f"▢ Picked up {item_name}! ({len(self.game.inventory)}/{self.game.max_inventory} slots)", 'loot')
         else:
             self.game.log(f"❌ INVENTORY STILL FULL! Can't pick up {item_name}. ({len(self.game.inventory)}/{self.game.max_inventory})", 'system')
         
         if not skip_refresh:
             self.game.update_display()
-            self.game.show_exploration_options()
+            # Don't call show_exploration_options here - let caller handle refresh
     
     def pickup_dropped_item(self, item_name, skip_refresh=False):
         """Pick up an item that was previously dropped by the player"""
@@ -354,10 +354,10 @@ class InventoryPickupManager:
             self.game.inventory.append(item_name)
             self.game.current_room.dropped_items.remove(item_name)
             # Don't count dropped items as found (player already had them)
-            self.game.log(f"▢ [PICKUP] Picked up {item_name}! ({len(self.game.inventory)}/{self.game.max_inventory})", 'loot')
+            self.game.log(f"▢ Picked up {item_name}! ({len(self.game.inventory)}/{self.game.max_inventory})", 'loot')
         else:
             self.game.log(f"❌ INVENTORY FULL! Can't pick up {item_name}. ({len(self.game.inventory)}/{self.game.max_inventory})", 'system')
         
         if not skip_refresh:
             self.game.update_display()
-            self.game.show_exploration_options()
+            # Don't call show_exploration_options here - let caller handle refresh

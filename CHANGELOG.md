@@ -1,5 +1,97 @@
 # Dice Dungeon Explorer - Changelog
 
+## [Unreleased] - 2025-12-13
+
+### Fixed
+- **Extra Die Purchase System**: Fixed critical bug preventing Extra Die upgrades from working
+  - WHY: Extra Die wasn't applying when purchased from store, despite gold being deducted
+  - PROBLEM SOLVED: 
+    - Extra Die has `"type": "upgrade"` in items_definitions.json
+    - Generic upgrade handler checked for `max_hp_bonus`, `damage_bonus`, `reroll_bonus`, `crit_bonus` fields
+    - Extra Die has none of these fields, so handler took gold but applied nothing
+    - Handler returned early before Extra Die-specific code could execute
+  - TECHNICAL IMPLEMENTATION:
+    - Moved Extra Die handling BEFORE generic upgrade handler in `_buy_item()` (explorer/store.py lines 728-792)
+    - Extra Die check now at line 728, generic upgrades at line 795
+    - Ensures `self.game.num_dice += 1` executes properly
+    - Updates dice_values and dice_locked arrays to match new dice count
+    - Added comprehensive debug output tracking each step of purchase process
+    - Logs purchase message: "Purchased Extra Die! Now have X dice."
+    - Adds to purchased_upgrades_this_floor set to prevent re-buying on same floor
+  - Extra Die now correctly increases dice pool from 3 → 4 → 5
+  - Purchase message appears in adventure log
+  - Character status screen shows updated dice count in Combat Stats section
+- **Store Refresh on Purchase**: Removed unnecessary store refresh after buying Extra Die
+  - WHY: Store was refreshing entire UI and scrolling to top after Extra Die purchase
+  - PROBLEM SOLVED: Removed `self._show_store_buy_content()` call from Extra Die purchase handler
+  - TECHNICAL IMPLEMENTATION:
+    - Extra Die purchase (lines 728-792) now only updates gold label, not entire store
+    - Gold label update: `self.gold_label.config(text=f"Your Gold: {self.game.gold}")`
+    - Removed lines that were calling store refresh and saving/restoring scroll position
+    - Store remains at same scroll position with same items visible
+    - Buy button stays available until store is closed/reopened (then greys out properly)
+  - No more jarring UI refresh or scroll jumping when buying permanent upgrades
+- **Critical Hit Chance Corruption**: Fixed negative crit chance in save file
+  - WHY: Save file had `"crit_chance": -0.04999999999999999` (-5%) instead of default 0.1 (10%)
+  - PROBLEM SOLVED: Directly edited save file to restore correct base crit chance
+  - TECHNICAL IMPLEMENTATION:
+    - Located crit_chance at line 12600 in saves/dice_dungeon_save_slot_1.json
+    - Changed value from -0.04999999999999999 to 0.1
+    - Base crit is 10%, can be increased through upgrades and equipment
+  - Character status screen now shows correct "10.0%" critical hit chance
+  - Likely caused by earlier game state or calculation bug (now prevented by proper upgrade handling)
+
+### Added
+- **Character Status Tooltips**: Added cursor-following tooltips with detailed stat breakdowns
+  - WHY: Players couldn't see where combat bonuses were coming from (equipment vs permanent upgrades)
+  - IMPLEMENTATION:
+    - Created `create_tooltip_follower()` helper function in ui_character_menu.py (lines 15-44)
+    - Tooltip appears at cursor position (+15px right, +15px down) with light yellow background
+    - Updates position as mouse moves using `<Motion>` event binding
+    - Destroys automatically when cursor leaves widget using `<Leave>` event
+  - TECHNICAL DETAILS - Tooltip Content:
+    - **Dice Pool**: Shows "Total Dice: X\n\nBase: X dice\n(Permanent upgrade)"
+    - **Damage Bonus**: Shows total first, then "Permanent Upgrade: +X" and equipment list
+    - **Multiplier**: Shows total multiplier with equipment and permanent sources
+    - **Crit Chance**: Shows percentage total, permanent upgrades, and equipment bonuses
+    - **Healing Bonus**: Shows total HP bonus from all sources
+    - **Rerolls**: Shows total bonus rerolls with source breakdown
+  - Equipment contributions calculated by examining all equipped items:
+    - Checks weapon, armor, accessory, backpack slots
+    - Applies floor scaling bonus (floor_level - 1) to damage
+    - Stores equipment sources as list of tuples: (item_name, bonus_value)
+  - Tooltips applied to label, value, and entire row frame for easy triggering
+  - Permanent values calculated by subtracting equipment totals from current stats
+- **Character Status Screen Manager**: Migrated UI to dedicated module
+  - WHY: Following architecture pattern to keep main file clean and modular
+  - CREATED: `explorer/ui_character_menu.py` (825 lines)
+  - REMOVED: 748 lines from dice_dungeon_explorer.py
+  - TECHNICAL IMPLEMENTATION:
+    - Module contains 4 main functions:
+      - `show_character_status(game)` - Creates tabbed interface with Character/Stats/Lore tabs
+      - `_populate_character_tab(game, parent)` - Shows equipment, combat stats, effects, resources, upgrades
+      - `_populate_stats_tab(game, parent)` - Shows combat/economy/items/equipment/lore/exploration statistics
+      - `_populate_lore_tab(game, parent)` - Shows expandable lore categories with read buttons
+      - `_add_stats_section(game, parent, title, items)` - Helper for stats sections
+      - `create_tooltip_follower(game, widget, get_tooltip_text)` - Tooltip system
+    - Main file import: `from explorer import ui_character_menu` (line 15)
+    - Main file delegation: `self.show_character_status()` → `ui_character_menu.show_character_status(self)`
+    - All functionality preserved: tabs, scrolling, lazy loading, expandable sections
+  - CRITICAL PRESERVED FEATURES:
+    - Tabbed notebook with custom styling (gold selected, cyan unselected)
+    - Lazy loading: Stats and Lore tabs only populate when clicked
+    - Scrollable canvas with mousewheel support on all tabs
+    - Equipped Gear section with durability display
+    - Combat Stats with tooltips showing breakdown
+    - Active Effects (shield, discount, tokens, temp effects)
+    - Resources (health, gold, inventory space, rest cooldown)
+    - Permanent Upgrades calculation (shows count and total bonus)
+    - Lore Codex with expandable categories and read buttons
+    - Red X close button in top-right corner
+    - Responsive dialog sizing (75% width, 90% height)
+  - Main file reduced by 748 lines, now only contains delegation
+  - Follows established manager architecture pattern
+
 ## [Unreleased] - 2025-12-11
 
 ### Added

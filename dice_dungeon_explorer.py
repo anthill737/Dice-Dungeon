@@ -13,6 +13,7 @@ import sys
 import copy
 from collections import Counter
 from debug_logger import get_logger
+from explorer import ui_character_menu
 
 # Add content engine to path
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dice_dungeon_content', 'engine'))
@@ -88,11 +89,15 @@ class DiceDungeonExplorer:
         # Bind window resize event for dynamic scaling
         self.root.bind('<Configure>', self.on_window_resize)
         
-        # High scores file
-        self.scores_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dice_dungeon_explorer_scores.json')
+        # Ensure saves directory exists
+        self.saves_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'saves')
+        os.makedirs(self.saves_dir, exist_ok=True)
         
-        # Save game file
-        self.save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dice_dungeon_explorer_save.json')
+        # High scores file
+        self.scores_file = os.path.join(self.saves_dir, 'dice_dungeon_explorer_scores.json')
+        
+        # Save game file (deprecated - now using slot system)
+        self.save_file = os.path.join(self.saves_dir, 'dice_dungeon_explorer_save.json')
         
         # Load content system
         try:
@@ -317,6 +322,7 @@ class DiceDungeonExplorer:
         self.stats = {
             # Combat stats
             "enemies_encountered": 0,
+            "enemies_fled": 0,
             "enemies_defeated": 0,
             "mini_bosses_defeated": 0,
             "bosses_defeated": 0,
@@ -343,6 +349,10 @@ class DiceDungeonExplorer:
             "weapons_repaired": 0,
             "armor_repaired": 0,
             
+            # Progress stats
+            "rooms_explored": 0,
+            "times_rested": 0,
+            
             # Lore items found (track each type)
             "lore_found": {
                 "Guard Journal": 0,
@@ -354,6 +364,7 @@ class DiceDungeonExplorer:
                 "Puzzle Note": 0,
                 "Cracked Map Scrap": 0,
                 "Star Chart": 0,
+                "Old Letter": 0,
                 "Prayer Strip": 0
             },
             
@@ -648,7 +659,7 @@ class DiceDungeonExplorer:
     
     def load_settings(self):
         """Load or initialize game settings"""
-        self.settings_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dice_dungeon_settings.json')
+        self.settings_file = os.path.join(self.saves_dir, 'dice_dungeon_settings.json')
         
         # Default settings
         default_settings = {
@@ -928,7 +939,7 @@ class DiceDungeonExplorer:
         # Also write to debug log file in real-time (slot-specific)
         try:
             slot_suffix = f"_slot_{self.current_save_slot}" if self.current_save_slot else "_new_game"
-            debug_log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+            debug_log_file = os.path.join(self.saves_dir, 
                                          f'adventure_log{slot_suffix}.txt')
             with open(debug_log_file, 'a', encoding='utf-8') as f:
                 import datetime
@@ -1035,7 +1046,7 @@ class DiceDungeonExplorer:
             import datetime
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             slot_suffix = f"_slot_{self.current_save_slot}" if self.current_save_slot else "_new_game"
-            export_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+            export_file = os.path.join(self.saves_dir, 
                                       f'adventure_log_export{slot_suffix}_{timestamp}.txt')
             
             with open(export_file, 'w', encoding='utf-8') as f:
@@ -1104,7 +1115,7 @@ class DiceDungeonExplorer:
             if source == "found":
                 self.log(f"Found {item_name}!", 'loot')
             elif source == "reward":
-                self.log(f"[REWARD] Received {item_name}!", 'loot')
+                self.log(f"Received {item_name}!", 'loot')
             elif source == "purchase":
                 self.log(f"[PURCHASE] Bought {item_name}!", 'loot')
             elif source == "search":
@@ -1427,7 +1438,7 @@ class DiceDungeonExplorer:
         
         # Clear debug log file for new game
         try:
-            debug_log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'adventure_log_new_game.txt')
+            debug_log_file = os.path.join(self.saves_dir, 'adventure_log_new_game.txt')
             with open(debug_log_file, 'w', encoding='utf-8') as f:
                 import datetime
                 f.write(f"=== NEW GAME STARTED: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===\n\n")
@@ -1448,6 +1459,7 @@ class DiceDungeonExplorer:
         # Reset comprehensive stats
         self.stats = {
             "enemies_encountered": 0,
+            "enemies_fled": 0,
             "enemies_defeated": 0,
             "mini_bosses_defeated": 0,
             "bosses_defeated": 0,
@@ -1467,6 +1479,8 @@ class DiceDungeonExplorer:
             "armor_broken": 0,
             "weapons_repaired": 0,
             "armor_repaired": 0,
+            "rooms_explored": 0,
+            "times_rested": 0,
             "lore_found": {
                 "Guard Journal": 0,
                 "Quest Notice": 0,
@@ -2790,6 +2804,7 @@ class DiceDungeonExplorer:
         actual = self.health - old_hp
         
         if actual > 0:
+            self.stats["times_rested"] += 1
             self.log(f"[REST] Rested and recovered {actual} HP. Must explore 3 rooms before resting again.", 'success')
             self.rest_cooldown = 3  # Must explore 3 rooms before resting again
             self.rooms_since_rest = 0
@@ -2805,6 +2820,9 @@ class DiceDungeonExplorer:
             self.log("No store found on this floor yet!", 'system')
             return
         
+        # Save current room name before teleporting
+        old_room_name = self.current_room.data.get('name', 'Unknown Location') if hasattr(self.current_room, 'data') else 'Unknown Location'
+        
         # Save current position
         old_pos = self.current_pos
         
@@ -2812,7 +2830,7 @@ class DiceDungeonExplorer:
         self.current_pos = self.store_position
         self.current_room = self.store_room
         
-        self.log(f"[TRAVEL] Traveled to the store from {old_pos}!", 'system')
+        self.log(f"Traveled to the store from {old_room_name}!", 'system')
         
         # Update display and refresh exploration options
         self.update_display()
@@ -3556,6 +3574,13 @@ class DiceDungeonExplorer:
             self.inventory[inv_idx] = item_data['original']
             self.equipment_durability[item_data['original']] = item_data['restore_dur']
             
+            # Track repair stats
+            original_def = self.item_definitions.get(item_data['original'], {})
+            if original_def.get('slot') == 'weapon':
+                self.stats["weapons_repaired"] += 1
+            elif original_def.get('slot') == 'armor':
+                self.stats["armor_repaired"] += 1
+            
             self.log(f"Used {repair_kit_name}! Restored {item_data['name']} to {item_data['original']} with {item_data['restore_dur']} durability", 'success')
             
         elif item_data['type'] == 'inventory':
@@ -3563,12 +3588,25 @@ class DiceDungeonExplorer:
             self.equipment_durability[item_data['name']] = item_data['new_dur']
             self.inventory.pop(repair_kit_idx)  # Remove repair kit
             
+            # Track repair stats
+            item_def = self.item_definitions.get(item_data['name'], {})
+            if item_def.get('slot') == 'weapon':
+                self.stats["weapons_repaired"] += 1
+            elif item_def.get('slot') == 'armor':
+                self.stats["armor_repaired"] += 1
+            
             self.log(f"Used {repair_kit_name} on {item_data['name']}! Restored {item_data['repair_amount']} durability", 'success')
             
         elif item_data['type'] == 'equipped':
             # Repair equipped item
             self.equipment_durability[item_data['name']] = item_data['new_dur']
             self.inventory.pop(repair_kit_idx)  # Remove repair kit
+            
+            # Track repair stats
+            if item_data['slot'] == 'weapon':
+                self.stats["weapons_repaired"] += 1
+            elif item_data['slot'] == 'armor':
+                self.stats["armor_repaired"] += 1
             
             self.log(f"Used {repair_kit_name} on {item_data['name']}! Restored {item_data['repair_amount']} durability", 'success')
         
@@ -4290,628 +4328,8 @@ class DiceDungeonExplorer:
         self.log(f"Read the prayer strip... The cult's devotion was absolute and terrifying.", 'lore')
     
     def show_character_status(self):
-        """Show comprehensive character status with tabbed interface"""
-        if self.dialog_frame:
-            self.dialog_frame.destroy()
-        
-        # Responsive sizing - larger for tabs
-        dialog_width, dialog_height = self.get_responsive_dialog_size(700, 700, 0.75, 0.9)
-        
-        self.dialog_frame = tk.Frame(self.game_frame, bg=self.current_colors["bg_panel"], 
-                                      relief=tk.RIDGE, borderwidth=3)
-        self.dialog_frame.place(relx=0.5, rely=0.5, anchor='center', 
-                                width=dialog_width, height=dialog_height)
-        
-        # Header with title and close button
-        header_frame = tk.Frame(self.dialog_frame, bg=self.current_colors["bg_panel"])
-        header_frame.pack(fill=tk.X, pady=(10, 5))
-        
-        # Title (centered)
-        tk.Label(header_frame, text="⚔ CHARACTER STATUS ⚔", 
-                font=('Arial', 20, 'bold'), bg=self.current_colors["bg_panel"], 
-                fg=self.current_colors["text_gold"]).pack()
-        
-        # Red X close button (top right)
-        close_btn = tk.Label(header_frame, text="✕", font=('Arial', 16, 'bold'),
-                            bg=self.current_colors["bg_panel"], fg='#ff4444',
-                            cursor="hand2", padx=5)
-        close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=0)
-        close_btn.bind('<Button-1>', lambda e: self.close_dialog())
-        close_btn.bind('<Enter>', lambda e: close_btn.config(fg='#ff0000'))
-        close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
-        
-        # Create tabbed notebook
-        style = ttk.Style()
-        style.theme_use('default')
-        style.configure('Custom.TNotebook', background=self.current_colors["bg_panel"], borderwidth=0)
-        style.configure('Custom.TNotebook.Tab', 
-                       background=self.current_colors["bg_dark"],
-                       foreground=self.current_colors["text_cyan"],
-                       padding=[20, 10],
-                       font=('Arial', 11, 'bold'))
-        style.map('Custom.TNotebook.Tab',
-                 background=[('selected', self.current_colors["bg_panel"])],
-                 foreground=[('selected', self.current_colors["text_gold"])])
-        
-        notebook = ttk.Notebook(self.dialog_frame, style='Custom.TNotebook')
-        notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
-        
-        # Create tabs
-        char_tab = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
-        stats_tab = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
-        lore_tab = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
-        
-        notebook.add(char_tab, text="Character")
-        notebook.add(stats_tab, text="Game Stats")
-        notebook.add(lore_tab, text="Lore Codex")
-        
-        # Populate Character tab
-        self._populate_character_tab(char_tab)
-        
-        # Lazy load other tabs
-        def on_tab_changed(event):
-            selected_tab = event.widget.select()
-            tab_text = event.widget.tab(selected_tab, "text")
-            
-            if tab_text == "Game Stats" and not stats_tab.winfo_children():
-                self._populate_stats_tab(stats_tab)
-            elif tab_text == "Lore Codex" and not lore_tab.winfo_children():
-                self._populate_lore_tab(lore_tab)
-        
-        notebook.bind('<<NotebookTabChanged>>', on_tab_changed)
-    
-    def _populate_character_tab(self, parent):
-        """Populate the Character tab"""
-        
-        # Create scrollable area
-        canvas = tk.Canvas(parent, bg=self.current_colors["bg_primary"], highlightthickness=0)
-        scrollbar = tk.Scrollbar(parent, orient="vertical", command=canvas.yview, width=10,
-                                bg=self.current_colors["bg_primary"], troughcolor=self.current_colors["bg_dark"])
-        scroll_frame = tk.Frame(canvas, bg=self.current_colors["bg_primary"])
-        
-        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-
-        
-        
-
-        
-        def update_width(event=None):
-
-        
-            canvas.itemconfig(canvas_window, width=canvas.winfo_width()-10)
-
-        
-        
-
-        
-        canvas_window = canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
-
-        
-        canvas.bind("<Configure>", update_width)
-
-        
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        # Setup mousewheel scrolling
-        self.setup_mousewheel_scrolling(canvas)
-        
-        canvas.pack(side="left", fill="both", expand=True, padx=10, pady=5)
-        scrollbar.pack(side="right", fill="y")
-        
-        # === EQUIPPED GEAR SECTION ===
-        gear_section = tk.Frame(scroll_frame, bg=self.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=2)
-        gear_section.pack(fill=tk.X, padx=10, pady=10)
-        
-        tk.Label(gear_section, text="◊ EQUIPPED GEAR", font=('Arial', 14, 'bold'),
-                bg=self.current_colors["bg_panel"], fg=self.current_colors["text_cyan"],
-                pady=5).pack()
-        
-        # Show each equipment slot
-        for slot_name, slot_key in [("Weapon", "weapon"), ("Armor", "armor"), ("Accessory", "accessory"), ("Backpack", "backpack")]:
-            slot_frame = tk.Frame(gear_section, bg=self.current_colors["bg_dark"], relief=tk.FLAT, borderwidth=1)
-            slot_frame.pack(fill=tk.X, padx=10, pady=3)
-            
-            equipped_item = self.equipped_items.get(slot_key)
-            if equipped_item:
-                item_def = self.item_definitions.get(equipped_item, {})
-                
-                # Build effect string from actual bonus properties
-                effect_parts = []
-                if 'damage_bonus' in item_def: 
-                    effect_parts.append(f"+{item_def['damage_bonus']} DMG")
-                if 'crit_bonus' in item_def: 
-                    effect_parts.append(f"+{int(item_def['crit_bonus']*100)}% CRIT")
-                # Show combat ability instead of passive reroll for Mystic Ring
-                if 'combat_ability' in item_def:
-                    if item_def['combat_ability'] == 'reroll':
-                        effect_parts.append("COMBAT: +1 REROLL (Once)")
-                elif 'reroll_bonus' in item_def: 
-                    effect_parts.append(f"+{item_def['reroll_bonus']} REROLL")
-                if 'max_hp_bonus' in item_def: 
-                    effect_parts.append(f"+{item_def['max_hp_bonus']} MAX HP")
-                if 'armor_bonus' in item_def: 
-                    effect_parts.append(f"+{item_def['armor_bonus']} ARMOR")
-                if 'inventory_bonus' in item_def: 
-                    effect_parts.append(f"+{item_def['inventory_bonus']} INV SLOTS")
-                
-                # Show durability if equipment has it
-                durability_str = ""
-                max_dur = item_def.get('max_durability', 0)
-                if max_dur > 0:
-                    # Ensure item is in durability tracking
-                    if equipped_item not in self.equipment_durability:
-                        self.equipment_durability[equipped_item] = max_dur
-                    
-                    current_dur = self.equipment_durability[equipped_item]
-                    durability_percent = int((current_dur / max_dur) * 100)
-                    durability_str = f" [{durability_percent}% condition]"
-                
-                effect_str = " | ".join(effect_parts) if effect_parts else "No bonuses"
-                
-                tk.Label(slot_frame, text=f"{slot_name}: {equipped_item}{durability_str}",
-                        font=('Arial', 11, 'bold'), bg=self.current_colors["bg_dark"],
-                        fg=self.current_colors["text_gold"], anchor='w', padx=10, pady=3).pack(anchor='w')
-                tk.Label(slot_frame, text=f"  {effect_str}",
-                        font=('Arial', 9), bg=self.current_colors["bg_dark"],
-                        fg=self.current_colors["text_green"], anchor='w', padx=10, pady=2).pack(anchor='w')
-            else:
-                tk.Label(slot_frame, text=f"{slot_name}: (Empty)",
-                        font=('Arial', 11), bg=self.current_colors["bg_dark"],
-                        fg=self.current_colors["text_secondary"], anchor='w', padx=10, pady=5).pack(anchor='w')
-        
-        # === COMBAT STATS SECTION ===
-        stats_section = tk.Frame(scroll_frame, bg=self.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=2)
-        stats_section.pack(fill=tk.X, padx=10, pady=10)
-        
-        tk.Label(stats_section, text="⚔ COMBAT STATS", font=('Arial', 14, 'bold'),
-                bg=self.current_colors["bg_panel"], fg=self.current_colors["text_red"],
-                pady=5).pack()
-        
-        stats_grid = tk.Frame(stats_section, bg=self.current_colors["bg_panel"])
-        stats_grid.pack(padx=10, pady=5, fill=tk.X)
-        
-        combat_stats = [
-            ("Dice Pool", f"{self.num_dice} dice"),
-            ("Base Damage Bonus", f"+{self.damage_bonus}"),
-            ("Damage Multiplier", f"{self.multiplier:.2f}x"),
-            ("Critical Hit Chance", f"{self.crit_chance*100:.1f}%"),
-            ("Healing Bonus", f"+{self.heal_bonus} HP"),
-            ("Bonus Rerolls", f"+{self.reroll_bonus}"),
-        ]
-        
-        for i, (label, value) in enumerate(combat_stats):
-            row_frame = tk.Frame(stats_grid, bg=self.current_colors["bg_dark"])
-            row_frame.pack(fill=tk.X, pady=2)
-            
-            tk.Label(row_frame, text=label+":", font=('Arial', 10),
-                    bg=self.current_colors["bg_dark"], fg=self.current_colors["text_white"],
-                    anchor='w', width=22).pack(side=tk.LEFT, padx=10)
-            tk.Label(row_frame, text=value, font=('Arial', 10, 'bold'),
-                    bg=self.current_colors["bg_dark"], fg=self.current_colors["text_cyan"],
-                    anchor='e').pack(side=tk.RIGHT, padx=10)
-        
-        # === ACTIVE EFFECTS SECTION ===
-        effects_section = tk.Frame(scroll_frame, bg=self.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=2)
-        effects_section.pack(fill=tk.X, padx=10, pady=10)
-        
-        tk.Label(effects_section, text="✨ ACTIVE EFFECTS", font=('Arial', 14, 'bold'),
-                bg=self.current_colors["bg_panel"], fg=self.current_colors["text_purple"],
-                pady=5).pack()
-        
-        # Show temp effects
-        effects_found = False
-        
-        if self.temp_shield > 0:
-            effects_found = True
-            tk.Label(effects_section, text=f"◊ Shield: {self.temp_shield} HP",
-                    font=('Arial', 10), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_cyan"], pady=2).pack()
-        
-        if self.shop_discount > 0:
-            effects_found = True
-            tk.Label(effects_section, text=f"◉ Shop Discount: {int(self.shop_discount*100)}%",
-                    font=('Arial', 10), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_gold"], pady=2).pack()
-        
-        if getattr(self, 'combat_accuracy_penalty', 0) > 0:
-            effects_found = True
-            tk.Label(effects_section, text=f"≈ Accuracy Penalty: {int(self.combat_accuracy_penalty*100)}%",
-                    font=('Arial', 10), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_red"], pady=2).pack()
-        
-        # Show flags and statuses from content system
-        if self.flags.get('disarm_token', 0) > 0:
-            effects_found = True
-            tk.Label(effects_section, text=f"⚙ Disarm Tokens: {self.flags['disarm_token']}",
-                    font=('Arial', 10), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_green"], pady=2).pack()
-        
-        if self.flags.get('escape_token', 0) > 0:
-            effects_found = True
-            tk.Label(effects_section, text=f"» Escape Tokens: {self.flags['escape_token']}",
-                    font=('Arial', 10), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_green"], pady=2).pack()
-        
-        # Show any temp effects from content system
-        for effect_name, effect_data in self.temp_effects.items():
-            effects_found = True
-            duration = effect_data.get('duration', '?')
-            
-            # Format effect name for display
-            display_name = effect_name.replace('_', ' ').title()
-            
-            # Special formatting for specific effects
-            if 'gold_mult' in effect_name:
-                mult_value = effect_data.get('value', 0)
-                display_name = f"Gold Bonus: +{int(mult_value * 100)}%"
-            elif 'damage_bonus' in effect_name:
-                dmg_value = effect_data.get('value', 0)
-                display_name = f"Damage Bonus: +{dmg_value}"
-            elif 'crit_bonus' in effect_name:
-                crit_value = effect_data.get('value', 0)
-                display_name = f"Crit Bonus: +{int(crit_value * 100)}%"
-            
-            tk.Label(effects_section, text=f"⚡ {display_name}: {duration}",
-                    font=('Arial', 10), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_magenta"], pady=2).pack()
-        
-        # Show statuses
-        for status in self.flags.get('statuses', []):
-            effects_found = True
-            tk.Label(effects_section, text=f"✦ {status}",
-                    font=('Arial', 10), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_purple"], pady=2).pack()
-        
-        if not effects_found:
-            tk.Label(effects_section, text="(No active effects)",
-                    font=('Arial', 10, 'italic'), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_secondary"], pady=10).pack()
-        
-        # === RESOURCES SECTION ===
-        resources_section = tk.Frame(scroll_frame, bg=self.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=2)
-        resources_section.pack(fill=tk.X, padx=10, pady=10)
-        
-        tk.Label(resources_section, text="◇ RESOURCES", font=('Arial', 14, 'bold'),
-                bg=self.current_colors["bg_panel"], fg=self.current_colors["text_gold"],
-                pady=5).pack()
-        
-        resources_grid = tk.Frame(resources_section, bg=self.current_colors["bg_panel"])
-        resources_grid.pack(padx=10, pady=5, fill=tk.X)
-        
-        resources = [
-            ("Health", f"{self.health}/{self.max_health}", self.current_colors["text_red"]),
-            ("Gold", f"{self.gold}", self.current_colors["text_gold"]),
-            ("Inventory Space", f"{len(self.inventory)}/{self.max_inventory}", self.current_colors["text_cyan"]),
-            ("Rest Cooldown", f"{self.rest_cooldown} rooms" if self.rest_cooldown > 0 else "Ready", 
-             self.current_colors["text_green"] if self.rest_cooldown == 0 else self.current_colors["text_red"]),
-        ]
-        
-        for label, value, color in resources:
-            row_frame = tk.Frame(resources_grid, bg=self.current_colors["bg_dark"])
-            row_frame.pack(fill=tk.X, pady=2)
-            
-            tk.Label(row_frame, text=label+":", font=('Arial', 10),
-                    bg=self.current_colors["bg_dark"], fg=self.current_colors["text_white"],
-                    anchor='w', width=22).pack(side=tk.LEFT, padx=10)
-            tk.Label(row_frame, text=value, font=('Arial', 10, 'bold'),
-                    bg=self.current_colors["bg_dark"], fg=color,
-                    anchor='e').pack(side=tk.RIGHT, padx=10)
-        
-        # === PERMANENT UPGRADES SECTION ===
-        upgrades_section = tk.Frame(scroll_frame, bg=self.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=2)
-        upgrades_section.pack(fill=tk.X, padx=10, pady=10)
-        
-        tk.Label(upgrades_section, text="⬆ PERMANENT UPGRADES", font=('Arial', 14, 'bold'),
-                bg=self.current_colors["bg_panel"], fg=self.current_colors["text_gold"],
-                pady=5).pack()
-        
-        upgrades_grid = tk.Frame(upgrades_section, bg=self.current_colors["bg_panel"])
-        upgrades_grid.pack(padx=10, pady=5, fill=tk.X)
-        
-        # Calculate base stats (what you'd have at start) to show upgrade gains
-        base_max_hp = 50  # Base starting HP after difficulty change
-        base_damage = 0   # Base damage bonus at start
-        base_crit = 0.05  # Base 5% crit chance
-        base_rerolls = 0  # Base rerolls
-        
-        # Calculate upgrades purchased
-        hp_upgrades = (self.max_health - base_max_hp) // 10  # Each upgrade gives +10 HP
-        damage_upgrades = self.damage_bonus - base_damage
-        crit_upgrades = int((self.crit_chance - base_crit) / 0.02)  # Each gives +2%
-        reroll_upgrades = self.reroll_bonus - base_rerolls
-        
-        upgrade_stats = []
-        if hp_upgrades > 0:
-            upgrade_stats.append(("Max HP Upgrades", f"×{hp_upgrades} (+{hp_upgrades * 10} HP)"))
-        if damage_upgrades > 0:
-            upgrade_stats.append(("Damage Upgrades", f"×{damage_upgrades} (+{damage_upgrades} DMG)"))
-        if crit_upgrades > 0:
-            upgrade_stats.append(("Critical Upgrades", f"×{crit_upgrades} (+{crit_upgrades * 2}% CRIT)"))
-        if reroll_upgrades > 0:
-            upgrade_stats.append(("Fortune Upgrades", f"×{reroll_upgrades} (+{reroll_upgrades} REROLL)"))
-        
-        if upgrade_stats:
-            for label, value in upgrade_stats:
-                row_frame = tk.Frame(upgrades_grid, bg=self.current_colors["bg_dark"])
-                row_frame.pack(fill=tk.X, pady=2)
-                
-                tk.Label(row_frame, text=label+":", font=('Arial', 10),
-                        bg=self.current_colors["bg_dark"], fg=self.current_colors["text_white"],
-                        anchor='w', width=22).pack(side=tk.LEFT, padx=10)
-                tk.Label(row_frame, text=value, font=('Arial', 10, 'bold'),
-                        bg=self.current_colors["bg_dark"], fg=self.current_colors["text_green"],
-                        anchor='e').pack(side=tk.RIGHT, padx=10)
-        else:
-            tk.Label(upgrades_section, text="(No permanent upgrades purchased yet)",
-                    font=('Arial', 10, 'italic'), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_secondary"], pady=10).pack()
-        
-        # Bind mousewheel to all child widgets
-        def bind_mousewheel_to_tree(widget):
-            def on_mousewheel(event):
-                canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-            widget.bind("<MouseWheel>", on_mousewheel, add='+')
-            for child in widget.winfo_children():
-                bind_mousewheel_to_tree(child)
-        bind_mousewheel_to_tree(scroll_frame)
-    
-    def _populate_stats_tab(self, parent):
-        """Populate the Game Stats tab"""
-        canvas = tk.Canvas(parent, bg=self.current_colors["bg_secondary"], highlightthickness=0)
-        scrollbar = tk.Scrollbar(parent, orient="vertical", command=canvas.yview, width=10,
-                                bg=self.current_colors["bg_secondary"], troughcolor=self.current_colors["bg_dark"])
-        scrollable_frame = tk.Frame(canvas, bg=self.current_colors["bg_secondary"])
-        
-        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-
-        
-        
-
-        
-        def update_width(event=None):
-
-        
-            canvas.itemconfig(canvas_window, width=canvas.winfo_width()-10)
-
-        
-        
-
-        
-        canvas_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-
-        
-        canvas.bind("<Configure>", update_width)
-
-        
-        canvas.configure(yscrollcommand=scrollbar.set)
-        self.setup_mousewheel_scrolling(canvas)
-        
-        stats_data = self.stats
-        
-        # Combat Statistics
-        self._add_stats_section(scrollable_frame, "⚔️ COMBAT", [
-            ("Enemies Encountered", stats_data.get("enemies_encountered", 0)),
-            ("Enemies Defeated", stats_data.get("enemies_defeated", 0)),
-            ("Mini-Bosses Defeated", stats_data.get("mini_bosses_defeated", 0)),
-            ("Bosses Defeated", stats_data.get("bosses_defeated", 0)),
-            ("Total Damage Dealt", stats_data.get("total_damage_dealt", 0)),
-            ("Total Damage Taken", stats_data.get("total_damage_taken", 0)),
-            ("Highest Single Damage", stats_data.get("highest_single_damage", 0)),
-            ("Critical Hits", stats_data.get("critical_hits", 0))
-        ])
-        
-        self._add_stats_section(scrollable_frame, "§ ECONOMY", [
-            ("Gold Found", stats_data.get("gold_found", 0)),
-            ("Gold Spent", stats_data.get("gold_spent", 0)),
-            ("Items Purchased", stats_data.get("items_purchased", 0)),
-            ("Items Sold", stats_data.get("items_sold", 0))
-        ])
-        
-        self._add_stats_section(scrollable_frame, "◈ ITEMS", [
-            ("Items Found", stats_data.get("items_found", 0)),
-            ("Items Used", stats_data.get("items_used", 0)),
-            ("Potions Used", stats_data.get("potions_used", 0)),
-            ("Containers Searched", stats_data.get("containers_searched", 0))
-        ])
-        
-        self._add_stats_section(scrollable_frame, "◊️ EQUIPMENT", [
-            ("Weapons Broken", stats_data.get("weapons_broken", 0)),
-            ("Armor Broken", stats_data.get("armor_broken", 0)),
-            ("Weapons Repaired", stats_data.get("weapons_repaired", 0)),
-            ("Armor Repaired", stats_data.get("armor_repaired", 0))
-        ])
-        
-        lore_data = stats_data.get("lore_found", {})
-        self._add_stats_section(scrollable_frame, "📜 LORE COLLECTED", [
-            ("Guard Journals", f"{lore_data.get('Guard Journal', 0)}/12"),
-            ("Quest Notices", f"{lore_data.get('Quest Notice', 0)}/8"),
-            ("Scrawled Notes", f"{lore_data.get('Scrawled Note', 0)}/10"),
-            ("Training Manuals", f"{lore_data.get('Training Manual Page', 0)}/15"),
-            ("Pressed Pages", f"{lore_data.get('Pressed Page', 0)}/7"),
-            ("Surgeon's Notes", f"{lore_data.get('Surgeon' + chr(39) + 's Note', 0)}/6"),
-            ("Puzzle Notes", f"{lore_data.get('Puzzle Note', 0)}/10"),
-            ("Star Charts", f"{lore_data.get('Star Chart', 0)}/4"),
-            ("Map Scraps", f"{lore_data.get('Cracked Map Scrap', 0)}/6"),
-            ("Old Letters", f"{lore_data.get('Old Letter', 0)}/12"),
-            ("Prayer Strips", f"{lore_data.get('Prayer Strip', 0)}/10")
-        ])
-        
-        self._add_stats_section(scrollable_frame, "🗺️ EXPLORATION", [
-            ("Rooms Explored", stats_data.get("rooms_explored", 0)),
-            ("Times Rested", stats_data.get("times_rested", 0)),
-            ("Stairs Used", stats_data.get("stairs_used", 0)),
-            ("Highest Floor Reached", stats_data.get("highest_floor", 1))
-        ])
-        
-        canvas.pack(side="left", fill="both", expand=True, padx=5, pady=5)
-        scrollbar.pack(side="right", fill="y", pady=5)
-        
-        # Bind mousewheel to all child widgets
-        def bind_mousewheel_to_tree(widget):
-            def on_mousewheel(event):
-                canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-            widget.bind("<MouseWheel>", on_mousewheel, add='+')
-            for child in widget.winfo_children():
-                bind_mousewheel_to_tree(child)
-        bind_mousewheel_to_tree(scrollable_frame)
-    
-    def _populate_lore_tab(self, parent):
-        """Populate the Lore Codex tab"""
-        category_info = {
-            "guards_journal": ("Guard Journals", "guards_journal_pages"),
-            "quest_notice": ("Quest Notices", "quest_notices"),
-            "scrawled_note": ("Scrawled Notes", "scrawled_notes"),
-            "training_manual": ("Training Manuals", "training_manual_pages"),
-            "pressed_page": ("Pressed Pages", "pressed_pages"),
-            "surgeons_note": ("Surgeon's Notes", "surgeons_notes"),
-            "puzzle_note": ("Puzzle Notes", "puzzle_notes"),
-            "star_chart": ("Star Charts", "star_charts"),
-            "map_scrap": ("Map Scraps", "map_scraps"),
-            "old_letter": ("Old Letters", "old_letters"),
-            "prayer_strip": ("Prayer Strips", "prayer_strips")
-        }
-        
-        lore_by_type = {}
-        for entry in self.lore_codex:
-            lore_type = entry.get("type", "unknown")
-            if lore_type not in lore_by_type:
-                lore_by_type[lore_type] = []
-            lore_by_type[lore_type].append(entry)
-        
-        for lore_type in lore_by_type:
-            lore_by_type[lore_type].sort(key=lambda x: x.get("floor_found", 0))
-        
-        total_found = len(self.lore_codex)
-        total_max = sum(self.lore_max_counts.values())
-        
-        header = tk.Frame(parent, bg=self.current_colors["bg_primary"])
-        header.pack(fill=tk.X, padx=10, pady=10)
-        tk.Label(header, text=f"Total Lore Discovered: {total_found}/{total_max}",
-                font=('Arial', 12, 'bold'), bg=self.current_colors["bg_primary"],
-                fg=self.current_colors["text_gold"]).pack()
-        
-        canvas = tk.Canvas(parent, bg=self.current_colors["bg_secondary"], highlightthickness=0)
-        scrollbar = tk.Scrollbar(parent, orient="vertical", command=canvas.yview, width=10,
-                                bg=self.current_colors["bg_secondary"], troughcolor=self.current_colors["bg_dark"])
-        scrollable_frame = tk.Frame(canvas, bg=self.current_colors["bg_secondary"])
-        
-        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-
-        
-        
-
-        
-        def update_width(event=None):
-
-        
-            canvas.itemconfig(canvas_window, width=canvas.winfo_width()-10)
-
-        
-        
-
-        
-        canvas_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-
-        
-        canvas.bind("<Configure>", update_width)
-
-        
-        canvas.configure(yscrollcommand=scrollbar.set)
-        self.setup_mousewheel_scrolling(canvas)
-        
-        if not hasattr(self, '_lore_expanded'):
-            self._lore_expanded = {}
-        
-        for lore_type, (display_name, json_key) in category_info.items():
-            category_lore = lore_by_type.get(lore_type, [])
-            count = len(category_lore)
-            max_count = self.lore_max_counts.get(json_key, 0)
-            
-            category_frame = tk.Frame(scrollable_frame, bg=self.current_colors["bg_dark"], relief=tk.RAISED, borderwidth=1)
-            category_frame.pack(fill=tk.X, padx=10, pady=2)
-            
-            header_frame = tk.Frame(category_frame, bg=self.current_colors["bg_dark"], cursor="hand2")
-            header_frame.pack(fill=tk.X)
-            
-            expanded = self._lore_expanded.get(lore_type, False)
-            arrow = "▼" if expanded else "►"
-            arrow_label = tk.Label(header_frame, text=arrow, font=('Arial', 10),
-                    bg=self.current_colors["bg_dark"], fg=self.current_colors["text_cyan"], width=2)
-            arrow_label.pack(side=tk.LEFT, padx=(5, 0))
-            
-            name_label = tk.Label(header_frame, text=display_name, font=('Arial', 11, 'bold'),
-                    bg=self.current_colors["bg_dark"], fg=self.current_colors["text_cyan"])
-            name_label.pack(side=tk.LEFT, padx=5)
-            
-            count_color = self.current_colors["text_gold"] if count == max_count and count > 0 else self.current_colors["text_secondary"]
-            count_label = tk.Label(header_frame, text=f"{count}/{max_count}", font=('Arial', 10, 'bold'),
-                    bg=self.current_colors["bg_dark"], fg=count_color)
-            count_label.pack(side=tk.RIGHT, padx=10, pady=5)
-            
-            content_frame = tk.Frame(category_frame, bg=self.current_colors["bg_secondary"])
-            if expanded:
-                content_frame.pack(fill=tk.X, padx=5, pady=5)
-            
-            if count > 0:
-                for entry in category_lore:
-                    entry_item = tk.Frame(content_frame, bg=self.current_colors["bg_dark"], relief=tk.GROOVE, borderwidth=1)
-                    entry_item.pack(fill=tk.X, padx=5, pady=2)
-                    
-                    entry_header = tk.Frame(entry_item, bg=self.current_colors["bg_dark"], cursor="hand2")
-                    entry_header.pack(fill=tk.X)
-                    
-                    # Show unique ID if available
-                    unique_id = entry.get('unique_id', '')
-                    id_text = f" #{unique_id}" if unique_id else ""
-                    
-                    title_text = f"{entry['title']}{id_text} (Floor {entry['floor_found']})"
-                    entry_title = tk.Label(entry_header, text=title_text, font=('Arial', 9),
-                            bg=self.current_colors["bg_dark"], fg=self.current_colors["text_primary"])
-                    entry_title.pack(side=tk.LEFT, padx=8, pady=3)
-                    
-                    read_btn = tk.Button(entry_header, text="Read",
-                            command=lambda e=entry: self.show_lore_entry_popup(e),
-                            font=('Arial', 8, 'bold'), bg=self.current_colors["button_primary"],
-                            fg='#000000', width=8, pady=1)
-                    read_btn.pack(side=tk.RIGHT, padx=5, pady=2)
-            else:
-                if expanded:
-                    tk.Label(content_frame, text="None discovered yet", font=('Arial', 9, 'italic'),
-                            bg=self.current_colors["bg_secondary"],
-                            fg=self.current_colors["text_secondary"]).pack(pady=5)
-            
-            def toggle_category(event=None, lt=lore_type, cf=content_frame, al=arrow_label, c=canvas):
-                current = self._lore_expanded.get(lt, False)
-                self._lore_expanded[lt] = not current
-                
-                if self._lore_expanded[lt]:
-                    al.config(text="▼")
-                    cf.pack(fill=tk.X, padx=5, pady=5)
-                else:
-                    al.config(text="►")
-                    cf.pack_forget()
-                
-                c.update_idletasks()
-                c.configure(scrollregion=c.bbox("all"))
-            
-            header_frame.bind("<Button-1>", toggle_category)
-            arrow_label.bind("<Button-1>", toggle_category)
-            name_label.bind("<Button-1>", toggle_category)
-            count_label.bind("<Button-1>", toggle_category)
-        
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y, pady=5)
-        
-        # Bind mousewheel to all child widgets
-        def bind_mousewheel_to_tree(widget):
-            def on_mousewheel(event):
-                canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-            widget.bind("<MouseWheel>", on_mousewheel, add='+')
-            for child in widget.winfo_children():
-                bind_mousewheel_to_tree(child)
-        bind_mousewheel_to_tree(scrollable_frame)
-    
-
+        """Show comprehensive character status with tabbed interface - delegated to ui_character_menu"""
+        ui_character_menu.show_character_status(self)
     
     def close_dialog(self):
         """Close dialog"""
@@ -5115,7 +4533,7 @@ class DiceDungeonExplorer:
     
     def _create_unified_slot_item(self, slot_num):
         """Create a list item for a save slot in the unified menu"""
-        save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        save_file = os.path.join(self.saves_dir, 
                                  f'dice_dungeon_save_slot_{slot_num}.json')
         
         # Check if save exists
@@ -5199,7 +4617,7 @@ class DiceDungeonExplorer:
         for widget in self.details_panel.winfo_children():
             widget.destroy()
         
-        save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        save_file = os.path.join(self.saves_dir, 
                                  f'dice_dungeon_save_slot_{slot_num}.json')
         
         is_occupied = os.path.exists(save_file)
@@ -5385,7 +4803,7 @@ class DiceDungeonExplorer:
         if not hasattr(self, 'selected_slot') or self.selected_slot is None:
             return
         
-        save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        save_file = os.path.join(self.saves_dir, 
                                  f'dice_dungeon_save_slot_{self.selected_slot}.json')
         is_occupied = os.path.exists(save_file)
         
@@ -5535,7 +4953,7 @@ class DiceDungeonExplorer:
     
     def _create_save_slot_button(self, parent, slot_num):
         """Create a button for a save slot with custom name input"""
-        save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        save_file = os.path.join(self.saves_dir, 
                                  f'dice_dungeon_save_slot_{slot_num}.json')
         
         slot_frame = tk.Frame(parent, bg='#3d2415', relief=tk.RIDGE, borderwidth=2)
@@ -5706,7 +5124,7 @@ class DiceDungeonExplorer:
                 'starter_rooms': [list(pos) for pos in getattr(self, 'starter_rooms', set())]
             }
             
-            save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+            save_file = os.path.join(self.saves_dir, 
                                      f'dice_dungeon_save_slot_{slot_num}.json')
             
             with open(save_file, 'w') as f:
@@ -5717,7 +5135,7 @@ class DiceDungeonExplorer:
             
             # Clear and reinitialize the slot-specific debug log
             try:
-                debug_log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                debug_log_file = os.path.join(self.saves_dir, 
                                              f'adventure_log_slot_{slot_num}.txt')
                 with open(debug_log_file, 'w', encoding='utf-8') as f:
                     import datetime
@@ -5729,7 +5147,7 @@ class DiceDungeonExplorer:
             except:
                 pass
             
-            self.log(f"[SAVE] Game saved to Slot {slot_num}!", 'system')
+            self.log(f"⚡ Game saved to Slot {slot_num}!", 'system')
             self.close_dialog()
         except Exception as e:
             messagebox.showerror("Save Error", f"Failed to save game: {str(e)}")
@@ -5740,7 +5158,7 @@ class DiceDungeonExplorer:
     
     def update_save_name(self, slot_num, new_name):
         """Update the custom name of a save file"""
-        save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        save_file = os.path.join(self.saves_dir, 
                                  f'dice_dungeon_save_slot_{slot_num}.json')
         try:
             # Load existing save data
@@ -5762,7 +5180,7 @@ class DiceDungeonExplorer:
     
     def delete_save_slot(self, slot_num):
         """Delete a save slot"""
-        save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        save_file = os.path.join(self.saves_dir, 
                                  f'dice_dungeon_save_slot_{slot_num}.json')
         try:
             os.remove(save_file)
@@ -5772,7 +5190,7 @@ class DiceDungeonExplorer:
     
     def load_from_slot(self, slot_num):
         """Load game from specific slot"""
-        save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        save_file = os.path.join(self.saves_dir, 
                                  f'dice_dungeon_save_slot_{slot_num}.json')
         
         try:
@@ -5809,7 +5227,7 @@ class DiceDungeonExplorer:
             
             # Initialize slot-specific debug log
             try:
-                debug_log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                debug_log_file = os.path.join(self.saves_dir, 
                                              f'adventure_log_slot_{slot_num}.txt')
                 with open(debug_log_file, 'w', encoding='utf-8') as f:
                     import datetime
@@ -5963,10 +5381,26 @@ class DiceDungeonExplorer:
             # Restore comprehensive stats (with defaults for old saves)
             if 'stats' in save_data:
                 self.stats = save_data['stats']
+                # Add missing fields for backward compatibility
+                if "enemies_fled" not in self.stats:
+                    self.stats["enemies_fled"] = 0
+                if "rooms_explored" not in self.stats:
+                    self.stats["rooms_explored"] = 0
+                if "times_rested" not in self.stats:
+                    self.stats["times_rested"] = 0
+                # Ensure lore_found has all current types
+                if "lore_found" not in self.stats:
+                    self.stats["lore_found"] = {}
+                for lore_type in ["Guard Journal", "Quest Notice", "Scrawled Note", "Training Manual Page", 
+                                 "Pressed Page", "Surgeon's Note", "Puzzle Note", "Cracked Map Scrap",
+                                 "Star Chart", "Old Letter", "Prayer Strip"]:
+                    if lore_type not in self.stats["lore_found"]:
+                        self.stats["lore_found"][lore_type] = 0
             else:
                 # Initialize empty stats for old saves
                 self.stats = {
                     "enemies_encountered": 0,
+                    "enemies_fled": 0,
                     "enemies_defeated": 0,
                     "mini_bosses_defeated": 0,
                     "bosses_defeated": 0,
@@ -5986,6 +5420,8 @@ class DiceDungeonExplorer:
                     "armor_broken": 0,
                     "weapons_repaired": 0,
                     "armor_repaired": 0,
+                    "rooms_explored": 0,
+                    "times_rested": 0,
                     "lore_found": {
                         "Guard Journal": 0,
                         "Quest Notice": 0,
@@ -5994,7 +5430,10 @@ class DiceDungeonExplorer:
                         "Pressed Page": 0,
                         "Surgeon's Note": 0,
                         "Puzzle Note": 0,
-                        "Cracked Map Scrap": 0
+                        "Cracked Map Scrap": 0,
+                        "Star Chart": 0,
+                        "Old Letter": 0,
+                        "Prayer Strip": 0
                     },
                     "enemy_kills": {},
                     "most_damaged_enemy": {"name": "", "damage": 0}
@@ -7334,6 +6773,7 @@ Final Score: {self.run_score}
         # Combat Statistics
         self._add_stats_section(scrollable_frame, "⚔️ COMBAT", [
             ("Enemies Encountered", stats_data.get("enemies_encountered", 0)),
+            ("Enemies Fled", stats_data.get("enemies_fled", 0)),
             ("Enemies Defeated", stats_data.get("enemies_defeated", 0)),
             ("Mini-Bosses Defeated", stats_data.get("mini_bosses_defeated", 0)),
             ("Bosses Defeated", stats_data.get("bosses_defeated", 0)),
@@ -8134,8 +7574,8 @@ Final Score: {self.run_score}
             ("⬆⬇⬅➡ EXPLORATION", [
                 ("", "Use WASD or arrow keys to explore new rooms"),
                 ("", "Each room may contain enemies, chests, or stairs"),
-                ("", "You MUST find stairs to descend to the next floor"),
-                ("", "Higher floors = tougher enemies + better loot"),
+                ("", "You MUST find stairs to descend deeper into the dungeon"),
+                ("", "Deeper floors = tougher enemies + better loot"),
             ]),
             ("⚔ COMBAT", [
                 ("", "Enemies block your path until defeated"),

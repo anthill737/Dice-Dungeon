@@ -78,7 +78,8 @@ class StoreManager:
         content_frame = tk.Frame(notebook, bg=self.game.current_colors["bg_panel"])
         content_frame.pack(fill=tk.BOTH, expand=True)
         
-        # Save reference for updating sell tab without full refresh
+        # Save reference for updating tabs without full refresh
+        self.buy_content_frame = content_frame
         self.sell_content_frame = content_frame
         
         # State to track current tab
@@ -333,13 +334,13 @@ class StoreManager:
         
         # Accessories (special bonuses)
         if self.game.floor >= 1:
-            store_items.append(("Traveler's Pack", 100 + (self.game.floor * 25))) # +5 inventory
+            store_items.append(("Traveler's Pack", 100 + (self.game.floor * 25))) # +10 inventory
         
         if self.game.floor >= 2:
             store_items.extend([
                 ("Lucky Coin", 140 + (self.game.floor * 35)),      # +5% crit
                 ("Mystic Ring", 150 + (self.game.floor * 38)),     # +1 reroll per combat
-                ("Merchant's Satchel", 180 + (self.game.floor * 40)), # +10 inventory
+                ("Merchant's Satchel", 180 + (self.game.floor * 40)), # +20 inventory
                 ("Extra Die", 500 + (self.game.floor * 50))        # Add extra die to rolls
             ])
         
@@ -530,46 +531,179 @@ class StoreManager:
                 btn_state = tk.NORMAL
                 btn_text = "Buy"
             
+            
+            def buy_click():
+                print(f"[DEBUG] Buy button clicked for {item_name} at price {price}")
+                self._show_buy_confirmation(item_name, price)
+            
             tk.Button(action_frame, text=btn_text, 
-                     command=lambda: self._buy_item(item_name, price),
+                     command=buy_click,
                      font=('Arial', 9, 'bold'), bg=self.game.current_colors["button_primary"], 
                      fg='#000000', width=10, pady=5, state=btn_state).pack(pady=3)
         else:
-            # Sell button - store reference to item_frame for removal
+            # Sell button - pass item_name instead of index to avoid stale reference bugs
             tk.Button(action_frame, text="Sell", 
-                     command=lambda f=item_frame: self._show_sell_confirmation(item_name, item_idx, price, f),
+                     command=lambda f=item_frame: self._show_sell_confirmation(item_name, price, f),
                      font=('Arial', 9, 'bold'), bg=self.game.current_colors["text_purple"], 
                      fg='#ffffff', width=10, pady=5).pack(pady=3)
     
-    def _show_sell_confirmation(self, item_name, item_idx, price, item_frame):
-        """Show confirmation popup for selling an item"""
+    def _show_buy_confirmation(self, item_name, price):
+        """Show in-game confirmation popup for buying an item"""
+        print(f"[DEBUG] _show_buy_confirmation called: item_name={item_name}, price={price}")
+        print(f"[DEBUG] Current gold: {self.game.gold}")
+        
+        # Check if can afford and have space
+        if self.game.gold < price:
+            self.game.log("Not enough gold!", 'system')
+            return
+        
+        item_def = self.game.item_definitions.get(item_name, {})
+        item_type = item_def.get('type', '')
+        needs_inventory = item_type not in ['upgrade']
+        
+        if needs_inventory and self.game.get_unequipped_inventory_count() >= self.game.max_inventory:
+            self.game.log("Inventory is full!", 'system')
+            return
+        
+        # Check if this is a consumable (show quantity selector)
+        # Consumables include: heal, token, cleanse, repair, and other non-equipment/upgrade items
+        is_consumable = item_type not in ['upgrade', 'equipment']
+        
+        # Calculate max affordable quantity
+        max_affordable = self.game.gold // price if is_consumable else 1
+        max_inventory_space = self.game.max_inventory - self.game.get_unequipped_inventory_count() if needs_inventory else 999
+        max_quantity = min(max_affordable, max_inventory_space) if is_consumable else 1
+        
+        # Adjust panel height based on whether we show quantity selector
+        panel_height = 280 if is_consumable and max_quantity > 1 else 200
+        
+        # Create confirmation popup panel directly on store dialog (no overlay)
+        popup = tk.Frame(self.game.dialog_frame, bg=self.game.current_colors["bg_primary"],
+                        relief=tk.RIDGE, borderwidth=3)
+        popup.place(relx=0.5, rely=0.5, anchor='center', width=400, height=panel_height)
+        
+        # Title
+        tk.Label(popup, text="Confirm Purchase", font=('Arial', 14, 'bold'),
+                bg=self.game.current_colors["bg_primary"], 
+                fg=self.game.current_colors["text_gold"], pady=10).pack()
+        
+        # Red X close button (top right)
+        close_btn = tk.Label(popup, text="✕", font=('Arial', 16, 'bold'),
+                            bg=self.game.current_colors["bg_primary"], fg='#ff4444',
+                            cursor="hand2", padx=5)
+        close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=5)
+        close_btn.bind('<Button-1>', lambda e: popup.destroy())
+        close_btn.bind('<Enter>', lambda e: close_btn.config(fg='#ff0000'))
+        close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
+        
+        # Quantity selection for consumables
+        quantity_var = tk.IntVar(value=1)
+        total_price_var = tk.IntVar(value=price)
+        
+        if is_consumable and max_quantity > 1:
+            tk.Label(popup, text=f"Max affordable: {max_quantity}", font=('Arial', 10),
+                    bg=self.game.current_colors["bg_primary"], 
+                    fg=self.game.current_colors["text_secondary"]).pack(pady=5)
+            
+            # Quantity selector frame
+            qty_frame = tk.Frame(popup, bg=self.game.current_colors["bg_primary"])
+            qty_frame.pack(pady=10)
+            
+            tk.Label(qty_frame, text="Quantity to buy:", font=('Arial', 10),
+                    bg=self.game.current_colors["bg_primary"], 
+                    fg=self.game.current_colors["text_primary"]).pack()
+            
+            # Slider frame with value display
+            slider_frame = tk.Frame(qty_frame, bg=self.game.current_colors["bg_primary"])
+            slider_frame.pack(pady=5)
+            
+            quantity_label = tk.Label(slider_frame, text="1", font=('Arial', 12, 'bold'),
+                    bg=self.game.current_colors["bg_primary"], 
+                    fg=self.game.current_colors["text_gold"], width=3)
+            quantity_label.pack(side=tk.LEFT, padx=5)
+            
+            def update_quantity(val):
+                qty = int(float(val))
+                quantity_var.set(qty)
+                quantity_label.config(text=str(qty))
+                total = qty * price
+                total_price_var.set(total)
+                price_label.config(text=f"Total: {total} gold")
+            
+            slider = tk.Scale(slider_frame, from_=1, to=max_quantity, orient=tk.HORIZONTAL,
+                            command=update_quantity, length=200,
+                            bg=self.game.current_colors["bg_secondary"],
+                            fg=self.game.current_colors["text_primary"],
+                            troughcolor=self.game.current_colors["bg_dark"],
+                            highlightthickness=0)
+            slider.pack(side=tk.LEFT)
+            
+            price_label = tk.Label(popup, text=f"Total: {price} gold", font=('Arial', 11, 'bold'),
+                    bg=self.game.current_colors["bg_primary"], 
+                    fg=self.game.current_colors["text_primary"])
+            price_label.pack(pady=5)
+        else:
+            # Simple message for non-consumables or single items
+            tk.Label(popup, text=f"Buy {item_name} for {price} gold?", font=('Arial', 11),
+                    bg=self.game.current_colors["bg_primary"], 
+                    fg=self.game.current_colors["text_primary"]).pack(pady=10)
+        
+        # Buttons
+        btn_frame = tk.Frame(popup, bg=self.game.current_colors["bg_primary"])
+        btn_frame.pack(pady=20)
+        
+        def confirm_buy():
+            qty = quantity_var.get()
+            print(f"[DEBUG] confirm_buy callback triggered for {item_name}, quantity={qty}")
+            popup.destroy()
+            print(f"[DEBUG] Popup destroyed, calling _buy_item({item_name}, {price}, {qty})")
+            self._buy_item(item_name, price, quantity=qty)
+            print(f"[DEBUG] _buy_item returned")
+        
+        def cancel_buy():
+            popup.destroy()
+        
+        tk.Button(btn_frame, text="Buy", command=confirm_buy,
+                 font=('Arial', 11, 'bold'), bg=self.game.current_colors["button_primary"], 
+                 fg='#000000', width=12, pady=5).pack(side=tk.LEFT, padx=10)
+        
+        tk.Button(btn_frame, text="Cancel", command=cancel_buy,
+                 font=('Arial', 11, 'bold'), bg=self.game.current_colors["bg_dark"], 
+                 fg='#ffffff', width=12, pady=5).pack(side=tk.LEFT, padx=10)
+        
+        # Make popup accept focus and bind escape
+        popup.focus_set()
+        popup.bind('<Escape>', lambda e: cancel_buy())
+    
+    def _show_sell_confirmation(self, item_name, price, item_frame):
+        """Show in-game confirmation popup for selling an item"""
         # Check quantity of this item in inventory
         item_count = self.game.inventory.count(item_name)
         
-        # Create confirmation popup
-        popup = tk.Toplevel(self.game.root)
-        popup.title("Confirm Sale")
-        popup.configure(bg=self.game.current_colors["bg_primary"])
+        if item_count == 0:
+            return
         
         # Adjust size based on whether we need a slider
-        if item_count > 1:
-            popup.geometry("400x280")
-        else:
-            popup.geometry("400x200")
+        panel_height = 280 if item_count > 1 else 200
         
-        popup.transient(self.game.root)
-        popup.grab_set()
+        # Create confirmation popup panel directly on store dialog (no overlay)
+        popup = tk.Frame(self.game.dialog_frame, bg=self.game.current_colors["bg_primary"],
+                        relief=tk.RIDGE, borderwidth=3)
+        popup.place(relx=0.5, rely=0.5, anchor='center', width=400, height=panel_height)
         
-        # Center the popup
-        popup.update_idletasks()
-        x = self.game.root.winfo_x() + (self.game.root.winfo_width() // 2) - (popup.winfo_width() // 2)
-        y = self.game.root.winfo_y() + (self.game.root.winfo_height() // 2) - (popup.winfo_height() // 2)
-        popup.geometry(f"+{x}+{y}")
-        
-        # Message
+        # Title
         tk.Label(popup, text="Confirm Sale", font=('Arial', 14, 'bold'),
                 bg=self.game.current_colors["bg_primary"], 
-                fg=self.game.current_colors["text_gold"]).pack(pady=20)
+                fg=self.game.current_colors["text_gold"], pady=10).pack()
+        
+        # Red X close button (top right)
+        close_btn = tk.Label(popup, text="✕", font=('Arial', 16, 'bold'),
+                            bg=self.game.current_colors["bg_primary"], fg='#ff4444',
+                            cursor="hand2", padx=5)
+        close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=5)
+        close_btn.bind('<Button-1>', lambda e: popup.destroy())
+        close_btn.bind('<Enter>', lambda e: close_btn.config(fg='#ff0000'))
+        close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
         
         # Quantity selection if multiple items
         quantity_var = tk.IntVar(value=1)
@@ -628,9 +762,11 @@ class StoreManager:
         
         def confirm_sale():
             qty = quantity_var.get()
-            total = total_price_var.get()
             popup.destroy()
-            self._sell_item(item_idx, price, item_frame, quantity=qty)
+            # Look up current index at time of sale to avoid stale reference
+            if item_name in self.game.inventory:
+                item_idx = self.game.inventory.index(item_name)
+                self._sell_item(item_idx, price, item_frame, quantity=qty)
         
         def cancel_sale():
             popup.destroy()
@@ -642,16 +778,73 @@ class StoreManager:
         tk.Button(btn_frame, text="Cancel", command=cancel_sale,
                  font=('Arial', 11, 'bold'), bg=self.game.current_colors["bg_dark"], 
                  fg='#ffffff', width=12, pady=5).pack(side=tk.LEFT, padx=10)
+        
+        # Make popup accept focus and bind escape
+        popup.focus_set()
+        popup.bind('<Escape>', lambda e: cancel_sale())
     
-    def _buy_item(self, item_name, price):
+    def _buy_item(self, item_name, price, quantity=1):
         """Purchase an item from the store"""
-        if self.game.gold < price:
+        print(f"[DEBUG] _buy_item called: item_name={item_name}, price={price}, quantity={quantity}")
+        
+        total_cost = price * quantity
+        
+        if self.game.gold < total_cost:
             self.game.log("Not enough gold!", 'system')
             return
         
         # Check if this is an upgrade or equipment (doesn't go to inventory)
         item_def = self.game.item_definitions.get(item_name, {})
         item_type = item_def.get('type', '')
+        print(f"[DEBUG] Item type: {item_type}")
+        
+        # Handle Extra Die FIRST (before generic upgrade handler)
+        if item_name == "Extra Die":
+            print(f"[DEBUG] Extra Die purchase triggered")
+            print(f"[DEBUG] Current num_dice: {self.game.num_dice}")
+            print(f"[DEBUG] Max dice: {self.game.max_dice}")
+            print(f"[DEBUG] Current gold: {self.game.gold}")
+            print(f"[DEBUG] Price: {price}")
+            
+            if self.game.num_dice >= self.game.max_dice:
+                print(f"[DEBUG] Already at max dice - aborting")
+                self.game.log(f"You already have the maximum {self.game.max_dice} dice!", 'system')
+                return
+            
+            print(f"[DEBUG] Incrementing num_dice from {self.game.num_dice} to {self.game.num_dice + 1}")
+            self.game.num_dice += 1
+            self.game.dice_values = [0] * self.game.num_dice
+            self.game.dice_locked = [False] * self.game.num_dice
+            print(f"[DEBUG] New num_dice: {self.game.num_dice}")
+            print(f"[DEBUG] Logging purchase message...")
+            self.game.log(f"Purchased {item_name}! Now have {self.game.num_dice} dice.", 'loot')
+            print(f"[DEBUG] Message logged")
+            
+            # Track that this upgrade was purchased on this floor
+            self.game.purchased_upgrades_this_floor.add(item_name)
+            print(f"[DEBUG] Added to purchased_upgrades_this_floor: {self.game.purchased_upgrades_this_floor}")
+            
+            print(f"[DEBUG] Deducting gold from {self.game.gold} to {self.game.gold - price}")
+            self.game.gold -= price
+            print(f"[DEBUG] New gold: {self.game.gold}")
+            
+            # Track stats
+            self.game.stats["gold_spent"] += price
+            self.game.stats["items_purchased"] += 1
+            
+            print(f"[DEBUG] Calling update_display()")
+            self.game.update_display()
+            print(f"[DEBUG] update_display() complete")
+            
+            # Update gold label without refreshing entire store
+            if hasattr(self, 'gold_label') and self.gold_label.winfo_exists():
+                print(f"[DEBUG] Updating gold label to {self.game.gold}")
+                self.gold_label.config(text=f"Your Gold: {self.game.gold}")
+            else:
+                print(f"[DEBUG] Gold label not available")
+            
+            print(f"[DEBUG] Extra Die purchase complete")
+            return
         
         # Handle PERMANENT UPGRADES
         if item_type == "upgrade":
@@ -660,22 +853,22 @@ class StoreManager:
                 bonus = item_def['max_hp_bonus']
                 self.game.max_health += bonus
                 self.game.health += bonus  # Also restore that much HP
-                self.game.log(f"[UPGRADE] Maximum HP increased by {bonus}! (Now {self.game.max_health})", 'success')
+                self.game.log(f"Maximum HP increased by {bonus}! (Now {self.game.max_health})", 'success')
             
             if 'damage_bonus' in item_def:
                 bonus = item_def['damage_bonus']
                 self.game.damage_bonus += bonus
-                self.game.log(f"[UPGRADE] Permanent damage increased by {bonus}! (Now +{self.game.damage_bonus})", 'success')
+                self.game.log(f"Permanent damage increased by {bonus}! (Now +{self.game.damage_bonus})", 'success')
             
             if 'reroll_bonus' in item_def:
                 bonus = item_def['reroll_bonus']
                 self.game.reroll_bonus += bonus
-                self.game.log(f"[UPGRADE] Permanent rerolls increased by {bonus}! (Now +{self.game.reroll_bonus})", 'success')
+                self.game.log(f"Permanent rerolls increased by {bonus}! (Now +{self.game.reroll_bonus})", 'success')
             
             if 'crit_bonus' in item_def:
                 bonus = item_def['crit_bonus']
                 self.game.crit_chance += bonus
-                self.game.log(f"[UPGRADE] Crit chance increased by {int(bonus*100)}%! (Now {int(self.game.crit_chance*100)}%)", 'success')
+                self.game.log(f"Crit chance increased by {int(bonus*100)}%! (Now {int(self.game.crit_chance*100)}%)", 'success')
             
             # Track that this upgrade was purchased on this floor
             self.game.purchased_upgrades_this_floor.add(item_name)
@@ -687,7 +880,17 @@ class StoreManager:
             self.game.stats["items_purchased"] += 1
             
             self.game.update_display()
-            self.show_store()
+            
+            # Update gold label without refreshing entire store
+            if hasattr(self, 'gold_label') and self.gold_label.winfo_exists():
+                self.gold_label.config(text=f"Your Gold: {self.game.gold}")
+            
+            # Refresh buy content to update button states (upgrades can only be bought once per floor)
+            if hasattr(self, 'buy_content_frame') and self.buy_content_frame.winfo_exists():
+                # Save scroll position
+                if hasattr(self, 'buy_canvas') and self.buy_canvas.winfo_exists():
+                    self.scroll_position['buy'] = self.buy_canvas.yview()[0]
+                self._show_store_buy_content(self.buy_content_frame)
             return
         
         # Handle EQUIPMENT (goes to inventory, can be equipped)
@@ -715,45 +918,32 @@ class StoreManager:
             self.game.stats["items_purchased"] += 1
             
             self.game.update_display()
-            self.show_store()
-            return
-        
-        # Handle Extra Die
-        if item_name == "Extra Die":
-            if self.game.num_dice >= self.game.max_dice:
-                self.game.log(f"You already have the maximum {self.game.max_dice} dice!", 'system')
-                return
-            self.game.num_dice += 1
-            self.game.dice_values = [0] * self.game.num_dice
-            self.game.dice_locked = [False] * self.game.num_dice
-            self.game.log(f"Purchased {item_name}! Now have {self.game.num_dice} dice.", 'loot')
             
-            # Track that this upgrade was purchased on this floor
-            self.game.purchased_upgrades_this_floor.add(item_name)
-            
-            self.game.gold -= price
-            
-            # Track stats
-            self.game.stats["gold_spent"] += price
-            self.game.stats["items_purchased"] += 1
-            
-            self.game.update_display()
-            self.show_store()
+            # Update gold label without refreshing entire store
+            if hasattr(self, 'gold_label') and self.gold_label.winfo_exists():
+                self.gold_label.config(text=f"Your Gold: {self.game.gold}")
             return
         
         # All other items (consumables) go to inventory
-        if self.game.get_unequipped_inventory_count() >= self.game.max_inventory:
-            self.game.log("Inventory is full! (Equipped items don't count)", 'system')
+        inventory_space = self.game.max_inventory - self.game.get_unequipped_inventory_count()
+        if quantity > inventory_space:
+            self.game.log(f"Not enough inventory space! (Need {quantity}, have {inventory_space})", 'system')
             return
         
-        self.game.inventory.append(item_name)
-        self.game.log(f"Purchased {item_name}!", 'loot')
+        # Add items to inventory
+        for _ in range(quantity):
+            self.game.inventory.append(item_name)
         
-        self.game.gold -= price
+        if quantity > 1:
+            self.game.log(f"Purchased {quantity}x {item_name}!", 'loot')
+        else:
+            self.game.log(f"Purchased {item_name}!", 'loot')
+        
+        self.game.gold -= total_cost
         
         # Track stats
-        self.game.stats["gold_spent"] += price
-        self.game.stats["items_purchased"] += 1
+        self.game.stats["gold_spent"] += total_cost
+        self.game.stats["items_purchased"] += quantity
         
         self.game.update_display()
         

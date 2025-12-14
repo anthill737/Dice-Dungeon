@@ -534,20 +534,31 @@ class InventoryDisplayManager:
     def pickup_from_ground(self, item_name, source_type):
         """Pick up item from ground dialog or search container"""
         if source_type == 'uncollected':
-            self.game.pickup_uncollected_item(item_name)
+            self.game.pickup_uncollected_item(item_name, skip_refresh=True)
         elif source_type == 'dropped':
-            self.game.pickup_dropped_item(item_name)
+            self.game.pickup_dropped_item(item_name, skip_refresh=True)
         elif source_type == 'container':
             self.game.search_container(item_name)
+            return  # Container search handles its own UI refresh
         
         # Refresh dialog to update item list
         discoverables = self.game.current_room.data.get('discoverables', [])
         unsearched_containers = [d for d in discoverables if d not in self.game.current_room.collected_discoverables]
         
-        if ((hasattr(self.game.current_room, 'uncollected_items') and self.game.current_room.uncollected_items) or
+        # Check if there are still items on the ground
+        has_items = (
+            (hasattr(self.game.current_room, 'uncollected_items') and self.game.current_room.uncollected_items) or
             (hasattr(self.game.current_room, 'dropped_items') and self.game.current_room.dropped_items) or
-            unsearched_containers):
+            (self.game.current_room.ground_gold > 0) or
+            (self.game.current_room.ground_items) or
+            (self.game.current_room.ground_container and not self.game.current_room.container_searched) or
+            unsearched_containers
+        )
+        
+        if has_items:
+            # Still items left - refresh the ground items dialog
             self.show_ground_items()
+            self.game.show_exploration_options()  # Update button count
         else:
             # No more items, close dialog and refresh exploration view
             self.game.close_dialog()

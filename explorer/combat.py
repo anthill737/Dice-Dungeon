@@ -205,14 +205,14 @@ class CombatManager:
             self.game.stats["gold_found"] += gold_reward
             self.game.run_score += 500 + (self.game.floor * 50)
             
-            self.game.log(f"[MINI-BOSS DEFEATED]", 'success')
+            self.game.log(f"Mini-boss defeated!", 'success')
             self.game.log(f"+{gold_reward} gold!", 'loot')
             
             # Give Boss Key Fragment (initialize if missing for old saves)
             if not hasattr(self.game, 'key_fragments_collected'):
                 self.game.key_fragments_collected = 0
             self.game.key_fragments_collected += 1
-            self.game.log(f"[KEY FRAGMENT] Obtained Boss Key Fragment! ({self.game.key_fragments_collected}/3)", 'loot')
+            self.game.log(f"Obtained Boss Key Fragment! ({self.game.key_fragments_collected}/3)", 'loot')
             
             # Guaranteed useful loot - scale with floor for better equipment
             if self.game.floor >= 8:
@@ -247,11 +247,11 @@ class CombatManager:
             # When 3rd mini-boss is defeated, set boss spawn target for 4-6 rooms from now
             if self.game.mini_bosses_defeated == 3:
                 self.game.next_boss_at = self.game.rooms_explored_on_floor + random.randint(4, 6)
-                self.game.log(f"[BOSS APPROACHING] The floor boss will appear soon...", 'enemy')
+                self.game.log(f"The floor boss will appear soon...", 'enemy')
             
             # Permanently unlock this room after defeating mini-boss
             self.game.unlocked_rooms.add(self.game.current_pos)
-            self.game.log("[UNLOCKED] This room is now permanently accessible!", 'success')
+            # Room is now permanently accessible (no need to announce)
         else:
             # Normal enemy rewards
             gold_reward = random.randint(10, 30) + (self.game.floor * 5)
@@ -358,7 +358,7 @@ class CombatManager:
         elif is_mini_boss:
             mini_boss_mult = 3.0
             enemy_hp = int(enemy_hp * mini_boss_mult)
-            self.game.log(f"\n[MINI-BOSS] ⚡ {enemy_name.upper()} ⚡", 'enemy')
+            self.game.log(f"\n⚡ {enemy_name.upper()} ⚡ (MINI-BOSS)", 'enemy')
             self.game.log(f"A powerful guardian blocks your path!", 'enemy')
         else:
             if not (is_mini_boss or is_boss):
@@ -408,6 +408,9 @@ class CombatManager:
         
         # Show enemy info in action panel
         self.game.action_panel_enemy_label.config(text=enemy_name)
+        
+        # Track enemy encountered
+        self.game.stats["enemies_encountered"] += 1
         
         if self.game.action_panel_enemy_hp:
             self.game.action_panel_enemy_hp.pack_forget()

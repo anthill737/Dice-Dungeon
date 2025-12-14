@@ -55,14 +55,13 @@ venv.bak/
 
 # Game-specific
 logs/*.log
-dice_dungeon_save_slot_*.json
-dice_dungeon_explorer_save.json
-dice_dungeon_scores.json
-dice_dungeon_settings.json
-adventure_log_*.txt
 
 # Keep the logs directory structure
 !logs/.gitkeep
+
+# User data and save files (kept local, not pushed to GitHub)
+saves/
+*.json.bak
 
 # Temporary files
 *.tmp
