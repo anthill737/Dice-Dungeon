@@ -352,6 +352,10 @@ class InventoryPickupManager:
         # Try to add to inventory
         if len(self.game.inventory) < self.game.max_inventory:
             self.game.inventory.append(item_name)
+            # Track item collection (even for picked up dropped items)
+            if "items_collected" not in self.game.stats:
+                self.game.stats["items_collected"] = {}
+            self.game.stats["items_collected"][item_name] = self.game.stats["items_collected"].get(item_name, 0) + 1
             self.game.current_room.dropped_items.remove(item_name)
             # Don't count dropped items as found (player already had them)
             self.game.log(f"▢ Picked up {item_name}! ({len(self.game.inventory)}/{self.game.max_inventory})", 'loot')

@@ -934,6 +934,10 @@ class NavigationManager:
         for item in chest['items']:
             if len(self.game.inventory) < self.game.max_inventory:
                 self.game.inventory.append(item)
+                # Track item collection
+                if "items_collected" not in self.game.stats:
+                    self.game.stats["items_collected"] = {}
+                self.game.stats["items_collected"][item] = self.game.stats["items_collected"].get(item, 0) + 1
                 self.game.stats["items_found"] += 1
         
         # Add gold

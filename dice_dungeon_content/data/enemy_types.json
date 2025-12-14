@@ -4,7 +4,15 @@
     "split_into_type": "Slime Blob",
     "split_count": 3,
     "split_hp_percent": 0.4,
-    "split_dice": -1
+    "split_dice": -1,
+    "boss_abilities": [
+      {
+        "type": "dice_obscure",
+        "trigger": "combat_start",
+        "duration_turns": 2,
+        "message": "The Gelatinous Slime's translucent body distorts your vision! Your dice values are hidden for 2 turns."
+      }
+    ]
   },
   "Slime Blob": {
     "splits_on_death": false
@@ -17,7 +25,24 @@
     "spawn_count": 2,
     "spawn_type": "Skeleton",
     "spawn_hp_mult": 0.3,
-    "spawn_dice": 2
+    "spawn_dice": 2,
+    "boss_abilities": [
+      {
+        "type": "curse_reroll",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.5,
+        "duration_turns": 3,
+        "message": "The Necromancer curses you! You can only reroll once per turn for the next 3 turns."
+      },
+      {
+        "type": "spawn_on_death",
+        "spawn_type": "Skeleton",
+        "spawn_count": 3,
+        "spawn_hp_mult": 0.4,
+        "spawn_dice": 3,
+        "message": "With its dying breath, the Necromancer raises more Skeletons!"
+      }
+    ]
   },
   "Skeleton": {
     "can_spawn": false
@@ -30,7 +55,17 @@
     "spawn_count": 2,
     "spawn_type": "Shadow Head",
     "spawn_hp_mult": 0.35,
-    "spawn_dice": 2
+    "spawn_dice": 2,
+    "boss_abilities": [
+      {
+        "type": "dice_restrict",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "restricted_values": [1, 2],
+        "duration_turns": 2,
+        "message": "Shadow energy wraps around your dice! You can only roll 1s and 2s for 2 turns."
+      }
+    ]
   },
   "Shadow Head": {
     "can_spawn": false
@@ -43,7 +78,35 @@
     "spawn_count": 1,
     "spawn_type": "Imp",
     "spawn_hp_mult": 0.25,
-    "spawn_dice": 2
+    "spawn_dice": 2,
+    "boss_abilities": [
+      {
+        "type": "curse_damage",
+        "trigger": "combat_start",
+        "damage_per_turn": 3,
+        "duration_turns": 999,
+        "message": "The Demon Lord's aura burns you! You take 3 damage at the start of each turn."
+      },
+      {
+        "type": "transform_on_death",
+        "transform_into": "Demon Prince",
+        "hp_mult": 0.6,
+        "dice_count": 6,
+        "message": "The Demon Lord transforms into a Demon Prince!"
+      }
+    ]
+  },
+  "Demon Prince": {
+    "can_spawn": false,
+    "boss_abilities": [
+      {
+        "type": "dice_obscure",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.5,
+        "duration_turns": 999,
+        "message": "The Demon Prince shrouds your dice in darkness for the rest of combat!"
+      }
+    ]
   },
   "Imp": {
     "can_spawn": false
@@ -53,7 +116,17 @@
     "split_into_type": "Crystal Shard",
     "split_count": 4,
     "split_hp_percent": 0.3,
-    "split_dice": -2
+    "split_dice": -2,
+    "boss_abilities": [
+      {
+        "type": "dice_lock_random",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "lock_count": 2,
+        "duration_turns": 2,
+        "message": "Crystal shards pierce your dice! 2 random dice are frozen at random values this turn."
+      }
+    ]
   },
   "Crystal Shard": {
     "can_spawn": false

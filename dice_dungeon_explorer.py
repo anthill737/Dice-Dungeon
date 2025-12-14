@@ -370,7 +370,10 @@ class DiceDungeonExplorer:
             
             # Enemy-specific tracking
             "enemy_kills": {},  # {enemy_name: count}
-            "most_damaged_enemy": {"name": "", "damage": 0}
+            "most_damaged_enemy": {"name": "", "damage": 0},
+            
+            # Item collection tracking (all items ever collected)
+            "items_collected": {}  # {item_name: count}
         }
         
         # Lore item persistence - track USED entry indices to avoid duplicates
@@ -1107,10 +1110,8 @@ class DiceDungeonExplorer:
         """
         if len(self.inventory) < self.max_inventory:
             self.inventory.append(item_name)
-            
-            # Track items found (not purchases)
-            if source in ["found", "reward"]:
-                self.stats["items_found"] += 1
+            # Track acquisition using centralized function
+            self.inventory_equipment_manager.track_item_acquisition(item_name, source)
             
             if source == "found":
                 self.log(f"Found {item_name}!", 'loot')
@@ -2723,7 +2724,8 @@ class DiceDungeonExplorer:
             item = random.choice(items)
             if len(self.inventory) < self.max_inventory:
                 self.inventory.append(item)
-                self.stats["items_found"] += 1
+                # Track acquisition using centralized function
+                self.inventory_equipment_manager.track_item_acquisition(item, "chest")
                 self.log(f"[CHEST] Opened chest: {item}!", 'loot')
             else:
                 self.log(f"[CHEST] Opened chest: {item}! But inventory is full.", 'system')
@@ -3345,7 +3347,8 @@ class DiceDungeonExplorer:
         for item in chest['items']:
             if len(self.inventory) < self.max_inventory:
                 self.inventory.append(item)
-                self.stats["items_found"] += 1
+                # Track acquisition using centralized function
+                self.inventory_equipment_manager.track_item_acquisition(item, "chest")
         
         # Add gold
         if chest['gold'] > 0:
@@ -5436,21 +5439,10 @@ class DiceDungeonExplorer:
                         "Prayer Strip": 0
                     },
                     "enemy_kills": {},
-                    "most_damaged_enemy": {"name": "", "damage": 0}
+                    "most_damaged_enemy": {"name": "", "damage": 0},
+                    "items_collected": {}  # Track all items ever collected
                 }
             
-            # Restore purchased upgrades for current floor (with backward compatibility)
-            if 'purchased_upgrades_this_floor' in save_data:
-                self.purchased_upgrades_this_floor = set(save_data['purchased_upgrades_this_floor'])
-            else:
-                self.purchased_upgrades_this_floor = set()
-            
-            # Initialize starter area tracking (for saves that don't have these fields)
-            self.in_starter_area = save_data.get('in_starter_area', False)
-            self.starter_chests_opened = save_data.get('starter_chests_opened', [])
-            self.signs_read = save_data.get('signs_read', [])
-            
-            # Convert starter_rooms from list to set (backward compatibility)
             starter_rooms_data = save_data.get('starter_rooms', [])
             self.starter_rooms = set()
             for pos in starter_rooms_data:
@@ -7716,87 +7708,491 @@ Final Score: {self.run_score}
         notebook = ttk.Notebook(self.dialog_frame, style='DevTools.TNotebook')
         notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=(5, 10))
         
-        # ===== TAB 1: SPAWN CONTROLS =====
-        spawn_tab = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
-        notebook.add(spawn_tab, text="Spawning")
+        # ===== TAB 1: ENEMY SPAWNING =====
+        enemy_tab_outer = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
+        notebook.add(enemy_tab_outer, text="Enemies")
         
-        # Enemy spawning
-        tk.Label(spawn_tab, text="Enemy Spawning", font=('Arial', 14, 'bold'),
-                bg=self.current_colors["bg_primary"], fg=self.current_colors["text_gold"]).pack(pady=10)
+        # Create scrollable area for enemy tab
+        enemy_canvas = tk.Canvas(enemy_tab_outer, bg=self.current_colors["bg_primary"], highlightthickness=0)
+        enemy_outer_scrollbar = tk.Scrollbar(enemy_tab_outer, orient="vertical", command=enemy_canvas.yview, width=10)
+        enemy_tab = tk.Frame(enemy_canvas, bg=self.current_colors["bg_primary"])
         
-        enemy_frame = tk.Frame(spawn_tab, bg=self.current_colors["bg_secondary"])
-        enemy_frame.pack(fill=tk.X, padx=20, pady=5)
+        enemy_tab.bind("<Configure>", lambda e: enemy_canvas.configure(scrollregion=enemy_canvas.bbox("all")))
         
-        # Get complete enemy list from all rooms' threats
-        enemy_set = set()
-        if hasattr(self, '_rooms'):
-            for room in self._rooms:
-                enemy_set.update(room.get('threats', []))
-        enemy_list = sorted(list(enemy_set)) if enemy_set else ["Skeleton", "Goblin", "Orc"]
+        def update_enemy_tab_width(event=None):
+            enemy_canvas.itemconfig(enemy_tab_window, width=enemy_canvas.winfo_width()-10)
         
-        tk.Label(enemy_frame, text="Enemy:", bg='#3c2820', fg='#ffffff').grid(row=0, column=0, padx=5, pady=5)
-        enemy_var = tk.StringVar(value=enemy_list[0] if enemy_list else "Skeleton")
-        enemy_combo = ttk.Combobox(enemy_frame, textvariable=enemy_var, values=enemy_list, width=25, state='readonly')
-        enemy_combo.grid(row=0, column=1, padx=5, pady=5)
+        enemy_tab_window = enemy_canvas.create_window((0, 0), window=enemy_tab, anchor="nw")
+        enemy_canvas.bind("<Configure>", update_enemy_tab_width)
+        enemy_canvas.configure(yscrollcommand=enemy_outer_scrollbar.set)
+        
+        self.setup_mousewheel_scrolling(enemy_canvas)
+        
+        enemy_canvas.pack(side="left", fill="both", expand=True)
+        enemy_outer_scrollbar.pack(side="right", fill="y")
+        
+        # Get complete enemy list from sprite system instead of enemy_types.json
+        # This ensures we show ALL enemies, not just those with special mechanics
+        sprite_based_enemies = []
+        if hasattr(self, 'enemy_sprites') and self.enemy_sprites:
+            # Get all enemy names from the sprite system
+            sprite_based_enemies = sorted(list(self.enemy_sprites.keys()))
+        
+        # Also include enemies from enemy_types.json that might not have sprites
+        config_enemies = sorted([name for name in self.enemy_types.keys() if name != '_meta'])
+        
+        # Combine both lists and remove duplicates
+        all_enemies = sorted(list(set(sprite_based_enemies + config_enemies)))
+        enemy_list = all_enemies
+        
+        print(f"DEBUG: Found {len(enemy_list)} total enemies from sprites and config")
+        print(f"DEBUG: Sprite enemies: {len(sprite_based_enemies)}, Config enemies: {len(config_enemies)}")
+        print(f"DEBUG: Sample enemies: {enemy_list[:10]}...")  # Show first 10
+        
+        # Search and filter controls
+        enemy_controls_frame = tk.Frame(enemy_tab, bg=self.current_colors["bg_secondary"])
+        enemy_controls_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(enemy_controls_frame, text="Search:", bg=self.current_colors["bg_secondary"],
+                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+        enemy_search_var = tk.StringVar()
+        enemy_search_entry = tk.Entry(enemy_controls_frame, textvariable=enemy_search_var, width=20)
+        enemy_search_entry.pack(side=tk.LEFT, padx=5)
+        
+        tk.Label(enemy_controls_frame, text="Sort:", bg=self.current_colors["bg_secondary"],
+                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(20, 5))
+        enemy_sort_var = tk.StringVar(value="name_asc")
+        
+        # Sort buttons
+        sort_options = [("name_asc", "A-Z"), ("name_desc", "Z-A"), ("hp_asc", "HP↑"), ("hp_desc", "HP↓")]
+        for sort_type, label in sort_options:
+            def set_enemy_sort(st=sort_type):
+                enemy_sort_var.set(st)
+                refresh_enemy_list()
+            btn = tk.Button(enemy_controls_frame, text=label, command=set_enemy_sort,
+                    font=('Arial', 8), bg=self.current_colors["bg_dark"],
+                    fg=self.current_colors["text_secondary"], width=5, pady=2)
+            btn.pack(side=tk.LEFT, padx=2)
+        
+        # Spawn options
+        options_frame = tk.Frame(enemy_tab, bg=self.current_colors["bg_secondary"])
+        options_frame.pack(fill=tk.X, padx=20, pady=5)
         
         is_boss_var = tk.BooleanVar(value=False)
-        tk.Checkbutton(enemy_frame, text="Boss", variable=is_boss_var, bg='#3c2820', fg='#ffffff',
-                      selectcolor='#000000').grid(row=0, column=2, padx=5)
+        tk.Checkbutton(options_frame, text="Spawn as Boss", variable=is_boss_var, bg=self.current_colors["bg_secondary"],
+                      fg='#ffffff', selectcolor='#000000', font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
         
         is_miniboss_var = tk.BooleanVar(value=False)
-        tk.Checkbutton(enemy_frame, text="Mini-Boss", variable=is_miniboss_var, bg='#3c2820', fg='#ffffff',
-                      selectcolor='#000000').grid(row=0, column=3, padx=5)
+        tk.Checkbutton(options_frame, text="Spawn as Mini-Boss", variable=is_miniboss_var, bg=self.current_colors["bg_secondary"],
+                      fg='#ffffff', selectcolor='#000000', font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
         
-        def spawn_enemy():
-            enemy_name = enemy_var.get()
-            is_boss = is_boss_var.get()
-            is_miniboss = is_miniboss_var.get()
-            self.trigger_combat(enemy_name, is_mini_boss=is_miniboss, is_boss=is_boss)
-            self.log(f"🛠 DEV: Spawned {enemy_name}", 'system')
+        # Create scrollable canvas for enemy list
+        enemy_list_canvas = tk.Canvas(enemy_tab, bg=self.current_colors["bg_primary"], highlightthickness=0, height=400)
+        enemy_list_scrollbar = tk.Scrollbar(enemy_tab, orient="vertical", command=enemy_list_canvas.yview, width=10)
+        enemy_scroll_frame = tk.Frame(enemy_list_canvas, bg=self.current_colors["bg_primary"])
         
-        tk.Button(enemy_frame, text="Spawn Enemy", command=spawn_enemy,
-                 bg='#e74c3c', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=1, column=0, columnspan=4, pady=10)
+        enemy_scroll_frame.bind("<Configure>", lambda e: enemy_list_canvas.configure(scrollregion=enemy_list_canvas.bbox("all")))
         
-        # Item spawning
-        tk.Label(spawn_tab, text="Item Spawning", font=('Arial', 14, 'bold'),
-                bg='#2c1810', fg='#f39c12').pack(pady=10)
+        def update_enemy_list_width(event=None):
+            enemy_list_canvas.itemconfig(enemy_list_window, width=enemy_list_canvas.winfo_width()-10)
         
-        item_frame = tk.Frame(spawn_tab, bg='#3c2820')
-        item_frame.pack(fill=tk.X, padx=20, pady=5)
+        enemy_list_window = enemy_list_canvas.create_window((0, 0), window=enemy_scroll_frame, anchor="nw")
+        enemy_list_canvas.bind("<Configure>", update_enemy_list_width)
+        enemy_list_canvas.configure(yscrollcommand=enemy_list_scrollbar.set)
+        
+        self.setup_mousewheel_scrolling(enemy_list_canvas)
+        
+        enemy_list_canvas.pack(side="left", fill="both", expand=True, padx=(20, 0))
+        enemy_list_scrollbar.pack(side="left", fill="y", padx=(0, 20))
+        
+        def calculate_enemy_stats(enemy_name, as_boss=False, as_mini_boss=False):
+            """Calculate enemy stats using exact same logic as trigger_combat"""
+            # Base stats
+            base_hp = 30 + (self.floor * 10)
+            
+            # Add enemy-specific HP multipliers based on enemy name/type
+            enemy_hp_multipliers = {
+                # Weak enemies
+                "Goblin": 0.7, "Rat": 0.6, "Spider": 0.6, "Imp": 0.7, "Slime": 0.8,
+                "Bat": 0.5, "Sprite": 0.6, "Wisp": 0.5, "Grub": 0.4,
+                
+                # Normal enemies (1.0 multiplier - default)
+                "Skeleton": 1.0, "Orc": 1.0, "Zombie": 1.1, "Bandit": 0.9,
+                
+                # Strong enemies
+                "Troll": 1.5, "Ogre": 1.4, "Knight": 1.3, "Guard": 1.2, "Warrior": 1.1,
+                "Beast": 1.3, "Wolf": 1.1, "Bear": 1.4, "Boar": 1.2,
+                
+                # Elite enemies
+                "Demon": 2.0, "Dragon": 2.5, "Lich": 1.8, "Vampire": 1.6, "Wraith": 1.4,
+                "Golem": 2.2, "Hydra": 2.3, "Phoenix": 2.0, "Titan": 2.8,
+                
+                # Special/Boss enemies
+                "Lord": 3.0, "King": 3.5, "Ancient": 3.2, "Primordial": 4.0,
+                "Crystal Golem": 1.8, "Shadow Hydra": 2.1, "Necromancer": 1.6,
+                "Gelatinous Slime": 1.3, "Demon Lord": 2.8, "Demon Prince": 2.4
+            }
+            
+            # Find multiplier for this enemy (check for partial name matches)
+            multiplier = 1.0  # Default
+            enemy_lower = enemy_name.lower()
+            
+            for enemy_key, mult in enemy_hp_multipliers.items():
+                if enemy_key.lower() in enemy_lower:
+                    multiplier = mult
+                    break
+            
+            # Apply enemy-specific multiplier
+            base_hp = int(base_hp * multiplier)
+            hp_min = base_hp - 5
+            hp_max = base_hp + 10
+            
+            # Dice calculation
+            if as_boss:
+                dice_count = min(5 + (self.floor // 2), 8)
+            elif as_mini_boss:
+                dice_count = min(4 + (self.floor // 2), 7)
+            else:
+                dice_count = min(3 + (self.floor // 2), 6)
+            
+            # Apply boss multipliers
+            if as_boss:
+                hp_min = int(hp_min * 8.0)
+                hp_max = int(hp_max * 8.0)
+            elif as_mini_boss:
+                hp_min = int(hp_min * 3.0)
+                hp_max = int(hp_max * 3.0)
+            
+            # Apply difficulty multiplier
+            difficulty = self.settings.get("difficulty", "Normal")
+            diff_mult = self.difficulty_multipliers[difficulty]["enemy_health_mult"]
+            hp_min = int(hp_min * diff_mult)
+            hp_max = int(hp_max * diff_mult)
+            
+            # Apply dev multipliers
+            hp_min = int(hp_min * self.dev_config["enemy_hp_mult"])
+            hp_max = int(hp_max * self.dev_config["enemy_hp_mult"])
+            dice_count = int(dice_count * self.dev_config["enemy_dice_mult"])
+            
+            return hp_min, hp_max, dice_count
+        
+        def get_enemy_category(enemy_name):
+            enemy_config = self.enemy_types.get(enemy_name, {})
+            if enemy_config.get("can_spawn") or enemy_config.get("splits_on_death"):
+                return "Spawner"
+            
+            # Use calculated HP to determine category
+            hp_min, hp_max, _ = calculate_enemy_stats(enemy_name)
+            avg_hp = (hp_min + hp_max) / 2
+            
+            if avg_hp >= 150:
+                return "Boss"
+            elif avg_hp >= 80:
+                return "Elite"
+            return "Regular"
+        
+        def refresh_enemy_list():
+            for widget in enemy_scroll_frame.winfo_children():
+                widget.destroy()
+            
+            search_term = enemy_search_var.get().lower()
+            current_sort = enemy_sort_var.get()
+            
+            # Filter enemies by search
+            filtered_enemies = []
+            for enemy_name in enemy_list:
+                if search_term and search_term not in enemy_name.lower():
+                    continue
+                filtered_enemies.append(enemy_name)
+            
+            # Sort enemies
+            if current_sort == "name_asc":
+                filtered_enemies.sort()
+            elif current_sort == "name_desc":
+                filtered_enemies.sort(reverse=True)
+            elif current_sort == "hp_asc":
+                filtered_enemies.sort(key=lambda x: calculate_enemy_stats(x)[0])  # Sort by min HP
+            elif current_sort == "hp_desc":
+                filtered_enemies.sort(key=lambda x: calculate_enemy_stats(x)[0], reverse=True)  # Sort by min HP
+            
+            print(f"DEBUG: Filtered enemies: {len(filtered_enemies)} of {len(enemy_list)}")
+            
+            if not filtered_enemies:
+                tk.Label(enemy_scroll_frame, text="No enemies found", font=('Arial', 10, 'italic'),
+                        bg=self.current_colors["bg_primary"], fg=self.current_colors["text_secondary"]).pack(pady=20)
+                return
+            
+            for enemy_name in filtered_enemies:
+                enemy_config = self.enemy_types.get(enemy_name, {})
+                category = get_enemy_category(enemy_name)
+                
+                # Calculate accurate stats for regular enemy
+                hp_min, hp_max, dice_count = calculate_enemy_stats(enemy_name, 
+                                                                   as_boss=is_boss_var.get(), 
+                                                                   as_mini_boss=is_miniboss_var.get())
+                
+                row_frame = tk.Frame(enemy_scroll_frame, bg=self.current_colors["bg_dark"])
+                row_frame.pack(fill=tk.X, padx=5, pady=1)
+                
+                def spawn_this_enemy(name=enemy_name):
+                    self.trigger_combat(name, is_mini_boss=is_miniboss_var.get(), is_boss=is_boss_var.get())
+                    self.log(f"🛠 DEV: Spawned {name}", 'system')
+                    self.close_dialog()
+                
+                # Make row clickable
+                row_frame.bind("<Button-1>", lambda e, name=enemy_name: spawn_this_enemy(name))
+                row_frame.config(cursor="hand2")
+                
+                # Category badge
+                badge_colors = {"Regular": "#95a5a6", "Elite": "#f39c12", "Boss": "#e74c3c", "Spawner": "#9b59b6"}
+                badge = tk.Label(row_frame, text=f"[{category}]", font=('Arial', 7),
+                        bg=badge_colors.get(category, "#95a5a6"), fg='#ffffff')
+                badge.pack(side=tk.LEFT, padx=2)
+                badge.bind("<Button-1>", lambda e, name=enemy_name: spawn_this_enemy(name))
+                badge.config(cursor="hand2")
+                
+                # Enemy name
+                name_label = tk.Label(row_frame, text=f"☠ {enemy_name}", font=('Arial', 9),
+                        bg=self.current_colors["bg_dark"], fg=self.current_colors["text_secondary"])
+                name_label.pack(side=tk.LEFT, pady=2, padx=5)
+                name_label.bind("<Button-1>", lambda e, name=enemy_name: spawn_this_enemy(name))
+                name_label.config(cursor="hand2")
+                
+                # Stats - show range if different, single value if same
+                if hp_min == hp_max:
+                    hp_text = f"HP:{hp_min}"
+                else:
+                    hp_text = f"HP:{hp_min}-{hp_max}"
+                
+                stats_label = tk.Label(row_frame, text=f"{hp_text} | Dice:{dice_count}", font=('Arial', 8),
+                        bg=self.current_colors["bg_dark"], fg=self.current_colors["text_gold"])
+                stats_label.pack(side=tk.RIGHT, padx=5)
+                stats_label.bind("<Button-1>", lambda e, name=enemy_name: spawn_this_enemy(name))
+                stats_label.config(cursor="hand2")
+        
+        enemy_search_var.trace('w', lambda *args: refresh_enemy_list())
+        refresh_enemy_list()
+        
+        # ===== TAB 2: ITEM SPAWNING =====
+        item_tab_outer = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
+        notebook.add(item_tab_outer, text="Items")
+        
+        # Create scrollable area for item tab
+        item_outer_canvas = tk.Canvas(item_tab_outer, bg=self.current_colors["bg_primary"], highlightthickness=0)
+        item_outer_scrollbar = tk.Scrollbar(item_tab_outer, orient="vertical", command=item_outer_canvas.yview, width=10)
+        item_tab = tk.Frame(item_outer_canvas, bg=self.current_colors["bg_primary"])
+        
+        item_tab.bind("<Configure>", lambda e: item_outer_canvas.configure(scrollregion=item_outer_canvas.bbox("all")))
+        
+        def update_item_tab_width(event=None):
+            item_outer_canvas.itemconfig(item_tab_window, width=item_outer_canvas.winfo_width()-10)
+        
+        item_tab_window = item_outer_canvas.create_window((0, 0), window=item_tab, anchor="nw")
+        item_outer_canvas.bind("<Configure>", update_item_tab_width)
+        item_outer_canvas.configure(yscrollcommand=item_outer_scrollbar.set)
+        
+        self.setup_mousewheel_scrolling(item_outer_canvas)
+        
+        item_outer_canvas.pack(side="left", fill="both", expand=True)
+        item_outer_scrollbar.pack(side="right", fill="y")
         
         # Get complete item list from item_definitions (excluding _meta)
         item_list = sorted([item for item in self.item_definitions.keys() if item != '_meta'])
+        print(f"DEBUG: Found {len(item_list)} items: {item_list[:10]}...")  # Show first 10
         
-        tk.Label(item_frame, text="Item:", bg='#3c2820', fg='#ffffff').grid(row=0, column=0, padx=5, pady=5)
-        item_var = tk.StringVar(value=item_list[0] if item_list else "Health Potion")
-        item_combo = ttk.Combobox(item_frame, textvariable=item_var, values=item_list, width=25, state='readonly')
-        item_combo.grid(row=0, column=1, padx=5, pady=5)
+        # Search and filter controls
+        item_controls_frame = tk.Frame(item_tab, bg=self.current_colors["bg_secondary"])
+        item_controls_frame.pack(fill=tk.X, padx=20, pady=10)
         
-        def give_item():
-            item_name = item_var.get()
-            if len(self.inventory) < self.max_inventory:
-                self.inventory.append(item_name)
-                self.log(f"🛠 DEV: Added {item_name} to inventory", 'success')
-                self.update_display()
+        tk.Label(item_controls_frame, text="Search:", bg=self.current_colors["bg_secondary"],
+                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+        item_search_var = tk.StringVar()
+        item_search_entry = tk.Entry(item_controls_frame, textvariable=item_search_var, width=20)
+        item_search_entry.pack(side=tk.LEFT, padx=5)
+        
+        tk.Label(item_controls_frame, text="Filter:", bg=self.current_colors["bg_secondary"],
+                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(20, 5))
+        
+        item_filter_var = tk.StringVar(value="All")
+        item_categories = ["All", "Weapon", "Armor", "Accessory", "Consumable", "Combat Item", "Utility", "Upgrade", "Repair Kit", "Other"]
+        
+        # Filter buttons
+        for category in item_categories:
+            def set_item_filter(cat=category):
+                item_filter_var.set(cat)
+                refresh_item_list()
+            btn = tk.Button(item_controls_frame, text=category, command=set_item_filter,
+                    font=('Arial', 7), bg=self.current_colors["bg_dark"],
+                    fg=self.current_colors["text_secondary"], padx=3, pady=2)
+            btn.pack(side=tk.LEFT, padx=1)
+        
+        tk.Label(item_controls_frame, text="Sort:", bg=self.current_colors["bg_secondary"],
+                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(20, 5))
+        item_sort_var = tk.StringVar(value="name_asc")
+        
+        # Sort buttons
+        item_sort_options = [("name_asc", "A-Z"), ("name_desc", "Z-A"), ("type_asc", "Type")]
+        for sort_type, label in item_sort_options:
+            def set_item_sort(st=sort_type):
+                item_sort_var.set(st)
+                refresh_item_list()
+            btn = tk.Button(item_controls_frame, text=label, command=set_item_sort,
+                    font=('Arial', 8), bg=self.current_colors["bg_dark"],
+                    fg=self.current_colors["text_secondary"], width=5, pady=2)
+            btn.pack(side=tk.LEFT, padx=2)
+        
+        # Create scrollable canvas for item list
+        item_canvas = tk.Canvas(item_tab, bg=self.current_colors["bg_primary"], highlightthickness=0, height=400)
+        item_scrollbar = tk.Scrollbar(item_tab, orient="vertical", command=item_canvas.yview, width=10)
+        item_scroll_frame = tk.Frame(item_canvas, bg=self.current_colors["bg_primary"])
+        
+        item_scroll_frame.bind("<Configure>", lambda e: item_canvas.configure(scrollregion=item_canvas.bbox("all")))
+        
+        def update_item_width(event=None):
+            item_canvas.itemconfig(item_canvas_window, width=item_canvas.winfo_width()-10)
+        
+        item_canvas_window = item_canvas.create_window((0, 0), window=item_scroll_frame, anchor="nw")
+        item_canvas.bind("<Configure>", update_item_width)
+        item_canvas.configure(yscrollcommand=item_scrollbar.set)
+        
+        self.setup_mousewheel_scrolling(item_canvas)
+        
+        item_canvas.pack(side="left", fill="both", expand=True, padx=(20, 0))
+        item_scrollbar.pack(side="left", fill="y", padx=(0, 20))
+        
+        def get_item_category(item_name):
+            item_def = self.item_definitions.get(item_name, {})
+            item_type = item_def.get("type", "other")
+            slot = item_def.get("slot", None)
+            
+            if slot == "weapon":
+                return "Weapon"
+            elif slot == "armor":
+                return "Armor"
+            elif slot == "accessory":
+                return "Accessory"
+            elif item_type in ["heal", "potion"]:
+                return "Consumable"
+            elif item_type == "upgrade":
+                return "Upgrade"
+            elif item_type in ["buff", "shield"]:
+                return "Combat Item"
+            elif item_type in ["token", "tool", "cleanse"]:
+                return "Utility"
+            elif item_type == "repair":
+                return "Repair Kit"
             else:
-                self.log("Inventory full!", 'warning')
+                return "Other"
         
-        def spawn_item_room():
-            item_name = item_var.get()
-            if hasattr(self, 'current_room') and self.current_room:
-                self.current_room.ground_items.append(item_name)
-                self.log(f"🛠 DEV: Spawned {item_name} in room", 'success')
-            else:
-                self.log("No active room!", 'warning')
+        def refresh_item_list():
+            for widget in item_scroll_frame.winfo_children():
+                widget.destroy()
+            
+            search_term = item_search_var.get().lower()
+            current_filter = item_filter_var.get()
+            current_sort = item_sort_var.get()
+            
+            # Filter items
+            filtered_items = []
+            for item_name in item_list:
+                if search_term and search_term not in item_name.lower():
+                    continue
+                category = get_item_category(item_name)
+                if current_filter != "All" and category != current_filter:
+                    continue
+                filtered_items.append(item_name)
+            
+            # Sort items
+            if current_sort == "name_asc":
+                filtered_items.sort()
+            elif current_sort == "name_desc":
+                filtered_items.sort(reverse=True)
+            elif current_sort == "type_asc":
+                filtered_items.sort(key=lambda x: get_item_category(x))
+            
+            if not filtered_items:
+                tk.Label(item_scroll_frame, text="No items found", font=('Arial', 10, 'italic'),
+                        bg=self.current_colors["bg_primary"], fg=self.current_colors["text_secondary"]).pack(pady=20)
+                return
+            
+            for item_name in filtered_items:
+                item_def = self.item_definitions.get(item_name, {})
+                category = get_item_category(item_name)
+                
+                row_frame = tk.Frame(item_scroll_frame, bg=self.current_colors["bg_dark"])
+                row_frame.pack(fill=tk.X, padx=5, pady=1)
+                
+                # Category badge
+                badge_colors = {
+                    "Weapon": "#e74c3c", "Armor": "#3498db", "Accessory": "#9b59b6",
+                    "Consumable": "#27ae60", "Combat Item": "#e67e22", "Utility": "#f39c12",
+                    "Upgrade": "#1abc9c", "Repair Kit": "#95a5a6", "Other": "#7f8c8d"
+                }
+                tk.Label(row_frame, text=f"[{category}]", font=('Arial', 7),
+                        bg=badge_colors.get(category, "#95a5a6"), fg='#ffffff').pack(side=tk.LEFT, padx=2)
+                
+                # Item name
+                name_label = tk.Label(row_frame, text=f"📦 {item_name}", font=('Arial', 9),
+                        bg=self.current_colors["bg_dark"], fg=self.current_colors["text_secondary"])
+                name_label.pack(side=tk.LEFT, pady=2, padx=5)
+                
+                # Action buttons
+                def give_this_item(name=item_name):
+                    if len(self.inventory) < self.max_inventory:
+                        self.inventory.append(name)
+                        # Track item collection
+                        if "items_collected" not in self.stats:
+                            self.stats["items_collected"] = {}
+                        self.stats["items_collected"][name] = self.stats["items_collected"].get(name, 0) + 1
+                        # Track items found for dev spawning
+                        self.stats["items_found"] += 1
+                        self.log(f"🛠 DEV: Added {name} to inventory", 'success')
+                        self.update_display()
+                    else:
+                        self.log("Inventory full!", 'warning')
+                
+                def spawn_this_item(name=item_name):
+                    if hasattr(self, 'current_room') and self.current_room:
+                        self.current_room.ground_items.append(name)
+                        self.log(f"🛠 DEV: Spawned {name} in room", 'success')
+                    else:
+                        self.log("No active room!", 'warning')
+                
+                btn_frame = tk.Frame(row_frame, bg=self.current_colors["bg_dark"])
+                btn_frame.pack(side=tk.RIGHT, padx=2)
+                
+                tk.Button(btn_frame, text="Give", command=give_this_item,
+                         bg='#3498db', fg='#ffffff', font=('Arial', 7, 'bold'),
+                         padx=4, pady=1).pack(side=tk.LEFT, padx=1)
+                tk.Button(btn_frame, text="Spawn", command=spawn_this_item,
+                         bg='#27ae60', fg='#ffffff', font=('Arial', 7, 'bold'),
+                         padx=4, pady=1).pack(side=tk.LEFT, padx=1)
         
-        tk.Button(item_frame, text="Give to Player", command=give_item,
-                 bg='#3498db', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=1, column=0, padx=5, pady=10)
-        tk.Button(item_frame, text="Spawn in Room", command=spawn_item_room,
-                 bg='#3498db', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=1, column=1, padx=5, pady=10)
+        item_search_var.trace('w', lambda *args: refresh_item_list())
+        refresh_item_list()
         
-        # ===== TAB 2: PLAYER CONTROLS =====
-        player_tab = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
-        notebook.add(player_tab, text="Player")
+        # ===== TAB 3: PLAYER CONTROLS =====
+        player_tab_outer = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
+        notebook.add(player_tab_outer, text="Player")
+        
+        # Create scrollable area for player tab
+        player_outer_canvas = tk.Canvas(player_tab_outer, bg=self.current_colors["bg_primary"], highlightthickness=0)
+        player_outer_scrollbar = tk.Scrollbar(player_tab_outer, orient="vertical", command=player_outer_canvas.yview, width=10)
+        player_tab = tk.Frame(player_outer_canvas, bg=self.current_colors["bg_primary"])
+        
+        player_tab.bind("<Configure>", lambda e: player_outer_canvas.configure(scrollregion=player_outer_canvas.bbox("all")))
+        
+        def update_player_tab_width(event=None):
+            player_outer_canvas.itemconfig(player_tab_window, width=player_outer_canvas.winfo_width()-10)
+        
+        player_tab_window = player_outer_canvas.create_window((0, 0), window=player_tab, anchor="nw")
+        player_outer_canvas.bind("<Configure>", update_player_tab_width)
+        player_outer_canvas.configure(yscrollcommand=player_outer_scrollbar.set)
+        
+        self.setup_mousewheel_scrolling(player_outer_canvas)
+        
+        player_outer_canvas.pack(side="left", fill="both", expand=True)
+        player_outer_scrollbar.pack(side="right", fill="y")
         
         # Gold controls
         tk.Label(player_tab, text="Gold Management", font=('Arial', 14, 'bold'),

@@ -540,6 +540,9 @@ def _populate_stats_tab(game: 'DiceDungeonExplorer', parent):
         ("Containers Searched", stats_data.get("containers_searched", 0))
     ])
     
+    # Items Codex - sortable list of all items collected
+    _add_sortable_codex_section(game, scrollable_frame, "📦 ITEMS COLLECTED", "items", canvas)
+    
     _add_stats_section(game, scrollable_frame, "◊️ EQUIPMENT", [
         ("Weapons Broken", stats_data.get("weapons_broken", 0)),
         ("Armor Broken", stats_data.get("armor_broken", 0)),
@@ -561,6 +564,9 @@ def _populate_stats_tab(game: 'DiceDungeonExplorer', parent):
         ("Old Letters", f"{lore_data.get('Old Letter', 0)}/12"),
         ("Prayer Strips", f"{lore_data.get('Prayer Strip', 0)}/10")
     ])
+    
+    # Enemy Codex - sortable list of all enemies defeated
+    _add_sortable_codex_section(game, scrollable_frame, "⚔️ ENEMIES DEFEATED", "enemies", canvas)
     
     _add_stats_section(game, scrollable_frame, "🗺️ EXPLORATION", [
         ("Rooms Explored", stats_data.get("rooms_explored", 0)),
@@ -607,6 +613,313 @@ def _add_stats_section(game: 'DiceDungeonExplorer', parent, title, items):
                 font=('Arial', 10, 'bold'),
                 bg=game.current_colors["bg_dark"],
                 fg=game.current_colors["text_gold"]).pack(side=tk.RIGHT)
+
+
+def _add_sortable_codex_section(game: 'DiceDungeonExplorer', parent, title, codex_type, parent_canvas):
+    """Add an expandable, sortable codex section for items or enemies"""
+    print(f"DEBUG: Creating sortable codex section: {title} (type: {codex_type})")
+    section_frame = tk.Frame(parent, bg=game.current_colors["bg_dark"], relief=tk.RAISED, borderwidth=2)
+    section_frame.pack(fill=tk.X, padx=10, pady=8)
+    
+    # Define category functions for both types
+    def get_enemy_category(enemy_name):
+        """Determine enemy category based on stats and definitions"""
+        enemy_config = game.enemy_types.get(enemy_name, {})
+        
+        if enemy_config.get("can_spawn") or enemy_config.get("splits_on_death"):
+            return "Spawner"
+        
+        # Check if this was encountered as a boss (lower kill counts typically)
+        kill_count = data_dict.get(enemy_name, 0)
+        if kill_count <= 3:  # Likely a boss/mini-boss
+            return "Boss/Elite"
+        
+        return "Regular"
+    
+    def get_item_category(item_name):
+        """Determine item category from item_definitions"""
+        item_def = game.item_definitions.get(item_name, {})
+        item_type = item_def.get("type", "other")
+        slot = item_def.get("slot", None)
+        
+        # Map types to display categories
+        if slot == "weapon":
+            return "Weapon"
+        elif slot == "armor":
+            return "Armor"
+        elif slot == "accessory":
+            return "Accessory"
+        elif item_type in ["heal", "potion"]:
+            return "Consumable"
+        elif item_type == "upgrade":
+            return "Upgrade"
+        elif item_type in ["buff", "shield"]:
+            return "Combat Item"
+        elif item_type in ["token", "tool", "cleanse"]:
+            return "Utility"
+        elif item_type == "repair":
+            return "Repair Kit"
+        else:
+            return "Other"
+    
+    # Get data based on type
+    if codex_type == "enemies":
+        data_dict = game.stats.get("enemy_kills", {})
+        icon = "☠"
+    else:  # items
+        # Track all items ever collected (not just current inventory)
+        data_dict = game.stats.get("items_collected", {})
+        
+        # ONE-TIME MIGRATION: For older saves without items_collected tracking,
+        # populate it with current inventory items to show something useful
+        if not data_dict and hasattr(game, 'inventory') and game.inventory:
+            print("DEBUG: Migrating inventory to items_collected for older save")
+            data_dict = {}
+            # Count all items in current inventory
+            for item in game.inventory:
+                data_dict[item] = data_dict.get(item, 0) + 1
+            # Also count equipped items
+            for slot, equipped_item in game.equipped_items.items():
+                if equipped_item:
+                    data_dict[equipped_item] = data_dict.get(equipped_item, 0) + 1
+            # Save this to the stats so it persists
+            game.stats["items_collected"] = data_dict
+            print(f"DEBUG: Migrated {len(data_dict)} unique items, total {sum(data_dict.values())} items")
+        icon = "📦"
+    
+    if not data_dict:
+        # Show empty message
+        tk.Label(section_frame, text=title,
+                font=('Arial', 12, 'bold'),
+                bg=game.current_colors["bg_dark"],
+                fg=game.current_colors["text_cyan"]).pack(anchor=tk.W, padx=10, pady=5)
+        tk.Label(section_frame, text="None yet",
+                font=('Arial', 10, 'italic'),
+                bg=game.current_colors["bg_dark"],
+                fg=game.current_colors["text_secondary"]).pack(padx=15, pady=5)
+        return
+    
+    # Track expanded state and filter
+    codex_key = f"_{codex_type}_codex_expanded"
+    sort_key = f"_{codex_type}_codex_sort"
+    filter_key = f"_{codex_type}_codex_filter"
+    if not hasattr(game, codex_key):
+        setattr(game, codex_key, False)
+    if not hasattr(game, sort_key):
+        setattr(game, sort_key, "count_desc")  # Default sort
+    if not hasattr(game, filter_key):
+        setattr(game, filter_key, "All")  # Default filter
+    
+    # Header with expand/collapse
+    header_frame = tk.Frame(section_frame, bg=game.current_colors["bg_dark"], cursor="hand2")
+    header_frame.pack(fill=tk.X)
+    
+    expanded = getattr(game, codex_key)
+    arrow = "▼" if expanded else "►"
+    arrow_label = tk.Label(header_frame, text=arrow, font=('Arial', 10),
+            bg=game.current_colors["bg_dark"], fg=game.current_colors["text_cyan"], width=2)
+    arrow_label.pack(side=tk.LEFT, padx=(5, 0))
+    
+    title_label = tk.Label(header_frame, text=title,
+            font=('Arial', 12, 'bold'),
+            bg=game.current_colors["bg_dark"],
+            fg=game.current_colors["text_cyan"])
+    title_label.pack(side=tk.LEFT, padx=5, pady=5)
+    
+    count_label = tk.Label(header_frame, text=f"{len(data_dict)} unique",
+            font=('Arial', 10),
+            bg=game.current_colors["bg_dark"],
+            fg=game.current_colors["text_gold"])
+    count_label.pack(side=tk.RIGHT, padx=10)
+    
+    # Content frame (collapsible)
+    content_frame = tk.Frame(section_frame, bg=game.current_colors["bg_secondary"])
+    
+    def refresh_content():
+        """Refresh the content with current sort order and filter"""
+        for widget in content_frame.winfo_children():
+            widget.destroy()
+        
+        # Filter controls (category filter)
+        filter_frame = tk.Frame(content_frame, bg=game.current_colors["bg_secondary"])
+        filter_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        tk.Label(filter_frame, text="Filter:",
+                font=('Arial', 9, 'bold'),
+                bg=game.current_colors["bg_secondary"],
+                fg=game.current_colors["text_cyan"]).pack(side=tk.LEFT, padx=5)
+        
+        # Get available categories
+        if codex_type == "enemies":
+            categories = ["All", "Regular", "Boss/Elite"]
+        else:  # items
+            categories = ["All", "Weapon", "Armor", "Accessory", "Consumable", "Combat Item", "Utility", "Upgrade", "Repair Kit", "Other"]
+        
+        current_filter = getattr(game, filter_key)
+        
+        def set_filter(filter_type):
+            setattr(game, filter_key, filter_type)
+            refresh_content()
+            parent_canvas.update_idletasks()
+            parent_canvas.configure(scrollregion=parent_canvas.bbox("all"))
+        
+        for category in categories:
+            bg_color = game.current_colors["text_purple"] if current_filter == category else game.current_colors["bg_dark"]
+            fg_color = "#ffffff" if current_filter == category else game.current_colors["text_secondary"]
+            btn = tk.Button(filter_frame, text=category,
+                    command=lambda c=category: set_filter(c),
+                    font=('Arial', 8),
+                    bg=bg_color, fg=fg_color,
+                    padx=8, pady=2)
+            btn.pack(side=tk.LEFT, padx=2)
+        
+        # Sort controls
+        controls_frame = tk.Frame(content_frame, bg=game.current_colors["bg_secondary"])
+        controls_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        tk.Label(controls_frame, text="Sort:",
+                font=('Arial', 9, 'bold'),
+                bg=game.current_colors["bg_secondary"],
+                fg=game.current_colors["text_cyan"]).pack(side=tk.LEFT, padx=5)
+        
+        # Sort option buttons
+        current_sort = getattr(game, sort_key)
+        
+        def set_sort(sort_type):
+            setattr(game, sort_key, sort_type)
+            refresh_content()
+            parent_canvas.update_idletasks()
+            parent_canvas.configure(scrollregion=parent_canvas.bbox("all"))
+        
+        sort_options = [
+            ("count_desc", "Count ↓"),
+            ("count_asc", "Count ↑"),
+            ("name_asc", "Name A-Z"),
+            ("name_desc", "Name Z-A")
+        ]
+        
+        for sort_type, label in sort_options:
+            bg_color = game.current_colors["text_cyan"] if current_sort == sort_type else game.current_colors["bg_dark"]
+            fg_color = "#000000" if current_sort == sort_type else game.current_colors["text_secondary"]
+            btn = tk.Button(controls_frame, text=label,
+                    command=lambda st=sort_type: set_sort(st),
+                    font=('Arial', 8),
+                    bg=bg_color, fg=fg_color,
+                    width=10, pady=2)
+            btn.pack(side=tk.LEFT, padx=2)
+        
+        # Filter data by category
+        filtered_data = {}
+        for name, count in data_dict.items():
+            if codex_type == "enemies":
+                category = get_enemy_category(name)
+            else:
+                category = get_item_category(name)
+            
+            if current_filter == "All" or category == current_filter:
+                filtered_data[name] = count
+        
+        # Sort filtered data
+        if current_sort == "count_desc":
+            sorted_data = sorted(filtered_data.items(), key=lambda x: x[1], reverse=True)
+        elif current_sort == "count_asc":
+            sorted_data = sorted(filtered_data.items(), key=lambda x: x[1])
+        elif current_sort == "name_asc":
+            sorted_data = sorted(filtered_data.items(), key=lambda x: x[0].lower())
+        else:  # name_desc
+            sorted_data = sorted(filtered_data.items(), key=lambda x: x[0].lower(), reverse=True)
+        
+        # Show count of filtered results
+        if current_filter != "All":
+            tk.Label(content_frame, text=f"Showing {len(sorted_data)} {current_filter.lower()} entries",
+                    font=('Arial', 9, 'italic'),
+                    bg=game.current_colors["bg_secondary"],
+                    fg=game.current_colors["text_secondary"]).pack(pady=5)
+        
+        # Create scrollable area for items list (like store menus)
+        list_canvas = tk.Canvas(content_frame, bg=game.current_colors["bg_primary"], 
+                               highlightthickness=0, height=300)
+        scrollbar = tk.Scrollbar(content_frame, orient="vertical", command=list_canvas.yview, width=10)
+        scroll_frame = tk.Frame(list_canvas, bg=game.current_colors["bg_primary"])
+        
+        scroll_frame.bind("<Configure>", lambda e: list_canvas.configure(scrollregion=list_canvas.bbox("all")))
+        
+        def update_width(event=None):
+            list_canvas.itemconfig(canvas_window, width=list_canvas.winfo_width()-10)
+        
+        canvas_window = list_canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        list_canvas.bind("<Configure>", update_width)
+        list_canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Setup mousewheel scrolling
+        game.setup_mousewheel_scrolling(list_canvas)
+        
+        list_canvas.pack(side="left", fill="both", expand=True, padx=10)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Display items
+        if not sorted_data:
+            tk.Label(scroll_frame, text=f"No {current_filter.lower()} entries",
+                    font=('Arial', 9, 'italic'),
+                    bg=game.current_colors["bg_primary"],
+                    fg=game.current_colors["text_secondary"]).pack(pady=10)
+        else:
+            for name, count in sorted_data:
+                item_row = tk.Frame(scroll_frame, bg=game.current_colors["bg_dark"])
+                item_row.pack(fill=tk.X, padx=5, pady=1)
+                
+                # Show category badge for items
+                if codex_type == "items":
+                    category = get_item_category(name)
+                    category_badge = tk.Label(item_row, text=f"[{category}]",
+                            font=('Arial', 7),
+                            bg=game.current_colors["bg_dark"],
+                            fg=game.current_colors["text_purple"])
+                    category_badge.pack(side=tk.LEFT, padx=2)
+                
+                tk.Label(item_row, text=f"{icon} {name}",
+                        font=('Arial', 9),
+                        bg=game.current_colors["bg_dark"],
+                        fg=game.current_colors["text_secondary"]).pack(side=tk.LEFT, pady=2)
+                
+                tk.Label(item_row, text=str(count),
+                        font=('Arial', 9, 'bold'),
+                        bg=game.current_colors["bg_dark"],
+                        fg=game.current_colors["text_gold"]).pack(side=tk.RIGHT, padx=5)
+        
+        # Bind mousewheel to all child widgets
+        def bind_mousewheel_to_tree(widget):
+            def on_mousewheel(event):
+                list_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            widget.bind("<MouseWheel>", on_mousewheel, add='+')
+            for child in widget.winfo_children():
+                bind_mousewheel_to_tree(child)
+        
+        bind_mousewheel_to_tree(scroll_frame)
+    
+    if expanded:
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        refresh_content()
+    
+    def toggle_codex(event=None):
+        current = getattr(game, codex_key)
+        setattr(game, codex_key, not current)
+        
+        if not current:  # Expanding
+            arrow_label.config(text="▼")
+            content_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            refresh_content()
+        else:  # Collapsing
+            arrow_label.config(text="►")
+            content_frame.pack_forget()
+        
+        parent_canvas.update_idletasks()
+        parent_canvas.configure(scrollregion=parent_canvas.bbox("all"))
+    
+    header_frame.bind("<Button-1>", toggle_codex)
+    arrow_label.bind("<Button-1>", toggle_codex)
+    title_label.bind("<Button-1>", toggle_codex)
+    count_label.bind("<Button-1>", toggle_codex)
 
 
 def _populate_lore_tab(game: 'DiceDungeonExplorer', parent):

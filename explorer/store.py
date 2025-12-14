@@ -901,6 +901,11 @@ class StoreManager:
             
             self.game.inventory.append(item_name)
             
+            # Track item collection
+            if "items_collected" not in self.game.stats:
+                self.game.stats["items_collected"] = {}
+            self.game.stats["items_collected"][item_name] = self.game.stats["items_collected"].get(item_name, 0) + 1
+            
             # Initialize durability for newly purchased equipment
             max_dur = item_def.get('max_durability', 100)
             self.game.equipment_durability[item_name] = max_dur
@@ -933,6 +938,14 @@ class StoreManager:
         # Add items to inventory
         for _ in range(quantity):
             self.game.inventory.append(item_name)
+            # Track item collection
+            if "items_collected" not in self.game.stats:
+                self.game.stats["items_collected"] = {}
+            self.game.stats["items_collected"][item_name] = self.game.stats["items_collected"].get(item_name, 0) + 1
+            # Track items found for equipment purchases
+            self.game.stats["items_found"] += 1
+            # Track items found for store purchases
+            self.game.stats["items_found"] += 1
         
         if quantity > 1:
             self.game.log(f"Purchased {quantity}x {item_name}!", 'loot')

@@ -54,7 +54,8 @@ class CombatManager:
         if hasattr(self.game, 'roll_button'):
             self.game.roll_button.config(state=tk.DISABLED)
         
-        # Determine which dice to roll
+        # Determine which dice to roll (exclude force-locked dice)
+        forced_locks = getattr(self.game, 'forced_dice_locks', [])
         dice_to_roll = [i for i in range(self.game.num_dice) if not self.game.dice_locked[i]]
         
         if not dice_to_roll:
@@ -63,8 +64,15 @@ class CombatManager:
         
         # Calculate final values first
         final_values = {}
+        restricted_values = getattr(self.game, 'dice_restricted_values', [])
+        
         for i in dice_to_roll:
-            final_values[i] = random.randint(1, 6)
+            if restricted_values:
+                # Roll only from restricted values
+                final_values[i] = random.choice(restricted_values)
+            else:
+                # Normal roll
+                final_values[i] = random.randint(1, 6)
         
         # Animate the roll (8 frames, ~25ms each = ~200ms total)
         self.game._animate_dice_roll(dice_to_roll, final_values, 0, 8)
@@ -336,6 +344,41 @@ class CombatManager:
         
         # Scale enemy with floor
         base_hp = 30 + (self.game.floor * 10)
+        
+        # Add enemy-specific HP multipliers based on enemy name/type
+        enemy_hp_multipliers = {
+            # Weak enemies
+            "Goblin": 0.7, "Rat": 0.6, "Spider": 0.6, "Imp": 0.7, "Slime": 0.8,
+            "Bat": 0.5, "Sprite": 0.6, "Wisp": 0.5, "Grub": 0.4,
+            
+            # Normal enemies (1.0 multiplier - default)
+            "Skeleton": 1.0, "Orc": 1.0, "Zombie": 1.1, "Bandit": 0.9,
+            
+            # Strong enemies
+            "Troll": 1.5, "Ogre": 1.4, "Knight": 1.3, "Guard": 1.2, "Warrior": 1.1,
+            "Beast": 1.3, "Wolf": 1.1, "Bear": 1.4, "Boar": 1.2,
+            
+            # Elite enemies
+            "Demon": 2.0, "Dragon": 2.5, "Lich": 1.8, "Vampire": 1.6, "Wraith": 1.4,
+            "Golem": 2.2, "Hydra": 2.3, "Phoenix": 2.0, "Titan": 2.8,
+            
+            # Special/Boss enemies
+            "Lord": 3.0, "King": 3.5, "Ancient": 3.2, "Primordial": 4.0,
+            "Crystal Golem": 1.8, "Shadow Hydra": 2.1, "Necromancer": 1.6,
+            "Gelatinous Slime": 1.3, "Demon Lord": 2.8, "Demon Prince": 2.4
+        }
+        
+        # Find multiplier for this enemy (check for partial name matches)
+        multiplier = 1.0  # Default
+        enemy_lower = enemy_name.lower()
+        
+        for enemy_key, mult in enemy_hp_multipliers.items():
+            if enemy_key.lower() in enemy_lower:
+                multiplier = mult
+                break
+        
+        # Apply enemy-specific multiplier before random variation
+        base_hp = int(base_hp * multiplier)
         enemy_hp = base_hp + random.randint(-5, 10)
         
         # Determine enemy dice count - increased to be more competitive with player
@@ -395,6 +438,17 @@ class CombatManager:
         self.game.is_boss_fight = is_mini_boss or is_boss
         self.game.current_enemy_index = 0
         self.game.mystic_ring_used = False  # Reset Mystic Ring for new combat
+        
+        # Initialize boss ability tracking
+        self.game.active_curses = []  # List of active curse effects
+        self.game.dice_obscured = False  # Whether dice values are hidden
+        self.game.dice_restricted_values = []  # List of allowed dice values (empty = all allowed)
+        self.game.forced_dice_locks = []  # List of dice indices that are force-locked
+        self.game.boss_ability_cooldowns = {}  # Track ability cooldowns by ability type
+        
+        # Trigger combat_start abilities for all enemies
+        for enemy in self.game.enemies:
+            self._trigger_boss_abilities(enemy, "combat_start")
         
         self.game.log(f"Enemy HP: {enemy_hp} | Dice: {enemy_dice}", 'enemy')
         
@@ -465,20 +519,16 @@ class CombatManager:
     # ======================================================================
     def spawn_additional_enemy(self, spawner_enemy, spawn_type, hp_mult, dice_count):
         """Spawn an additional enemy during combat"""
-        # Calculate spawned enemy stats with base 30 HP + floor scaling
-        base_hp = 30 + (self.game.floor * 10)
-        spawn_hp = base_hp
-        
-        # Apply difficulty multiplier
-        difficulty = self.game.settings.get("difficulty", "Normal")
-        spawn_hp = int(spawn_hp * self.game.difficulty_multipliers[difficulty]["enemy_health_mult"])
+        # All spawned enemies have exactly 30 HP and 2 dice
+        spawn_hp = 30
+        spawn_dice = 2
         
         # Create spawned enemy
         spawned_enemy = {
             "name": spawn_type,
             "health": spawn_hp,
             "max_health": spawn_hp,
-            "num_dice": dice_count,
+            "num_dice": spawn_dice,
             "is_boss": False,
             "is_mini_boss": False,
             "config": self.game.enemy_types.get(spawn_type, {}),
@@ -493,7 +543,7 @@ class CombatManager:
         
         # Log the spawn
         self.game.log(f"⚠️ {spawner_enemy['name']} summons a {spawn_type}! ⚠️", 'enemy')
-        self.game.log(f"[SPAWNED] {spawn_type} - HP: {spawn_hp} | Dice: {dice_count}", 'enemy')
+        self.game.log(f"[SPAWNED] {spawn_type} - HP: {spawn_hp} | Dice: {spawn_dice}", 'enemy')
         
         # Update spawner's spawn count
         spawner_enemy["spawns_used"] += 1
@@ -508,15 +558,10 @@ class CombatManager:
     # ======================================================================
     def split_enemy(self, enemy, split_type, split_count, hp_percent, dice_modifier=0):
         """Split an enemy into smaller enemies"""
-        # Calculate split enemy stats with base 30 HP + floor scaling
-        base_hp = 30 + (self.game.floor * 10)
-        split_hp = base_hp
+        # All split enemies have exactly 30 HP and modified dice count
+        split_hp = 30
         split_dice = enemy["num_dice"] + dice_modifier  # dice_modifier is usually negative
         split_dice = max(1, split_dice)  # Minimum 1 die
-        
-        # Apply difficulty multiplier
-        difficulty = self.game.settings.get("difficulty", "Normal")
-        split_hp = int(split_hp * self.game.difficulty_multipliers[difficulty]["enemy_health_mult"])
         
         # Create split enemies
         split_enemies = []
@@ -683,6 +728,255 @@ class CombatManager:
         return False
     
 
+    # ======================================================================
+    # Boss Ability System
+    # ======================================================================
+    def _trigger_boss_abilities(self, enemy, trigger_type, **kwargs):
+        """Check and trigger boss abilities based on trigger type"""
+        config = enemy.get("config", {})
+        abilities = config.get("boss_abilities", [])
+        
+        if not abilities:
+            return
+        
+        print(f"DEBUG: _trigger_boss_abilities called for {enemy.get('name')} with trigger {trigger_type}")
+        
+        for ability in abilities:
+            if ability.get("trigger") != trigger_type:
+                continue
+            
+            print(f"DEBUG: Processing ability {ability.get('type')} for trigger {trigger_type}")
+            
+            # Check trigger-specific conditions
+            should_trigger = False
+            
+            if trigger_type == "combat_start":
+                should_trigger = True
+            
+            elif trigger_type == "hp_threshold":
+                current_hp_percent = enemy["health"] / enemy["max_health"]
+                threshold = ability.get("hp_threshold", 0.5)
+                # Check if ability has already been triggered
+                ability_key = f"{enemy['name']}_{ability['type']}_hp_threshold"
+                if current_hp_percent <= threshold and ability_key not in self.game.boss_ability_cooldowns:
+                    should_trigger = True
+                    self.game.boss_ability_cooldowns[ability_key] = True
+            
+            elif trigger_type == "enemy_turn":
+                interval = ability.get("interval_turns", 1)
+                # Check if enough turns have passed
+                ability_key = f"{enemy['name']}_{ability['type']}_turn"
+                last_trigger = self.game.boss_ability_cooldowns.get(ability_key, -interval)
+                if isinstance(last_trigger, bool):
+                    last_trigger = -interval  # Reset if it was a boolean
+                print(f"DEBUG: Turn check - current turn: {self.game.combat_turn_count}, last trigger: {last_trigger}, interval: {interval}")
+                if self.game.combat_turn_count - last_trigger >= interval:
+                    should_trigger = True
+                    self.game.boss_ability_cooldowns[ability_key] = self.game.combat_turn_count
+                    print(f"DEBUG: Should trigger ability on turn {self.game.combat_turn_count}")
+            
+            elif trigger_type == "on_death":
+                should_trigger = True
+            
+            if should_trigger:
+                self._execute_boss_ability(enemy, ability)
+    
+    def _execute_boss_ability(self, enemy, ability):
+        """Execute a specific boss ability"""
+        ability_type = ability.get("type")
+        message = ability.get("message", "")
+        
+        if message:
+            self.game.log(f"⚠️ {message}", 'enemy')
+        
+        # Dice obscure - hide dice values from player
+        if ability_type == "dice_obscure":
+            duration = ability.get("duration_turns", 2)
+            self.game.dice_obscured = True
+            self.game.active_curses.append({
+                "type": "dice_obscure",
+                "turns_left": duration,
+                "message": "Your dice values are hidden!"
+            })
+        
+        # Dice restrict - limit dice to specific values
+        elif ability_type == "dice_restrict":
+            duration = ability.get("duration_turns", 2)
+            restricted_values = ability.get("restricted_values", [1, 2, 3, 4, 5, 6])
+            self.game.dice_restricted_values = restricted_values
+            self.game.active_curses.append({
+                "type": "dice_restrict",
+                "turns_left": duration,
+                "restricted_values": restricted_values,
+                "message": f"Your dice can only roll: {restricted_values}!"
+            })
+        
+        # Dice lock random - force-lock random dice
+        elif ability_type == "dice_lock_random":
+            duration = ability.get("duration_turns", 1)
+            lock_count = min(ability.get("lock_count", 1), self.game.num_dice)
+            
+            # Choose random unlocked dice to lock
+            unlocked_indices = [i for i in range(self.game.num_dice) if not self.game.dice_locked[i]]
+            print(f"DEBUG: dice_lock_random - unlocked indices: {unlocked_indices}, trying to lock {lock_count}")
+            
+            if unlocked_indices:
+                to_lock = random.sample(unlocked_indices, min(lock_count, len(unlocked_indices)))
+                print(f"DEBUG: Locking dice indices: {to_lock}")
+                
+                # Set all locked dice to random values (they're frozen at that value)
+                for idx in to_lock:
+                    random_value = random.randint(1, 6)
+                    self.game.dice_values[idx] = random_value
+                    print(f"DEBUG: Force-locked die {idx} to random value {random_value}")
+                
+                self.game.forced_dice_locks = to_lock
+                for idx in to_lock:
+                    self.game.dice_locked[idx] = True
+                
+                # Update dice display to show the locked random values
+                self.game.dice_manager.update_dice_display()
+                
+                self.game.active_curses.append({
+                    "type": "dice_lock_random",
+                    "turns_left": duration,
+                    "locked_indices": to_lock,
+                    "message": f"{lock_count} dice are force-locked!"
+                })
+                
+                print(f"DEBUG: Dice locked state: {self.game.dice_locked}")
+            else:
+                print(f"DEBUG: No unlocked dice to lock!")
+        
+        # Curse reroll - limit rerolls
+        elif ability_type == "curse_reroll":
+            duration = ability.get("duration_turns", 3)
+            self.game.active_curses.append({
+                "type": "curse_reroll",
+                "turns_left": duration,
+                "original_rolls": self.game.rolls_left,
+                "message": "You can only reroll once per turn!"
+            })
+            # Apply the curse immediately
+            self.game.rolls_left = min(self.game.rolls_left, 1)
+        
+        # Curse damage - damage over time
+        elif ability_type == "curse_damage":
+            duration = ability.get("duration_turns", 999)
+            damage = ability.get("damage_per_turn", 3)
+            self.game.active_curses.append({
+                "type": "curse_damage",
+                "turns_left": duration,
+                "damage": damage,
+                "message": f"You take {damage} damage per turn!"
+            })
+        
+        # Spawn on death
+        elif ability_type == "spawn_on_death":
+            spawn_type = ability.get("spawn_type", "Skeleton")
+            spawn_count = ability.get("spawn_count", 2)
+            spawn_hp_mult = ability.get("spawn_hp_mult", 0.3)
+            spawn_dice = ability.get("spawn_dice", 2)
+            
+            for _ in range(spawn_count):
+                self.spawn_additional_enemy(enemy, spawn_type, spawn_hp_mult, spawn_dice)
+        
+        # Transform on death
+        elif ability_type == "transform_on_death":
+            transform_into = ability.get("transform_into", "")
+            if not transform_into:
+                return
+            
+            hp_mult = ability.get("hp_mult", 0.6)
+            dice_count = ability.get("dice_count", 4)
+            
+            # Calculate transformed enemy stats
+            base_hp = 30 + (self.game.floor * 10)
+            transform_hp = int(base_hp * hp_mult * 1.5)  # Buff transformed form
+            
+            # Apply difficulty multiplier
+            difficulty = self.game.settings.get("difficulty", "Normal")
+            transform_hp = int(transform_hp * self.game.difficulty_multipliers[difficulty]["enemy_health_mult"])
+            
+            # Create transformed enemy
+            transformed_enemy = {
+                "name": transform_into,
+                "health": transform_hp,
+                "max_health": transform_hp,
+                "num_dice": dice_count,
+                "is_boss": enemy.get("is_boss", False),
+                "is_mini_boss": enemy.get("is_mini_boss", False),
+                "config": self.game.enemy_types.get(transform_into, {}),
+                "spawns_used": 0,
+                "has_split": False,
+                "turn_spawned": self.game.combat_turn_count,
+                "is_transformed": True
+            }
+            
+            # Replace the dead enemy with transformed form
+            if enemy in self.game.enemies:
+                enemy_index = self.game.enemies.index(enemy)
+                self.game.enemies[enemy_index] = transformed_enemy
+                
+                self.game.log(f"[TRANSFORMED] {transform_into} - HP: {transform_hp} | Dice: {dice_count}", 'enemy')
+                
+                # Update display
+                self.update_enemy_display()
+                
+                # Trigger any combat_start abilities for the new form
+                self._trigger_boss_abilities(transformed_enemy, "combat_start")
+    
+    def _process_boss_curses(self):
+        """Process active boss curses at start of player turn"""
+        curses_to_remove = []
+        
+        for i, curse in enumerate(self.game.active_curses):
+            curse_type = curse.get("type")
+            
+            # Apply damage curses
+            if curse_type == "curse_damage":
+                damage = curse.get("damage", 3)
+                if not self.game.dev_invincible:
+                    self.game.health -= damage
+                    self.game.log(f"☠ Curse damage! You lose {damage} HP. ({curse['message']})", 'enemy')
+                    self.game.update_display()
+                    
+                    if self.game.health <= 0:
+                        self.game.health = 0
+                        self.game.player_died()
+                        return
+            
+            # Decrement turn counter
+            curse["turns_left"] -= 1
+            if curse["turns_left"] <= 0:
+                curses_to_remove.append(i)
+                
+                # Remove curse effects
+                if curse_type == "dice_obscure":
+                    self.game.dice_obscured = False
+                    self.game.log("Your vision clears! Dice values are visible again.", 'success')
+                elif curse_type == "dice_restrict":
+                    self.game.dice_restricted_values = []
+                    self.game.log("The curse fades! Your dice roll normally again.", 'success')
+                elif curse_type == "dice_lock_random":
+                    # Unlock the force-locked dice
+                    for idx in curse.get("locked_indices", []):
+                        if idx in self.game.forced_dice_locks:
+                            self.game.dice_locked[idx] = False
+                    self.game.forced_dice_locks = []
+                    self.game.log("The binding breaks! Your dice are unlocked.", 'success')
+                elif curse_type == "curse_reroll":
+                    self.game.log("The curse fades! You can reroll normally again.", 'success')
+        
+        # Remove expired curses (in reverse to maintain indices)
+        for i in reversed(curses_to_remove):
+            self.game.active_curses.pop(i)
+    
+    def _check_boss_ability_triggers(self, trigger_type, **kwargs):
+        """Check all enemies for ability triggers"""
+        for enemy in self.game.enemies:
+            self._trigger_boss_abilities(enemy, trigger_type, **kwargs)
+
 
     # ======================================================================
     # select_target
@@ -837,15 +1131,39 @@ class CombatManager:
         self.game.combat_state = "idle"  # States: idle, player_rolled, resolving_player_attack, resolving_enemy_attack
         
         # Reset dice completely for new turn
-        self.game.rolls_left = 3 + self.game.reroll_bonus
-        self.game.dice_values = [0] * self.game.num_dice
-        self.game.dice_locked = [False] * self.game.num_dice
+        base_rolls = 3 + self.game.reroll_bonus
+        
+        # Check for reroll curse
+        has_reroll_curse = any(c.get("type") == "curse_reroll" for c in getattr(self.game, 'active_curses', []))
+        if has_reroll_curse:
+            self.game.rolls_left = 1  # Curse limits to 1 roll per turn
+        else:
+            self.game.rolls_left = base_rolls
+        
+        # Reset dice values and locks, but preserve force-locked dice
+        forced_locks = getattr(self.game, 'forced_dice_locks', [])
+        
+        # Reset dice values (but keep values for force-locked dice)
+        new_dice_values = [0] * self.game.num_dice
+        for idx in forced_locks:
+            if idx < len(self.game.dice_values):
+                new_dice_values[idx] = self.game.dice_values[idx]  # Preserve force-locked values
+        self.game.dice_values = new_dice_values
+        
+        # Reset dice locks (but keep force-locked dice locked)
+        new_dice_locked = [False] * self.game.num_dice
+        for idx in forced_locks:
+            if idx < len(new_dice_locked):
+                new_dice_locked[idx] = True  # Keep force-locked dice locked
+        self.game.dice_locked = new_dice_locked
+        
         self.game.has_rolled = False  # Track if player has rolled at least once
         
         # Update rolls label to reflect fresh start
-        max_rolls = 3 + self.game.reroll_bonus
+        max_rolls = base_rolls if not has_reroll_curse else 1
         if hasattr(self.game, 'rolls_label'):
-            self.game.rolls_label.config(text=f"Rolls Remaining: {self.game.rolls_left}/{max_rolls}")
+            curse_text = " [CURSED]" if has_reroll_curse else ""
+            self.game.rolls_label.config(text=f"Rolls Remaining: {self.game.rolls_left}/{max_rolls}{curse_text}")
         
         # Process status effects at start of turn
         self.process_status_effects()
@@ -881,11 +1199,9 @@ class CombatManager:
             # Store canvas and render initial state
             self.game.dice_canvases.append(canvas)
             self.game.dice_buttons.append(canvas)  # Keep for compatibility
-            
-            # Render initial "?" state
-            style = self.get_current_dice_style()
-            canvas.create_rectangle(0, 0, 72, 72, fill='#cccccc', outline='#666666', width=3)
-            canvas.create_text(36, 36, text="?", font=('Arial', 32, 'bold'), fill='#666666')
+        
+        # Update dice display to show proper values (including preserved force-locked values)
+        self.game.dice_manager.update_dice_display()
         
         # Target selection (if multiple enemies) - moved to action_buttons_strip area
         if len(self.game.enemies) > 1:
@@ -978,6 +1294,9 @@ class CombatManager:
     # ======================================================================
     def use_mystic_ring(self):
         """Use Mystic Ring to gain +1 reroll this combat"""
+        print(f"DEBUG: use_mystic_ring called, mystic_ring_used: {self.game.mystic_ring_used}")
+        print(f"DEBUG: Current rolls_left: {self.game.rolls_left}")
+        
         if self.game.mystic_ring_used:
             self.game.log("You've already used the Mystic Ring this combat!", 'system')
             return
@@ -986,15 +1305,17 @@ class CombatManager:
         self.game.rolls_left += 1
         self.game.mystic_ring_used = True
         
+        print(f"DEBUG: After mystic ring use, rolls_left: {self.game.rolls_left}")
+        
         self.game.log("◊ [MYSTIC RING] The ring glows with power! +1 reroll granted!", 'success')
         
         # Update rolls display
         max_rolls = 3 + self.game.reroll_bonus
-        if hasattr(self, 'rolls_label'):
+        if hasattr(self.game, 'rolls_label') and self.game.rolls_label:
             self.game.rolls_label.config(text=f"Rolls Remaining: {self.game.rolls_left}/{max_rolls}")
         
         # Disable the Mystic Ring button
-        if hasattr(self, 'mystic_ring_button'):
+        if hasattr(self.game, 'mystic_ring_button') and self.game.mystic_ring_button:
             self.game.mystic_ring_button.config(state=tk.DISABLED, bg='#555555', text="◊ Used")
     
 
@@ -1632,8 +1953,8 @@ class CombatManager:
         if hasattr(self, 'current_roll_button'):
             self.game.current_roll_button.config(state=tk.DISABLED, bg='#666666')
         
-        # Increment turn counter
-        self.game.combat_turn_count += 1
+        # Trigger enemy_turn boss abilities
+        self._check_boss_ability_triggers("enemy_turn")
         
         # Apply burn damage to enemies
         enemies_died_from_burn = self._apply_burn_damage()
@@ -1778,30 +2099,44 @@ class CombatManager:
         self.game.enemy_roll_results = []
         
         if len(self.game.enemies) > 0:
-            # For multiple enemies, show dice for first enemy only (for now)
-            first_enemy = self.game.enemies[0]
-            num_dice = first_enemy["num_dice"]
-            enemy_dice = [random.randint(1, 6) for _ in range(num_dice)]
-            
-            # Animate enemy dice roll
-            self._show_and_animate_enemy_dice(enemy_dice, num_dice)
-            
-            # Store all enemy rolls
+            # Find first enemy that can attack (not spawned this turn)
+            first_attacking_enemy = None
             for enemy in self.game.enemies:
-                if enemy == first_enemy:
-                    self.game.enemy_roll_results.append({
-                        'name': enemy['name'],
-                        'dice': enemy_dice,
-                        'enemy_ref': enemy
-                    })
-                else:
-                    # Other enemies roll but aren't animated
-                    other_dice = [random.randint(1, 6) for _ in range(enemy["num_dice"])]
-                    self.game.enemy_roll_results.append({
-                        'name': enemy['name'],
-                        'dice': other_dice,
-                        'enemy_ref': enemy
-                    })
+                if enemy.get("turn_spawned", 0) != self.game.combat_turn_count:
+                    first_attacking_enemy = enemy
+                    break
+            
+            if first_attacking_enemy:
+                num_dice = first_attacking_enemy["num_dice"]
+                enemy_dice = [random.randint(1, 6) for _ in range(num_dice)]
+                
+                # Animate enemy dice roll
+                self._show_and_animate_enemy_dice(enemy_dice, num_dice)
+                
+                # Store all enemy rolls (skip enemies spawned this turn)
+                for enemy in self.game.enemies:
+                    # Skip enemies that were spawned this turn
+                    if enemy.get("turn_spawned", 0) == self.game.combat_turn_count:
+                        self.game.log(f"{enemy['name']} is too dazed to attack (just spawned)!", 'system')
+                        continue
+                        
+                    if enemy == first_attacking_enemy:
+                        self.game.enemy_roll_results.append({
+                            'name': enemy['name'],
+                            'dice': enemy_dice,
+                            'enemy_ref': enemy
+                        })
+                    else:
+                        # Other enemies roll but aren't animated
+                        other_dice = [random.randint(1, 6) for _ in range(enemy["num_dice"])]
+                        self.game.enemy_roll_results.append({
+                            'name': enemy['name'],
+                            'dice': other_dice,
+                            'enemy_ref': enemy
+                        })
+            else:
+                # All enemies are newly spawned, none can attack
+                self.game.log("All enemies are too dazed to attack!", 'system')
         else:
             # Fallback single enemy
             num_dice = self.game.enemy_num_dice
@@ -1953,7 +2288,9 @@ class CombatManager:
         # Calculate damage for this enemy
         enemy = roll_result.get('enemy_ref')
         if enemy:
-            enemy_damage = sum(enemy_dice) + (self.game.floor * 2)
+            base_damage = sum(enemy_dice) + (self.game.floor * 2)
+            print(f"DEBUG: {enemy_name} damage calc: dice {enemy_dice} = {sum(enemy_dice)}, floor bonus {self.game.floor * 2}, base total {base_damage}")
+            enemy_damage = base_damage
             
             # Apply all multipliers
             difficulty = self.game.settings.get("difficulty", "Normal")
@@ -2233,6 +2570,12 @@ class CombatManager:
         """End combat round and prepare for next turn"""
         self.game.combat_state = "idle"
         
+        # Process boss curses at end of round (so they last the full turn)
+        if hasattr(self.game, 'active_curses') and self.game.active_curses:
+            self._process_boss_curses()
+            if self.game.health <= 0:
+                return  # Player died from curse damage
+        
         # Note: No need to re-enable roll button here since start_combat_turn
         # will create a new enabled button
         
@@ -2319,6 +2662,9 @@ class CombatManager:
             target["health"] -= damage
             self.game.enemy_health = target["health"]
             
+            # Check for HP threshold abilities AFTER damage is applied
+            self._trigger_boss_abilities(target, "hp_threshold")
+            
             # Update display to show new HP
             self.game.update_display()
             
@@ -2403,6 +2749,17 @@ class CombatManager:
     def _finalize_enemy_defeat(self, target):
         """Complete enemy defeat sequence"""
         self.game.log(f"{target['name']} has been defeated!", 'success')
+        
+        # Trigger on_death abilities BEFORE removing enemy
+        self._trigger_boss_abilities(target, "on_death")
+        
+        # Check if enemy transformed (transform_on_death ability replaces enemy instead of removing)
+        if target.get("is_transformed"):
+            # Enemy was already replaced by transformation, don't remove it
+            # Just continue to enemy turn
+            self.update_enemy_display()
+            self.game.root.after(1500, self._start_enemy_turn_sequence)
+            return
         
         # Remove from enemies list
         if target in self.game.enemies:
