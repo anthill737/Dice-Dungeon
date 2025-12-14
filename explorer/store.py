@@ -32,7 +32,11 @@ class StoreManager:
         # Generate store inventory once per floor (not per visit or tab switch)
         # This ensures consistent store offerings throughout the entire floor
         if not hasattr(self.game, 'floor_store_inventory') or self.game.floor_store_inventory is None:
+            print(f"[DEBUG] Generating store inventory for floor {self.game.floor}")
             self.game.floor_store_inventory = self._generate_store_inventory()
+            print(f"[DEBUG] Generated {len(self.game.floor_store_inventory)} items: {[item[0] for item in self.game.floor_store_inventory]}")
+        else:
+            print(f"[DEBUG] Using existing store inventory: {len(self.game.floor_store_inventory)} items")
         
         # Create dialog
         dialog_width, dialog_height = self.game.get_responsive_dialog_size(700, 600, 0.7, 0.8)
@@ -149,14 +153,23 @@ class StoreManager:
         
         # Use the floor's store inventory (generated once per floor)
         store_items = self.game.floor_store_inventory
+        print(f"[DEBUG] Store items to display: {len(store_items) if store_items else 0}")
+        if store_items:
+            print(f"[DEBUG] First 5 items: {store_items[:5]}")
         
         tk.Label(scroll_frame, text="Available Items:", font=('Arial', 12, 'bold'),
                 bg=self.game.current_colors["bg_primary"], fg=self.game.current_colors["text_cyan"],
                 pady=10).pack()
         
         # Display items
-        for item_name, price in store_items:
-            self._create_store_item_row(scroll_frame, item_name, price, is_buying=True)
+        if not store_items:
+            tk.Label(scroll_frame, text="No items available in store", font=('Arial', 11),
+                    bg=self.game.current_colors["bg_primary"], fg=self.game.current_colors["text_secondary"],
+                    pady=20).pack()
+        else:
+            for item_name, price in store_items:
+                print(f"[DEBUG] Creating store row for {item_name} at {price} gold")
+                self._create_store_item_row(scroll_frame, item_name, price, is_buying=True)
         
         # Bind mousewheel to all child widgets
         def bind_mousewheel_to_tree(widget):
@@ -245,118 +258,153 @@ class StoreManager:
     
     def _generate_store_inventory(self):
         """Generate store inventory based on floor level - all items shown (no randomization)"""
+        print(f"[DEBUG] _generate_store_inventory called for floor {self.game.floor}")
         store_items = []
         
+        # Handle edge case: if floor is 0 (tutorial/start), treat as floor 1 for store purposes
+        effective_floor = max(1, self.game.floor)
+        print(f"[DEBUG] Using effective floor {effective_floor} for store generation")
+        
         # ESSENTIALS - Always available
-        store_items.append(("Health Potion", 30 + (self.game.floor * 5)))
+        store_items.append(("Health Potion", 30 + (effective_floor * 5)))
+        print(f"[DEBUG] Added Health Potion")
         
         # REPAIR KITS - Always available from floor 1+ (CRITICAL for equipment durability)
-        store_items.append(("Weapon Repair Kit", 60 + (self.game.floor * 15)))  # Restore 40% weapon durability
-        store_items.append(("Armor Repair Kit", 60 + (self.game.floor * 15)))   # Restore 40% armor durability
+        store_items.append(("Weapon Repair Kit", 60 + (effective_floor * 15)))  # Restore 40% weapon durability
+        store_items.append(("Armor Repair Kit", 60 + (effective_floor * 15)))   # Restore 40% armor durability
+        print(f"[DEBUG] Added Repair Kits")
         
-        if self.game.floor >= 5:
-            store_items.append(("Master Repair Kit", 120 + (self.game.floor * 30)))  # Restore 60% any equipment
+        if effective_floor >= 5:
+            store_items.append(("Master Repair Kit", 120 + (effective_floor * 30)))  # Restore 60% any equipment
         
         # PERMANENT UPGRADES - Always shown but expensive (unless already purchased this floor)
         upgrades = [
-            ("Max HP Upgrade", 400 + (self.game.floor * 100)),  # +10 max HP - very expensive
-            ("Damage Upgrade", 500 + (self.game.floor * 120)),  # +1 permanent damage - most expensive
-            ("Fortune Upgrade", 450 + (self.game.floor * 110)), # +1 permanent reroll
+            ("Max HP Upgrade", 400 + (effective_floor * 100)),  # +10 max HP - very expensive
+            ("Damage Upgrade", 500 + (effective_floor * 120)),  # +1 permanent damage - most expensive
+            ("Fortune Upgrade", 450 + (effective_floor * 110)), # +1 permanent reroll
         ]
-        if self.game.floor >= 2:
-            upgrades.append(("Critical Upgrade", 200 + (self.game.floor * 50)))  # +2% permanent crit
+        if effective_floor >= 2:
+            upgrades.append(("Critical Upgrade", 200 + (effective_floor * 50)))  # +2% permanent crit
         
         # Filter out upgrades already purchased on this floor and add all available
         available_upgrades = [(name, price) for name, price in upgrades if name not in self.game.purchased_upgrades_this_floor]
         store_items.extend(available_upgrades)
+        print(f"[DEBUG] Added {len(available_upgrades)} upgrades: {[u[0] for u in available_upgrades]}")
         
         # CONSUMABLES - Show ALL consumables for current floor tier
-        if self.game.floor >= 1:
-            store_items.extend([
-                ("Lucky Chip", 70 + (self.game.floor * 15)),
-                ("Honey Jar", 20 + (self.game.floor * 4)),
-                ("Healing Poultice", 50 + (self.game.floor * 10)),
-            ])
+        if effective_floor >= 1:
+            floor1_consumables = [
+                ("Lucky Chip", 70 + (effective_floor * 15)),
+                ("Honey Jar", 20 + (effective_floor * 4)),
+                ("Healing Poultice", 50 + (effective_floor * 10)),
+            ]
+            store_items.extend(floor1_consumables)
+            print(f"[DEBUG] Added Floor 1+ consumables: {[c[0] for c in floor1_consumables]}")
         
-        if self.game.floor >= 2:
-            store_items.extend([
-                ("Weighted Die", 60 + (self.game.floor * 15)),
-                ("Lockpick Kit", 50 + (self.game.floor * 10)),
-                ("Conductor Rod", 70 + (self.game.floor * 15)),
-            ])
+        if effective_floor >= 2:
+            floor2_consumables = [
+                ("Weighted Die", 60 + (effective_floor * 15)),
+                ("Lockpick Kit", 50 + (effective_floor * 10)),
+                ("Conductor Rod", 70 + (effective_floor * 15)),
+            ]
+            store_items.extend(floor2_consumables)
+            print(f"[DEBUG] Added Floor 2+ consumables: {[c[0] for c in floor2_consumables]}")
         
-        if self.game.floor >= 3:
-            store_items.extend([
-                ("Hourglass Shard", 80 + (self.game.floor * 20)),
-                ("Tuner's Hammer", 85 + (self.game.floor * 22)),
-                ("Antivenom Leaf", 40 + (self.game.floor * 10)),
-            ])
+        if effective_floor >= 3:
+            floor3_consumables = [
+                ("Hourglass Shard", 80 + (effective_floor * 20)),
+                ("Tuner's Hammer", 85 + (effective_floor * 22)),
+                ("Antivenom Leaf", 40 + (effective_floor * 10)),
+            ]
+            store_items.extend(floor3_consumables)
+            print(f"[DEBUG] Added Floor 3+ consumables: {[c[0] for c in floor3_consumables]}")
         
-        if self.game.floor >= 4:
-            store_items.extend([
-                ("Cooled Ember", 90 + (self.game.floor * 23)),
-                ("Smoke Pot", 55 + (self.game.floor * 12)),
-                ("Black Candle", 65 + (self.game.floor * 15)),
-            ])
+        if effective_floor >= 4:
+            floor4_consumables = [
+                ("Cooled Ember", 90 + (effective_floor * 23)),
+                ("Smoke Pot", 55 + (effective_floor * 12)),
+                ("Black Candle", 65 + (effective_floor * 15)),
+            ]
+            store_items.extend(floor4_consumables)
+            print(f"[DEBUG] Added Floor 4+ consumables: {[c[0] for c in floor4_consumables]}")
         
         # EQUIPMENT - Weapons, Armor, Accessories (ALL items shown for floor)
         # Weapons (damage bonuses)
-        if self.game.floor >= 1:
-            store_items.extend([
-                ("Iron Sword", 120 + (self.game.floor * 30)),      # +4 damage
-                ("Steel Dagger", 100 + (self.game.floor * 25)),    # +2 damage
-            ])
+        if effective_floor >= 1:
+            floor1_weapons = [
+                ("Iron Sword", 120 + (effective_floor * 30)),      # +4 damage
+                ("Steel Dagger", 100 + (effective_floor * 25)),    # +2 damage
+            ]
+            store_items.extend(floor1_weapons)
+            print(f"[DEBUG] Added Floor 1+ weapons: {[w[0] for w in floor1_weapons]}")
         
-        if self.game.floor >= 2:
-            store_items.extend([
-                ("War Axe", 220 + (self.game.floor * 50)),         # +5 damage
-                ("Rapier", 160 + (self.game.floor * 35)),          # +3 damage, +6% crit
-            ])
+        if effective_floor >= 2:
+            floor2_weapons = [
+                ("War Axe", 220 + (effective_floor * 50)),         # +5 damage
+                ("Rapier", 160 + (effective_floor * 35)),          # +3 damage, +6% crit
+            ]
+            store_items.extend(floor2_weapons)
+            print(f"[DEBUG] Added Floor 2+ weapons: {[w[0] for w in floor2_weapons]}")
         
-        if self.game.floor >= 4:
-            store_items.extend([
-                ("Greatsword", 280 + (self.game.floor * 60)),      # +6 damage
-                ("Assassin's Blade", 260 + (self.game.floor * 55)), # +3 damage, +8% crit
-            ])
+        if effective_floor >= 4:
+            floor4_weapons = [
+                ("Greatsword", 280 + (effective_floor * 60)),      # +6 damage
+                ("Assassin's Blade", 260 + (effective_floor * 55)), # +3 damage, +8% crit
+            ]
+            store_items.extend(floor4_weapons)
+            print(f"[DEBUG] Added Floor 4+ weapons: {[w[0] for w in floor4_weapons]}")
         
         # Armor (HP and defense)
-        if self.game.floor >= 1:
-            store_items.extend([
-                ("Leather Armor", 110 + (self.game.floor * 28)),   # +15 max HP
-                ("Chain Vest", 130 + (self.game.floor * 32)),      # +10 max HP, +1 armor
-            ])
+        if effective_floor >= 1:
+            floor1_armor = [
+                ("Leather Armor", 110 + (effective_floor * 28)),   # +15 max HP
+                ("Chain Vest", 130 + (effective_floor * 32)),      # +10 max HP, +1 armor
+            ]
+            store_items.extend(floor1_armor)
+            print(f"[DEBUG] Added Floor 1+ armor: {[a[0] for a in floor1_armor]}")
         
-        if self.game.floor >= 3:
-            store_items.extend([
-                ("Plate Armor", 220 + (self.game.floor * 50)),     # +25 max HP, +2 armor
-                ("Dragon Scale", 300 + (self.game.floor * 65)),    # +30 max HP, +3 armor
-            ])
+        if effective_floor >= 3:
+            floor3_armor = [
+                ("Plate Armor", 220 + (effective_floor * 50)),     # +25 max HP, +2 armor
+                ("Dragon Scale", 300 + (effective_floor * 65)),    # +30 max HP, +3 armor
+            ]
+            store_items.extend(floor3_armor)
+            print(f"[DEBUG] Added Floor 3+ armor: {[a[0] for a in floor3_armor]}")
         
         # Accessories (special bonuses)
-        if self.game.floor >= 1:
-            store_items.append(("Traveler's Pack", 100 + (self.game.floor * 25))) # +10 inventory
+        if effective_floor >= 1:
+            store_items.append(("Traveler's Pack", 100 + (effective_floor * 25))) # +10 inventory
+            print(f"[DEBUG] Added Traveler's Pack")
         
-        if self.game.floor >= 2:
-            store_items.extend([
-                ("Lucky Coin", 140 + (self.game.floor * 35)),      # +5% crit
-                ("Mystic Ring", 150 + (self.game.floor * 38)),     # +1 reroll per combat
-                ("Merchant's Satchel", 180 + (self.game.floor * 40)), # +20 inventory
-                ("Extra Die", 500 + (self.game.floor * 50))        # Add extra die to rolls
-            ])
+        if effective_floor >= 2:
+            floor2_accessories = [
+                ("Lucky Coin", 140 + (effective_floor * 35)),      # +5% crit
+                ("Mystic Ring", 150 + (effective_floor * 38)),     # +1 reroll per combat
+                ("Merchant's Satchel", 180 + (effective_floor * 40)), # +20 inventory
+                ("Extra Die", 500 + (effective_floor * 50))        # Add extra die to rolls
+            ]
+            store_items.extend(floor2_accessories)
+            print(f"[DEBUG] Added Floor 2+ accessories: {[a[0] for a in floor2_accessories]}")
         
-        if self.game.floor >= 4:
-            store_items.extend([
-                ("Crown of Fortune", 250 + (self.game.floor * 55)), # +10% crit
-                ("Timekeeper's Watch", 270 + (self.game.floor * 58)), # +2 rerolls per combat
-            ])
+        if effective_floor >= 4:
+            floor4_accessories = [
+                ("Crown of Fortune", 250 + (effective_floor * 55)), # +10% crit
+                ("Timekeeper's Watch", 270 + (effective_floor * 58)), # +2 rerolls per combat
+            ]
+            store_items.extend(floor4_accessories)
+            print(f"[DEBUG] Added Floor 4+ accessories: {[a[0] for a in floor4_accessories]}")
         
         # VALUABLES/UTILITY
-        if self.game.floor >= 3:
-            store_items.extend([
-                ("Blue Quartz", 90 + (self.game.floor * 20)),
-                ("Silk Bundle", 120 + (self.game.floor * 30))
-            ])
+        if effective_floor >= 3:
+            valuables = [
+                ("Blue Quartz", 90 + (effective_floor * 20)),
+                ("Silk Bundle", 120 + (effective_floor * 30))
+            ]
+            store_items.extend(valuables)
+            print(f"[DEBUG] Added Floor 3+ valuables: {[v[0] for v in valuables]}")
         
+        print(f"[DEBUG] Total store items generated: {len(store_items)}")
+        print(f"[DEBUG] Final store inventory: {[(item[0], item[1]) for item in store_items]}")
         return store_items
     
     def _calculate_sell_price(self, item_name):

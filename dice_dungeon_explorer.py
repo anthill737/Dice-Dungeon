@@ -1170,7 +1170,7 @@ class DiceDungeonExplorer:
         return dialog_width, dialog_height
     
     def on_window_resize(self, event):
-        """Handle window resize events to update scale factor"""
+        """Handle window resize events to update scale factor and refresh main menu if visible"""
         # Only update if the event is for the root window
         if event.widget == self.root:
             current_width = self.root.winfo_width()
@@ -1183,6 +1183,21 @@ class DiceDungeonExplorer:
             
             # Clamp scale factor to reasonable bounds
             self.scale_factor = max(0.8, min(self.scale_factor, 2.5))
+            
+            # If we're on the main menu (no game_frame exists), refresh it for responsive layout
+            if hasattr(self, 'main_frame') and self.main_frame.winfo_exists() and not hasattr(self, 'game_frame'):
+                # Delay the refresh slightly to avoid excessive calls during window dragging
+                self.root.after(100, self._delayed_main_menu_refresh)
+    
+    def _delayed_main_menu_refresh(self):
+        """Delayed refresh of main menu for responsive layout - avoids excessive updates during window resize"""
+        try:
+            # Only refresh if we're still on the main menu
+            if hasattr(self, 'main_frame') and self.main_frame.winfo_exists() and not hasattr(self, 'game_frame'):
+                self.show_main_menu()
+        except Exception as e:
+            # Silently handle any errors during refresh to avoid breaking the UI
+            pass
     
     def load_enemy_sprites(self, base_dir):
         """Load enemy sprite images from disk - automatically loads all sprites"""
@@ -1277,7 +1292,7 @@ class DiceDungeonExplorer:
         return int(base_length * self.scale_factor)
     
     def show_main_menu(self):
-        """Show the main menu"""
+        """Show the main menu with responsive layout that fills the screen"""
         if not self.content_loaded:
             return
         
@@ -1299,81 +1314,110 @@ class DiceDungeonExplorer:
         # Apply color scheme
         bg_color = self.current_colors["bg_primary"]
         
+        # Create main container that fills the entire window
         self.main_frame = tk.Frame(self.root, bg=bg_color)
-        self.main_frame.pack(fill=tk.BOTH, expand=True)
+        self.main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
-        # Logo section
-        logo_frame = tk.Frame(self.main_frame, bg=bg_color)
-        logo_frame.pack(pady=int(15 * self.scale_factor))
+        # Calculate dynamic spacing based on window height
+        available_height = max(400, current_height - 60)  # Account for padding with minimum
+        total_elements = 8  # logo, title, subtitle, 5 buttons
+        dynamic_spacing = max(10, min(40, int(available_height / total_elements * 0.4)))
         
-        # Load and display DD Logo
+        # Header section with flexible spacing
+        header_frame = tk.Frame(self.main_frame, bg=bg_color)
+        header_frame.pack(fill=tk.X, pady=(0, dynamic_spacing))
+        
+        # Logo section with responsive sizing
+        logo_frame = tk.Frame(header_frame, bg=bg_color)
+        logo_frame.pack(pady=int(dynamic_spacing * 0.5))
+        
+        # Load and display DD Logo with dynamic sizing
         try:
             import os
             from PIL import Image, ImageTk
             logo_path = os.path.join(os.path.dirname(__file__), "assets", "DD Logo.png")
             if os.path.exists(logo_path):
-                # Load and scale logo - smaller size to fit screen
+                # Calculate logo size based on window height (15% of height, min 100, max 200)
                 img = Image.open(logo_path)
-                logo_size = max(80, min(120, int(100 * self.scale_factor)))
+                logo_size = max(100, min(200, int(available_height * 0.15)))
                 img = img.resize((logo_size, logo_size), Image.LANCZOS)
                 self.menu_logo_image = ImageTk.PhotoImage(img)
                 
                 logo_label = tk.Label(logo_frame, image=self.menu_logo_image, bg=bg_color)
-                logo_label.pack(pady=int(5 * self.scale_factor))
+                logo_label.pack()
             else:
                 # Fallback to text if logo not found
+                fallback_size = max(32, min(48, int(available_height * 0.08)))
                 tk.Label(logo_frame, text="DD", 
-                        font=('Arial', self.scale_font(32), 'bold'), 
-                        bg=bg_color, fg=self.current_colors["text_gold"],
-                        pady=int(5 * self.scale_factor)).pack()
+                        font=('Arial', self.scale_font(fallback_size), 'bold'), 
+                        bg=bg_color, fg=self.current_colors["text_gold"]).pack()
         except Exception as e:
             # Fallback to text if PIL not available or other error
+            fallback_size = max(32, min(48, int(available_height * 0.08)))
             tk.Label(logo_frame, text="DD", 
-                    font=('Arial', self.scale_font(32), 'bold'), 
-                    bg=bg_color, fg=self.current_colors["text_gold"],
-                    pady=int(5 * self.scale_factor)).pack()
+                    font=('Arial', self.scale_font(fallback_size), 'bold'), 
+                    bg=bg_color, fg=self.current_colors["text_gold"]).pack()
         
-        # Game title (smaller and less padding)
-        tk.Label(self.main_frame, text="DICE DUNGEON EXPLORER", 
-                font=('Arial', self.scale_font(22), 'bold'), bg=bg_color, fg=self.current_colors["text_gold"],
-                pady=int(8 * self.scale_factor)).pack()
+        # Title section with responsive font sizing
+        title_size = max(20, min(32, int(available_height * 0.04)))
+        tk.Label(header_frame, text="DICE DUNGEON EXPLORER", 
+                font=('Arial', self.scale_font(title_size), 'bold'), 
+                bg=bg_color, fg=self.current_colors["text_gold"]).pack(pady=(0, int(dynamic_spacing * 0.3)))
         
-        tk.Label(self.main_frame, text="Explore • Fight • Loot • Survive", 
-                font=('Arial', self.scale_font(14)), bg=bg_color, fg=self.current_colors["text_primary"],
-                pady=int(5 * self.scale_factor)).pack()
+        subtitle_size = max(12, min(18, int(available_height * 0.025)))
+        tk.Label(header_frame, text="Explore • Fight • Loot • Survive", 
+                font=('Arial', self.scale_font(subtitle_size)), 
+                bg=bg_color, fg=self.current_colors["text_primary"]).pack()
         
-        btn_frame = tk.Frame(self.main_frame, bg=bg_color)
-        btn_frame.pack(pady=int(25 * self.scale_factor))
+        # Central content area for buttons with better spacing
+        content_frame = tk.Frame(self.main_frame, bg=bg_color)
+        content_frame.pack(fill=tk.BOTH, expand=True, pady=dynamic_spacing)
         
-        # All buttons same size for consistent UI - reduced padding for better fit
-        btn_width = 20
-        btn_font = ('Arial', self.scale_font(14), 'bold')
-        btn_pady = int(8 * self.scale_factor)
+        # Button container centered in content area
+        btn_container = tk.Frame(content_frame, bg=bg_color)
+        btn_container.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
         
-        tk.Button(btn_frame, text="START ADVENTURE", 
-                 command=self.start_new_game,
-                 font=btn_font, bg=self.current_colors["button_primary"], fg='#000000',
-                 width=btn_width, pady=btn_pady).pack(pady=5)
+        # Responsive button sizing
+        btn_width = max(18, min(25, int(current_width * 0.025)))
+        btn_font_size = max(12, min(16, int(available_height * 0.022)))
+        btn_font = ('Arial', self.scale_font(btn_font_size), 'bold')
+        btn_pady = max(8, min(15, int(available_height * 0.012)))
+        btn_spacing = max(8, min(15, int(dynamic_spacing * 0.6)))
         
-        tk.Button(btn_frame, text="SAVE/LOAD GAME", 
-                 command=self.load_game,
-                 font=btn_font, bg=self.current_colors["button_secondary"], fg='#000000',
-                 width=btn_width, pady=btn_pady).pack(pady=5)
+        # Create buttons with enhanced styling
+        buttons = [
+            ("START ADVENTURE", self.start_new_game, self.current_colors["button_primary"], '#000000'),
+            ("SAVE/LOAD GAME", self.load_game, self.current_colors["button_secondary"], '#000000'),
+            ("SETTINGS", self.show_settings, self.current_colors["text_purple"], '#ffffff'),
+            ("HIGH SCORES", self.show_high_scores, self.current_colors["text_gold"], '#000000'),
+            ("QUIT", self.root.quit, '#ff6b6b', '#000000')
+        ]
         
-        tk.Button(btn_frame, text="SETTINGS", 
-                 command=self.show_settings,
-                 font=btn_font, bg=self.current_colors["text_purple"], fg='#ffffff',
-                 width=btn_width, pady=btn_pady).pack(pady=5)
-        
-        tk.Button(btn_frame, text="HIGH SCORES", 
-                 command=self.show_high_scores,
-                 font=btn_font, bg=self.current_colors["text_gold"], fg='#000000',
-                 width=btn_width, pady=btn_pady).pack(pady=5)
-        
-        tk.Button(btn_frame, text="QUIT", 
-                 command=self.root.quit,
-                 font=btn_font, bg='#ff6b6b', fg='#000000',
-                 width=btn_width, pady=btn_pady).pack(pady=5)
+        for text, command, bg, fg in buttons:
+            btn = tk.Button(btn_container, text=text, 
+                           command=command,
+                           font=btn_font, bg=bg, fg=fg,
+                           width=btn_width, pady=btn_pady,
+                           relief=tk.RAISED, borderwidth=2,
+                           activebackground=self.current_colors["button_hover"],
+                           activeforeground='#000000')
+            btn.pack(pady=btn_spacing)
+            
+            # Add hover effects with specific colors for each button
+            hover_color = self.current_colors["button_hover"] if bg in [self.current_colors["button_primary"], self.current_colors["button_secondary"]] else bg
+            
+            def on_enter(e, button=btn, hover_bg=hover_color):
+                if hover_bg == self.current_colors["button_hover"]:
+                    button.config(bg=hover_bg)
+                else:
+                    # For non-standard buttons, slightly lighten the color
+                    button.config(relief=tk.SUNKEN)
+            
+            def on_leave(e, button=btn, orig_bg=bg):
+                button.config(bg=orig_bg, relief=tk.RAISED)
+            
+            btn.bind("<Enter>", on_enter)
+            btn.bind("<Leave>", on_leave)
     
     # ========== UI STYLING HELPER METHODS ==========
     
@@ -8431,6 +8475,26 @@ Final Score: {self.run_score}
                  bg='#3498db', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=0, column=2, padx=5)
         tk.Button(nav_frame, text="Next Floor", command=next_floor_dev,
                  bg='#27ae60', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=0, column=3, padx=5)
+        
+        # Store debugging buttons
+        def test_store():
+            """Test function to debug store inventory generation"""
+            print(f"[TEST] Current floor: {self.floor}")
+            print(f"[TEST] Testing store inventory generation...")
+            test_inventory = self.store_manager._generate_store_inventory()
+            print(f"[TEST] Generated {len(test_inventory)} items")
+            messagebox.showinfo("Store Test", f"Generated {len(test_inventory)} store items for floor {self.floor}.\nCheck console for details.")
+        
+        def refresh_store_debug():
+            """Force refresh store inventory for debugging"""
+            self.floor_store_inventory = None
+            print(f"[DEBUG] Clearing store inventory, will regenerate on next store visit")
+            messagebox.showinfo("Store Debug", "Store inventory cleared. Visit store again to see regenerated items.")
+        
+        tk.Button(nav_frame, text="Test Store", command=test_store,
+                 bg='#e67e22', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=1, column=0, padx=5, pady=5)
+        tk.Button(nav_frame, text="Clear Store", command=refresh_store_debug,
+                 bg='#e74c3c', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=1, column=1, padx=5, pady=5)
         
         # ===== TAB 5: DEBUG INFO =====
         info_tab = tk.Frame(notebook, bg='#2c1810')
