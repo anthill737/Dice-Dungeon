@@ -8551,11 +8551,11 @@ if __name__ == "__main__":
             loading_frame = tk.Frame(main_frame, bg='#0a0604')
             loading_frame.pack(pady=(30, 30), expand=True)
             
-            # Loading text with dots on same line
+            # Loading text with dots on same line - fixed width to prevent movement
             text_frame = tk.Frame(loading_frame, bg='#0a0604')
             text_frame.pack()
             
-            self.loading_label = tk.Label(text_frame, text="Loading...", 
+            self.loading_label = tk.Label(text_frame, text="Loading game engine", 
                                         font=('Arial', 14), bg='#0a0604', fg='#e8dcc4')
             self.loading_label.pack(side=tk.LEFT)
             
@@ -8564,12 +8564,12 @@ if __name__ == "__main__":
                                      font=('Arial', 14), bg='#0a0604', fg='#d4af37')
             self.dots_label.pack(side=tk.LEFT)
             
-            # Progress tracking - adjusted for 5 seconds
+            # Progress tracking - slower animation
             self.progress = 0
-            self.max_progress = 50  # About 5 seconds at 100ms intervals
+            self.max_progress = 25  # Slower - 5 seconds at 200ms intervals
             self.loading_messages = [
                 "Loading game engine",
-                "Loading content system",
+                "Loading content system", 
                 "Initializing dice mechanics",
                 "Loading enemy data",
                 "Loading item definitions",
@@ -8585,20 +8585,20 @@ if __name__ == "__main__":
             self.splash.after(5000, self.launch_game)  # 5 second splash
         
         def animate_loading(self):
-            """Animate the loading screen"""
+            """Animate the loading screen - change messages in fixed position, slower animation"""
             if self.progress < self.max_progress:
-                # Update dots animation
-                dots = "." * ((self.progress % 4) + 1)  # Cycle through 1-4 dots
+                # Update dots animation - slower cycling
+                dots = "." * ((self.progress % 3) + 1)  # Cycle through 1-3 dots
                 self.dots_label.config(text=dots)
                 
                 # Update loading message occasionally - spread across 5 seconds
-                message_interval = self.max_progress // len(self.loading_messages)
+                message_interval = max(1, self.max_progress // len(self.loading_messages))
                 if self.progress % message_interval == 0 and self.message_index < len(self.loading_messages):
                     self.loading_label.config(text=self.loading_messages[self.message_index])
                     self.message_index += 1
                 
                 self.progress += 1
-                self.splash.after(100, self.animate_loading)  # 100ms intervals
+                self.splash.after(200, self.animate_loading)  # 200ms intervals (slower)
             else:
                 # Loading complete
                 self.loading_label.config(text="Ready")
