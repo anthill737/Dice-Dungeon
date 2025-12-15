@@ -39,7 +39,31 @@ Applies damage over time to the player.
 - **Player Impact**: Races against time, health drain
 - **Example**: Demon Lord deals 3 damage per turn throughout combat
 
+#### `heal_over_time`
+Enemy regenerates HP each turn.
+- **Effect**: Enemy heals fixed amount at start of each turn
+- **Player Impact**: Must deal damage faster than regeneration
+- **Example**: Acid Hydra heals 8 HP per turn for 5 turns at 60% HP
+
+#### `damage_reduction`
+Reduces all incoming damage by flat amount.
+- **Effect**: Subtracts fixed amount from all player damage (minimum 1)
+- **Player Impact**: Requires higher damage output to be effective
+- **Example**: Void Wraith has 5 damage reduction throughout combat
+
 ### Spawn Mechanics
+
+#### `spawn_minions`
+Spawns additional enemies when HP threshold is reached.
+- **Effect**: Summons new enemies during combat at specific HP%
+- **Player Impact**: Must manage multiple enemies mid-fight
+- **Example**: Necromancer spawns 2 Skeletons at 75% and 25% HP
+
+#### `spawn_minions_periodic`
+Spawns additional enemies every N turns (with max limit).
+- **Effect**: Summons enemies at regular turn intervals
+- **Player Impact**: Fight becomes progressively harder over time
+- **Example**: Demon Lord spawns 1 Imp every 3 turns (max 4)
 
 #### `spawn_on_death`
 Spawns additional enemies when boss dies.
@@ -106,29 +130,47 @@ Triggers when boss health reaches 0.
 
 ### Gelatinous Slime (Mini-Boss)
 - **Combat Start**: Obscures dice for 2 turns
-- **Strategy**: Attack blindly or wait out the curse
+- **On Death**: Splits into 3 Slime Blobs (40% HP, reduced dice)
+- **Strategy**: Attack blindly or wait out the curse, prepare for slime spawns
 
 ### Necromancer (Mini-Boss)
+- **75% HP**: Spawns 2 Skeletons (30% HP, 2 dice)
 - **50% HP**: Limits rerolls to 1 per turn for 3 turns
+- **25% HP**: Spawns 2 more Skeletons (30% HP, 2 dice)
 - **On Death**: Spawns 3 Skeletons (40% HP, 3 dice each)
-- **Strategy**: Burst damage before HP threshold, save resources for spawns
+- **Strategy**: Burst damage through thresholds quickly, save resources for skeleton waves
 
 ### Shadow Hydra (Mini-Boss)
 - **Every 4 Turns**: Restricts dice to only 1s and 2s for 2 turns
+- **30% HP**: Spawns 2 Shadow Heads (35% HP, 2 dice)
 - **Strategy**: Time attacks to avoid curse windows, use potions during curse
-
-### Demon Lord (Floor Boss)
-- **Combat Start**: Applies 3 damage per turn curse (permanent)
-- **On Death**: Transforms into Demon Prince (60% HP, 6 dice)
-- **Strategy**: Race against curse damage, prepare for transformation
-
-### Demon Prince (Transformed Boss)
-- **50% HP**: Obscures dice permanently for rest of combat
-- **Strategy**: Memorize last roll values, high-damage burst
 
 ### Crystal Golem (Mini-Boss)
 - **Every 3 Turns**: Force-locks 2 random dice for 1 turn
+- **On Death**: Splits into 4 Crystal Shards (30% HP, reduced dice)
 - **Strategy**: Don't rely on specific dice combinations, adapt quickly
+
+### Acid Hydra (Mini-Boss)
+- **60% HP**: Regenerates 8 HP per turn for 5 turns
+- **30% HP**: Spawns 2 Acid Slimes (35% HP, 2 dice)
+- **Strategy**: Burst damage to prevent excessive healing, manage slime adds
+
+### Void Wraith (Mini-Boss)
+- **Combat Start**: 5 damage reduction (permanent)
+- **Every 4 Turns**: Force-locks 1 random die for 1 turn
+- **Strategy**: Focus on high-damage combos to overcome reduction, prepare for dice locks
+
+### Bone Reaper (Mini-Boss)
+- **Combat Start**: 2 damage per turn curse (permanent)
+- **50% HP**: Limits rerolls to 1 per turn for 4 turns
+- **25% HP**: Restricts dice to only 1-3 for 3 turns
+- **Strategy**: Quick kill before multiple debuffs stack, save potions for final phase
+
+### Demon Lord (Floor Boss)
+- **Combat Start**: Applies 3 damage per turn curse (permanent)
+- **Every 3 Turns**: Spawns 1 Imp (25% HP, 2 dice) - max 4 total
+- **On Death**: Transforms into Demon Prince (60% HP, 6 dice)
+- **Strategy**: Race against curse damage and Imp accumulation, prepare for transformation
 
 ## Implementation Details
 

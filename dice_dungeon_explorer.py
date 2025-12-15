@@ -68,6 +68,7 @@ from explorer.lore import LoreManager
 from explorer.save_system import SaveSystem
 from explorer.quests import QuestManager
 from explorer.quest_definitions import create_default_quests
+from explorer.ui_main_menu import MainMenuManager
 
 class DiceDungeonExplorer:
     def __init__(self, root):
@@ -669,6 +670,7 @@ class DiceDungeonExplorer:
         self.lore_manager = LoreManager(self)
         self.save_system = SaveSystem(self)
         self.quest_manager = QuestManager(self)
+        self.main_menu_manager = MainMenuManager(self)
         
         # Import and initialize UI dialogs manager
         from explorer.ui_dialogs import UIDialogsManager
@@ -678,7 +680,7 @@ class DiceDungeonExplorer:
         self.quest_manager.register_default_quests(create_default_quests())
         
         # Show main menu
-        self.show_main_menu()
+        self.main_menu_manager.show_main_menu()
     
     def load_settings(self):
         """Load or initialize game settings"""
@@ -1187,17 +1189,7 @@ class DiceDungeonExplorer:
             # If we're on the main menu (no game_frame exists), refresh it for responsive layout
             if hasattr(self, 'main_frame') and self.main_frame.winfo_exists() and not hasattr(self, 'game_frame'):
                 # Delay the refresh slightly to avoid excessive calls during window dragging
-                self.root.after(100, self._delayed_main_menu_refresh)
-    
-    def _delayed_main_menu_refresh(self):
-        """Delayed refresh of main menu for responsive layout - avoids excessive updates during window resize"""
-        try:
-            # Only refresh if we're still on the main menu
-            if hasattr(self, 'main_frame') and self.main_frame.winfo_exists() and not hasattr(self, 'game_frame'):
-                self.show_main_menu()
-        except Exception as e:
-            # Silently handle any errors during refresh to avoid breaking the UI
-            pass
+                self.root.after(100, self.main_menu_manager._delayed_main_menu_refresh)
     
     def load_enemy_sprites(self, base_dir):
         """Load enemy sprite images from disk - automatically loads all sprites"""
@@ -1292,132 +1284,8 @@ class DiceDungeonExplorer:
         return int(base_length * self.scale_factor)
     
     def show_main_menu(self):
-        """Show the main menu with responsive layout that fills the screen"""
-        if not self.content_loaded:
-            return
-        
-        # Force window update to get accurate dimensions
-        self.root.update_idletasks()
-        
-        # Calculate initial scale factor based on current window size
-        current_width = self.root.winfo_width()
-        current_height = self.root.winfo_height()
-        if current_width > 1 and current_height > 1:  # Window has been sized
-            width_scale = current_width / self.base_window_width
-            height_scale = current_height / self.base_window_height
-            self.scale_factor = min(width_scale, height_scale)
-            self.scale_factor = max(0.8, min(self.scale_factor, 2.5))
-        
-        for widget in self.root.winfo_children():
-            widget.destroy()
-        
-        # Apply color scheme
-        bg_color = self.current_colors["bg_primary"]
-        
-        # Create main container that fills the entire window
-        self.main_frame = tk.Frame(self.root, bg=bg_color)
-        self.main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-        
-        # Calculate dynamic spacing based on window height
-        available_height = max(400, current_height - 60)  # Account for padding with minimum
-        total_elements = 8  # logo, title, subtitle, 5 buttons
-        dynamic_spacing = max(10, min(40, int(available_height / total_elements * 0.4)))
-        
-        # Header section with flexible spacing
-        header_frame = tk.Frame(self.main_frame, bg=bg_color)
-        header_frame.pack(fill=tk.X, pady=(0, dynamic_spacing))
-        
-        # Logo section with responsive sizing
-        logo_frame = tk.Frame(header_frame, bg=bg_color)
-        logo_frame.pack(pady=int(dynamic_spacing * 0.5))
-        
-        # Load and display DD Logo with dynamic sizing
-        try:
-            import os
-            from PIL import Image, ImageTk
-            logo_path = os.path.join(os.path.dirname(__file__), "assets", "DD Logo.png")
-            if os.path.exists(logo_path):
-                # Calculate logo size based on window height (15% of height, min 100, max 200)
-                img = Image.open(logo_path)
-                logo_size = max(100, min(200, int(available_height * 0.15)))
-                img = img.resize((logo_size, logo_size), Image.LANCZOS)
-                self.menu_logo_image = ImageTk.PhotoImage(img)
-                
-                logo_label = tk.Label(logo_frame, image=self.menu_logo_image, bg=bg_color)
-                logo_label.pack()
-            else:
-                # Fallback to text if logo not found
-                fallback_size = max(32, min(48, int(available_height * 0.08)))
-                tk.Label(logo_frame, text="DD", 
-                        font=('Arial', self.scale_font(fallback_size), 'bold'), 
-                        bg=bg_color, fg=self.current_colors["text_gold"]).pack()
-        except Exception as e:
-            # Fallback to text if PIL not available or other error
-            fallback_size = max(32, min(48, int(available_height * 0.08)))
-            tk.Label(logo_frame, text="DD", 
-                    font=('Arial', self.scale_font(fallback_size), 'bold'), 
-                    bg=bg_color, fg=self.current_colors["text_gold"]).pack()
-        
-        # Title section with responsive font sizing
-        title_size = max(20, min(32, int(available_height * 0.04)))
-        tk.Label(header_frame, text="DICE DUNGEON EXPLORER", 
-                font=('Arial', self.scale_font(title_size), 'bold'), 
-                bg=bg_color, fg=self.current_colors["text_gold"]).pack(pady=(0, int(dynamic_spacing * 0.3)))
-        
-        subtitle_size = max(12, min(18, int(available_height * 0.025)))
-        tk.Label(header_frame, text="Explore • Fight • Loot • Survive", 
-                font=('Arial', self.scale_font(subtitle_size)), 
-                bg=bg_color, fg=self.current_colors["text_primary"]).pack()
-        
-        # Central content area for buttons with better spacing
-        content_frame = tk.Frame(self.main_frame, bg=bg_color)
-        content_frame.pack(fill=tk.BOTH, expand=True, pady=dynamic_spacing)
-        
-        # Button container centered in content area
-        btn_container = tk.Frame(content_frame, bg=bg_color)
-        btn_container.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
-        
-        # Responsive button sizing
-        btn_width = max(18, min(25, int(current_width * 0.025)))
-        btn_font_size = max(12, min(16, int(available_height * 0.022)))
-        btn_font = ('Arial', self.scale_font(btn_font_size), 'bold')
-        btn_pady = max(8, min(15, int(available_height * 0.012)))
-        btn_spacing = max(8, min(15, int(dynamic_spacing * 0.6)))
-        
-        # Create buttons with enhanced styling
-        buttons = [
-            ("START ADVENTURE", self.start_new_game, self.current_colors["button_primary"], '#000000'),
-            ("SAVE/LOAD GAME", self.load_game, self.current_colors["button_secondary"], '#000000'),
-            ("SETTINGS", self.show_settings, self.current_colors["text_purple"], '#ffffff'),
-            ("HIGH SCORES", self.show_high_scores, self.current_colors["text_gold"], '#000000'),
-            ("QUIT", self.root.quit, '#ff6b6b', '#000000')
-        ]
-        
-        for text, command, bg, fg in buttons:
-            btn = tk.Button(btn_container, text=text, 
-                           command=command,
-                           font=btn_font, bg=bg, fg=fg,
-                           width=btn_width, pady=btn_pady,
-                           relief=tk.RAISED, borderwidth=2,
-                           activebackground=self.current_colors["button_hover"],
-                           activeforeground='#000000')
-            btn.pack(pady=btn_spacing)
-            
-            # Add hover effects with specific colors for each button
-            hover_color = self.current_colors["button_hover"] if bg in [self.current_colors["button_primary"], self.current_colors["button_secondary"]] else bg
-            
-            def on_enter(e, button=btn, hover_bg=hover_color):
-                if hover_bg == self.current_colors["button_hover"]:
-                    button.config(bg=hover_bg)
-                else:
-                    # For non-standard buttons, slightly lighten the color
-                    button.config(relief=tk.SUNKEN)
-            
-            def on_leave(e, button=btn, orig_bg=bg):
-                button.config(bg=orig_bg, relief=tk.RAISED)
-            
-            btn.bind("<Enter>", on_enter)
-            btn.bind("<Leave>", on_leave)
+        """Show the main menu - delegates to MainMenuManager"""
+        self.main_menu_manager.show_main_menu()
     
     # ========== UI STYLING HELPER METHODS ==========
     
@@ -7870,6 +7738,32 @@ Final Score: {self.run_score}
                     fg=self.current_colors["text_secondary"], width=5, pady=2)
             btn.pack(side=tk.LEFT, padx=2)
         
+        # Category filter frame (new row)
+        filter_frame = tk.Frame(enemy_tab, bg=self.current_colors["bg_secondary"])
+        filter_frame.pack(fill=tk.X, padx=20, pady=5)
+        
+        tk.Label(filter_frame, text="Filter:", bg=self.current_colors["bg_secondary"],
+                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+        
+        enemy_filter_var = tk.StringVar(value="all")
+        
+        filter_options = [
+            ("all", "All Enemies", "#95a5a6"),
+            ("regular", "Regular", "#95a5a6"),
+            ("elite", "Elite", "#f39c12"),
+            ("miniboss", "Mini-Boss", "#e67e22"),
+            ("boss", "Floor Boss", "#e74c3c")
+        ]
+        
+        for filter_type, label, color in filter_options:
+            def set_filter(ft=filter_type):
+                enemy_filter_var.set(ft)
+                refresh_enemy_list()
+            btn = tk.Button(filter_frame, text=label, command=set_filter,
+                    font=('Arial', 9, 'bold'), bg=color,
+                    fg='#ffffff', width=10, pady=4)
+            btn.pack(side=tk.LEFT, padx=2)
+        
         # Spawn options
         options_frame = tk.Frame(enemy_tab, bg=self.current_colors["bg_secondary"])
         options_frame.pack(fill=tk.X, padx=20, pady=5)
@@ -7973,19 +7867,37 @@ Final Score: {self.run_score}
             return hp_min, hp_max, dice_count
         
         def get_enemy_category(enemy_name):
+            """Categorize enemies as Regular, Elite, Mini-Boss, or Floor Boss"""
             enemy_config = self.enemy_types.get(enemy_name, {})
-            if enemy_config.get("can_spawn") or enemy_config.get("splits_on_death"):
-                return "Spawner"
             
-            # Use calculated HP to determine category
+            # Check if enemy has boss abilities defined - this is the PRIMARY indicator
+            has_boss_abilities = bool(enemy_config.get("boss_abilities"))
+            
+            # Use calculated HP and name patterns to determine category
             hp_min, hp_max, _ = calculate_enemy_stats(enemy_name)
             avg_hp = (hp_min + hp_max) / 2
+            enemy_lower = enemy_name.lower()
             
-            if avg_hp >= 150:
-                return "Boss"
-            elif avg_hp >= 80:
+            # Floor Boss indicators - typically named "Lord", "King", "Ancient", "Dragon", etc.
+            boss_keywords = ["lord", "king", "queen", "ancient", "primordial", "elder", "supreme", 
+                           "dragon", "titan", "colossus", "emperor", "empress", "leviathan", "behemoth"]
+            
+            # Check for boss keywords in name
+            is_boss_name = any(keyword in enemy_lower for keyword in boss_keywords)
+            
+            # Categorize based on boss abilities FIRST, then name/HP
+            if has_boss_abilities and (is_boss_name or avg_hp >= 200):
+                return "Floor Boss"
+            elif has_boss_abilities:
+                # Has boss abilities but not boss-level HP/name = Mini-Boss
+                return "Mini-Boss"
+            elif is_boss_name or avg_hp >= 200:
+                # Boss name/HP but no abilities = just a strong Elite
                 return "Elite"
-            return "Regular"
+            elif avg_hp >= 50:
+                return "Elite"
+            else:
+                return "Regular"
         
         def refresh_enemy_list():
             for widget in enemy_scroll_frame.winfo_children():
@@ -7993,12 +7905,26 @@ Final Score: {self.run_score}
             
             search_term = enemy_search_var.get().lower()
             current_sort = enemy_sort_var.get()
+            current_filter = enemy_filter_var.get()
             
-            # Filter enemies by search
+            # Filter enemies by search and category
             filtered_enemies = []
             for enemy_name in enemy_list:
                 if search_term and search_term not in enemy_name.lower():
                     continue
+                
+                # Apply category filter
+                if current_filter != "all":
+                    category = get_enemy_category(enemy_name)
+                    if current_filter == "regular" and category != "Regular":
+                        continue
+                    elif current_filter == "elite" and category != "Elite":
+                        continue
+                    elif current_filter == "miniboss" and category != "Mini-Boss":
+                        continue
+                    elif current_filter == "boss" and category != "Floor Boss":
+                        continue
+                
                 filtered_enemies.append(enemy_name)
             
             # Sort enemies
@@ -8039,9 +7965,14 @@ Final Score: {self.run_score}
                 row_frame.bind("<Button-1>", lambda e, name=enemy_name: spawn_this_enemy(name))
                 row_frame.config(cursor="hand2")
                 
-                # Category badge
-                badge_colors = {"Regular": "#95a5a6", "Elite": "#f39c12", "Boss": "#e74c3c", "Spawner": "#9b59b6"}
-                badge = tk.Label(row_frame, text=f"[{category}]", font=('Arial', 7),
+                # Category badge with updated colors
+                badge_colors = {
+                    "Regular": "#95a5a6", 
+                    "Elite": "#f39c12", 
+                    "Mini-Boss": "#e67e22",
+                    "Floor Boss": "#e74c3c"
+                }
+                badge = tk.Label(row_frame, text=f"[{category}]", font=('Arial', 7, 'bold'),
                         bg=badge_colors.get(category, "#95a5a6"), fg='#ffffff')
                 badge.pack(side=tk.LEFT, padx=2)
                 badge.bind("<Button-1>", lambda e, name=enemy_name: spawn_this_enemy(name))

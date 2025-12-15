@@ -360,12 +360,13 @@ class CombatManager:
             
             # Elite enemies
             "Demon": 2.0, "Dragon": 2.5, "Lich": 1.8, "Vampire": 1.6, "Wraith": 1.4,
-            "Golem": 2.2, "Hydra": 2.3, "Phoenix": 2.0, "Titan": 2.8,
+            "Golem": 2.2, "Hydra": 2.3, "Phoenix": 2.0, "Titan": 2.8, "Reaper": 1.9,
             
             # Special/Boss enemies
             "Lord": 3.0, "King": 3.5, "Ancient": 3.2, "Primordial": 4.0,
             "Crystal Golem": 1.8, "Shadow Hydra": 2.1, "Necromancer": 1.6,
-            "Gelatinous Slime": 1.3, "Demon Lord": 2.8, "Demon Prince": 2.4
+            "Gelatinous Slime": 1.3, "Demon Lord": 2.8, "Demon Prince": 2.4,
+            "Acid Hydra": 3.3, "Void Wraith": 2.7, "Bone Reaper": 2.85
         }
         
         # Find multiplier for this enemy (check for partial name matches)
@@ -519,9 +520,16 @@ class CombatManager:
     # ======================================================================
     def spawn_additional_enemy(self, spawner_enemy, spawn_type, hp_mult, dice_count):
         """Spawn an additional enemy during combat"""
-        # All spawned enemies have exactly 30 HP and 2 dice
-        spawn_hp = 30
-        spawn_dice = 2
+        # Calculate spawn HP based on spawner's max HP
+        spawn_hp = int(spawner_enemy["max_health"] * hp_mult)
+        spawn_hp = max(10, spawn_hp)  # Minimum 10 HP
+        
+        # Apply difficulty multiplier
+        difficulty = self.game.settings.get("difficulty", "Normal")
+        spawn_hp = int(spawn_hp * self.game.difficulty_multipliers[difficulty]["enemy_health_mult"])
+        
+        # Use provided dice count
+        spawn_dice = max(1, dice_count)  # Minimum 1 die
         
         # Create spawned enemy
         spawned_enemy = {
@@ -558,8 +566,11 @@ class CombatManager:
     # ======================================================================
     def split_enemy(self, enemy, split_type, split_count, hp_percent, dice_modifier=0):
         """Split an enemy into smaller enemies"""
-        # All split enemies have exactly 30 HP and modified dice count
-        split_hp = 30
+        # Calculate split HP based on original enemy's max HP
+        split_hp = int(enemy["max_health"] * hp_percent)
+        split_hp = max(10, split_hp)  # Minimum 10 HP
+        
+        # Calculate split dice count
         split_dice = enemy["num_dice"] + dice_modifier  # dice_modifier is usually negative
         split_dice = max(1, split_dice)  # Minimum 1 die
         
@@ -585,6 +596,9 @@ class CombatManager:
         self.game.log(f"✸ {enemy['name']} splits into {split_count} {split_type}s! ✸", 'enemy')
         for split_enemy in split_enemies:
             self.game.log(f"[SPLIT] {split_enemy['name']} - HP: {split_hp} | Dice: {split_dice}", 'enemy')
+        
+        # Mark original enemy as having split
+        enemy["has_split"] = True
         
         # Remove original enemy and add split enemies
         if enemy in self.game.enemies:
@@ -756,8 +770,8 @@ class CombatManager:
             elif trigger_type == "hp_threshold":
                 current_hp_percent = enemy["health"] / enemy["max_health"]
                 threshold = ability.get("hp_threshold", 0.5)
-                # Check if ability has already been triggered
-                ability_key = f"{enemy['name']}_{ability['type']}_hp_threshold"
+                # Check if ability has already been triggered (use threshold in key to allow multiple thresholds)
+                ability_key = f"{enemy['name']}_{ability['type']}_hp_{threshold}"
                 if current_hp_percent <= threshold and ability_key not in self.game.boss_ability_cooldowns:
                     should_trigger = True
                     self.game.boss_ability_cooldowns[ability_key] = True
@@ -871,6 +885,63 @@ class CombatManager:
                 "message": f"You take {damage} damage per turn!"
             })
         
+        # Heal over time - enemy regenerates HP
+        elif ability_type == "heal_over_time":
+            duration = ability.get("duration_turns", 5)
+            heal_amount = ability.get("heal_per_turn", 8)
+            self.game.active_curses.append({
+                "type": "heal_over_time",
+                "turns_left": duration,
+                "heal_amount": heal_amount,
+                "target_enemy": enemy,
+                "message": f"Enemy regenerates {heal_amount} HP per turn!"
+            })
+        
+        # Damage reduction - reduces all incoming damage
+        elif ability_type == "damage_reduction":
+            duration = ability.get("duration_turns", 999)
+            reduction = ability.get("reduction_amount", 5)
+            
+            # Store reduction on enemy for easy access during damage calculation
+            enemy["damage_reduction"] = reduction
+            
+            self.game.active_curses.append({
+                "type": "damage_reduction",
+                "turns_left": duration,
+                "reduction_amount": reduction,
+                "target_enemy": enemy,
+                "message": f"Enemy has {reduction} damage reduction!"
+            })
+        
+        # Spawn minions (hp_threshold trigger for mid-combat spawning)
+        elif ability_type == "spawn_minions":
+            spawn_type = ability.get("spawn_type", "Skeleton")
+            spawn_count = ability.get("spawn_count", 2)
+            spawn_hp_mult = ability.get("spawn_hp_mult", 0.3)
+            spawn_dice = ability.get("spawn_dice", 2)
+            
+            for _ in range(spawn_count):
+                self.spawn_additional_enemy(enemy, spawn_type, spawn_hp_mult, spawn_dice)
+        
+        # Spawn minions periodically (with max spawn limit)
+        elif ability_type == "spawn_minions_periodic":
+            # Track spawns for this ability
+            ability_key = f"{enemy['name']}_periodic_spawns"
+            current_spawns = self.game.boss_ability_cooldowns.get(f"{ability_key}_count", 0)
+            max_spawns = ability.get("max_spawns", 999)
+            
+            if current_spawns < max_spawns:
+                spawn_type = ability.get("spawn_type", "Imp")
+                spawn_count = ability.get("spawn_count", 1)
+                spawn_hp_mult = ability.get("spawn_hp_mult", 0.25)
+                spawn_dice = ability.get("spawn_dice", 2)
+                
+                for _ in range(spawn_count):
+                    self.spawn_additional_enemy(enemy, spawn_type, spawn_hp_mult, spawn_dice)
+                
+                # Increment spawn counter
+                self.game.boss_ability_cooldowns[f"{ability_key}_count"] = current_spawns + spawn_count
+        
         # Spawn on death
         elif ability_type == "spawn_on_death":
             spawn_type = ability.get("spawn_type", "Skeleton")
@@ -933,6 +1004,13 @@ class CombatManager:
         for i, curse in enumerate(self.game.active_curses):
             curse_type = curse.get("type")
             
+            # Check if curse is tied to a specific enemy and that enemy is dead/gone
+            target_enemy = curse.get("target_enemy")
+            if target_enemy and target_enemy not in self.game.enemies:
+                # Enemy died, remove this curse
+                curses_to_remove.append(i)
+                continue
+            
             # Apply damage curses
             if curse_type == "curse_damage":
                 damage = curse.get("damage", 3)
@@ -945,6 +1023,26 @@ class CombatManager:
                         self.game.health = 0
                         self.game.player_died()
                         return
+            
+            # Apply heal over time
+            elif curse_type == "heal_over_time":
+                heal_amount = curse.get("heal_amount", 8)
+                target_enemy = curse.get("target_enemy")
+                
+                # Check if enemy is still alive and in combat
+                if target_enemy and target_enemy in self.game.enemies and target_enemy["health"] > 0:
+                    # Don't heal above max HP
+                    old_hp = target_enemy["health"]
+                    target_enemy["health"] = min(target_enemy["health"] + heal_amount, target_enemy["max_health"])
+                    actual_heal = target_enemy["health"] - old_hp
+                    
+                    if actual_heal > 0:
+                        self.game.log(f"💚 {target_enemy['name']} regenerates {actual_heal} HP!", 'enemy')
+                        self.game.update_display()
+                else:
+                    # Enemy is dead, mark curse for removal
+                    curses_to_remove.append(i)
+                    continue  # Skip decrement for dead enemy's curse
             
             # Decrement turn counter
             curse["turns_left"] -= 1
@@ -967,6 +1065,14 @@ class CombatManager:
                     self.game.log("The binding breaks! Your dice are unlocked.", 'success')
                 elif curse_type == "curse_reroll":
                     self.game.log("The curse fades! You can reroll normally again.", 'success')
+                elif curse_type == "heal_over_time":
+                    self.game.log("The enemy's regeneration ends.", 'system')
+                elif curse_type == "damage_reduction":
+                    # Remove damage reduction from enemy
+                    target_enemy = curse.get("target_enemy")
+                    if target_enemy and "damage_reduction" in target_enemy:
+                        del target_enemy["damage_reduction"]
+                    self.game.log("The enemy's defenses fade!", 'success')
         
         # Remove expired curses (in reverse to maintain indices)
         for i in reversed(curses_to_remove):
@@ -1164,6 +1270,12 @@ class CombatManager:
         if hasattr(self.game, 'rolls_label'):
             curse_text = " [CURSED]" if has_reroll_curse else ""
             self.game.rolls_label.config(text=f"Rolls Remaining: {self.game.rolls_left}/{max_rolls}{curse_text}")
+        
+        # Process boss curses at START of turn (curse_damage applies here)
+        if hasattr(self.game, 'active_curses') and self.game.active_curses:
+            self._process_boss_curses()
+            if self.game.health <= 0:
+                return  # Player died from curse damage
         
         # Process status effects at start of turn
         self.process_status_effects()
@@ -2570,12 +2682,7 @@ class CombatManager:
         """End combat round and prepare for next turn"""
         self.game.combat_state = "idle"
         
-        # Process boss curses at end of round (so they last the full turn)
-        if hasattr(self.game, 'active_curses') and self.game.active_curses:
-            self._process_boss_curses()
-            if self.game.health <= 0:
-                return  # Player died from curse damage
-        
+        # Note: Boss curses are processed at START of player turn in start_combat_turn()
         # Note: No need to re-enable roll button here since start_combat_turn
         # will create a new enabled button
         
@@ -2624,6 +2731,19 @@ class CombatManager:
         self.game.stats["total_damage_dealt"] += damage
         if damage > self.game.stats["highest_single_damage"]:
             self.game.stats["highest_single_damage"] = damage
+        
+        # Apply damage reduction from boss abilities
+        if len(self.game.enemies) > 0:
+            target_index = min(self.game.current_enemy_index, len(self.game.enemies) - 1)
+            target = self.game.enemies[target_index]
+            
+            if "damage_reduction" in target:
+                reduction = target["damage_reduction"]
+                original_damage = damage
+                damage = max(1, damage - reduction)  # Minimum 1 damage
+                
+                if damage < original_damage:
+                    self.game.log(f"🛡️ Enemy's defenses reduce {reduction} damage! ({original_damage} → {damage})", 'enemy')
         
         # Store damage for later application
         self._pending_player_damage = damage

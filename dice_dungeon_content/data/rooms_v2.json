@@ -2632,10 +2632,11 @@
   {
     "id": 82,
     "name": "Well of Names",
-    "difficulty": "Medium",
+    "difficulty": "Elite",
     "threats": [
       "Name Leech",
-      "Echo Wraith"
+      "Echo Wraith",
+      "Void Wraith"
     ],
     "history": "Names thrown in for luck could be stolen back.",
     "flavor": "Your name sounds lighter the longer you stay.",

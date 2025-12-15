@@ -18,21 +18,33 @@
     "splits_on_death": false
   },
   "Necromancer": {
-    "can_spawn": true,
-    "spawn_trigger": "hp_thresholds",
-    "spawn_hp_thresholds": [0.75, 0.5, 0.25],
-    "max_spawns": 3,
-    "spawn_count": 2,
-    "spawn_type": "Skeleton",
-    "spawn_hp_mult": 0.3,
-    "spawn_dice": 2,
     "boss_abilities": [
+      {
+        "type": "spawn_minions",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.75,
+        "spawn_type": "Skeleton",
+        "spawn_count": 2,
+        "spawn_hp_mult": 0.3,
+        "spawn_dice": 2,
+        "message": "The Necromancer summons Skeletons to aid in battle!"
+      },
       {
         "type": "curse_reroll",
         "trigger": "hp_threshold",
         "hp_threshold": 0.5,
         "duration_turns": 3,
         "message": "The Necromancer curses you! You can only reroll once per turn for the next 3 turns."
+      },
+      {
+        "type": "spawn_minions",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.25,
+        "spawn_type": "Skeleton",
+        "spawn_count": 2,
+        "spawn_hp_mult": 0.3,
+        "spawn_dice": 2,
+        "message": "The Necromancer summons more Skeletons!"
       },
       {
         "type": "spawn_on_death",
@@ -48,14 +60,6 @@
     "can_spawn": false
   },
   "Shadow Hydra": {
-    "can_spawn": true,
-    "spawn_trigger": "hp_threshold",
-    "spawn_hp_threshold": 0.3,
-    "max_spawns": 2,
-    "spawn_count": 2,
-    "spawn_type": "Shadow Head",
-    "spawn_hp_mult": 0.35,
-    "spawn_dice": 2,
     "boss_abilities": [
       {
         "type": "dice_restrict",
@@ -64,6 +68,16 @@
         "restricted_values": [1, 2],
         "duration_turns": 2,
         "message": "Shadow energy wraps around your dice! You can only roll 1s and 2s for 2 turns."
+      },
+      {
+        "type": "spawn_minions",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.3,
+        "spawn_type": "Shadow Head",
+        "spawn_count": 2,
+        "spawn_hp_mult": 0.35,
+        "spawn_dice": 2,
+        "message": "The Shadow Hydra splits off shadow heads to attack you!"
       }
     ]
   },
@@ -71,14 +85,6 @@
     "can_spawn": false
   },
   "Demon Lord": {
-    "can_spawn": true,
-    "spawn_trigger": "turn_count",
-    "spawn_turn_interval": 3,
-    "max_spawns": 4,
-    "spawn_count": 1,
-    "spawn_type": "Imp",
-    "spawn_hp_mult": 0.25,
-    "spawn_dice": 2,
     "boss_abilities": [
       {
         "type": "curse_damage",
@@ -86,6 +92,17 @@
         "damage_per_turn": 3,
         "duration_turns": 999,
         "message": "The Demon Lord's aura burns you! You take 3 damage at the start of each turn."
+      },
+      {
+        "type": "spawn_minions_periodic",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "max_spawns": 4,
+        "spawn_type": "Imp",
+        "spawn_count": 1,
+        "spawn_hp_mult": 0.25,
+        "spawn_dice": 2,
+        "message": "The Demon Lord summons an Imp to attack you!"
       },
       {
         "type": "transform_on_death",
@@ -130,5 +147,75 @@
   },
   "Crystal Shard": {
     "can_spawn": false
+  },
+  "Acid Hydra": {
+    "boss_abilities": [
+      {
+        "type": "heal_over_time",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.6,
+        "heal_per_turn": 8,
+        "duration_turns": 5,
+        "message": "The Acid Hydra's wounds begin to regenerate!"
+      },
+      {
+        "type": "spawn_minions",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.3,
+        "spawn_type": "Acid Slime",
+        "spawn_count": 2,
+        "spawn_hp_mult": 0.35,
+        "spawn_dice": 2,
+        "message": "The Acid Hydra spits out corrosive slimes!"
+      }
+    ]
+  },
+  "Acid Slime": {
+    "can_spawn": false
+  },
+  "Void Wraith": {
+    "boss_abilities": [
+      {
+        "type": "damage_reduction",
+        "trigger": "combat_start",
+        "reduction_amount": 5,
+        "duration_turns": 999,
+        "message": "The Void Wraith phases partially out of reality! All damage reduced by 5."
+      },
+      {
+        "type": "dice_lock_random",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "lock_count": 1,
+        "duration_turns": 2,
+        "message": "Void energy reaches out and freezes one of your dice!"
+      }
+    ]
+  },
+  "Bone Reaper": {
+    "boss_abilities": [
+      {
+        "type": "curse_damage",
+        "trigger": "combat_start",
+        "damage_per_turn": 2,
+        "duration_turns": 999,
+        "message": "The Bone Reaper's death aura drains your life! You take 2 damage per turn."
+      },
+      {
+        "type": "curse_reroll",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.5,
+        "duration_turns": 4,
+        "message": "The Bone Reaper's chilling presence makes your hands shake! You can only reroll once per turn for 4 turns."
+      },
+      {
+        "type": "dice_restrict",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.25,
+        "restricted_values": [1, 2, 3],
+        "duration_turns": 3,
+        "message": "Death's grip weakens you! Your dice can only roll 1-3 for 3 turns."
+      }
+    ]
   }
 }

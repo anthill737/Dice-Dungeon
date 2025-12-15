@@ -52,8 +52,15 @@ class DiceManager:
         
         # Generate final values for dice being rolled
         final_values = {}
+        restricted_values = getattr(self.game, 'dice_restricted_values', [])
+        
         for i in dice_to_roll:
-            final_values[i] = random.randint(1, 6)
+            if restricted_values:
+                # Roll only from restricted values (boss curse)
+                final_values[i] = random.choice(restricted_values)
+            else:
+                # Normal roll
+                final_values[i] = random.randint(1, 6)
         
         # Start animation (15 frames = 375ms total at 25ms per frame, reduced from 20 frames/500ms)
         self._animate_dice_roll(dice_to_roll, final_values, frame=0, max_frames=15)
@@ -98,12 +105,16 @@ class DiceManager:
             # Show rolled dice values with potential damage preview inline
             dice_str = ", ".join(str(self.game.dice_values[i]) for i in range(self.game.num_dice) if self.game.dice_values[i] > 0)
             
+            # Add restriction warning if active
+            restricted_values = getattr(self.game, 'dice_restricted_values', [])
+            restriction_note = f" [Restricted to {restricted_values}]" if restricted_values else ""
+            
             # Calculate potential damage for preview
             potential_info = self._get_damage_preview_text()
             if potential_info:
-                self.game.log(f"⚄ You rolled: [{dice_str}] - {potential_info}", 'player')
+                self.game.log(f"⚄ You rolled: [{dice_str}]{restriction_note} - {potential_info}", 'player')
             else:
-                self.game.log(f"⚄ You rolled: [{dice_str}]", 'player')
+                self.game.log(f"⚄ You rolled: [{dice_str}]{restriction_note}", 'player')
             
             # Clear the damage preview label since we're showing it in the log now
             if hasattr(self.game, 'damage_preview_label'):
