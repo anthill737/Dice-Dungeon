@@ -94,8 +94,8 @@ class DiceDungeonExplorer:
             except:
                 pass  # If fallback also fails, just continue without icon
         
-        self.root.geometry("1000x750")
-        self.root.minsize(950, 700)  # Increased minimum height to ensure movement controls visible
+        self.root.geometry("950x700")  # Smaller default size
+        self.root.minsize(900, 650)  # Reduced minimum size
         self.root.configure(bg='#2c1810')
         
         # Initialize debug logger
@@ -3229,15 +3229,15 @@ class DiceDungeonExplorer:
         
         # Enter dungeon button
         enter_frame = tk.Frame(interact_frame, bg=self.current_colors["bg_secondary"])
-        enter_frame.pack(pady=self.scale_padding(20))
+        enter_frame.pack(pady=self.scale_padding(10))
         
         tk.Label(enter_frame, text="Beyond lies the First Calculation...",
-                font=('Arial', self.scale_font(10), 'italic'), bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_secondary"]).pack(pady=self.scale_padding(5))
+                font=('Arial', self.scale_font(10), 'italic'), bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_secondary"]).pack(pady=self.scale_padding(3))
         
         tk.Button(enter_frame, text="[ENTER THE DUNGEON - FLOOR 1]",
                  command=self.enter_dungeon_from_starter,
-                 font=('Arial', self.scale_font(14), 'bold'), bg=self.current_colors["text_red"], fg='#ffffff',
-                 width=30, pady=self.scale_padding(15)).pack(pady=self.scale_padding(5))
+                 font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["text_red"], fg='#ffffff',
+                 width=28, pady=self.scale_padding(10)).pack(pady=self.scale_padding(3))
         
         # Update scroll region after all content is added
         main_area.update_idletasks()

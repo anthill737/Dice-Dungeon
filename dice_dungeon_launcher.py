@@ -4,16 +4,19 @@ Choose between Classic mode or Explorer mode
 """
 
 import tkinter as tk
-import subprocess
+import sys
 import os
 
 class GameLauncher:
     def __init__(self, root):
         self.root = root
-        self.root.title("Dice Dungeon RPG - Launcher")
-        self.root.geometry("600x500")
-        self.root.configure(bg='#2c1810')
+        self.root.title("Dice Dungeon - Launcher")
+        self.root.configure(bg='#2c1810')  # Set background immediately to prevent white flash
+        self.root.geometry("600x600")  # Increased height to fit logo
         self.root.resizable(False, False)
+        
+        # Withdraw window until it's fully built to prevent flash
+        self.root.withdraw()
         
         # Set DD Icon for the window
         try:
@@ -26,19 +29,36 @@ class GameLauncher:
         except:
             pass  # Use default icon if loading fails
         
-        # Center window
+        self.setup_ui()
+        
+        # Center window after UI is built
         self.root.update_idletasks()
         x = (self.root.winfo_screenwidth() // 2) - (600 // 2)
-        y = (self.root.winfo_screenheight() // 2) - (500 // 2)
-        self.root.geometry(f'600x500+{x}+{y}')
+        y = (self.root.winfo_screenheight() // 2) - (600 // 2)
+        self.root.geometry(f'600x600+{x}+{y}')
         
-        self.setup_ui()
+        # Show window now that it's ready
+        self.root.deiconify()
     
     def setup_ui(self):
+        # Logo
+        try:
+            logo_path = os.path.join("assets", "DD Logo.png")
+            if os.path.exists(logo_path):
+                from PIL import Image, ImageTk
+                img = Image.open(logo_path)
+                img = img.resize((120, 120), Image.LANCZOS)
+                self.logo_image = ImageTk.PhotoImage(img)
+                
+                logo_label = tk.Label(self.root, image=self.logo_image, bg='#2c1810')
+                logo_label.pack(pady=(20, 5))
+        except:
+            pass  # Skip logo if loading fails
+        
         # Title
-        tk.Label(self.root, text="DICE DUNGEON RPG", 
+        tk.Label(self.root, text="DICE DUNGEON", 
                 font=('Arial', 28, 'bold'), bg='#2c1810', fg='#ffd700',
-                pady=30).pack()
+                pady=10).pack()
         
         tk.Label(self.root, text="Choose Your Adventure", 
                 font=('Arial', 16), bg='#2c1810', fg='#ffffff',
@@ -46,89 +66,258 @@ class GameLauncher:
         
         # Game mode cards
         cards_frame = tk.Frame(self.root, bg='#2c1810')
-        cards_frame.pack(pady=30)
+        cards_frame.pack(pady=20)
         
         # Classic Mode Card
         classic_card = tk.Frame(cards_frame, bg='#3d2415', relief=tk.RAISED, borderwidth=3)
-        classic_card.pack(side=tk.LEFT, padx=20)
+        classic_card.pack(side=tk.LEFT, padx=15)
         
-        tk.Label(classic_card, text="⚔️ CLASSIC MODE ⚔️", 
-                font=('Arial', 16, 'bold'), bg='#3d2415', fg='#4ecdc4',
-                pady=15).pack()
+        tk.Label(classic_card, text="⚔️ CLASSIC ⚔️", 
+                font=('Arial', 14, 'bold'), bg='#3d2415', fg='#4ecdc4',
+                pady=10).pack()
         
-        classic_desc = """
-Fight your way through floors
-        
-• Floor-by-floor progression
-• Boss battles
-• Shop upgrades
-• Fast-paced action
-• Dice combat system
-        """
+        classic_desc = """Floor-by-floor • Boss battles
+Shop upgrades • Fast action"""
         
         tk.Label(classic_card, text=classic_desc, 
-                font=('Arial', 10), bg='#3d2415', fg='#ffffff',
-                justify=tk.LEFT, padx=20, pady=10).pack()
+                font=('Arial', 9), bg='#3d2415', fg='#ffffff',
+                justify=tk.CENTER, padx=15, pady=8).pack()
         
         tk.Button(classic_card, text="PLAY CLASSIC", 
                  command=self.launch_classic,
-                 font=('Arial', 12, 'bold'), bg='#4ecdc4', fg='#000000',
-                 width=18, pady=12).pack(pady=15)
+                 font=('Arial', 11, 'bold'), bg='#4ecdc4', fg='#000000',
+                 width=16, pady=10).pack(pady=12)
         
         # Explorer Mode Card
         explorer_card = tk.Frame(cards_frame, bg='#3d2415', relief=tk.RAISED, borderwidth=3)
-        explorer_card.pack(side=tk.LEFT, padx=20)
+        explorer_card.pack(side=tk.LEFT, padx=15)
         
-        tk.Label(explorer_card, text="🗺️ EXPLORER MODE 🗺️", 
-                font=('Arial', 16, 'bold'), bg='#3d2415', fg='#ffd700',
-                pady=15).pack()
+        tk.Label(explorer_card, text="🗺  EXPLORER  🗺", 
+                font=('Arial', 14, 'bold'), bg='#3d2415', fg='#ffd700',
+                pady=10).pack()
         
-        explorer_desc = """
-Explore procedural dungeons
-        
-• Roguelike exploration
-• 100+ unique rooms
-• Dynamic dungeon map
-• Discover secrets
-• Betrayal-style tiles
-        """
+        explorer_desc = """Procedural dungeons • 100+ rooms
+Dynamic map • Mysterious lore"""
         
         tk.Label(explorer_card, text=explorer_desc, 
-                font=('Arial', 10), bg='#3d2415', fg='#ffffff',
-                justify=tk.LEFT, padx=20, pady=10).pack()
+                font=('Arial', 9), bg='#3d2415', fg='#ffffff',
+                justify=tk.CENTER, padx=15, pady=8).pack()
         
         tk.Button(explorer_card, text="PLAY EXPLORER", 
                  command=self.launch_explorer,
-                 font=('Arial', 12, 'bold'), bg='#ffd700', fg='#000000',
-                 width=18, pady=12).pack(pady=15)
+                 font=('Arial', 11, 'bold'), bg='#ffd700', fg='#000000',
+                 width=16, pady=10).pack(pady=12)
         
         # Quit button
         tk.Button(self.root, text="QUIT", 
                  command=self.root.quit,
                  font=('Arial', 11, 'bold'), bg='#ff6b6b', fg='#000000',
-                 width=15, pady=10).pack(pady=20)
+                 width=15, pady=8).pack(pady=15)
     
     def launch_classic(self):
         """Launch the classic mode game"""
-        script_dir = os.path.dirname(__file__)
-        classic_path = os.path.join(script_dir, 'dice_dungeon_rpg.py')
-        
         try:
-            subprocess.Popen(['python', classic_path])
-            self.root.quit()
+            self.root.destroy()  # Close launcher
+            self.show_splash_classic()
         except Exception as e:
-            tk.messagebox.showerror("Error", f"Could not launch Classic Mode:\n{e}")
+            import tkinter.messagebox as messagebox
+            messagebox.showerror("Error", f"Could not launch Classic Mode:\n{e}")
     
     def launch_explorer(self):
         """Launch the explorer mode game"""
-        script_dir = os.path.dirname(__file__)
-        explorer_path = os.path.join(script_dir, 'dice_dungeon_explorer.py')
-        
         try:
-            subprocess.Popen(['python', explorer_path])
-            self.root.quit()
+            self.root.destroy()  # Close launcher
+            self.show_splash_explorer()
         except Exception as e:
-            tk.messagebox.showerror("Error", f"Could not launch Explorer Mode:\n{e}")
+            import tkinter.messagebox as messagebox
+            messagebox.showerror("Error", f"Could not launch Explorer Mode:\n{e}")
+    
+    def show_splash_classic(self):
+        """Show splash screen for Classic Mode"""
+        splash = tk.Tk()
+        splash.title("Dice Dungeon Classic")
+        splash.resizable(False, False)
+        splash.configure(bg='#2c1810')
+        
+        width = 650
+        height = 450
+        x = (splash.winfo_screenwidth() // 2) - (width // 2)
+        y = (splash.winfo_screenheight() // 2) - (height // 2)
+        splash.geometry(f'{width}x{height}+{x}+{y}')
+        splash.overrideredirect(True)
+        
+        main_frame = tk.Frame(splash, bg='#2c1810', relief=tk.RAISED, borderwidth=3)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        
+        # Logo
+        logo_image = None
+        try:
+            logo_path = os.path.join("assets", "DD Logo.png")
+            if os.path.exists(logo_path):
+                from PIL import Image, ImageTk
+                img = Image.open(logo_path)
+                img = img.resize((120, 120), Image.LANCZOS)
+                logo_image = ImageTk.PhotoImage(img)
+                logo_label = tk.Label(main_frame, image=logo_image, bg='#2c1810')
+                logo_label.image = logo_image
+                logo_label.pack(pady=(30, 15))
+        except:
+            pass
+        
+        tk.Label(main_frame, text="DICE DUNGEON CLASSIC",
+                font=('Arial', 22, 'bold'), bg='#2c1810', fg='#ffd700').pack(pady=8)
+        tk.Label(main_frame, text="Roll • Fight • Survive",
+                font=('Arial', 12, 'italic'), bg='#2c1810', fg='#ffffff').pack(pady=5)
+        
+        # Loading area
+        loading_frame = tk.Frame(main_frame, bg='#2c1810')
+        loading_frame.pack(pady=(30, 30), expand=True)
+        
+        text_frame = tk.Frame(loading_frame, bg='#2c1810')
+        text_frame.pack()
+        
+        loading_label = tk.Label(text_frame, text="Loading game engine",
+                               font=('Arial', 14), bg='#2c1810', fg='#ffffff')
+        loading_label.pack(side=tk.LEFT)
+        
+        dots_label = tk.Label(text_frame, text="",
+                            font=('Arial', 14), bg='#2c1810', fg='#ffd700')
+        dots_label.pack(side=tk.LEFT)
+        
+        # Progress tracking
+        progress = [0]
+        max_progress = 25
+        loading_messages = [
+            "Loading game engine",
+            "Loading dice mechanics",
+            "Loading enemy data",
+            "Loading shop items",
+            "Preparing combat system",
+            "Starting game"
+        ]
+        message_index = [0]
+        
+        def animate():
+            if progress[0] < max_progress:
+                # Update dots
+                dots = "." * ((progress[0] % 3) + 1)
+                dots_label.config(text=dots)
+                
+                # Update loading message
+                message_interval = max(1, max_progress // len(loading_messages))
+                if progress[0] % message_interval == 0 and message_index[0] < len(loading_messages):
+                    loading_label.config(text=loading_messages[message_index[0]])
+                    message_index[0] += 1
+                
+                progress[0] += 1
+                splash.after(200, animate)
+            else:
+                # Loading complete - launch immediately
+                launch_game()
+        
+        def launch_game():
+            splash.destroy()
+            import dice_dungeon_rpg
+            root = tk.Tk()
+            app = dice_dungeon_rpg.DiceDungeonRPG(root)
+            root.mainloop()
+        
+        animate()
+        splash.mainloop()
+    
+    def show_splash_explorer(self):
+        """Show splash screen for Explorer Mode"""
+        splash = tk.Tk()
+        splash.title("Dice Dungeon Explorer")
+        splash.resizable(False, False)
+        splash.configure(bg='#0a0604')
+        
+        width = 650
+        height = 450
+        x = (splash.winfo_screenwidth() // 2) - (width // 2)
+        y = (splash.winfo_screenheight() // 2) - (height // 2)
+        splash.geometry(f'{width}x{height}+{x}+{y}')
+        splash.overrideredirect(True)
+        
+        main_frame = tk.Frame(splash, bg='#0a0604', relief=tk.RAISED, borderwidth=3)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        
+        # Logo
+        logo_image = None
+        try:
+            logo_path = os.path.join("assets", "DD Logo.png")
+            if os.path.exists(logo_path):
+                from PIL import Image, ImageTk
+                img = Image.open(logo_path)
+                img = img.resize((120, 120), Image.LANCZOS)
+                logo_image = ImageTk.PhotoImage(img)
+                logo_label = tk.Label(main_frame, image=logo_image, bg='#0a0604')
+                logo_label.image = logo_image
+                logo_label.pack(pady=(30, 15))
+        except:
+            pass
+        
+        tk.Label(main_frame, text="DICE DUNGEON EXPLORER",
+                font=('Arial', 22, 'bold'), bg='#0a0604', fg='#d4af37').pack(pady=8)
+        tk.Label(main_frame, text="Explore • Fight • Loot • Survive",
+                font=('Arial', 12, 'italic'), bg='#0a0604', fg='#8b7355').pack(pady=5)
+        
+        # Loading area
+        loading_frame = tk.Frame(main_frame, bg='#0a0604')
+        loading_frame.pack(pady=(30, 30), expand=True)
+        
+        text_frame = tk.Frame(loading_frame, bg='#0a0604')
+        text_frame.pack()
+        
+        loading_label = tk.Label(text_frame, text="Loading game engine",
+                               font=('Arial', 14), bg='#0a0604', fg='#e8dcc4')
+        loading_label.pack(side=tk.LEFT)
+        
+        dots_label = tk.Label(text_frame, text="",
+                            font=('Arial', 14), bg='#0a0604', fg='#d4af37')
+        dots_label.pack(side=tk.LEFT)
+        
+        # Progress tracking
+        progress = [0]
+        max_progress = 25
+        loading_messages = [
+            "Loading game engine",
+            "Loading content system",
+            "Initializing dice mechanics",
+            "Loading enemy data",
+            "Loading item definitions",
+            "Preparing world lore",
+            "Starting adventure"
+        ]
+        message_index = [0]
+        
+        def animate():
+            if progress[0] < max_progress:
+                # Update dots
+                dots = "." * ((progress[0] % 3) + 1)
+                dots_label.config(text=dots)
+                
+                # Update loading message
+                message_interval = max(1, max_progress // len(loading_messages))
+                if progress[0] % message_interval == 0 and message_index[0] < len(loading_messages):
+                    loading_label.config(text=loading_messages[message_index[0]])
+                    message_index[0] += 1
+                
+                progress[0] += 1
+                splash.after(200, animate)
+            else:
+                # Loading complete - launch immediately
+                launch_game()
+        
+        def launch_game():
+            splash.destroy()
+            import dice_dungeon_explorer
+            root = tk.Tk()
+            app = dice_dungeon_explorer.DiceDungeonExplorer(root)
+            root.mainloop()
+        
+        animate()
+        splash.mainloop()
 
 if __name__ == "__main__":
     root = tk.Tk()

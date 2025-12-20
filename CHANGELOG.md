@@ -1,5 +1,71 @@
 # Dice Dungeon Explorer - Changelog
 
+## [Unreleased] - 2025-12-20
+
+### Enhanced
+- **Classic Mode Shop Interface Overhaul**: Completely redesigned shop to match Explorer mode's polished UI
+  - WHY: Classic mode had cramped shop dialog with buttons getting cut off and limited functionality
+  - PROBLEM SOLVED: Rebuilt shop as full-screen centered dialog with Explorer-style layout and features
+  - TECHNICAL IMPLEMENTATION:
+    - **Dialog Size**: Increased from 450x400 to 550x500 centered dialog with proper borders
+    - **Red X Close Button**: Added top-right corner close button (✕) with hover effects (#ff4444 → #ff0000)
+    - **Item Row Layout**: Redesigned with left-aligned info panel and right-aligned action panel
+    - **Visual Hierarchy**: Item name (11pt bold) → Description (9pt, 350px wrap) | Price (11pt gold) + Buy button
+    - **Button State Management**: Buttons disable showing "Can't Afford" or "Max Dice" when appropriate
+    - **Live Gold Updates**: Gold label updates immediately after purchases without full refresh
+    - **Better Spacing**: 10px padding on items, RIDGE borders, professional color scheme (#4a2c1a panels)
+
+- **Shop Automatic Progression System**: Shop now intelligently progresses to next floor when closed from floor complete
+  - WHY: Players had to manually click "Next Floor" after leaving shop, creating extra unnecessary step
+  - PROBLEM SOLVED: Shop tracks context and automatically starts next floor when closed after floor complete
+  - TECHNICAL IMPLEMENTATION:
+    - **Context Tracking**: Added `from_floor_complete` parameter to `open_shop_dialog()` method
+    - **New Close Handler**: Created `close_shop_and_continue()` that checks context flag
+    - **Multiple Close Methods**: ESC key, Red X, and "Next Floor" button all use unified close handler
+    - **Flag Management**: `shop_from_floor_complete` flag automatically resets after triggering progression
+    - **Seamless Flow**: Floor complete → Shop → Any close method → Next floor starts automatically
+    - **Smart Behavior**: Only auto-progresses when opened from floor complete, normal close otherwise
+
+- **Explorer-Style Scroll Mechanics in Classic Shop**: Implemented comprehensive mousewheel scrolling system
+  - WHY: Classic mode shop had basic scrolling that didn't work on all UI elements like Explorer
+  - PROBLEM SOLVED: Replicated Explorer's recursive mousewheel binding for smooth scrolling everywhere
+  - TECHNICAL IMPLEMENTATION:
+    - **Canvas Scrolling**: Direct mousewheel binding to canvas with delta/120 conversion
+    - **Recursive Binding**: `bind_mousewheel_to_tree()` recursively binds all child widgets
+    - **Event Propagation**: Uses `add='+'` flag to allow multiple bindings without conflicts
+    - **Consistent Behavior**: Matches Explorer mode's scroll behavior exactly
+    - **Widget Coverage**: Canvas and all descendants (frames, labels, buttons) support scrolling
+
+- **Shop UI Simplification**: Removed redundant "Leave Store" button in favor of single "Next Floor" button
+  - WHY: Having both "Leave Store" and "Next Floor" buttons was redundant since shop auto-progresses
+  - PROBLEM SOLVED: Simplified to single "Next Floor" button that handles all close scenarios
+  - TECHNICAL IMPLEMENTATION:
+    - **Button Consolidation**: Removed "Leave Store" (#ff6b6b red) button from bottom frame
+    - **Single Action**: "Next Floor" button (#4ecdc4 cyan) calls `close_shop_and_continue()`
+    - **Unified Behavior**: All close methods (ESC, Red X, button) trigger same progression logic
+    - **Clearer Intent**: Single button makes it obvious that closing shop advances the game
+    - **Consistent Styling**: Matches Explorer mode's single-button approach
+
+### Fixed
+- **Shop Purchase and Refresh Logic**: Fixed shop to properly refresh after purchases showing updated states
+  - WHY: After buying items, button states weren't updating to reflect affordability changes
+  - PROBLEM SOLVED: Implemented automatic shop refresh system after each purchase
+  - TECHNICAL IMPLEMENTATION:
+    - **New Purchase Handler**: Created `buy_item_dialog_update()` that handles purchase and refresh
+    - **State Tracking**: Stores gold label reference (`shop_gold_label`) for live updates
+    - **Automatic Refresh**: Closes and reopens shop after purchase to update all button states
+    - **Context Preservation**: Maintains `from_floor_complete` flag across refresh
+    - **Purchase Logging**: Added detailed log messages for each purchase type with feedback
+    - **Gold Display**: Updates gold immediately via label config before refresh
+
+- **Indentation Error in Shop Code**: Fixed Python IndentationError causing launcher crash
+  - WHY: Duplicate line during edit created unexpected indent at line 1161
+  - PROBLEM SOLVED: Removed duplicate button pack() line
+  - TECHNICAL IMPLEMENTATION:
+    - Identified duplicate: `font=('Arial', 11, 'bold'), bg='#4ecdc4', fg='#000000',`
+    - Removed second occurrence that was causing IndentationError
+    - Verified proper method ending with single button definition
+
 ## [Unreleased] - 2025-12-14
 
 ### Added

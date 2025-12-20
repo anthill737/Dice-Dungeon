@@ -1,5 +1,5 @@
 """
-Dice Dungeon RPG
+Dice Dungeon Classic
 A roguelike dice game with multipliers, power-ups, and strategic risk/reward gameplay
 """
 
@@ -12,9 +12,9 @@ import os
 class DiceDungeonRPG:
     def __init__(self, root):
         self.root = root
-        self.root.title("Dice Dungeon RPG")
-        self.root.geometry("700x650")  # Smaller default size
-        self.root.minsize(400, 400)  # Allow very small window
+        self.root.title("Dice Dungeon Classic")
+        self.root.geometry("650x700")  # Increased height for 10-line combat log
+        self.root.minsize(650, 700)  # Allow resizing
         self.root.configure(bg='#2c1810')
         
         # High scores file
@@ -142,10 +142,33 @@ class DiceDungeonRPG:
         self.main_frame = tk.Frame(self.root, bg='#2c1810')
         self.main_frame.pack(fill=tk.BOTH, expand=True)
         
+        # Logo
+        try:
+            logo_path = os.path.join(os.path.dirname(__file__), "assets", "DD Logo.png")
+            if os.path.exists(logo_path):
+                # Load and resize logo
+                from PIL import Image, ImageTk
+                img = Image.open(logo_path)
+                img = img.resize((150, 150), Image.LANCZOS)
+                self.logo_image = ImageTk.PhotoImage(img)
+                
+                logo_label = tk.Label(self.main_frame, image=self.logo_image, bg='#2c1810')
+                logo_label.pack(pady=(20, 10))
+            else:
+                # Fallback to text title if no logo
+                tk.Label(self.main_frame, text="DICE DUNGEON CLASSIC", 
+                        font=('Arial', 32, 'bold'), bg='#2c1810', fg='#ffd700',
+                        pady=30).pack()
+        except Exception as e:
+            # Fallback to text title if PIL not available
+            tk.Label(self.main_frame, text="DICE DUNGEON CLASSIC", 
+                    font=('Arial', 32, 'bold'), bg='#2c1810', fg='#ffd700',
+                    pady=30).pack()
+        
         # Title
-        tk.Label(self.main_frame, text="DICE DUNGEON RPG", 
-                font=('Arial', 32, 'bold'), bg='#2c1810', fg='#ffd700',
-                pady=30).pack()
+        tk.Label(self.main_frame, text="DICE DUNGEON CLASSIC", 
+                font=('Arial', 26, 'bold'), bg='#2c1810', fg='#ffd700',
+                pady=10).pack()
         
         # Subtitle
         tk.Label(self.main_frame, text="Roll, Fight, Survive", 
@@ -158,18 +181,23 @@ class DiceDungeonRPG:
         
         tk.Button(button_frame, text="START NEW RUN", 
                  command=self.start_game_from_menu,
-                 font=('Arial', 16, 'bold'), bg='#4ecdc4', fg='#000000',
-                 padx=40, pady=20, width=20).pack(pady=10)
+                 font=('Arial', 12, 'bold'), bg='#4ecdc4', fg='#000000',
+                 padx=20, pady=10, width=20).pack(pady=5)
         
         tk.Button(button_frame, text="HIGH SCORES", 
                  command=self.show_high_scores,
-                 font=('Arial', 16, 'bold'), bg='#ffd700', fg='#000000',
-                 padx=40, pady=20, width=20).pack(pady=10)
+                 font=('Arial', 12, 'bold'), bg='#ffd700', fg='#000000',
+                 padx=20, pady=10, width=20).pack(pady=5)
+        
+        tk.Button(button_frame, text="RETURN TO LAUNCHER", 
+                 command=self.return_to_launcher_from_menu,
+                 font=('Arial', 12, 'bold'), bg='#ff9f43', fg='#000000',
+                 padx=20, pady=10, width=20).pack(pady=5)
         
         tk.Button(button_frame, text="QUIT", 
                  command=self.root.quit,
-                 font=('Arial', 16, 'bold'), bg='#e94560', fg='#ffffff',
-                 padx=40, pady=20, width=20).pack(pady=10)
+                 font=('Arial', 12, 'bold'), bg='#e94560', fg='#ffffff',
+                 padx=20, pady=10, width=20).pack(pady=5)
         
         # Instructions
         instructions = """
@@ -267,38 +295,16 @@ class DiceDungeonRPG:
         self.start_new_floor()
         
     def setup_ui(self):
-        # Create a main canvas with scrollbar for the entire game UI
-        self.main_canvas = tk.Canvas(self.root, bg='#2c1810', highlightthickness=0)
-        self.main_scrollbar = tk.Scrollbar(self.root, orient="vertical", command=self.main_canvas.yview)
-        self.game_frame = tk.Frame(self.main_canvas, bg='#2c1810')
+        # Create game frame directly without canvas/scrollbar
+        self.game_frame = tk.Frame(self.root, bg='#2c1810')
+        self.game_frame.pack(fill="both", expand=True)
         
-        self.game_frame.bind(
-            "<Configure>",
-            lambda e: self.main_canvas.configure(scrollregion=self.main_canvas.bbox("all"))
-        )
-        
-        self.canvas_window = self.main_canvas.create_window((0, 0), window=self.game_frame, anchor="nw")
-        self.main_canvas.configure(yscrollcommand=self.main_scrollbar.set)
-        
-        # Bind canvas resize to update the window width
-        self.main_canvas.bind("<Configure>", self._on_canvas_resize)
-        
-        # Bind mouse wheel for scrolling
-        self.main_canvas.bind_all("<MouseWheel>", self._on_mousewheel)
-        
-        self.main_canvas.pack(side="left", fill="both", expand=True)
-        self.main_scrollbar.pack(side="right", fill="y")
-        
-        # Now build the UI in game_frame instead of root
+        # Now build the UI in game_frame
         self._build_game_ui()
     
-    def _on_canvas_resize(self, event):
-        # Update the canvas window width to match the canvas width
-        self.main_canvas.itemconfig(self.canvas_window, width=event.width)
-    
     def _on_mousewheel(self, event):
-        if self.main_canvas.winfo_exists():
-            self.main_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        # Disabled - no scrollbar anymore
+        pass
     
     def show_dialog(self, content_builder, width=400, height=300):
         """Show a modal dialog inside the main window"""
@@ -343,6 +349,14 @@ class DiceDungeonRPG:
         # Unbind resize event
         self.root.unbind('<Configure>')
     
+    def close_shop_and_continue(self):
+        """Close the shop and proceed to next floor if opened from floor complete"""
+        self.close_dialog()
+        # If shop was opened from floor complete, automatically start next floor
+        if hasattr(self, 'shop_from_floor_complete') and self.shop_from_floor_complete:
+            self.shop_from_floor_complete = False  # Reset flag
+            self.floor_up()
+    
     def show_hamburger_menu(self):
         """Show in-window menu with game options"""
         def build_menu(dialog):
@@ -362,12 +376,17 @@ class DiceDungeonRPG:
                      font=('Arial', 11, 'bold'), bg='#ff6b6b', fg='#ffffff',
                      width=20, pady=10).pack(pady=8)
             
+            tk.Button(btn_frame, text="Return to Launcher", 
+                     command=lambda: (self.close_dialog(), self.return_to_launcher()),
+                     font=('Arial', 11, 'bold'), bg='#ff9f43', fg='#000000',
+                     width=20, pady=10).pack(pady=8)
+            
             tk.Button(btn_frame, text="Resume Game", 
                      command=self.close_dialog,
                      font=('Arial', 11, 'bold'), bg='#4ecdc4', fg='#000000',
                      width=20, pady=10).pack(pady=8)
         
-        self.show_dialog(build_menu, width=350, height=280)
+        self.show_dialog(build_menu, width=350, height=340)
     
     def show_help(self):
         """Show game rules and combo explanations"""
@@ -484,7 +503,7 @@ POWER-UPS:
                             padx=5, pady=0, command=self.show_hamburger_menu)
         menu_btn.pack(side=tk.LEFT, padx=2)
         
-        title = tk.Label(header, text="DICE DUNGEON RPG", 
+        title = tk.Label(header, text="DICE DUNGEON CLASSIC", 
                         font=('Arial', 14, 'bold'), bg='#4a2c1a', fg='#ffd700')
         title.pack()
         
@@ -579,7 +598,7 @@ POWER-UPS:
         tk.Label(info_frame, text="COMBAT LOG", font=('Arial', 11, 'bold'), 
                 bg='#3d2415', fg='#ffd700').pack()
         
-        self.log_text = tk.Text(info_frame, height=8, width=80, 
+        self.log_text = tk.Text(info_frame, height=10, width=80, 
                                font=('Consolas', 9), bg='#1a1a1a', fg='#00ff00',
                                state=tk.DISABLED, wrap=tk.WORD)
         self.log_text.pack(pady=5)
@@ -918,20 +937,20 @@ POWER-UPS:
             btn_frame = tk.Frame(dialog, bg='#2c1810')
             btn_frame.pack(pady=8)
             
-            tk.Button(btn_frame, text="VISIT SHOP", 
-                     command=lambda: (self.close_dialog(), self.open_shop_dialog()),
-                     font=('Arial', 11, 'bold'), bg='#ffd700', fg='#000000',
-                     width=18, pady=8).pack(pady=4)
+            tk.Button(btn_frame, text="SHOP", 
+                     command=lambda: (self.close_dialog(), self.open_shop_dialog(from_floor_complete=True)),
+                     font=('Arial', 10, 'bold'), bg='#ffd700', fg='#000000',
+                     width=12, pady=8).pack(side=tk.LEFT, padx=5)
             
-            tk.Button(btn_frame, text="REST (Heal 30 HP)", 
+            tk.Button(btn_frame, text="REST (+30 HP)", 
                      command=lambda: self.rest_and_continue(),
-                     font=('Arial', 11, 'bold'), bg='#95e1d3', fg='#000000',
-                     width=18, pady=8).pack(pady=4)
+                     font=('Arial', 10, 'bold'), bg='#95e1d3', fg='#000000',
+                     width=12, pady=8).pack(side=tk.LEFT, padx=5)
             
             tk.Button(btn_frame, text="NEXT FLOOR", 
                      command=lambda: (self.close_dialog(), self.floor_up()),
-                     font=('Arial', 11, 'bold'), bg='#4ecdc4', fg='#000000',
-                     width=18, pady=8).pack(pady=4)
+                     font=('Arial', 10, 'bold'), bg='#4ecdc4', fg='#000000',
+                     width=12, pady=8).pack(side=tk.LEFT, padx=5)
         
         self.show_dialog(build_menu, width=400, height=380)
     
@@ -972,15 +991,15 @@ POWER-UPS:
         btn_frame = tk.Frame(menu, bg='#2c1810', pady=20)
         btn_frame.pack()
         
-        tk.Button(btn_frame, text="VISIT SHOP", 
-                 command=lambda: (menu.destroy(), self.open_shop(floor_complete=True)),
-                 font=('Arial', 12, 'bold'), bg='#ffd700', fg='#000000',
-                 padx=20, pady=10, width=15).pack(pady=8)
+        tk.Button(btn_frame, text="SHOP", 
+                 command=lambda: (menu.destroy(), self.open_shop_dialog(from_floor_complete=True)),
+                 font=('Arial', 11, 'bold'), bg='#ffd700', fg='#000000',
+                 padx=15, pady=10, width=12).pack(side=tk.LEFT, padx=5)
         
         tk.Button(btn_frame, text="NEXT FLOOR", 
                  command=lambda: (menu.destroy(), self.floor_up()),
-                 font=('Arial', 12, 'bold'), bg='#4ecdc4', fg='#000000',
-                 padx=20, pady=10, width=15).pack(pady=8)
+                 font=('Arial', 11, 'bold'), bg='#4ecdc4', fg='#000000',
+                 padx=15, pady=10, width=12).pack(side=tk.LEFT, padx=5)
     
     def floor_up(self):
         self.floor += 1
@@ -1027,63 +1046,160 @@ POWER-UPS:
         self.roll_btn.config(state=tk.NORMAL)
         self.rolls_label.config(text=f"Rolls Left: {self.rolls_left}")
     
-    def open_shop_dialog(self):
-        """Show shop in an in-window dialog"""
-        def build_shop(dialog):
-            tk.Label(dialog, text="*** SHOP ***", font=('Arial', 14, 'bold'),
-                    bg='#2c1810', fg='#ffd700', pady=5).pack()
-            
-            gold_label = tk.Label(dialog, text=f"Your Gold: {self.gold}", font=('Arial', 10),
-                                 bg='#2c1810', fg='#ffffff', pady=5)
-            gold_label.pack()
-            
-            # Scrollable items
-            canvas = tk.Canvas(dialog, bg='#2c1810', highlightthickness=0, height=250)
-            scrollbar = tk.Scrollbar(dialog, orient="vertical", command=canvas.yview)
-            items_frame = tk.Frame(canvas, bg='#2c1810')
-            
-            items_frame.bind(
-                "<Configure>",
-                lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-            )
-            
-            canvas.create_window((0, 0), window=items_frame, anchor="nw")
-            canvas.configure(yscrollcommand=scrollbar.set)
-            
-            for item in self.shop_items:
-                frame = tk.Frame(items_frame, bg='#4a2c1a', pady=5, padx=5)
-                frame.pack(fill=tk.X, padx=10, pady=3)
-                
-                top = tk.Frame(frame, bg='#4a2c1a')
-                top.pack(fill=tk.X)
-                
-                tk.Label(top, text=item['name'], font=('Arial', 10, 'bold'),
-                        bg='#4a2c1a', fg='#ffffff').pack(side=tk.LEFT, padx=5)
-                
-                tk.Label(top, text=f"{item['cost']}g", font=('Arial', 9),
-                        bg='#4a2c1a', fg='#ffd700').pack(side=tk.LEFT, padx=5)
-                
-                tk.Button(top, text="BUY", command=lambda i=item, gl=gold_label: self.buy_item_dialog(i, gl),
-                         font=('Arial', 8, 'bold'), bg='#4ecdc4', fg='#000000',
-                         padx=10, pady=3).pack(side=tk.RIGHT)
-                
-                tk.Label(frame, text=item['desc'], font=('Arial', 8),
-                        bg='#4a2c1a', fg='#b8e6d5', wraplength=340,
-                        justify=tk.LEFT).pack(fill=tk.X, padx=3)
-            
-            canvas.pack(side="left", fill="both", expand=True, padx=5)
-            scrollbar.pack(side="right", fill="y")
-            
-            # Button container to center the button
-            btn_container = tk.Frame(dialog, bg='#2c1810')
-            btn_container.pack(pady=10, fill=tk.X)
-            
-            tk.Button(btn_container, text="Continue to Next Floor", 
-                     command=lambda: (self.close_dialog(), self.floor_up()),
-                     font=('Arial', 10, 'bold'), bg='#4ecdc4', fg='#000000',
-                     width=22, pady=8).pack()
+    def open_shop_dialog(self, from_floor_complete=False):
+        """Show shop in a full-screen style dialog like Explorer mode"""
+        # Store context for when shop closes
+        self.shop_from_floor_complete = from_floor_complete
         
-        self.show_dialog(build_shop, width=450, height=400)
+        # Close existing dialog if any
+        if self.dialog_frame and self.dialog_frame.winfo_exists():
+            self.dialog_frame.destroy()
+        
+        # Create larger dialog frame
+        dialog_width = 550
+        dialog_height = 500
+        
+        self.dialog_frame = tk.Frame(self.game_frame, bg='#2c1810', relief=tk.RIDGE, borderwidth=3)
+        self.dialog_frame.place(relx=0.5, rely=0.5, anchor='center', width=dialog_width, height=dialog_height)
+        
+        # Grab focus and bind ESC to close and continue
+        self.dialog_frame.focus_set()
+        self.dialog_frame.bind('<Escape>', lambda e: self.close_shop_and_continue() or "break")
+        
+        # Title
+        tk.Label(self.dialog_frame, text="*** SHOP ***", font=('Arial', 16, 'bold'),
+                bg='#2c1810', fg='#ffd700', pady=10).pack()
+        
+        # Red X close button (top right corner)
+        close_btn = tk.Label(self.dialog_frame, text="✕", font=('Arial', 16, 'bold'),
+                            bg='#2c1810', fg='#ff4444',
+                            cursor="hand2", padx=5)
+        close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=5)
+        close_btn.bind('<Button-1>', lambda e: self.close_shop_and_continue())
+        close_btn.bind('<Enter>', lambda e: close_btn.config(fg='#ff0000'))
+        close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
+        
+        # Gold label that we can update
+        self.shop_gold_label = tk.Label(self.dialog_frame, text=f"Your Gold: {self.gold}", 
+                font=('Arial', 12, 'bold'), bg='#2c1810', fg='#ffd700', pady=5)
+        self.shop_gold_label.pack()
+        
+        # Scrollable items
+        canvas = tk.Canvas(self.dialog_frame, bg='#2c1810', highlightthickness=0)
+        scrollbar = tk.Scrollbar(self.dialog_frame, orient="vertical", command=canvas.yview, width=10)
+        items_frame = tk.Frame(canvas, bg='#2c1810')
+        
+        items_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        
+        canvas.create_window((0, 0), window=items_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Setup mousewheel scrolling (Explorer style)
+        def on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        def bind_mousewheel_to_tree(widget):
+            widget.bind("<MouseWheel>", on_mousewheel, add='+')
+            for child in widget.winfo_children():
+                bind_mousewheel_to_tree(child)
+        
+        # Bind to canvas and all children
+        canvas.bind("<MouseWheel>", on_mousewheel)
+        bind_mousewheel_to_tree(items_frame)
+        
+        # Create item rows
+        for item in self.shop_items:
+            frame = tk.Frame(items_frame, bg='#4a2c1a', relief=tk.RIDGE, borderwidth=1)
+            frame.pack(fill=tk.X, padx=10, pady=5)
+            
+            container = tk.Frame(frame, bg='#4a2c1a')
+            container.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            
+            # Left side - Item info
+            info_frame = tk.Frame(container, bg='#4a2c1a')
+            info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
+            
+            tk.Label(info_frame, text=item['name'], font=('Arial', 11, 'bold'),
+                    bg='#4a2c1a', fg='#ffffff', anchor='w').pack(fill=tk.X, pady=2)
+            
+            tk.Label(info_frame, text=item['desc'], font=('Arial', 9),
+                    bg='#4a2c1a', fg='#b8e6d5', wraplength=350,
+                    justify=tk.LEFT, anchor='w').pack(fill=tk.X, pady=2)
+            
+            # Right side - Price and buy button
+            action_frame = tk.Frame(container, bg='#4a2c1a')
+            action_frame.pack(side=tk.RIGHT, padx=5)
+            
+            tk.Label(action_frame, text=f"{item['cost']}g", font=('Arial', 11, 'bold'),
+                    bg='#4a2c1a', fg='#ffd700').pack(pady=3)
+            
+            # Check if can afford
+            can_afford = self.gold >= item['cost']
+            btn_state = tk.NORMAL if can_afford else tk.DISABLED
+            btn_text = "BUY" if can_afford else "Can't Afford"
+            
+            # Check if max dice
+            if item['effect'] == 'dice' and self.num_dice >= self.max_dice:
+                btn_state = tk.DISABLED
+                btn_text = "Max Dice"
+            
+            tk.Button(action_frame, text=btn_text, 
+                     command=lambda i=item: self.buy_item_dialog_update(i),
+                     font=('Arial', 9, 'bold'), bg='#4ecdc4', fg='#000000',
+                     width=10, pady=5, state=btn_state).pack(pady=3)
+        
+        canvas.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Bottom buttons
+        button_frame = tk.Frame(self.dialog_frame, bg='#2c1810')
+        button_frame.pack(pady=10)
+        
+        tk.Button(button_frame, text="Next Floor", command=self.close_shop_and_continue,
+                 font=('Arial', 11, 'bold'), bg='#4ecdc4', fg='#000000',
+                 width=12, pady=8).pack(side=tk.LEFT, padx=5)
+    
+    def buy_item_dialog_update(self, item):
+        """Buy item and update the shop display"""
+        # Check if trying to buy dice at max
+        if item['effect'] == 'dice' and self.num_dice >= self.max_dice:
+            messagebox.showinfo("Max Dice Reached", f"You already have the maximum of {self.max_dice} dice!")
+            return
+        
+        if self.gold >= item['cost']:
+            self.gold -= item['cost']
+            
+            if item['effect'] == 'dice':
+                self.num_dice += 1
+                self.dice_values.append(0)
+                self.dice_locked.append(False)
+                self.log(f"Purchased {item['name']}! Now have {self.num_dice} dice.")
+            elif item['effect'] == 'damage':
+                self.damage_bonus += 10
+                self.log(f"Purchased {item['name']}! Damage increased by 10.")
+            elif item['effect'] == 'heal':
+                healed = min(40, self.max_health - self.health)
+                self.health = min(self.health + 40, self.max_health)
+                self.log(f"Purchased {item['name']}! Restored {healed} HP.")
+            elif item['effect'] == 'crit':
+                self.crit_chance += 0.1
+                self.log(f"Purchased {item['name']}! Critical hit chance increased by 10%.")
+            elif item['effect'] == 'reroll':
+                self.reroll_bonus += 1
+                self.log(f"Purchased {item['name']}! +1 extra reroll each turn.")
+            elif item['effect'] == 'multiplier':
+                self.multiplier_bonus += 1
+                self.log(f"Purchased {item['name']}! Bonus multiplier increased by 1.")
+            
+            # Update gold label
+            if hasattr(self, 'shop_gold_label') and self.shop_gold_label.winfo_exists():
+                self.shop_gold_label.config(text=f"Your Gold: {self.gold}")
+            
+            # Refresh the shop to update button states
+            self.close_dialog()
+            self.open_shop_dialog()
+        else:
+            messagebox.showinfo("Not Enough Gold", f"You need {item['cost']} gold but only have {self.gold}.")
     
     def buy_item_dialog(self, item, gold_label):
         # Check if trying to buy dice at max
@@ -1170,12 +1286,12 @@ POWER-UPS:
         canvas.pack(side="left", fill="both", expand=True, padx=10)
         scrollbar.pack(side="right", fill="y")
         
-        # Close button
-        close_btn = tk.Button(shop, text="Close Shop" if not floor_complete else "Continue to Next Floor", 
+        # Close button - more compact
+        close_btn = tk.Button(shop, text="Close Shop" if not floor_complete else "Next Floor", 
                              command=lambda: self.close_shop(shop, floor_complete),
-                             font=('Arial', 12, 'bold'), bg='#e94560', fg='#ffffff',
-                             padx=30, pady=10)
-        close_btn.pack(pady=15)
+                             font=('Arial', 10, 'bold'), bg='#e94560', fg='#ffffff',
+                             padx=15, pady=8, width=15)
+        close_btn.pack(pady=10)
     
     def close_shop(self, shop_window, floor_complete):
         shop_window.destroy()
@@ -1286,6 +1402,57 @@ POWER-UPS:
         for widget in self.root.winfo_children():
             widget.destroy()
         self.show_main_menu()
+    
+    def return_to_launcher_from_menu(self):
+        """Return to launcher from main menu (no confirmation needed)"""
+        self.root.destroy()
+        
+        # Launch the launcher
+        import dice_dungeon_launcher
+        root = tk.Tk()
+        app = dice_dungeon_launcher.GameLauncher(root)
+        root.mainloop()
+    
+    def return_to_launcher(self):
+        """Return to game launcher"""
+        def confirm_quit():
+            if self.game_active:
+                self.save_high_score()
+            
+            # Close this game window
+            self.root.destroy()
+            
+            # Launch the launcher
+            import dice_dungeon_launcher
+            root = tk.Tk()
+            app = dice_dungeon_launcher.GameLauncher(root)
+            root.mainloop()
+        
+        if self.game_active:
+            def build_confirm(dialog):
+                tk.Label(dialog, text="RETURN TO LAUNCHER?", font=('Arial', 16, 'bold'),
+                        bg='#2c1810', fg='#ff6b6b', pady=15).pack()
+                
+                tk.Label(dialog, text="Your current run will be lost.\nAre you sure?",
+                        font=('Arial', 11), bg='#2c1810', fg='#ffffff',
+                        pady=10).pack()
+                
+                btn_frame = tk.Frame(dialog, bg='#2c1810')
+                btn_frame.pack(expand=True, pady=15)
+                
+                tk.Button(btn_frame, text="Yes, Quit to Launcher", 
+                         command=lambda: (self.close_dialog(), confirm_quit()),
+                         font=('Arial', 11, 'bold'), bg='#ff6b6b', fg='#ffffff',
+                         width=20, pady=10).pack(pady=5)
+                
+                tk.Button(btn_frame, text="Cancel", 
+                         command=self.close_dialog,
+                         font=('Arial', 11, 'bold'), bg='#4ecdc4', fg='#000000',
+                         width=20, pady=10).pack(pady=5)
+            
+            self.show_dialog(build_confirm, width=400, height=250)
+        else:
+            confirm_quit()
 
 
 def main():
