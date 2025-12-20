@@ -19,6 +19,12 @@ class DiceManager:
     def toggle_dice(self, idx):
         """Toggle dice lock state for a specific die"""
         if idx < len(self.game.dice_locked):
+            # Prevent toggling force-locked dice
+            forced_locks = getattr(self.game, 'forced_dice_locks', [])
+            if idx in forced_locks:
+                self.game.log("This die is force-locked by an enemy ability!", 'system')
+                return
+            
             self.game.dice_locked[idx] = not self.game.dice_locked[idx]
             self.update_dice_display()
     
@@ -35,8 +41,10 @@ class DiceManager:
             self.debug_logger.warning("DICE", "No rolls left")
             return
         
-        # Determine which dice to roll (unlocked ones)
-        dice_to_roll = [i for i in range(self.game.num_dice) if not self.game.dice_locked[i]]
+        # Determine which dice to roll (exclude both manually locked and force-locked dice)
+        forced_locks = getattr(self.game, 'forced_dice_locks', [])
+        dice_to_roll = [i for i in range(self.game.num_dice) 
+                       if not self.game.dice_locked[i] and i not in forced_locks]
         
         if not dice_to_roll:
             self.game.log("All dice are locked!", 'system')
@@ -44,8 +52,15 @@ class DiceManager:
         
         # Generate final values for dice being rolled
         final_values = {}
+        restricted_values = getattr(self.game, 'dice_restricted_values', [])
+        
         for i in dice_to_roll:
-            final_values[i] = random.randint(1, 6)
+            if restricted_values:
+                # Roll only from restricted values (boss curse)
+                final_values[i] = random.choice(restricted_values)
+            else:
+                # Normal roll
+                final_values[i] = random.randint(1, 6)
         
         # Start animation (15 frames = 375ms total at 25ms per frame, reduced from 20 frames/500ms)
         self._animate_dice_roll(dice_to_roll, final_values, frame=0, max_frames=15)
@@ -90,12 +105,16 @@ class DiceManager:
             # Show rolled dice values with potential damage preview inline
             dice_str = ", ".join(str(self.game.dice_values[i]) for i in range(self.game.num_dice) if self.game.dice_values[i] > 0)
             
+            # Add restriction warning if active
+            restricted_values = getattr(self.game, 'dice_restricted_values', [])
+            restriction_note = f" [Restricted to {restricted_values}]" if restricted_values else ""
+            
             # Calculate potential damage for preview
             potential_info = self._get_damage_preview_text()
             if potential_info:
-                self.game.log(f"⚄ You rolled: [{dice_str}] - {potential_info}", 'player')
+                self.game.log(f"⚄ You rolled: [{dice_str}]{restriction_note} - {potential_info}", 'player')
             else:
-                self.game.log(f"⚄ You rolled: [{dice_str}]", 'player')
+                self.game.log(f"⚄ You rolled: [{dice_str}]{restriction_note}", 'player')
             
             # Clear the damage preview label since we're showing it in the log now
             if hasattr(self.game, 'damage_preview_label'):
@@ -103,8 +122,23 @@ class DiceManager:
     
     def reset_turn(self):
         """Reset turn state: unlock dice, restore rolls (without rolling)"""
-        # Unlock all dice
-        self.game.dice_locked = [False] * self.game.num_dice
+        # Unlock all dice except force-locked ones
+        forced_locks = getattr(self.game, 'forced_dice_locks', [])
+        for i in range(self.game.num_dice):
+            if i not in forced_locks:
+                self.game.dice_locked[i] = False
+        
+        # Preserve force-locked dice values when resetting
+        preserved_values = {}
+        for idx in forced_locks:
+            if idx < len(self.game.dice_values):
+                preserved_values[idx] = self.game.dice_values[idx]
+        
+        # Reset dice values to 0, but restore force-locked values
+        self.game.dice_values = [0] * self.game.num_dice
+        for idx, value in preserved_values.items():
+            self.game.dice_values[idx] = value
+        
         self.game.rolls_left = 3 + self.game.reroll_bonus
         
         # Reset has_rolled flag so player must roll before attacking
@@ -128,6 +162,7 @@ class DiceManager:
             return
         
         style = self.get_current_dice_style()
+        dice_obscured = getattr(self.game, 'dice_obscured', False)
         
         for i, canvas in enumerate(self.game.dice_canvases):
             if i >= len(self.game.dice_values):
@@ -140,8 +175,14 @@ class DiceManager:
                 # Not yet rolled - show "?"
                 canvas.create_rectangle(0, 0, 72, 72, fill='#cccccc', outline='#666666', width=3)
                 canvas.create_text(36, 36, text="?", font=('Arial', 32, 'bold'), fill='#666666')
-            elif self.game.dice_locked[i]:
-                # Locked die - render normal die first
+            elif dice_obscured and self.game.dice_values[i] > 0:
+                # Dice values are obscured by boss ability - show "?" with dark tint
+                canvas.create_rectangle(0, 0, 72, 72, fill='#4a4a4a', outline='#8b008b', width=3)
+                canvas.create_text(36, 36, text="?", font=('Arial', 32, 'bold'), fill='#8b008b')
+                # Add curse indicator
+                canvas.create_text(36, 60, text="CURSED", font=('Arial', 7, 'bold'), fill='#8b008b')
+            elif self.game.dice_locked[i] or i in getattr(self.game, 'forced_dice_locks', []):
+                # Locked die (manually or force-locked) - render normal die first
                 self.render_die_on_canvas(canvas, self.game.dice_values[i], style, size=72, locked=False)
                 
                 # Add 80% transparent dark overlay using multiple stipple rectangles for darker effect
@@ -149,9 +190,11 @@ class DiceManager:
                 canvas.create_rectangle(0, 0, 72, 72, fill='#000000', stipple='gray50', outline='')
                 
                 # Add "LOCKED" text below the die value area
-                canvas.create_text(36, 62, text="LOCKED", 
+                lock_text = "CURSED" if i in getattr(self.game, 'forced_dice_locks', []) else "LOCKED"
+                lock_color = '#ff4444' if i in getattr(self.game, 'forced_dice_locks', []) else '#ffd700'
+                canvas.create_text(36, 62, text=lock_text, 
                                  font=('Arial', 8, 'bold'), 
-                                 fill='#ffd700', anchor='center')
+                                 fill=lock_color, anchor='center')
             else:
                 # Rolled but not locked - use normal style
                 self.render_die_on_canvas(canvas, self.game.dice_values[i], style, size=72, locked=False)

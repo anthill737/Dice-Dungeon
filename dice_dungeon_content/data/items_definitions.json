@@ -33,7 +33,7 @@
   "Verdict Seal": { "type": "token", "escape_token": true, "desc": "Escape a punishment or death once." },
   "Loophole Slip": { "type": "cleanse", "cleanse": true, "desc": "Negate one debuff or curse." },
   "Lockpick Kit": { "type": "token", "disarm_token": true, "desc": "Unlock a locked container. Consumed on use." },
-  "Meat Hook": { "type": "tool", "disarm_token": true, "desc": "Pull or disarm one hazard." },
+  "Meat Hook": { "type": "lore", "desc": "A rusted and bloody meat hook. Too damaged to be of practical use." },
   "Gate Wedge": { "type": "tool", "disarm_token": true, "desc": "Prevent a gate/flood hazard once." },
   "Pruning Hook": { "type": "tool", "disarm_token": true, "desc": "Cut through vines/entanglements once." },
   "Quill Knife": { "type": "tool", "disarm_token": true, "desc": "Precise cut to bypass a trap once." },
@@ -135,10 +135,10 @@
   "Dragon Scale": { "type": "equipment", "slot": "armor", "max_hp_bonus": 30, "armor_bonus": 4, "max_durability": 200, "desc": "Legendary scales. +30 max HP, +4 armor." },
   "Enchanted Cloak": { "type": "equipment", "slot": "armor", "max_hp_bonus": 20, "armor_bonus": 2, "crit_bonus": 0.05, "max_durability": 120, "sell_value": 120, "desc": "Magical cloak. +20 max HP, +2 armor, +5% crit chance." },
 
-  "Traveler's Pack": { "type": "equipment", "slot": "backpack", "inventory_bonus": 5, "desc": "Extra storage. +5 inventory slots." },
+  "Traveler's Pack": { "type": "equipment", "slot": "backpack", "inventory_bonus": 10, "desc": "Extra storage. +10 inventory slots." },
   "Lucky Coin": { "type": "equipment", "slot": "accessory", "crit_bonus": 0.05, "max_durability": 999, "desc": "A fortunate charm. +5% crit chance." },
   "Mystic Ring": { "type": "equipment", "slot": "accessory", "combat_ability": "reroll", "max_durability": 999, "desc": "Mystical ring. Use once per combat for +1 reroll." },
-  "Merchant's Satchel": { "type": "equipment", "slot": "backpack", "inventory_bonus": 10, "desc": "Large pack. +10 inventory slots." },
+  "Merchant's Satchel": { "type": "equipment", "slot": "backpack", "inventory_bonus": 20, "desc": "Large pack. +20 inventory slots." },
   "Crown of Fortune": { "type": "equipment", "slot": "accessory", "crit_bonus": 0.10, "max_durability": 999, "desc": "Royal luck. +10% crit chance." },
   "Timekeeper's Watch": { "type": "equipment", "slot": "accessory", "reroll_bonus": 2, "max_durability": 999, "desc": "Control time. +2 rerolls per combat." },
 

@@ -13,6 +13,7 @@ import sys
 import copy
 from collections import Counter
 from debug_logger import get_logger
+from explorer import ui_character_menu
 
 # Add content engine to path
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dice_dungeon_content', 'engine'))
@@ -67,11 +68,32 @@ from explorer.lore import LoreManager
 from explorer.save_system import SaveSystem
 from explorer.quests import QuestManager
 from explorer.quest_definitions import create_default_quests
+from explorer.ui_main_menu import MainMenuManager
 
 class DiceDungeonExplorer:
     def __init__(self, root):
         self.root = root
         self.root.title("Dice Dungeon Explorer")
+        
+        # Set window and taskbar icon
+        try:
+            import os
+            icon_path = os.path.join(os.path.dirname(__file__), "assets", "DD Logo.png")
+            if os.path.exists(icon_path):
+                # Create PhotoImage for the icon
+                icon = tk.PhotoImage(file=icon_path)
+                # Store reference to prevent garbage collection
+                self.root.icon_image = icon
+                # Set icon for window and taskbar (True makes it default for all windows)
+                self.root.iconphoto(True, icon)
+        except Exception as e:
+            print(f"Could not load window icon: {e}")
+            # Fallback to default icon
+            try:
+                self.root.iconphoto(False, tk.PhotoImage())
+            except:
+                pass  # If fallback also fails, just continue without icon
+        
         self.root.geometry("1000x750")
         self.root.minsize(950, 700)  # Increased minimum height to ensure movement controls visible
         self.root.configure(bg='#2c1810')
@@ -88,11 +110,15 @@ class DiceDungeonExplorer:
         # Bind window resize event for dynamic scaling
         self.root.bind('<Configure>', self.on_window_resize)
         
-        # High scores file
-        self.scores_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dice_dungeon_explorer_scores.json')
+        # Ensure saves directory exists
+        self.saves_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'saves')
+        os.makedirs(self.saves_dir, exist_ok=True)
         
-        # Save game file
-        self.save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dice_dungeon_explorer_save.json')
+        # High scores file
+        self.scores_file = os.path.join(self.saves_dir, 'dice_dungeon_explorer_scores.json')
+        
+        # Save game file (deprecated - now using slot system)
+        self.save_file = os.path.join(self.saves_dir, 'dice_dungeon_explorer_save.json')
         
         # Load content system
         try:
@@ -317,6 +343,7 @@ class DiceDungeonExplorer:
         self.stats = {
             # Combat stats
             "enemies_encountered": 0,
+            "enemies_fled": 0,
             "enemies_defeated": 0,
             "mini_bosses_defeated": 0,
             "bosses_defeated": 0,
@@ -343,6 +370,10 @@ class DiceDungeonExplorer:
             "weapons_repaired": 0,
             "armor_repaired": 0,
             
+            # Progress stats
+            "rooms_explored": 0,
+            "times_rested": 0,
+            
             # Lore items found (track each type)
             "lore_found": {
                 "Guard Journal": 0,
@@ -354,12 +385,16 @@ class DiceDungeonExplorer:
                 "Puzzle Note": 0,
                 "Cracked Map Scrap": 0,
                 "Star Chart": 0,
+                "Old Letter": 0,
                 "Prayer Strip": 0
             },
             
             # Enemy-specific tracking
             "enemy_kills": {},  # {enemy_name: count}
-            "most_damaged_enemy": {"name": "", "damage": 0}
+            "most_damaged_enemy": {"name": "", "damage": 0},
+            
+            # Item collection tracking (all items ever collected)
+            "items_collected": {}  # {item_name: count}
         }
         
         # Lore item persistence - track USED entry indices to avoid duplicates
@@ -635,6 +670,7 @@ class DiceDungeonExplorer:
         self.lore_manager = LoreManager(self)
         self.save_system = SaveSystem(self)
         self.quest_manager = QuestManager(self)
+        self.main_menu_manager = MainMenuManager(self)
         
         # Import and initialize UI dialogs manager
         from explorer.ui_dialogs import UIDialogsManager
@@ -644,11 +680,11 @@ class DiceDungeonExplorer:
         self.quest_manager.register_default_quests(create_default_quests())
         
         # Show main menu
-        self.show_main_menu()
+        self.main_menu_manager.show_main_menu()
     
     def load_settings(self):
         """Load or initialize game settings"""
-        self.settings_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dice_dungeon_settings.json')
+        self.settings_file = os.path.join(self.saves_dir, 'dice_dungeon_settings.json')
         
         # Default settings
         default_settings = {
@@ -928,7 +964,7 @@ class DiceDungeonExplorer:
         # Also write to debug log file in real-time (slot-specific)
         try:
             slot_suffix = f"_slot_{self.current_save_slot}" if self.current_save_slot else "_new_game"
-            debug_log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+            debug_log_file = os.path.join(self.saves_dir, 
                                          f'adventure_log{slot_suffix}.txt')
             with open(debug_log_file, 'a', encoding='utf-8') as f:
                 import datetime
@@ -1035,7 +1071,7 @@ class DiceDungeonExplorer:
             import datetime
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             slot_suffix = f"_slot_{self.current_save_slot}" if self.current_save_slot else "_new_game"
-            export_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+            export_file = os.path.join(self.saves_dir, 
                                       f'adventure_log_export{slot_suffix}_{timestamp}.txt')
             
             with open(export_file, 'w', encoding='utf-8') as f:
@@ -1096,15 +1132,13 @@ class DiceDungeonExplorer:
         """
         if len(self.inventory) < self.max_inventory:
             self.inventory.append(item_name)
-            
-            # Track items found (not purchases)
-            if source in ["found", "reward"]:
-                self.stats["items_found"] += 1
+            # Track acquisition using centralized function
+            self.inventory_equipment_manager.track_item_acquisition(item_name, source)
             
             if source == "found":
                 self.log(f"Found {item_name}!", 'loot')
             elif source == "reward":
-                self.log(f"[REWARD] Received {item_name}!", 'loot')
+                self.log(f"Received {item_name}!", 'loot')
             elif source == "purchase":
                 self.log(f"[PURCHASE] Bought {item_name}!", 'loot')
             elif source == "search":
@@ -1138,7 +1172,7 @@ class DiceDungeonExplorer:
         return dialog_width, dialog_height
     
     def on_window_resize(self, event):
-        """Handle window resize events to update scale factor"""
+        """Handle window resize events to update scale factor and refresh main menu if visible"""
         # Only update if the event is for the root window
         if event.widget == self.root:
             current_width = self.root.winfo_width()
@@ -1151,6 +1185,11 @@ class DiceDungeonExplorer:
             
             # Clamp scale factor to reasonable bounds
             self.scale_factor = max(0.8, min(self.scale_factor, 2.5))
+            
+            # If we're on the main menu (no game_frame exists), refresh it for responsive layout
+            if hasattr(self, 'main_frame') and self.main_frame.winfo_exists() and not hasattr(self, 'game_frame'):
+                # Delay the refresh slightly to avoid excessive calls during window dragging
+                self.root.after(100, self.main_menu_manager._delayed_main_menu_refresh)
     
     def load_enemy_sprites(self, base_dir):
         """Load enemy sprite images from disk - automatically loads all sprites"""
@@ -1245,71 +1284,8 @@ class DiceDungeonExplorer:
         return int(base_length * self.scale_factor)
     
     def show_main_menu(self):
-        """Show the main menu"""
-        if not self.content_loaded:
-            return
-        
-        # Force window update to get accurate dimensions
-        self.root.update_idletasks()
-        
-        # Calculate initial scale factor based on current window size
-        current_width = self.root.winfo_width()
-        current_height = self.root.winfo_height()
-        if current_width > 1 and current_height > 1:  # Window has been sized
-            width_scale = current_width / self.base_window_width
-            height_scale = current_height / self.base_window_height
-            self.scale_factor = min(width_scale, height_scale)
-            self.scale_factor = max(0.8, min(self.scale_factor, 2.5))
-        
-        for widget in self.root.winfo_children():
-            widget.destroy()
-        
-        # Apply color scheme
-        bg_color = self.current_colors["bg_primary"]
-        
-        self.main_frame = tk.Frame(self.root, bg=bg_color)
-        self.main_frame.pack(fill=tk.BOTH, expand=True)
-        
-        tk.Label(self.main_frame, text="DICE DUNGEON EXPLORER", 
-                font=('Arial', self.scale_font(32), 'bold'), bg=bg_color, fg=self.current_colors["text_gold"],
-                pady=int(30 * self.scale_factor)).pack()
-        
-        tk.Label(self.main_frame, text="Explore • Fight • Loot • Survive", 
-                font=('Arial', self.scale_font(16)), bg=bg_color, fg=self.current_colors["text_primary"],
-                pady=int(10 * self.scale_factor)).pack()
-        
-        btn_frame = tk.Frame(self.main_frame, bg=bg_color)
-        btn_frame.pack(pady=int(50 * self.scale_factor))
-        
-        # All buttons same size for consistent UI
-        btn_width = 20
-        btn_font = ('Arial', self.scale_font(14), 'bold')
-        btn_pady = int(12 * self.scale_factor)
-        
-        tk.Button(btn_frame, text="START ADVENTURE", 
-                 command=self.start_new_game,
-                 font=btn_font, bg=self.current_colors["button_primary"], fg='#000000',
-                 width=btn_width, pady=btn_pady).pack(pady=8)
-        
-        tk.Button(btn_frame, text="SAVE/LOAD GAME", 
-                 command=self.load_game,
-                 font=btn_font, bg=self.current_colors["button_secondary"], fg='#000000',
-                 width=btn_width, pady=btn_pady).pack(pady=8)
-        
-        tk.Button(btn_frame, text="SETTINGS", 
-                 command=self.show_settings,
-                 font=btn_font, bg=self.current_colors["text_purple"], fg='#ffffff',
-                 width=btn_width, pady=btn_pady).pack(pady=8)
-        
-        tk.Button(btn_frame, text="HIGH SCORES", 
-                 command=self.show_high_scores,
-                 font=btn_font, bg=self.current_colors["text_gold"], fg='#000000',
-                 width=btn_width, pady=btn_pady).pack(pady=8)
-        
-        tk.Button(btn_frame, text="QUIT", 
-                 command=self.root.quit,
-                 font=btn_font, bg='#ff6b6b', fg='#000000',
-                 width=btn_width, pady=btn_pady).pack(pady=8)
+        """Show the main menu - delegates to MainMenuManager"""
+        self.main_menu_manager.show_main_menu()
     
     # ========== UI STYLING HELPER METHODS ==========
     
@@ -1427,7 +1403,7 @@ class DiceDungeonExplorer:
         
         # Clear debug log file for new game
         try:
-            debug_log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'adventure_log_new_game.txt')
+            debug_log_file = os.path.join(self.saves_dir, 'adventure_log_new_game.txt')
             with open(debug_log_file, 'w', encoding='utf-8') as f:
                 import datetime
                 f.write(f"=== NEW GAME STARTED: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===\n\n")
@@ -1448,6 +1424,7 @@ class DiceDungeonExplorer:
         # Reset comprehensive stats
         self.stats = {
             "enemies_encountered": 0,
+            "enemies_fled": 0,
             "enemies_defeated": 0,
             "mini_bosses_defeated": 0,
             "bosses_defeated": 0,
@@ -1467,6 +1444,8 @@ class DiceDungeonExplorer:
             "armor_broken": 0,
             "weapons_repaired": 0,
             "armor_repaired": 0,
+            "rooms_explored": 0,
+            "times_rested": 0,
             "lore_found": {
                 "Guard Journal": 0,
                 "Quest Notice": 0,
@@ -2709,7 +2688,8 @@ class DiceDungeonExplorer:
             item = random.choice(items)
             if len(self.inventory) < self.max_inventory:
                 self.inventory.append(item)
-                self.stats["items_found"] += 1
+                # Track acquisition using centralized function
+                self.inventory_equipment_manager.track_item_acquisition(item, "chest")
                 self.log(f"[CHEST] Opened chest: {item}!", 'loot')
             else:
                 self.log(f"[CHEST] Opened chest: {item}! But inventory is full.", 'system')
@@ -2790,6 +2770,7 @@ class DiceDungeonExplorer:
         actual = self.health - old_hp
         
         if actual > 0:
+            self.stats["times_rested"] += 1
             self.log(f"[REST] Rested and recovered {actual} HP. Must explore 3 rooms before resting again.", 'success')
             self.rest_cooldown = 3  # Must explore 3 rooms before resting again
             self.rooms_since_rest = 0
@@ -2805,6 +2786,9 @@ class DiceDungeonExplorer:
             self.log("No store found on this floor yet!", 'system')
             return
         
+        # Save current room name before teleporting
+        old_room_name = self.current_room.data.get('name', 'Unknown Location') if hasattr(self.current_room, 'data') else 'Unknown Location'
+        
         # Save current position
         old_pos = self.current_pos
         
@@ -2812,7 +2796,7 @@ class DiceDungeonExplorer:
         self.current_pos = self.store_position
         self.current_room = self.store_room
         
-        self.log(f"[TRAVEL] Traveled to the store from {old_pos}!", 'system')
+        self.log(f"Traveled to the store from {old_room_name}!", 'system')
         
         # Update display and refresh exploration options
         self.update_display()
@@ -3327,7 +3311,8 @@ class DiceDungeonExplorer:
         for item in chest['items']:
             if len(self.inventory) < self.max_inventory:
                 self.inventory.append(item)
-                self.stats["items_found"] += 1
+                # Track acquisition using centralized function
+                self.inventory_equipment_manager.track_item_acquisition(item, "chest")
         
         # Add gold
         if chest['gold'] > 0:
@@ -3556,6 +3541,13 @@ class DiceDungeonExplorer:
             self.inventory[inv_idx] = item_data['original']
             self.equipment_durability[item_data['original']] = item_data['restore_dur']
             
+            # Track repair stats
+            original_def = self.item_definitions.get(item_data['original'], {})
+            if original_def.get('slot') == 'weapon':
+                self.stats["weapons_repaired"] += 1
+            elif original_def.get('slot') == 'armor':
+                self.stats["armor_repaired"] += 1
+            
             self.log(f"Used {repair_kit_name}! Restored {item_data['name']} to {item_data['original']} with {item_data['restore_dur']} durability", 'success')
             
         elif item_data['type'] == 'inventory':
@@ -3563,12 +3555,25 @@ class DiceDungeonExplorer:
             self.equipment_durability[item_data['name']] = item_data['new_dur']
             self.inventory.pop(repair_kit_idx)  # Remove repair kit
             
+            # Track repair stats
+            item_def = self.item_definitions.get(item_data['name'], {})
+            if item_def.get('slot') == 'weapon':
+                self.stats["weapons_repaired"] += 1
+            elif item_def.get('slot') == 'armor':
+                self.stats["armor_repaired"] += 1
+            
             self.log(f"Used {repair_kit_name} on {item_data['name']}! Restored {item_data['repair_amount']} durability", 'success')
             
         elif item_data['type'] == 'equipped':
             # Repair equipped item
             self.equipment_durability[item_data['name']] = item_data['new_dur']
             self.inventory.pop(repair_kit_idx)  # Remove repair kit
+            
+            # Track repair stats
+            if item_data['slot'] == 'weapon':
+                self.stats["weapons_repaired"] += 1
+            elif item_data['slot'] == 'armor':
+                self.stats["armor_repaired"] += 1
             
             self.log(f"Used {repair_kit_name} on {item_data['name']}! Restored {item_data['repair_amount']} durability", 'success')
         
@@ -4290,628 +4295,8 @@ class DiceDungeonExplorer:
         self.log(f"Read the prayer strip... The cult's devotion was absolute and terrifying.", 'lore')
     
     def show_character_status(self):
-        """Show comprehensive character status with tabbed interface"""
-        if self.dialog_frame:
-            self.dialog_frame.destroy()
-        
-        # Responsive sizing - larger for tabs
-        dialog_width, dialog_height = self.get_responsive_dialog_size(700, 700, 0.75, 0.9)
-        
-        self.dialog_frame = tk.Frame(self.game_frame, bg=self.current_colors["bg_panel"], 
-                                      relief=tk.RIDGE, borderwidth=3)
-        self.dialog_frame.place(relx=0.5, rely=0.5, anchor='center', 
-                                width=dialog_width, height=dialog_height)
-        
-        # Header with title and close button
-        header_frame = tk.Frame(self.dialog_frame, bg=self.current_colors["bg_panel"])
-        header_frame.pack(fill=tk.X, pady=(10, 5))
-        
-        # Title (centered)
-        tk.Label(header_frame, text="⚔ CHARACTER STATUS ⚔", 
-                font=('Arial', 20, 'bold'), bg=self.current_colors["bg_panel"], 
-                fg=self.current_colors["text_gold"]).pack()
-        
-        # Red X close button (top right)
-        close_btn = tk.Label(header_frame, text="✕", font=('Arial', 16, 'bold'),
-                            bg=self.current_colors["bg_panel"], fg='#ff4444',
-                            cursor="hand2", padx=5)
-        close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=0)
-        close_btn.bind('<Button-1>', lambda e: self.close_dialog())
-        close_btn.bind('<Enter>', lambda e: close_btn.config(fg='#ff0000'))
-        close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
-        
-        # Create tabbed notebook
-        style = ttk.Style()
-        style.theme_use('default')
-        style.configure('Custom.TNotebook', background=self.current_colors["bg_panel"], borderwidth=0)
-        style.configure('Custom.TNotebook.Tab', 
-                       background=self.current_colors["bg_dark"],
-                       foreground=self.current_colors["text_cyan"],
-                       padding=[20, 10],
-                       font=('Arial', 11, 'bold'))
-        style.map('Custom.TNotebook.Tab',
-                 background=[('selected', self.current_colors["bg_panel"])],
-                 foreground=[('selected', self.current_colors["text_gold"])])
-        
-        notebook = ttk.Notebook(self.dialog_frame, style='Custom.TNotebook')
-        notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
-        
-        # Create tabs
-        char_tab = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
-        stats_tab = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
-        lore_tab = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
-        
-        notebook.add(char_tab, text="Character")
-        notebook.add(stats_tab, text="Game Stats")
-        notebook.add(lore_tab, text="Lore Codex")
-        
-        # Populate Character tab
-        self._populate_character_tab(char_tab)
-        
-        # Lazy load other tabs
-        def on_tab_changed(event):
-            selected_tab = event.widget.select()
-            tab_text = event.widget.tab(selected_tab, "text")
-            
-            if tab_text == "Game Stats" and not stats_tab.winfo_children():
-                self._populate_stats_tab(stats_tab)
-            elif tab_text == "Lore Codex" and not lore_tab.winfo_children():
-                self._populate_lore_tab(lore_tab)
-        
-        notebook.bind('<<NotebookTabChanged>>', on_tab_changed)
-    
-    def _populate_character_tab(self, parent):
-        """Populate the Character tab"""
-        
-        # Create scrollable area
-        canvas = tk.Canvas(parent, bg=self.current_colors["bg_primary"], highlightthickness=0)
-        scrollbar = tk.Scrollbar(parent, orient="vertical", command=canvas.yview, width=10,
-                                bg=self.current_colors["bg_primary"], troughcolor=self.current_colors["bg_dark"])
-        scroll_frame = tk.Frame(canvas, bg=self.current_colors["bg_primary"])
-        
-        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-
-        
-        
-
-        
-        def update_width(event=None):
-
-        
-            canvas.itemconfig(canvas_window, width=canvas.winfo_width()-10)
-
-        
-        
-
-        
-        canvas_window = canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
-
-        
-        canvas.bind("<Configure>", update_width)
-
-        
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        # Setup mousewheel scrolling
-        self.setup_mousewheel_scrolling(canvas)
-        
-        canvas.pack(side="left", fill="both", expand=True, padx=10, pady=5)
-        scrollbar.pack(side="right", fill="y")
-        
-        # === EQUIPPED GEAR SECTION ===
-        gear_section = tk.Frame(scroll_frame, bg=self.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=2)
-        gear_section.pack(fill=tk.X, padx=10, pady=10)
-        
-        tk.Label(gear_section, text="◊ EQUIPPED GEAR", font=('Arial', 14, 'bold'),
-                bg=self.current_colors["bg_panel"], fg=self.current_colors["text_cyan"],
-                pady=5).pack()
-        
-        # Show each equipment slot
-        for slot_name, slot_key in [("Weapon", "weapon"), ("Armor", "armor"), ("Accessory", "accessory"), ("Backpack", "backpack")]:
-            slot_frame = tk.Frame(gear_section, bg=self.current_colors["bg_dark"], relief=tk.FLAT, borderwidth=1)
-            slot_frame.pack(fill=tk.X, padx=10, pady=3)
-            
-            equipped_item = self.equipped_items.get(slot_key)
-            if equipped_item:
-                item_def = self.item_definitions.get(equipped_item, {})
-                
-                # Build effect string from actual bonus properties
-                effect_parts = []
-                if 'damage_bonus' in item_def: 
-                    effect_parts.append(f"+{item_def['damage_bonus']} DMG")
-                if 'crit_bonus' in item_def: 
-                    effect_parts.append(f"+{int(item_def['crit_bonus']*100)}% CRIT")
-                # Show combat ability instead of passive reroll for Mystic Ring
-                if 'combat_ability' in item_def:
-                    if item_def['combat_ability'] == 'reroll':
-                        effect_parts.append("COMBAT: +1 REROLL (Once)")
-                elif 'reroll_bonus' in item_def: 
-                    effect_parts.append(f"+{item_def['reroll_bonus']} REROLL")
-                if 'max_hp_bonus' in item_def: 
-                    effect_parts.append(f"+{item_def['max_hp_bonus']} MAX HP")
-                if 'armor_bonus' in item_def: 
-                    effect_parts.append(f"+{item_def['armor_bonus']} ARMOR")
-                if 'inventory_bonus' in item_def: 
-                    effect_parts.append(f"+{item_def['inventory_bonus']} INV SLOTS")
-                
-                # Show durability if equipment has it
-                durability_str = ""
-                max_dur = item_def.get('max_durability', 0)
-                if max_dur > 0:
-                    # Ensure item is in durability tracking
-                    if equipped_item not in self.equipment_durability:
-                        self.equipment_durability[equipped_item] = max_dur
-                    
-                    current_dur = self.equipment_durability[equipped_item]
-                    durability_percent = int((current_dur / max_dur) * 100)
-                    durability_str = f" [{durability_percent}% condition]"
-                
-                effect_str = " | ".join(effect_parts) if effect_parts else "No bonuses"
-                
-                tk.Label(slot_frame, text=f"{slot_name}: {equipped_item}{durability_str}",
-                        font=('Arial', 11, 'bold'), bg=self.current_colors["bg_dark"],
-                        fg=self.current_colors["text_gold"], anchor='w', padx=10, pady=3).pack(anchor='w')
-                tk.Label(slot_frame, text=f"  {effect_str}",
-                        font=('Arial', 9), bg=self.current_colors["bg_dark"],
-                        fg=self.current_colors["text_green"], anchor='w', padx=10, pady=2).pack(anchor='w')
-            else:
-                tk.Label(slot_frame, text=f"{slot_name}: (Empty)",
-                        font=('Arial', 11), bg=self.current_colors["bg_dark"],
-                        fg=self.current_colors["text_secondary"], anchor='w', padx=10, pady=5).pack(anchor='w')
-        
-        # === COMBAT STATS SECTION ===
-        stats_section = tk.Frame(scroll_frame, bg=self.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=2)
-        stats_section.pack(fill=tk.X, padx=10, pady=10)
-        
-        tk.Label(stats_section, text="⚔ COMBAT STATS", font=('Arial', 14, 'bold'),
-                bg=self.current_colors["bg_panel"], fg=self.current_colors["text_red"],
-                pady=5).pack()
-        
-        stats_grid = tk.Frame(stats_section, bg=self.current_colors["bg_panel"])
-        stats_grid.pack(padx=10, pady=5, fill=tk.X)
-        
-        combat_stats = [
-            ("Dice Pool", f"{self.num_dice} dice"),
-            ("Base Damage Bonus", f"+{self.damage_bonus}"),
-            ("Damage Multiplier", f"{self.multiplier:.2f}x"),
-            ("Critical Hit Chance", f"{self.crit_chance*100:.1f}%"),
-            ("Healing Bonus", f"+{self.heal_bonus} HP"),
-            ("Bonus Rerolls", f"+{self.reroll_bonus}"),
-        ]
-        
-        for i, (label, value) in enumerate(combat_stats):
-            row_frame = tk.Frame(stats_grid, bg=self.current_colors["bg_dark"])
-            row_frame.pack(fill=tk.X, pady=2)
-            
-            tk.Label(row_frame, text=label+":", font=('Arial', 10),
-                    bg=self.current_colors["bg_dark"], fg=self.current_colors["text_white"],
-                    anchor='w', width=22).pack(side=tk.LEFT, padx=10)
-            tk.Label(row_frame, text=value, font=('Arial', 10, 'bold'),
-                    bg=self.current_colors["bg_dark"], fg=self.current_colors["text_cyan"],
-                    anchor='e').pack(side=tk.RIGHT, padx=10)
-        
-        # === ACTIVE EFFECTS SECTION ===
-        effects_section = tk.Frame(scroll_frame, bg=self.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=2)
-        effects_section.pack(fill=tk.X, padx=10, pady=10)
-        
-        tk.Label(effects_section, text="✨ ACTIVE EFFECTS", font=('Arial', 14, 'bold'),
-                bg=self.current_colors["bg_panel"], fg=self.current_colors["text_purple"],
-                pady=5).pack()
-        
-        # Show temp effects
-        effects_found = False
-        
-        if self.temp_shield > 0:
-            effects_found = True
-            tk.Label(effects_section, text=f"◊ Shield: {self.temp_shield} HP",
-                    font=('Arial', 10), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_cyan"], pady=2).pack()
-        
-        if self.shop_discount > 0:
-            effects_found = True
-            tk.Label(effects_section, text=f"◉ Shop Discount: {int(self.shop_discount*100)}%",
-                    font=('Arial', 10), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_gold"], pady=2).pack()
-        
-        if getattr(self, 'combat_accuracy_penalty', 0) > 0:
-            effects_found = True
-            tk.Label(effects_section, text=f"≈ Accuracy Penalty: {int(self.combat_accuracy_penalty*100)}%",
-                    font=('Arial', 10), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_red"], pady=2).pack()
-        
-        # Show flags and statuses from content system
-        if self.flags.get('disarm_token', 0) > 0:
-            effects_found = True
-            tk.Label(effects_section, text=f"⚙ Disarm Tokens: {self.flags['disarm_token']}",
-                    font=('Arial', 10), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_green"], pady=2).pack()
-        
-        if self.flags.get('escape_token', 0) > 0:
-            effects_found = True
-            tk.Label(effects_section, text=f"» Escape Tokens: {self.flags['escape_token']}",
-                    font=('Arial', 10), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_green"], pady=2).pack()
-        
-        # Show any temp effects from content system
-        for effect_name, effect_data in self.temp_effects.items():
-            effects_found = True
-            duration = effect_data.get('duration', '?')
-            
-            # Format effect name for display
-            display_name = effect_name.replace('_', ' ').title()
-            
-            # Special formatting for specific effects
-            if 'gold_mult' in effect_name:
-                mult_value = effect_data.get('value', 0)
-                display_name = f"Gold Bonus: +{int(mult_value * 100)}%"
-            elif 'damage_bonus' in effect_name:
-                dmg_value = effect_data.get('value', 0)
-                display_name = f"Damage Bonus: +{dmg_value}"
-            elif 'crit_bonus' in effect_name:
-                crit_value = effect_data.get('value', 0)
-                display_name = f"Crit Bonus: +{int(crit_value * 100)}%"
-            
-            tk.Label(effects_section, text=f"⚡ {display_name}: {duration}",
-                    font=('Arial', 10), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_magenta"], pady=2).pack()
-        
-        # Show statuses
-        for status in self.flags.get('statuses', []):
-            effects_found = True
-            tk.Label(effects_section, text=f"✦ {status}",
-                    font=('Arial', 10), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_purple"], pady=2).pack()
-        
-        if not effects_found:
-            tk.Label(effects_section, text="(No active effects)",
-                    font=('Arial', 10, 'italic'), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_secondary"], pady=10).pack()
-        
-        # === RESOURCES SECTION ===
-        resources_section = tk.Frame(scroll_frame, bg=self.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=2)
-        resources_section.pack(fill=tk.X, padx=10, pady=10)
-        
-        tk.Label(resources_section, text="◇ RESOURCES", font=('Arial', 14, 'bold'),
-                bg=self.current_colors["bg_panel"], fg=self.current_colors["text_gold"],
-                pady=5).pack()
-        
-        resources_grid = tk.Frame(resources_section, bg=self.current_colors["bg_panel"])
-        resources_grid.pack(padx=10, pady=5, fill=tk.X)
-        
-        resources = [
-            ("Health", f"{self.health}/{self.max_health}", self.current_colors["text_red"]),
-            ("Gold", f"{self.gold}", self.current_colors["text_gold"]),
-            ("Inventory Space", f"{len(self.inventory)}/{self.max_inventory}", self.current_colors["text_cyan"]),
-            ("Rest Cooldown", f"{self.rest_cooldown} rooms" if self.rest_cooldown > 0 else "Ready", 
-             self.current_colors["text_green"] if self.rest_cooldown == 0 else self.current_colors["text_red"]),
-        ]
-        
-        for label, value, color in resources:
-            row_frame = tk.Frame(resources_grid, bg=self.current_colors["bg_dark"])
-            row_frame.pack(fill=tk.X, pady=2)
-            
-            tk.Label(row_frame, text=label+":", font=('Arial', 10),
-                    bg=self.current_colors["bg_dark"], fg=self.current_colors["text_white"],
-                    anchor='w', width=22).pack(side=tk.LEFT, padx=10)
-            tk.Label(row_frame, text=value, font=('Arial', 10, 'bold'),
-                    bg=self.current_colors["bg_dark"], fg=color,
-                    anchor='e').pack(side=tk.RIGHT, padx=10)
-        
-        # === PERMANENT UPGRADES SECTION ===
-        upgrades_section = tk.Frame(scroll_frame, bg=self.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=2)
-        upgrades_section.pack(fill=tk.X, padx=10, pady=10)
-        
-        tk.Label(upgrades_section, text="⬆ PERMANENT UPGRADES", font=('Arial', 14, 'bold'),
-                bg=self.current_colors["bg_panel"], fg=self.current_colors["text_gold"],
-                pady=5).pack()
-        
-        upgrades_grid = tk.Frame(upgrades_section, bg=self.current_colors["bg_panel"])
-        upgrades_grid.pack(padx=10, pady=5, fill=tk.X)
-        
-        # Calculate base stats (what you'd have at start) to show upgrade gains
-        base_max_hp = 50  # Base starting HP after difficulty change
-        base_damage = 0   # Base damage bonus at start
-        base_crit = 0.05  # Base 5% crit chance
-        base_rerolls = 0  # Base rerolls
-        
-        # Calculate upgrades purchased
-        hp_upgrades = (self.max_health - base_max_hp) // 10  # Each upgrade gives +10 HP
-        damage_upgrades = self.damage_bonus - base_damage
-        crit_upgrades = int((self.crit_chance - base_crit) / 0.02)  # Each gives +2%
-        reroll_upgrades = self.reroll_bonus - base_rerolls
-        
-        upgrade_stats = []
-        if hp_upgrades > 0:
-            upgrade_stats.append(("Max HP Upgrades", f"×{hp_upgrades} (+{hp_upgrades * 10} HP)"))
-        if damage_upgrades > 0:
-            upgrade_stats.append(("Damage Upgrades", f"×{damage_upgrades} (+{damage_upgrades} DMG)"))
-        if crit_upgrades > 0:
-            upgrade_stats.append(("Critical Upgrades", f"×{crit_upgrades} (+{crit_upgrades * 2}% CRIT)"))
-        if reroll_upgrades > 0:
-            upgrade_stats.append(("Fortune Upgrades", f"×{reroll_upgrades} (+{reroll_upgrades} REROLL)"))
-        
-        if upgrade_stats:
-            for label, value in upgrade_stats:
-                row_frame = tk.Frame(upgrades_grid, bg=self.current_colors["bg_dark"])
-                row_frame.pack(fill=tk.X, pady=2)
-                
-                tk.Label(row_frame, text=label+":", font=('Arial', 10),
-                        bg=self.current_colors["bg_dark"], fg=self.current_colors["text_white"],
-                        anchor='w', width=22).pack(side=tk.LEFT, padx=10)
-                tk.Label(row_frame, text=value, font=('Arial', 10, 'bold'),
-                        bg=self.current_colors["bg_dark"], fg=self.current_colors["text_green"],
-                        anchor='e').pack(side=tk.RIGHT, padx=10)
-        else:
-            tk.Label(upgrades_section, text="(No permanent upgrades purchased yet)",
-                    font=('Arial', 10, 'italic'), bg=self.current_colors["bg_panel"],
-                    fg=self.current_colors["text_secondary"], pady=10).pack()
-        
-        # Bind mousewheel to all child widgets
-        def bind_mousewheel_to_tree(widget):
-            def on_mousewheel(event):
-                canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-            widget.bind("<MouseWheel>", on_mousewheel, add='+')
-            for child in widget.winfo_children():
-                bind_mousewheel_to_tree(child)
-        bind_mousewheel_to_tree(scroll_frame)
-    
-    def _populate_stats_tab(self, parent):
-        """Populate the Game Stats tab"""
-        canvas = tk.Canvas(parent, bg=self.current_colors["bg_secondary"], highlightthickness=0)
-        scrollbar = tk.Scrollbar(parent, orient="vertical", command=canvas.yview, width=10,
-                                bg=self.current_colors["bg_secondary"], troughcolor=self.current_colors["bg_dark"])
-        scrollable_frame = tk.Frame(canvas, bg=self.current_colors["bg_secondary"])
-        
-        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-
-        
-        
-
-        
-        def update_width(event=None):
-
-        
-            canvas.itemconfig(canvas_window, width=canvas.winfo_width()-10)
-
-        
-        
-
-        
-        canvas_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-
-        
-        canvas.bind("<Configure>", update_width)
-
-        
-        canvas.configure(yscrollcommand=scrollbar.set)
-        self.setup_mousewheel_scrolling(canvas)
-        
-        stats_data = self.stats
-        
-        # Combat Statistics
-        self._add_stats_section(scrollable_frame, "⚔️ COMBAT", [
-            ("Enemies Encountered", stats_data.get("enemies_encountered", 0)),
-            ("Enemies Defeated", stats_data.get("enemies_defeated", 0)),
-            ("Mini-Bosses Defeated", stats_data.get("mini_bosses_defeated", 0)),
-            ("Bosses Defeated", stats_data.get("bosses_defeated", 0)),
-            ("Total Damage Dealt", stats_data.get("total_damage_dealt", 0)),
-            ("Total Damage Taken", stats_data.get("total_damage_taken", 0)),
-            ("Highest Single Damage", stats_data.get("highest_single_damage", 0)),
-            ("Critical Hits", stats_data.get("critical_hits", 0))
-        ])
-        
-        self._add_stats_section(scrollable_frame, "§ ECONOMY", [
-            ("Gold Found", stats_data.get("gold_found", 0)),
-            ("Gold Spent", stats_data.get("gold_spent", 0)),
-            ("Items Purchased", stats_data.get("items_purchased", 0)),
-            ("Items Sold", stats_data.get("items_sold", 0))
-        ])
-        
-        self._add_stats_section(scrollable_frame, "◈ ITEMS", [
-            ("Items Found", stats_data.get("items_found", 0)),
-            ("Items Used", stats_data.get("items_used", 0)),
-            ("Potions Used", stats_data.get("potions_used", 0)),
-            ("Containers Searched", stats_data.get("containers_searched", 0))
-        ])
-        
-        self._add_stats_section(scrollable_frame, "◊️ EQUIPMENT", [
-            ("Weapons Broken", stats_data.get("weapons_broken", 0)),
-            ("Armor Broken", stats_data.get("armor_broken", 0)),
-            ("Weapons Repaired", stats_data.get("weapons_repaired", 0)),
-            ("Armor Repaired", stats_data.get("armor_repaired", 0))
-        ])
-        
-        lore_data = stats_data.get("lore_found", {})
-        self._add_stats_section(scrollable_frame, "📜 LORE COLLECTED", [
-            ("Guard Journals", f"{lore_data.get('Guard Journal', 0)}/12"),
-            ("Quest Notices", f"{lore_data.get('Quest Notice', 0)}/8"),
-            ("Scrawled Notes", f"{lore_data.get('Scrawled Note', 0)}/10"),
-            ("Training Manuals", f"{lore_data.get('Training Manual Page', 0)}/15"),
-            ("Pressed Pages", f"{lore_data.get('Pressed Page', 0)}/7"),
-            ("Surgeon's Notes", f"{lore_data.get('Surgeon' + chr(39) + 's Note', 0)}/6"),
-            ("Puzzle Notes", f"{lore_data.get('Puzzle Note', 0)}/10"),
-            ("Star Charts", f"{lore_data.get('Star Chart', 0)}/4"),
-            ("Map Scraps", f"{lore_data.get('Cracked Map Scrap', 0)}/6"),
-            ("Old Letters", f"{lore_data.get('Old Letter', 0)}/12"),
-            ("Prayer Strips", f"{lore_data.get('Prayer Strip', 0)}/10")
-        ])
-        
-        self._add_stats_section(scrollable_frame, "🗺️ EXPLORATION", [
-            ("Rooms Explored", stats_data.get("rooms_explored", 0)),
-            ("Times Rested", stats_data.get("times_rested", 0)),
-            ("Stairs Used", stats_data.get("stairs_used", 0)),
-            ("Highest Floor Reached", stats_data.get("highest_floor", 1))
-        ])
-        
-        canvas.pack(side="left", fill="both", expand=True, padx=5, pady=5)
-        scrollbar.pack(side="right", fill="y", pady=5)
-        
-        # Bind mousewheel to all child widgets
-        def bind_mousewheel_to_tree(widget):
-            def on_mousewheel(event):
-                canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-            widget.bind("<MouseWheel>", on_mousewheel, add='+')
-            for child in widget.winfo_children():
-                bind_mousewheel_to_tree(child)
-        bind_mousewheel_to_tree(scrollable_frame)
-    
-    def _populate_lore_tab(self, parent):
-        """Populate the Lore Codex tab"""
-        category_info = {
-            "guards_journal": ("Guard Journals", "guards_journal_pages"),
-            "quest_notice": ("Quest Notices", "quest_notices"),
-            "scrawled_note": ("Scrawled Notes", "scrawled_notes"),
-            "training_manual": ("Training Manuals", "training_manual_pages"),
-            "pressed_page": ("Pressed Pages", "pressed_pages"),
-            "surgeons_note": ("Surgeon's Notes", "surgeons_notes"),
-            "puzzle_note": ("Puzzle Notes", "puzzle_notes"),
-            "star_chart": ("Star Charts", "star_charts"),
-            "map_scrap": ("Map Scraps", "map_scraps"),
-            "old_letter": ("Old Letters", "old_letters"),
-            "prayer_strip": ("Prayer Strips", "prayer_strips")
-        }
-        
-        lore_by_type = {}
-        for entry in self.lore_codex:
-            lore_type = entry.get("type", "unknown")
-            if lore_type not in lore_by_type:
-                lore_by_type[lore_type] = []
-            lore_by_type[lore_type].append(entry)
-        
-        for lore_type in lore_by_type:
-            lore_by_type[lore_type].sort(key=lambda x: x.get("floor_found", 0))
-        
-        total_found = len(self.lore_codex)
-        total_max = sum(self.lore_max_counts.values())
-        
-        header = tk.Frame(parent, bg=self.current_colors["bg_primary"])
-        header.pack(fill=tk.X, padx=10, pady=10)
-        tk.Label(header, text=f"Total Lore Discovered: {total_found}/{total_max}",
-                font=('Arial', 12, 'bold'), bg=self.current_colors["bg_primary"],
-                fg=self.current_colors["text_gold"]).pack()
-        
-        canvas = tk.Canvas(parent, bg=self.current_colors["bg_secondary"], highlightthickness=0)
-        scrollbar = tk.Scrollbar(parent, orient="vertical", command=canvas.yview, width=10,
-                                bg=self.current_colors["bg_secondary"], troughcolor=self.current_colors["bg_dark"])
-        scrollable_frame = tk.Frame(canvas, bg=self.current_colors["bg_secondary"])
-        
-        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-
-        
-        
-
-        
-        def update_width(event=None):
-
-        
-            canvas.itemconfig(canvas_window, width=canvas.winfo_width()-10)
-
-        
-        
-
-        
-        canvas_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-
-        
-        canvas.bind("<Configure>", update_width)
-
-        
-        canvas.configure(yscrollcommand=scrollbar.set)
-        self.setup_mousewheel_scrolling(canvas)
-        
-        if not hasattr(self, '_lore_expanded'):
-            self._lore_expanded = {}
-        
-        for lore_type, (display_name, json_key) in category_info.items():
-            category_lore = lore_by_type.get(lore_type, [])
-            count = len(category_lore)
-            max_count = self.lore_max_counts.get(json_key, 0)
-            
-            category_frame = tk.Frame(scrollable_frame, bg=self.current_colors["bg_dark"], relief=tk.RAISED, borderwidth=1)
-            category_frame.pack(fill=tk.X, padx=10, pady=2)
-            
-            header_frame = tk.Frame(category_frame, bg=self.current_colors["bg_dark"], cursor="hand2")
-            header_frame.pack(fill=tk.X)
-            
-            expanded = self._lore_expanded.get(lore_type, False)
-            arrow = "▼" if expanded else "►"
-            arrow_label = tk.Label(header_frame, text=arrow, font=('Arial', 10),
-                    bg=self.current_colors["bg_dark"], fg=self.current_colors["text_cyan"], width=2)
-            arrow_label.pack(side=tk.LEFT, padx=(5, 0))
-            
-            name_label = tk.Label(header_frame, text=display_name, font=('Arial', 11, 'bold'),
-                    bg=self.current_colors["bg_dark"], fg=self.current_colors["text_cyan"])
-            name_label.pack(side=tk.LEFT, padx=5)
-            
-            count_color = self.current_colors["text_gold"] if count == max_count and count > 0 else self.current_colors["text_secondary"]
-            count_label = tk.Label(header_frame, text=f"{count}/{max_count}", font=('Arial', 10, 'bold'),
-                    bg=self.current_colors["bg_dark"], fg=count_color)
-            count_label.pack(side=tk.RIGHT, padx=10, pady=5)
-            
-            content_frame = tk.Frame(category_frame, bg=self.current_colors["bg_secondary"])
-            if expanded:
-                content_frame.pack(fill=tk.X, padx=5, pady=5)
-            
-            if count > 0:
-                for entry in category_lore:
-                    entry_item = tk.Frame(content_frame, bg=self.current_colors["bg_dark"], relief=tk.GROOVE, borderwidth=1)
-                    entry_item.pack(fill=tk.X, padx=5, pady=2)
-                    
-                    entry_header = tk.Frame(entry_item, bg=self.current_colors["bg_dark"], cursor="hand2")
-                    entry_header.pack(fill=tk.X)
-                    
-                    # Show unique ID if available
-                    unique_id = entry.get('unique_id', '')
-                    id_text = f" #{unique_id}" if unique_id else ""
-                    
-                    title_text = f"{entry['title']}{id_text} (Floor {entry['floor_found']})"
-                    entry_title = tk.Label(entry_header, text=title_text, font=('Arial', 9),
-                            bg=self.current_colors["bg_dark"], fg=self.current_colors["text_primary"])
-                    entry_title.pack(side=tk.LEFT, padx=8, pady=3)
-                    
-                    read_btn = tk.Button(entry_header, text="Read",
-                            command=lambda e=entry: self.show_lore_entry_popup(e),
-                            font=('Arial', 8, 'bold'), bg=self.current_colors["button_primary"],
-                            fg='#000000', width=8, pady=1)
-                    read_btn.pack(side=tk.RIGHT, padx=5, pady=2)
-            else:
-                if expanded:
-                    tk.Label(content_frame, text="None discovered yet", font=('Arial', 9, 'italic'),
-                            bg=self.current_colors["bg_secondary"],
-                            fg=self.current_colors["text_secondary"]).pack(pady=5)
-            
-            def toggle_category(event=None, lt=lore_type, cf=content_frame, al=arrow_label, c=canvas):
-                current = self._lore_expanded.get(lt, False)
-                self._lore_expanded[lt] = not current
-                
-                if self._lore_expanded[lt]:
-                    al.config(text="▼")
-                    cf.pack(fill=tk.X, padx=5, pady=5)
-                else:
-                    al.config(text="►")
-                    cf.pack_forget()
-                
-                c.update_idletasks()
-                c.configure(scrollregion=c.bbox("all"))
-            
-            header_frame.bind("<Button-1>", toggle_category)
-            arrow_label.bind("<Button-1>", toggle_category)
-            name_label.bind("<Button-1>", toggle_category)
-            count_label.bind("<Button-1>", toggle_category)
-        
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y, pady=5)
-        
-        # Bind mousewheel to all child widgets
-        def bind_mousewheel_to_tree(widget):
-            def on_mousewheel(event):
-                canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-            widget.bind("<MouseWheel>", on_mousewheel, add='+')
-            for child in widget.winfo_children():
-                bind_mousewheel_to_tree(child)
-        bind_mousewheel_to_tree(scrollable_frame)
-    
-
+        """Show comprehensive character status with tabbed interface - delegated to ui_character_menu"""
+        ui_character_menu.show_character_status(self)
     
     def close_dialog(self):
         """Close dialog"""
@@ -5115,7 +4500,7 @@ class DiceDungeonExplorer:
     
     def _create_unified_slot_item(self, slot_num):
         """Create a list item for a save slot in the unified menu"""
-        save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        save_file = os.path.join(self.saves_dir, 
                                  f'dice_dungeon_save_slot_{slot_num}.json')
         
         # Check if save exists
@@ -5199,7 +4584,7 @@ class DiceDungeonExplorer:
         for widget in self.details_panel.winfo_children():
             widget.destroy()
         
-        save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        save_file = os.path.join(self.saves_dir, 
                                  f'dice_dungeon_save_slot_{slot_num}.json')
         
         is_occupied = os.path.exists(save_file)
@@ -5385,7 +4770,7 @@ class DiceDungeonExplorer:
         if not hasattr(self, 'selected_slot') or self.selected_slot is None:
             return
         
-        save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        save_file = os.path.join(self.saves_dir, 
                                  f'dice_dungeon_save_slot_{self.selected_slot}.json')
         is_occupied = os.path.exists(save_file)
         
@@ -5535,7 +4920,7 @@ class DiceDungeonExplorer:
     
     def _create_save_slot_button(self, parent, slot_num):
         """Create a button for a save slot with custom name input"""
-        save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        save_file = os.path.join(self.saves_dir, 
                                  f'dice_dungeon_save_slot_{slot_num}.json')
         
         slot_frame = tk.Frame(parent, bg='#3d2415', relief=tk.RIDGE, borderwidth=2)
@@ -5706,7 +5091,7 @@ class DiceDungeonExplorer:
                 'starter_rooms': [list(pos) for pos in getattr(self, 'starter_rooms', set())]
             }
             
-            save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+            save_file = os.path.join(self.saves_dir, 
                                      f'dice_dungeon_save_slot_{slot_num}.json')
             
             with open(save_file, 'w') as f:
@@ -5717,7 +5102,7 @@ class DiceDungeonExplorer:
             
             # Clear and reinitialize the slot-specific debug log
             try:
-                debug_log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                debug_log_file = os.path.join(self.saves_dir, 
                                              f'adventure_log_slot_{slot_num}.txt')
                 with open(debug_log_file, 'w', encoding='utf-8') as f:
                     import datetime
@@ -5729,7 +5114,7 @@ class DiceDungeonExplorer:
             except:
                 pass
             
-            self.log(f"[SAVE] Game saved to Slot {slot_num}!", 'system')
+            self.log(f"⚡ Game saved to Slot {slot_num}!", 'system')
             self.close_dialog()
         except Exception as e:
             messagebox.showerror("Save Error", f"Failed to save game: {str(e)}")
@@ -5740,7 +5125,7 @@ class DiceDungeonExplorer:
     
     def update_save_name(self, slot_num, new_name):
         """Update the custom name of a save file"""
-        save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        save_file = os.path.join(self.saves_dir, 
                                  f'dice_dungeon_save_slot_{slot_num}.json')
         try:
             # Load existing save data
@@ -5762,7 +5147,7 @@ class DiceDungeonExplorer:
     
     def delete_save_slot(self, slot_num):
         """Delete a save slot"""
-        save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        save_file = os.path.join(self.saves_dir, 
                                  f'dice_dungeon_save_slot_{slot_num}.json')
         try:
             os.remove(save_file)
@@ -5772,7 +5157,7 @@ class DiceDungeonExplorer:
     
     def load_from_slot(self, slot_num):
         """Load game from specific slot"""
-        save_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        save_file = os.path.join(self.saves_dir, 
                                  f'dice_dungeon_save_slot_{slot_num}.json')
         
         try:
@@ -5809,7 +5194,7 @@ class DiceDungeonExplorer:
             
             # Initialize slot-specific debug log
             try:
-                debug_log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                debug_log_file = os.path.join(self.saves_dir, 
                                              f'adventure_log_slot_{slot_num}.txt')
                 with open(debug_log_file, 'w', encoding='utf-8') as f:
                     import datetime
@@ -5963,10 +5348,26 @@ class DiceDungeonExplorer:
             # Restore comprehensive stats (with defaults for old saves)
             if 'stats' in save_data:
                 self.stats = save_data['stats']
+                # Add missing fields for backward compatibility
+                if "enemies_fled" not in self.stats:
+                    self.stats["enemies_fled"] = 0
+                if "rooms_explored" not in self.stats:
+                    self.stats["rooms_explored"] = 0
+                if "times_rested" not in self.stats:
+                    self.stats["times_rested"] = 0
+                # Ensure lore_found has all current types
+                if "lore_found" not in self.stats:
+                    self.stats["lore_found"] = {}
+                for lore_type in ["Guard Journal", "Quest Notice", "Scrawled Note", "Training Manual Page", 
+                                 "Pressed Page", "Surgeon's Note", "Puzzle Note", "Cracked Map Scrap",
+                                 "Star Chart", "Old Letter", "Prayer Strip"]:
+                    if lore_type not in self.stats["lore_found"]:
+                        self.stats["lore_found"][lore_type] = 0
             else:
                 # Initialize empty stats for old saves
                 self.stats = {
                     "enemies_encountered": 0,
+                    "enemies_fled": 0,
                     "enemies_defeated": 0,
                     "mini_bosses_defeated": 0,
                     "bosses_defeated": 0,
@@ -5986,6 +5387,8 @@ class DiceDungeonExplorer:
                     "armor_broken": 0,
                     "weapons_repaired": 0,
                     "armor_repaired": 0,
+                    "rooms_explored": 0,
+                    "times_rested": 0,
                     "lore_found": {
                         "Guard Journal": 0,
                         "Quest Notice": 0,
@@ -5994,24 +5397,16 @@ class DiceDungeonExplorer:
                         "Pressed Page": 0,
                         "Surgeon's Note": 0,
                         "Puzzle Note": 0,
-                        "Cracked Map Scrap": 0
+                        "Cracked Map Scrap": 0,
+                        "Star Chart": 0,
+                        "Old Letter": 0,
+                        "Prayer Strip": 0
                     },
                     "enemy_kills": {},
-                    "most_damaged_enemy": {"name": "", "damage": 0}
+                    "most_damaged_enemy": {"name": "", "damage": 0},
+                    "items_collected": {}  # Track all items ever collected
                 }
             
-            # Restore purchased upgrades for current floor (with backward compatibility)
-            if 'purchased_upgrades_this_floor' in save_data:
-                self.purchased_upgrades_this_floor = set(save_data['purchased_upgrades_this_floor'])
-            else:
-                self.purchased_upgrades_this_floor = set()
-            
-            # Initialize starter area tracking (for saves that don't have these fields)
-            self.in_starter_area = save_data.get('in_starter_area', False)
-            self.starter_chests_opened = save_data.get('starter_chests_opened', [])
-            self.signs_read = save_data.get('signs_read', [])
-            
-            # Convert starter_rooms from list to set (backward compatibility)
             starter_rooms_data = save_data.get('starter_rooms', [])
             self.starter_rooms = set()
             for pos in starter_rooms_data:
@@ -7334,6 +6729,7 @@ Final Score: {self.run_score}
         # Combat Statistics
         self._add_stats_section(scrollable_frame, "⚔️ COMBAT", [
             ("Enemies Encountered", stats_data.get("enemies_encountered", 0)),
+            ("Enemies Fled", stats_data.get("enemies_fled", 0)),
             ("Enemies Defeated", stats_data.get("enemies_defeated", 0)),
             ("Mini-Bosses Defeated", stats_data.get("mini_bosses_defeated", 0)),
             ("Bosses Defeated", stats_data.get("bosses_defeated", 0)),
@@ -8134,8 +7530,8 @@ Final Score: {self.run_score}
             ("⬆⬇⬅➡ EXPLORATION", [
                 ("", "Use WASD or arrow keys to explore new rooms"),
                 ("", "Each room may contain enemies, chests, or stairs"),
-                ("", "You MUST find stairs to descend to the next floor"),
-                ("", "Higher floors = tougher enemies + better loot"),
+                ("", "You MUST find stairs to descend deeper into the dungeon"),
+                ("", "Deeper floors = tougher enemies + better loot"),
             ]),
             ("⚔ COMBAT", [
                 ("", "Enemies block your path until defeated"),
@@ -8276,87 +7672,554 @@ Final Score: {self.run_score}
         notebook = ttk.Notebook(self.dialog_frame, style='DevTools.TNotebook')
         notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=(5, 10))
         
-        # ===== TAB 1: SPAWN CONTROLS =====
-        spawn_tab = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
-        notebook.add(spawn_tab, text="Spawning")
+        # ===== TAB 1: ENEMY SPAWNING =====
+        enemy_tab_outer = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
+        notebook.add(enemy_tab_outer, text="Enemies")
         
-        # Enemy spawning
-        tk.Label(spawn_tab, text="Enemy Spawning", font=('Arial', 14, 'bold'),
-                bg=self.current_colors["bg_primary"], fg=self.current_colors["text_gold"]).pack(pady=10)
+        # Create scrollable area for enemy tab
+        enemy_canvas = tk.Canvas(enemy_tab_outer, bg=self.current_colors["bg_primary"], highlightthickness=0)
+        enemy_outer_scrollbar = tk.Scrollbar(enemy_tab_outer, orient="vertical", command=enemy_canvas.yview, width=10)
+        enemy_tab = tk.Frame(enemy_canvas, bg=self.current_colors["bg_primary"])
         
-        enemy_frame = tk.Frame(spawn_tab, bg=self.current_colors["bg_secondary"])
-        enemy_frame.pack(fill=tk.X, padx=20, pady=5)
+        enemy_tab.bind("<Configure>", lambda e: enemy_canvas.configure(scrollregion=enemy_canvas.bbox("all")))
         
-        # Get complete enemy list from all rooms' threats
-        enemy_set = set()
-        if hasattr(self, '_rooms'):
-            for room in self._rooms:
-                enemy_set.update(room.get('threats', []))
-        enemy_list = sorted(list(enemy_set)) if enemy_set else ["Skeleton", "Goblin", "Orc"]
+        def update_enemy_tab_width(event=None):
+            enemy_canvas.itemconfig(enemy_tab_window, width=enemy_canvas.winfo_width()-10)
         
-        tk.Label(enemy_frame, text="Enemy:", bg='#3c2820', fg='#ffffff').grid(row=0, column=0, padx=5, pady=5)
-        enemy_var = tk.StringVar(value=enemy_list[0] if enemy_list else "Skeleton")
-        enemy_combo = ttk.Combobox(enemy_frame, textvariable=enemy_var, values=enemy_list, width=25, state='readonly')
-        enemy_combo.grid(row=0, column=1, padx=5, pady=5)
+        enemy_tab_window = enemy_canvas.create_window((0, 0), window=enemy_tab, anchor="nw")
+        enemy_canvas.bind("<Configure>", update_enemy_tab_width)
+        enemy_canvas.configure(yscrollcommand=enemy_outer_scrollbar.set)
+        
+        self.setup_mousewheel_scrolling(enemy_canvas)
+        
+        enemy_canvas.pack(side="left", fill="both", expand=True)
+        enemy_outer_scrollbar.pack(side="right", fill="y")
+        
+        # Get complete enemy list from sprite system instead of enemy_types.json
+        # This ensures we show ALL enemies, not just those with special mechanics
+        sprite_based_enemies = []
+        if hasattr(self, 'enemy_sprites') and self.enemy_sprites:
+            # Get all enemy names from the sprite system
+            sprite_based_enemies = sorted(list(self.enemy_sprites.keys()))
+        
+        # Also include enemies from enemy_types.json that might not have sprites
+        config_enemies = sorted([name for name in self.enemy_types.keys() if name != '_meta'])
+        
+        # Combine both lists and remove duplicates
+        all_enemies = sorted(list(set(sprite_based_enemies + config_enemies)))
+        enemy_list = all_enemies
+        
+        print(f"DEBUG: Found {len(enemy_list)} total enemies from sprites and config")
+        print(f"DEBUG: Sprite enemies: {len(sprite_based_enemies)}, Config enemies: {len(config_enemies)}")
+        print(f"DEBUG: Sample enemies: {enemy_list[:10]}...")  # Show first 10
+        
+        # Search and filter controls
+        enemy_controls_frame = tk.Frame(enemy_tab, bg=self.current_colors["bg_secondary"])
+        enemy_controls_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(enemy_controls_frame, text="Search:", bg=self.current_colors["bg_secondary"],
+                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+        enemy_search_var = tk.StringVar()
+        enemy_search_entry = tk.Entry(enemy_controls_frame, textvariable=enemy_search_var, width=20)
+        enemy_search_entry.pack(side=tk.LEFT, padx=5)
+        
+        tk.Label(enemy_controls_frame, text="Sort:", bg=self.current_colors["bg_secondary"],
+                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(20, 5))
+        enemy_sort_var = tk.StringVar(value="name_asc")
+        
+        # Sort buttons
+        sort_options = [("name_asc", "A-Z"), ("name_desc", "Z-A"), ("hp_asc", "HP↑"), ("hp_desc", "HP↓")]
+        for sort_type, label in sort_options:
+            def set_enemy_sort(st=sort_type):
+                enemy_sort_var.set(st)
+                refresh_enemy_list()
+            btn = tk.Button(enemy_controls_frame, text=label, command=set_enemy_sort,
+                    font=('Arial', 8), bg=self.current_colors["bg_dark"],
+                    fg=self.current_colors["text_secondary"], width=5, pady=2)
+            btn.pack(side=tk.LEFT, padx=2)
+        
+        # Category filter frame (new row)
+        filter_frame = tk.Frame(enemy_tab, bg=self.current_colors["bg_secondary"])
+        filter_frame.pack(fill=tk.X, padx=20, pady=5)
+        
+        tk.Label(filter_frame, text="Filter:", bg=self.current_colors["bg_secondary"],
+                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+        
+        enemy_filter_var = tk.StringVar(value="all")
+        
+        filter_options = [
+            ("all", "All Enemies", "#95a5a6"),
+            ("regular", "Regular", "#95a5a6"),
+            ("elite", "Elite", "#f39c12"),
+            ("miniboss", "Mini-Boss", "#e67e22"),
+            ("boss", "Floor Boss", "#e74c3c")
+        ]
+        
+        for filter_type, label, color in filter_options:
+            def set_filter(ft=filter_type):
+                enemy_filter_var.set(ft)
+                refresh_enemy_list()
+            btn = tk.Button(filter_frame, text=label, command=set_filter,
+                    font=('Arial', 9, 'bold'), bg=color,
+                    fg='#ffffff', width=10, pady=4)
+            btn.pack(side=tk.LEFT, padx=2)
+        
+        # Spawn options
+        options_frame = tk.Frame(enemy_tab, bg=self.current_colors["bg_secondary"])
+        options_frame.pack(fill=tk.X, padx=20, pady=5)
         
         is_boss_var = tk.BooleanVar(value=False)
-        tk.Checkbutton(enemy_frame, text="Boss", variable=is_boss_var, bg='#3c2820', fg='#ffffff',
-                      selectcolor='#000000').grid(row=0, column=2, padx=5)
+        tk.Checkbutton(options_frame, text="Spawn as Boss", variable=is_boss_var, bg=self.current_colors["bg_secondary"],
+                      fg='#ffffff', selectcolor='#000000', font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
         
         is_miniboss_var = tk.BooleanVar(value=False)
-        tk.Checkbutton(enemy_frame, text="Mini-Boss", variable=is_miniboss_var, bg='#3c2820', fg='#ffffff',
-                      selectcolor='#000000').grid(row=0, column=3, padx=5)
+        tk.Checkbutton(options_frame, text="Spawn as Mini-Boss", variable=is_miniboss_var, bg=self.current_colors["bg_secondary"],
+                      fg='#ffffff', selectcolor='#000000', font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
         
-        def spawn_enemy():
-            enemy_name = enemy_var.get()
-            is_boss = is_boss_var.get()
-            is_miniboss = is_miniboss_var.get()
-            self.trigger_combat(enemy_name, is_mini_boss=is_miniboss, is_boss=is_boss)
-            self.log(f"🛠 DEV: Spawned {enemy_name}", 'system')
+        # Create scrollable canvas for enemy list
+        enemy_list_canvas = tk.Canvas(enemy_tab, bg=self.current_colors["bg_primary"], highlightthickness=0, height=400)
+        enemy_list_scrollbar = tk.Scrollbar(enemy_tab, orient="vertical", command=enemy_list_canvas.yview, width=10)
+        enemy_scroll_frame = tk.Frame(enemy_list_canvas, bg=self.current_colors["bg_primary"])
         
-        tk.Button(enemy_frame, text="Spawn Enemy", command=spawn_enemy,
-                 bg='#e74c3c', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=1, column=0, columnspan=4, pady=10)
+        enemy_scroll_frame.bind("<Configure>", lambda e: enemy_list_canvas.configure(scrollregion=enemy_list_canvas.bbox("all")))
         
-        # Item spawning
-        tk.Label(spawn_tab, text="Item Spawning", font=('Arial', 14, 'bold'),
-                bg='#2c1810', fg='#f39c12').pack(pady=10)
+        def update_enemy_list_width(event=None):
+            enemy_list_canvas.itemconfig(enemy_list_window, width=enemy_list_canvas.winfo_width()-10)
         
-        item_frame = tk.Frame(spawn_tab, bg='#3c2820')
-        item_frame.pack(fill=tk.X, padx=20, pady=5)
+        enemy_list_window = enemy_list_canvas.create_window((0, 0), window=enemy_scroll_frame, anchor="nw")
+        enemy_list_canvas.bind("<Configure>", update_enemy_list_width)
+        enemy_list_canvas.configure(yscrollcommand=enemy_list_scrollbar.set)
+        
+        self.setup_mousewheel_scrolling(enemy_list_canvas)
+        
+        enemy_list_canvas.pack(side="left", fill="both", expand=True, padx=(20, 0))
+        enemy_list_scrollbar.pack(side="left", fill="y", padx=(0, 20))
+        
+        def calculate_enemy_stats(enemy_name, as_boss=False, as_mini_boss=False):
+            """Calculate enemy stats using exact same logic as trigger_combat"""
+            # Base stats
+            base_hp = 30 + (self.floor * 10)
+            
+            # Add enemy-specific HP multipliers based on enemy name/type
+            enemy_hp_multipliers = {
+                # Weak enemies
+                "Goblin": 0.7, "Rat": 0.6, "Spider": 0.6, "Imp": 0.7, "Slime": 0.8,
+                "Bat": 0.5, "Sprite": 0.6, "Wisp": 0.5, "Grub": 0.4,
+                
+                # Normal enemies (1.0 multiplier - default)
+                "Skeleton": 1.0, "Orc": 1.0, "Zombie": 1.1, "Bandit": 0.9,
+                
+                # Strong enemies
+                "Troll": 1.5, "Ogre": 1.4, "Knight": 1.3, "Guard": 1.2, "Warrior": 1.1,
+                "Beast": 1.3, "Wolf": 1.1, "Bear": 1.4, "Boar": 1.2,
+                
+                # Elite enemies
+                "Demon": 2.0, "Dragon": 2.5, "Lich": 1.8, "Vampire": 1.6, "Wraith": 1.4,
+                "Golem": 2.2, "Hydra": 2.3, "Phoenix": 2.0, "Titan": 2.8,
+                
+                # Special/Boss enemies
+                "Lord": 3.0, "King": 3.5, "Ancient": 3.2, "Primordial": 4.0,
+                "Crystal Golem": 1.8, "Shadow Hydra": 2.1, "Necromancer": 1.6,
+                "Gelatinous Slime": 1.3, "Demon Lord": 2.8, "Demon Prince": 2.4
+            }
+            
+            # Find multiplier for this enemy (check for partial name matches)
+            multiplier = 1.0  # Default
+            enemy_lower = enemy_name.lower()
+            
+            for enemy_key, mult in enemy_hp_multipliers.items():
+                if enemy_key.lower() in enemy_lower:
+                    multiplier = mult
+                    break
+            
+            # Apply enemy-specific multiplier
+            base_hp = int(base_hp * multiplier)
+            hp_min = base_hp - 5
+            hp_max = base_hp + 10
+            
+            # Dice calculation
+            if as_boss:
+                dice_count = min(5 + (self.floor // 2), 8)
+            elif as_mini_boss:
+                dice_count = min(4 + (self.floor // 2), 7)
+            else:
+                dice_count = min(3 + (self.floor // 2), 6)
+            
+            # Apply boss multipliers
+            if as_boss:
+                hp_min = int(hp_min * 8.0)
+                hp_max = int(hp_max * 8.0)
+            elif as_mini_boss:
+                hp_min = int(hp_min * 3.0)
+                hp_max = int(hp_max * 3.0)
+            
+            # Apply difficulty multiplier
+            difficulty = self.settings.get("difficulty", "Normal")
+            diff_mult = self.difficulty_multipliers[difficulty]["enemy_health_mult"]
+            hp_min = int(hp_min * diff_mult)
+            hp_max = int(hp_max * diff_mult)
+            
+            # Apply dev multipliers
+            hp_min = int(hp_min * self.dev_config["enemy_hp_mult"])
+            hp_max = int(hp_max * self.dev_config["enemy_hp_mult"])
+            dice_count = int(dice_count * self.dev_config["enemy_dice_mult"])
+            
+            return hp_min, hp_max, dice_count
+        
+        def get_enemy_category(enemy_name):
+            """Categorize enemies as Regular, Elite, Mini-Boss, or Floor Boss"""
+            enemy_config = self.enemy_types.get(enemy_name, {})
+            
+            # Check if enemy has boss abilities defined - this is the PRIMARY indicator
+            has_boss_abilities = bool(enemy_config.get("boss_abilities"))
+            
+            # Use calculated HP and name patterns to determine category
+            hp_min, hp_max, _ = calculate_enemy_stats(enemy_name)
+            avg_hp = (hp_min + hp_max) / 2
+            enemy_lower = enemy_name.lower()
+            
+            # Floor Boss indicators - typically named "Lord", "King", "Ancient", "Dragon", etc.
+            boss_keywords = ["lord", "king", "queen", "ancient", "primordial", "elder", "supreme", 
+                           "dragon", "titan", "colossus", "emperor", "empress", "leviathan", "behemoth"]
+            
+            # Check for boss keywords in name
+            is_boss_name = any(keyword in enemy_lower for keyword in boss_keywords)
+            
+            # Categorize based on boss abilities FIRST, then name/HP
+            if has_boss_abilities and (is_boss_name or avg_hp >= 200):
+                return "Floor Boss"
+            elif has_boss_abilities:
+                # Has boss abilities but not boss-level HP/name = Mini-Boss
+                return "Mini-Boss"
+            elif is_boss_name or avg_hp >= 200:
+                # Boss name/HP but no abilities = just a strong Elite
+                return "Elite"
+            elif avg_hp >= 50:
+                return "Elite"
+            else:
+                return "Regular"
+        
+        def refresh_enemy_list():
+            for widget in enemy_scroll_frame.winfo_children():
+                widget.destroy()
+            
+            search_term = enemy_search_var.get().lower()
+            current_sort = enemy_sort_var.get()
+            current_filter = enemy_filter_var.get()
+            
+            # Filter enemies by search and category
+            filtered_enemies = []
+            for enemy_name in enemy_list:
+                if search_term and search_term not in enemy_name.lower():
+                    continue
+                
+                # Apply category filter
+                if current_filter != "all":
+                    category = get_enemy_category(enemy_name)
+                    if current_filter == "regular" and category != "Regular":
+                        continue
+                    elif current_filter == "elite" and category != "Elite":
+                        continue
+                    elif current_filter == "miniboss" and category != "Mini-Boss":
+                        continue
+                    elif current_filter == "boss" and category != "Floor Boss":
+                        continue
+                
+                filtered_enemies.append(enemy_name)
+            
+            # Sort enemies
+            if current_sort == "name_asc":
+                filtered_enemies.sort()
+            elif current_sort == "name_desc":
+                filtered_enemies.sort(reverse=True)
+            elif current_sort == "hp_asc":
+                filtered_enemies.sort(key=lambda x: calculate_enemy_stats(x)[0])  # Sort by min HP
+            elif current_sort == "hp_desc":
+                filtered_enemies.sort(key=lambda x: calculate_enemy_stats(x)[0], reverse=True)  # Sort by min HP
+            
+            print(f"DEBUG: Filtered enemies: {len(filtered_enemies)} of {len(enemy_list)}")
+            
+            if not filtered_enemies:
+                tk.Label(enemy_scroll_frame, text="No enemies found", font=('Arial', 10, 'italic'),
+                        bg=self.current_colors["bg_primary"], fg=self.current_colors["text_secondary"]).pack(pady=20)
+                return
+            
+            for enemy_name in filtered_enemies:
+                enemy_config = self.enemy_types.get(enemy_name, {})
+                category = get_enemy_category(enemy_name)
+                
+                # Calculate accurate stats for regular enemy
+                hp_min, hp_max, dice_count = calculate_enemy_stats(enemy_name, 
+                                                                   as_boss=is_boss_var.get(), 
+                                                                   as_mini_boss=is_miniboss_var.get())
+                
+                row_frame = tk.Frame(enemy_scroll_frame, bg=self.current_colors["bg_dark"])
+                row_frame.pack(fill=tk.X, padx=5, pady=1)
+                
+                def spawn_this_enemy(name=enemy_name):
+                    self.trigger_combat(name, is_mini_boss=is_miniboss_var.get(), is_boss=is_boss_var.get())
+                    self.log(f"🛠 DEV: Spawned {name}", 'system')
+                    self.close_dialog()
+                
+                # Make row clickable
+                row_frame.bind("<Button-1>", lambda e, name=enemy_name: spawn_this_enemy(name))
+                row_frame.config(cursor="hand2")
+                
+                # Category badge with updated colors
+                badge_colors = {
+                    "Regular": "#95a5a6", 
+                    "Elite": "#f39c12", 
+                    "Mini-Boss": "#e67e22",
+                    "Floor Boss": "#e74c3c"
+                }
+                badge = tk.Label(row_frame, text=f"[{category}]", font=('Arial', 7, 'bold'),
+                        bg=badge_colors.get(category, "#95a5a6"), fg='#ffffff')
+                badge.pack(side=tk.LEFT, padx=2)
+                badge.bind("<Button-1>", lambda e, name=enemy_name: spawn_this_enemy(name))
+                badge.config(cursor="hand2")
+                
+                # Enemy name
+                name_label = tk.Label(row_frame, text=f"☠ {enemy_name}", font=('Arial', 9),
+                        bg=self.current_colors["bg_dark"], fg=self.current_colors["text_secondary"])
+                name_label.pack(side=tk.LEFT, pady=2, padx=5)
+                name_label.bind("<Button-1>", lambda e, name=enemy_name: spawn_this_enemy(name))
+                name_label.config(cursor="hand2")
+                
+                # Stats - show range if different, single value if same
+                if hp_min == hp_max:
+                    hp_text = f"HP:{hp_min}"
+                else:
+                    hp_text = f"HP:{hp_min}-{hp_max}"
+                
+                stats_label = tk.Label(row_frame, text=f"{hp_text} | Dice:{dice_count}", font=('Arial', 8),
+                        bg=self.current_colors["bg_dark"], fg=self.current_colors["text_gold"])
+                stats_label.pack(side=tk.RIGHT, padx=5)
+                stats_label.bind("<Button-1>", lambda e, name=enemy_name: spawn_this_enemy(name))
+                stats_label.config(cursor="hand2")
+        
+        enemy_search_var.trace('w', lambda *args: refresh_enemy_list())
+        refresh_enemy_list()
+        
+        # ===== TAB 2: ITEM SPAWNING =====
+        item_tab_outer = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
+        notebook.add(item_tab_outer, text="Items")
+        
+        # Create scrollable area for item tab
+        item_outer_canvas = tk.Canvas(item_tab_outer, bg=self.current_colors["bg_primary"], highlightthickness=0)
+        item_outer_scrollbar = tk.Scrollbar(item_tab_outer, orient="vertical", command=item_outer_canvas.yview, width=10)
+        item_tab = tk.Frame(item_outer_canvas, bg=self.current_colors["bg_primary"])
+        
+        item_tab.bind("<Configure>", lambda e: item_outer_canvas.configure(scrollregion=item_outer_canvas.bbox("all")))
+        
+        def update_item_tab_width(event=None):
+            item_outer_canvas.itemconfig(item_tab_window, width=item_outer_canvas.winfo_width()-10)
+        
+        item_tab_window = item_outer_canvas.create_window((0, 0), window=item_tab, anchor="nw")
+        item_outer_canvas.bind("<Configure>", update_item_tab_width)
+        item_outer_canvas.configure(yscrollcommand=item_outer_scrollbar.set)
+        
+        self.setup_mousewheel_scrolling(item_outer_canvas)
+        
+        item_outer_canvas.pack(side="left", fill="both", expand=True)
+        item_outer_scrollbar.pack(side="right", fill="y")
         
         # Get complete item list from item_definitions (excluding _meta)
         item_list = sorted([item for item in self.item_definitions.keys() if item != '_meta'])
+        print(f"DEBUG: Found {len(item_list)} items: {item_list[:10]}...")  # Show first 10
         
-        tk.Label(item_frame, text="Item:", bg='#3c2820', fg='#ffffff').grid(row=0, column=0, padx=5, pady=5)
-        item_var = tk.StringVar(value=item_list[0] if item_list else "Health Potion")
-        item_combo = ttk.Combobox(item_frame, textvariable=item_var, values=item_list, width=25, state='readonly')
-        item_combo.grid(row=0, column=1, padx=5, pady=5)
+        # Search and filter controls
+        item_controls_frame = tk.Frame(item_tab, bg=self.current_colors["bg_secondary"])
+        item_controls_frame.pack(fill=tk.X, padx=20, pady=10)
         
-        def give_item():
-            item_name = item_var.get()
-            if len(self.inventory) < self.max_inventory:
-                self.inventory.append(item_name)
-                self.log(f"🛠 DEV: Added {item_name} to inventory", 'success')
-                self.update_display()
+        tk.Label(item_controls_frame, text="Search:", bg=self.current_colors["bg_secondary"],
+                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+        item_search_var = tk.StringVar()
+        item_search_entry = tk.Entry(item_controls_frame, textvariable=item_search_var, width=20)
+        item_search_entry.pack(side=tk.LEFT, padx=5)
+        
+        tk.Label(item_controls_frame, text="Filter:", bg=self.current_colors["bg_secondary"],
+                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(20, 5))
+        
+        item_filter_var = tk.StringVar(value="All")
+        item_categories = ["All", "Weapon", "Armor", "Accessory", "Consumable", "Combat Item", "Utility", "Upgrade", "Repair Kit", "Other"]
+        
+        # Filter buttons
+        for category in item_categories:
+            def set_item_filter(cat=category):
+                item_filter_var.set(cat)
+                refresh_item_list()
+            btn = tk.Button(item_controls_frame, text=category, command=set_item_filter,
+                    font=('Arial', 7), bg=self.current_colors["bg_dark"],
+                    fg=self.current_colors["text_secondary"], padx=3, pady=2)
+            btn.pack(side=tk.LEFT, padx=1)
+        
+        tk.Label(item_controls_frame, text="Sort:", bg=self.current_colors["bg_secondary"],
+                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(20, 5))
+        item_sort_var = tk.StringVar(value="name_asc")
+        
+        # Sort buttons
+        item_sort_options = [("name_asc", "A-Z"), ("name_desc", "Z-A"), ("type_asc", "Type")]
+        for sort_type, label in item_sort_options:
+            def set_item_sort(st=sort_type):
+                item_sort_var.set(st)
+                refresh_item_list()
+            btn = tk.Button(item_controls_frame, text=label, command=set_item_sort,
+                    font=('Arial', 8), bg=self.current_colors["bg_dark"],
+                    fg=self.current_colors["text_secondary"], width=5, pady=2)
+            btn.pack(side=tk.LEFT, padx=2)
+        
+        # Create scrollable canvas for item list
+        item_canvas = tk.Canvas(item_tab, bg=self.current_colors["bg_primary"], highlightthickness=0, height=400)
+        item_scrollbar = tk.Scrollbar(item_tab, orient="vertical", command=item_canvas.yview, width=10)
+        item_scroll_frame = tk.Frame(item_canvas, bg=self.current_colors["bg_primary"])
+        
+        item_scroll_frame.bind("<Configure>", lambda e: item_canvas.configure(scrollregion=item_canvas.bbox("all")))
+        
+        def update_item_width(event=None):
+            item_canvas.itemconfig(item_canvas_window, width=item_canvas.winfo_width()-10)
+        
+        item_canvas_window = item_canvas.create_window((0, 0), window=item_scroll_frame, anchor="nw")
+        item_canvas.bind("<Configure>", update_item_width)
+        item_canvas.configure(yscrollcommand=item_scrollbar.set)
+        
+        self.setup_mousewheel_scrolling(item_canvas)
+        
+        item_canvas.pack(side="left", fill="both", expand=True, padx=(20, 0))
+        item_scrollbar.pack(side="left", fill="y", padx=(0, 20))
+        
+        def get_item_category(item_name):
+            item_def = self.item_definitions.get(item_name, {})
+            item_type = item_def.get("type", "other")
+            slot = item_def.get("slot", None)
+            
+            if slot == "weapon":
+                return "Weapon"
+            elif slot == "armor":
+                return "Armor"
+            elif slot == "accessory":
+                return "Accessory"
+            elif item_type in ["heal", "potion"]:
+                return "Consumable"
+            elif item_type == "upgrade":
+                return "Upgrade"
+            elif item_type in ["buff", "shield"]:
+                return "Combat Item"
+            elif item_type in ["token", "tool", "cleanse"]:
+                return "Utility"
+            elif item_type == "repair":
+                return "Repair Kit"
             else:
-                self.log("Inventory full!", 'warning')
+                return "Other"
         
-        def spawn_item_room():
-            item_name = item_var.get()
-            if hasattr(self, 'current_room') and self.current_room:
-                self.current_room.ground_items.append(item_name)
-                self.log(f"🛠 DEV: Spawned {item_name} in room", 'success')
-            else:
-                self.log("No active room!", 'warning')
+        def refresh_item_list():
+            for widget in item_scroll_frame.winfo_children():
+                widget.destroy()
+            
+            search_term = item_search_var.get().lower()
+            current_filter = item_filter_var.get()
+            current_sort = item_sort_var.get()
+            
+            # Filter items
+            filtered_items = []
+            for item_name in item_list:
+                if search_term and search_term not in item_name.lower():
+                    continue
+                category = get_item_category(item_name)
+                if current_filter != "All" and category != current_filter:
+                    continue
+                filtered_items.append(item_name)
+            
+            # Sort items
+            if current_sort == "name_asc":
+                filtered_items.sort()
+            elif current_sort == "name_desc":
+                filtered_items.sort(reverse=True)
+            elif current_sort == "type_asc":
+                filtered_items.sort(key=lambda x: get_item_category(x))
+            
+            if not filtered_items:
+                tk.Label(item_scroll_frame, text="No items found", font=('Arial', 10, 'italic'),
+                        bg=self.current_colors["bg_primary"], fg=self.current_colors["text_secondary"]).pack(pady=20)
+                return
+            
+            for item_name in filtered_items:
+                item_def = self.item_definitions.get(item_name, {})
+                category = get_item_category(item_name)
+                
+                row_frame = tk.Frame(item_scroll_frame, bg=self.current_colors["bg_dark"])
+                row_frame.pack(fill=tk.X, padx=5, pady=1)
+                
+                # Category badge
+                badge_colors = {
+                    "Weapon": "#e74c3c", "Armor": "#3498db", "Accessory": "#9b59b6",
+                    "Consumable": "#27ae60", "Combat Item": "#e67e22", "Utility": "#f39c12",
+                    "Upgrade": "#1abc9c", "Repair Kit": "#95a5a6", "Other": "#7f8c8d"
+                }
+                tk.Label(row_frame, text=f"[{category}]", font=('Arial', 7),
+                        bg=badge_colors.get(category, "#95a5a6"), fg='#ffffff').pack(side=tk.LEFT, padx=2)
+                
+                # Item name
+                name_label = tk.Label(row_frame, text=f"📦 {item_name}", font=('Arial', 9),
+                        bg=self.current_colors["bg_dark"], fg=self.current_colors["text_secondary"])
+                name_label.pack(side=tk.LEFT, pady=2, padx=5)
+                
+                # Action buttons
+                def give_this_item(name=item_name):
+                    if len(self.inventory) < self.max_inventory:
+                        self.inventory.append(name)
+                        # Track item collection
+                        if "items_collected" not in self.stats:
+                            self.stats["items_collected"] = {}
+                        self.stats["items_collected"][name] = self.stats["items_collected"].get(name, 0) + 1
+                        # Track items found for dev spawning
+                        self.stats["items_found"] += 1
+                        self.log(f"🛠 DEV: Added {name} to inventory", 'success')
+                        self.update_display()
+                    else:
+                        self.log("Inventory full!", 'warning')
+                
+                def spawn_this_item(name=item_name):
+                    if hasattr(self, 'current_room') and self.current_room:
+                        self.current_room.ground_items.append(name)
+                        self.log(f"🛠 DEV: Spawned {name} in room", 'success')
+                    else:
+                        self.log("No active room!", 'warning')
+                
+                btn_frame = tk.Frame(row_frame, bg=self.current_colors["bg_dark"])
+                btn_frame.pack(side=tk.RIGHT, padx=2)
+                
+                tk.Button(btn_frame, text="Give", command=give_this_item,
+                         bg='#3498db', fg='#ffffff', font=('Arial', 7, 'bold'),
+                         padx=4, pady=1).pack(side=tk.LEFT, padx=1)
+                tk.Button(btn_frame, text="Spawn", command=spawn_this_item,
+                         bg='#27ae60', fg='#ffffff', font=('Arial', 7, 'bold'),
+                         padx=4, pady=1).pack(side=tk.LEFT, padx=1)
         
-        tk.Button(item_frame, text="Give to Player", command=give_item,
-                 bg='#3498db', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=1, column=0, padx=5, pady=10)
-        tk.Button(item_frame, text="Spawn in Room", command=spawn_item_room,
-                 bg='#3498db', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=1, column=1, padx=5, pady=10)
+        item_search_var.trace('w', lambda *args: refresh_item_list())
+        refresh_item_list()
         
-        # ===== TAB 2: PLAYER CONTROLS =====
-        player_tab = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
-        notebook.add(player_tab, text="Player")
+        # ===== TAB 3: PLAYER CONTROLS =====
+        player_tab_outer = tk.Frame(notebook, bg=self.current_colors["bg_primary"])
+        notebook.add(player_tab_outer, text="Player")
+        
+        # Create scrollable area for player tab
+        player_outer_canvas = tk.Canvas(player_tab_outer, bg=self.current_colors["bg_primary"], highlightthickness=0)
+        player_outer_scrollbar = tk.Scrollbar(player_tab_outer, orient="vertical", command=player_outer_canvas.yview, width=10)
+        player_tab = tk.Frame(player_outer_canvas, bg=self.current_colors["bg_primary"])
+        
+        player_tab.bind("<Configure>", lambda e: player_outer_canvas.configure(scrollregion=player_outer_canvas.bbox("all")))
+        
+        def update_player_tab_width(event=None):
+            player_outer_canvas.itemconfig(player_tab_window, width=player_outer_canvas.winfo_width()-10)
+        
+        player_tab_window = player_outer_canvas.create_window((0, 0), window=player_tab, anchor="nw")
+        player_outer_canvas.bind("<Configure>", update_player_tab_width)
+        player_outer_canvas.configure(yscrollcommand=player_outer_scrollbar.set)
+        
+        self.setup_mousewheel_scrolling(player_outer_canvas)
+        
+        player_outer_canvas.pack(side="left", fill="both", expand=True)
+        player_outer_scrollbar.pack(side="right", fill="y")
         
         # Gold controls
         tk.Label(player_tab, text="Gold Management", font=('Arial', 14, 'bold'),
@@ -8544,6 +8407,26 @@ Final Score: {self.run_score}
         tk.Button(nav_frame, text="Next Floor", command=next_floor_dev,
                  bg='#27ae60', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=0, column=3, padx=5)
         
+        # Store debugging buttons
+        def test_store():
+            """Test function to debug store inventory generation"""
+            print(f"[TEST] Current floor: {self.floor}")
+            print(f"[TEST] Testing store inventory generation...")
+            test_inventory = self.store_manager._generate_store_inventory()
+            print(f"[TEST] Generated {len(test_inventory)} items")
+            messagebox.showinfo("Store Test", f"Generated {len(test_inventory)} store items for floor {self.floor}.\nCheck console for details.")
+        
+        def refresh_store_debug():
+            """Force refresh store inventory for debugging"""
+            self.floor_store_inventory = None
+            print(f"[DEBUG] Clearing store inventory, will regenerate on next store visit")
+            messagebox.showinfo("Store Debug", "Store inventory cleared. Visit store again to see regenerated items.")
+        
+        tk.Button(nav_frame, text="Test Store", command=test_store,
+                 bg='#e67e22', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=1, column=0, padx=5, pady=5)
+        tk.Button(nav_frame, text="Clear Store", command=refresh_store_debug,
+                 bg='#e74c3c', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=1, column=1, padx=5, pady=5)
+        
         # ===== TAB 5: DEBUG INFO =====
         info_tab = tk.Frame(notebook, bg='#2c1810')
         notebook.add(info_tab, text="Info")
@@ -8595,6 +8478,136 @@ Backpack: {self.equipped_items.get('backpack', 'None')}
                  bg='#3498db', fg='#ffffff', font=('Arial', 10, 'bold')).pack(pady=10)
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = DiceDungeonExplorer(root)
-    root.mainloop()
+    # Import required modules for splash screen
+    import threading
+    import time
+    
+    class SplashScreen:
+        def __init__(self):
+            self.splash = tk.Tk()
+            self.splash.title("Dice Dungeon Explorer")
+            self.splash.resizable(False, False)
+            self.splash.configure(bg='#0a0604')
+            
+            # Calculate center position - increased size for better text visibility
+            width = 650
+            height = 450
+            x = (self.splash.winfo_screenwidth() // 2) - (width // 2)
+            y = (self.splash.winfo_screenheight() // 2) - (height // 2)
+            self.splash.geometry(f'{width}x{height}+{x}+{y}')
+            
+            # Remove window decorations for true splash screen effect
+            self.splash.overrideredirect(True)
+            
+            # Set window icon
+            try:
+                import os
+                icon_path = os.path.join(os.path.dirname(__file__), "assets", "DD Logo.png")
+                if os.path.exists(icon_path):
+                    icon = tk.PhotoImage(file=icon_path)
+                    self.splash.iconphoto(True, icon)
+            except:
+                pass
+            
+            # Create main frame
+            main_frame = tk.Frame(self.splash, bg='#0a0604', relief=tk.RAISED, borderwidth=3)
+            main_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+            
+            # Logo - smaller to leave more room for text
+            try:
+                logo_path = os.path.join(os.path.dirname(__file__), "assets", "DD Logo.png")
+                if os.path.exists(logo_path):
+                    # Load and resize logo - slightly smaller
+                    from PIL import Image, ImageTk
+                    img = Image.open(logo_path)
+                    img = img.resize((120, 120), Image.LANCZOS)
+                    self.logo_image = ImageTk.PhotoImage(img)
+                    
+                    logo_label = tk.Label(main_frame, image=self.logo_image, bg='#0a0604')
+                    logo_label.pack(pady=(30, 15))
+                else:
+                    # Fallback text logo
+                    tk.Label(main_frame, text="DD", font=('Arial', 42, 'bold'), 
+                            bg='#0a0604', fg='#d4af37').pack(pady=(40, 15))
+            except Exception as e:
+                # Fallback text logo if PIL not available
+                tk.Label(main_frame, text="DD", font=('Arial', 42, 'bold'), 
+                        bg='#0a0604', fg='#d4af37').pack(pady=(40, 15))
+            
+            # Game title
+            tk.Label(main_frame, text="DICE DUNGEON EXPLORER", 
+                    font=('Arial', 22, 'bold'), bg='#0a0604', fg='#d4af37').pack(pady=8)
+            
+            # Subtitle
+            tk.Label(main_frame, text="Explore • Fight • Loot • Survive", 
+                    font=('Arial', 12, 'italic'), bg='#0a0604', fg='#8b7355').pack(pady=5)
+            
+            # Loading area - more space and better positioning
+            loading_frame = tk.Frame(main_frame, bg='#0a0604')
+            loading_frame.pack(pady=(30, 30), expand=True)
+            
+            # Loading text with dots on same line - fixed width to prevent movement
+            text_frame = tk.Frame(loading_frame, bg='#0a0604')
+            text_frame.pack()
+            
+            self.loading_label = tk.Label(text_frame, text="Loading game engine", 
+                                        font=('Arial', 14), bg='#0a0604', fg='#e8dcc4')
+            self.loading_label.pack(side=tk.LEFT)
+            
+            # Animated loading dots - on same line as text
+            self.dots_label = tk.Label(text_frame, text="", 
+                                     font=('Arial', 14), bg='#0a0604', fg='#d4af37')
+            self.dots_label.pack(side=tk.LEFT)
+            
+            # Progress tracking - slower animation
+            self.progress = 0
+            self.max_progress = 25  # Slower - 5 seconds at 200ms intervals
+            self.loading_messages = [
+                "Loading game engine",
+                "Loading content system", 
+                "Initializing dice mechanics",
+                "Loading enemy data",
+                "Loading item definitions",
+                "Preparing world lore",
+                "Starting adventure"
+            ]
+            self.message_index = 0
+            
+            # Start loading animation
+            self.animate_loading()
+            
+            # Start the main application after delay
+            self.splash.after(5000, self.launch_game)  # 5 second splash
+        
+        def animate_loading(self):
+            """Animate the loading screen - change messages in fixed position, slower animation"""
+            if self.progress < self.max_progress:
+                # Update dots animation - slower cycling
+                dots = "." * ((self.progress % 3) + 1)  # Cycle through 1-3 dots
+                self.dots_label.config(text=dots)
+                
+                # Update loading message occasionally - spread across 5 seconds
+                message_interval = max(1, self.max_progress // len(self.loading_messages))
+                if self.progress % message_interval == 0 and self.message_index < len(self.loading_messages):
+                    self.loading_label.config(text=self.loading_messages[self.message_index])
+                    self.message_index += 1
+                
+                self.progress += 1
+                self.splash.after(200, self.animate_loading)  # 200ms intervals (slower)
+            else:
+                # Loading complete
+                self.loading_label.config(text="Ready")
+                self.dots_label.config(text="!")
+        
+        def launch_game(self):
+            """Close splash and launch main game"""
+            self.splash.destroy()
+            
+            # Now launch the main game
+            root = tk.Tk()
+            app = DiceDungeonExplorer(root)
+            root.mainloop()
+    
+    # Show splash screen
+    splash = SplashScreen()
+    splash.splash.mainloop()

@@ -133,9 +133,22 @@ class InventoryEquipmentManager:
             # Then reopen inventory on top
             self.game.show_inventory()
     
-    def add_item_to_inventory(self, item_name):
+    def track_item_acquisition(self, item_name, source="found"):
+        """Centralized function to track all item acquisitions with stats"""
+        # Track item collection
+        if "items_collected" not in self.game.stats:
+            self.game.stats["items_collected"] = {}
+        self.game.stats["items_collected"][item_name] = self.game.stats["items_collected"].get(item_name, 0) + 1
+        
+        # Track items found (not purchases)
+        if source in ["found", "reward", "chest", "ground"]:
+            self.game.stats["items_found"] += 1
+    
+    def add_item_to_inventory(self, item_name, source="found"):
         """Add item to inventory and track floor level for equipment"""
         self.game.inventory.append(item_name)
+        # Track acquisition stats
+        self.track_item_acquisition(item_name, source)
         
         # Track floor level for equipment items
         item_def = self.game.item_definitions.get(item_name, {})

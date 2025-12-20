@@ -83,14 +83,14 @@ class NavigationManager:
             
             if room_type == 'mini_boss':
                 if "Old Key" not in self.game.inventory:
-                    self.game.log("⚡ [ELITE ROOM] A locked door blocks your path!", 'enemy')
-                    self.game.log("[BLOCKED] You need an Old Key to proceed.", 'enemy')
+                    self.game.log("⚡ A locked door blocks your path!", 'enemy')
+                    self.game.log("You need an Old Key to proceed.", 'enemy')
                     return
             elif room_type == 'boss':
                 fragments_have = getattr(self.game, 'key_fragments_collected', 0)
                 if fragments_have < 3:
-                    self.game.log("☠ [BOSS ROOM] A sealed boss door blocks your path!", 'enemy')
-                    self.game.log(f"[BLOCKED] You need 3 key fragments. You have {fragments_have}.", 'enemy')
+                    self.game.log("☠ A sealed boss door blocks your path!", 'enemy')
+                    self.game.log(f"You need 3 key fragments. You have {fragments_have}.", 'enemy')
                     return
         
         # Check if already explored
@@ -239,28 +239,28 @@ class NavigationManager:
                         if use_key:
                             self.game.key_fragments_collected = 0  # Consume the fragments
                             self.game.unlocked_rooms.add(new_pos if new_pos else self.game.current_pos)  # Mark room as unlocked
-                            self.game.log(f"[BOSS KEY FORGED] The 3 fragments merge into a complete key!", 'success')
-                            self.game.log(f"[UNLOCKED] The massive boss door grinds open!", 'success')
+                            self.game.log(f"The 3 fragments merge into a complete key!", 'success')
+                            self.game.log(f"The massive boss door grinds open!", 'success')
                             # Now actually enter the room
                             self._complete_room_entry(room, is_first, skip_effects, new_pos)
                         else:
-                            self.game.log("[KEY SAVED] You decide to prepare more before facing the boss.", 'system')
-                            self.game.log("[BLOCKED] You turn back. The boss room remains sealed.", 'enemy')
+                            self.game.log("You decide to prepare more before facing the boss.", 'system')
+                            self.game.log("You turn back. The boss room remains sealed.", 'enemy')
                             # Don't enter - update display and go back to previous room
                             self.game.update_display()
                             self.show_exploration_options()
                     
                     # Show the dialog and return - callback will handle entry
-                    self.game.log("☠ [BOSS ROOM] An enormous sealed door looms before you! ☠", 'enemy')
-                    self.game.log("[LOCKED] Three keyhole slots glow faintly in the door.", 'system')
+                    self.game.log("☠ An enormous sealed door looms before you! ☠", 'enemy')
+                    self.game.log("Three keyhole slots glow faintly in the door.", 'system')
                     self.game.show_key_usage_dialog("Boss Key", on_boss_key_decision)
                     return  # Exit here, callback will continue
                 else:
                     # Not enough fragments
                     fragments_needed = 3 - self.game.key_fragments_collected
-                    self.game.log("☠ [BOSS ROOM] An enormous sealed door looms before you! ☠", 'enemy')
-                    self.game.log(f"[LOCKED] The door has 3 keyhole slots. You have {self.game.key_fragments_collected} fragment(s).", 'system')
-                    self.game.log(f"[BLOCKED] You need {fragments_needed} more key fragment(s) to unlock this door!", 'enemy')
+                    self.game.log("☠ An enormous sealed door looms before you! ☠", 'enemy')
+                    self.game.log(f"The door has 3 keyhole slots. You have {self.game.key_fragments_collected} fragment(s).", 'system')
+                    self.game.log(f"You need {fragments_needed} more key fragment(s) to unlock this door!", 'enemy')
                     # Don't enter - show exploration options
                     self.show_exploration_options()
                     return
@@ -276,26 +276,26 @@ class NavigationManager:
                             self.game.inventory.remove("Old Key")
                             self.game.unlocked_rooms.add(new_pos if new_pos else self.game.current_pos)  # Mark room as unlocked
                             self.game.log("[KEY USED] The Old Key turns in the lock with a satisfying click!", 'success')
-                            self.game.log("[UNLOCKED] The elite room door swings open!", 'success')
+                            self.game.log("The elite room door swings open!", 'success')
                             # Now actually enter the room
                             self._complete_room_entry(room, is_first, skip_effects, new_pos)
                         else:
-                            self.game.log("[KEY KEPT] You decide to save your Old Key for later.", 'system')
-                            self.game.log("[BLOCKED] You turn back. The elite room remains locked.", 'enemy')
+                            self.game.log("You decide to save your Old Key for later.", 'system')
+                            self.game.log("You turn back. The elite room remains locked.", 'enemy')
                             # Don't enter - update display and go back to previous room
                             self.game.update_display()
                             self.show_exploration_options()
                     
                     # Show the dialog and return - callback will handle entry
-                    self.game.log("⚡ [ELITE ROOM] A reinforced door blocks your path! ⚡", 'enemy')
-                    self.game.log("[LOCKED] The door is sealed with an ornate lock.", 'system')
+                    self.game.log("⚡ A reinforced door blocks your path! ⚡", 'enemy')
+                    self.game.log("The door is sealed with an ornate lock.", 'system')
                     self.game.show_key_usage_dialog("Old Key", on_old_key_decision)
                     return  # Exit here, callback will continue
                 else:
                     # No Old Key
-                    self.game.log("⚡ [ELITE ROOM] A reinforced door blocks your path! ⚡", 'enemy')
-                    self.game.log("[LOCKED] The door is sealed with an ornate lock.", 'system')
-                    self.game.log("[BLOCKED] You need an Old Key to unlock this door.", 'enemy')
+                    self.game.log("⚡ A reinforced door blocks your path! ⚡", 'enemy')
+                    self.game.log("The door is sealed with an ornate lock.", 'system')
+                    self.game.log("You need an Old Key to unlock this door.", 'enemy')
                     # Don't enter - show exploration options
                     self.show_exploration_options()
                     return
@@ -323,6 +323,7 @@ class NavigationManager:
         # Only increment rooms_explored counter on first visit (not starting room)
         if not is_first and is_first_visit:
             self.game.rooms_explored += 1
+            self.game.stats["rooms_explored"] = self.game.rooms_explored
             
             # Track first 3 rooms as safe starter rooms (no combat ever)
             if self.game.rooms_explored <= 3 and self.game.floor == 1:
@@ -363,19 +364,31 @@ class NavigationManager:
         if not skip_effects and is_first_visit and not self.game.stairs_found and self.game.rooms_explored >= 3 and random.random() < 0.1:
             room.has_stairs = True
             self.game.stairs_found = True
-            self.game.log("[STAIRS] You found stairs to the next floor!", 'success')
+            self.game.log("⚡ You found stairs to the next floor!", 'success')
         
-        # Randomly add store (15% chance in any room after 2+ rooms explored, once per floor) - ONLY on first visit
-        if not skip_effects and is_first_visit and not self.game.store_found and self.game.rooms_explored >= 2 and random.random() < 0.15:
-            self.game.store_found = True
-            self.game.store_position = self.game.current_pos
-            self.game.store_room = room
-            self.game.log("You discovered a mysterious shop!", 'loot')
+        # Randomly add store (chance decreases on deeper floors, once per floor) - ONLY on first visit
+        # Floor 1: 35%, Floor 2: 25%, Floor 3: 20%, Floor 4+: 15%
+        # GUARANTEED after 15 rooms to prevent bad luck
+        store_chance = 0.15  # Default for floor 4+
+        if self.game.floor == 1:
+            store_chance = 0.35
+        elif self.game.floor == 2:
+            store_chance = 0.25
+        elif self.game.floor == 3:
+            store_chance = 0.20
+        
+        # Guarantee store spawn after 15 rooms
+        if not skip_effects and is_first_visit and not self.game.store_found and self.game.rooms_explored >= 2:
+            if self.game.rooms_explored >= 15 or random.random() < store_chance:
+                self.game.store_found = True
+                self.game.store_position = self.game.current_pos
+                self.game.store_room = room
+                self.game.log("You discovered a mysterious shop!", 'loot')
         
         # Randomly add chest (20% chance, only in unvisited rooms)
         if not skip_effects and not room.has_chest and not room.visited and random.random() < 0.2:
             room.has_chest = True
-            self.game.log("[CHEST] There's a chest here!", 'loot')
+            self.game.log("✨ There's a chest here!", 'loot')
         
         # Update display and minimap BEFORE checking for combat
         # This ensures the player sees their position update even when combat starts
@@ -692,10 +705,15 @@ class NavigationManager:
         self.game.floor += 1
         self.game.run_score += 100 * self.game.floor
         
+        # Track highest floor
+        if "highest_floor" not in self.game.stats:
+            self.game.stats["highest_floor"] = 1
+        self.game.stats["highest_floor"] = max(self.game.stats["highest_floor"], self.game.floor)
+        
         # Reset floor-specific trackers
         self.game.purchased_upgrades_this_floor.clear()
         
-        self.game.log(f"\n[STAIRS] Descending to Floor {self.game.floor}...", 'success')
+        self.game.log(f"\n[STAIRS] Descending deeper to Floor {self.game.floor}...", 'success')
         self.start_new_floor()
     
     def show_starter_area(self):
@@ -916,6 +934,10 @@ class NavigationManager:
         for item in chest['items']:
             if len(self.game.inventory) < self.game.max_inventory:
                 self.game.inventory.append(item)
+                # Track item collection
+                if "items_collected" not in self.game.stats:
+                    self.game.stats["items_collected"] = {}
+                self.game.stats["items_collected"][item] = self.game.stats["items_collected"].get(item, 0) + 1
                 self.game.stats["items_found"] += 1
         
         # Add gold

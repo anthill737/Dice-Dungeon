@@ -1,5 +1,329 @@
 # Dice Dungeon Explorer - Changelog
 
+## [Unreleased] - 2025-12-14
+
+### Added
+- **Professional Splash Screen with Loading Animation**: Polished startup experience with DD Logo and animated loading sequence
+  - WHY: Game lacked professional startup branding and visual polish
+  - PROBLEM SOLVED: Created animated 5-second splash screen with DD Logo, loading messages, and animated dots
+  - TECHNICAL IMPLEMENTATION:
+    - New `SplashScreen` class with 650x450 borderless window centered on screen
+    - DD Logo displays from assets/DD Logo.png (120x120 with PIL scaling)
+    - Animated loading sequence: "Loading game engine....Starting adventure!"
+    - 4-dot animation cycles at end of each message line every 100ms
+    - Messages spread evenly across 5-second duration with proper timing
+    - Graceful fallbacks: Text "DD" logo if PIL unavailable or logo missing
+    - Proper window icon integration with DD Logo
+    - Clean launch sequence: Splash → Main Game Window
+
+- **DD Logo Integration Across UI**: Added professional branding with actual logo image throughout interface
+  - WHY: Game used text-only branding instead of utilizing existing professional logo asset
+  - PROBLEM SOLVED: Integrated DD Logo.png across window icons and main menu for consistent branding
+  - TECHNICAL IMPLEMENTATION:
+    - **Window Icon**: Added DD Logo as window/taskbar icon with PhotoImage loading and error handling
+    - **Main Menu Logo**: Displays actual DD Logo (80-120px scaled) above game title
+    - **Responsive Sizing**: Logo scales with window size while maintaining aspect ratio
+    - **Memory Management**: Proper image reference storage prevents garbage collection
+    - **Fallback System**: Falls back to "DD" text if logo unavailable
+    - **Layout Optimization**: Adjusted spacing and font sizes to accommodate logo without overflow
+
+### Enhanced
+- **Main Menu Visual Layout**: Optimized spacing and sizing to fit properly on all screen sizes
+  - WHY: Main menu elements were overflowing and not fitting on smaller screens
+  - PROBLEM SOLVED: Comprehensive spacing reduction and responsive sizing adjustments
+  - TECHNICAL IMPLEMENTATION:
+    - **Size Reductions**: Logo (80-120px), title font (22pt), subtitle (14pt), fallback text (32pt)
+    - **Spacing Optimization**: Reduced padding throughout (logo: 15px, title: 8px, buttons: 25px)
+    - **Button Spacing**: Reduced internal button padding (8px) and external spacing (5px)
+    - **Responsive Design**: All elements scale with window size using scale_factor
+    - **Professional Layout**: Logo → Title → Subtitle → Buttons maintains visual hierarchy
+    - Menu now fits comfortably on standard screen sizes while maintaining visual appeal
+
+- **Splash Screen Animation Polish**: Refined loading animation for better visual feedback and timing
+  - WHY: Initial 3-second splash with separate dots felt rushed and visually disconnected
+  - PROBLEM SOLVED: Enhanced to 5-second duration with inline dot animation at end of text
+  - TECHNICAL IMPLEMENTATION:
+    - **Extended Duration**: Increased from 3 to 5 seconds for better logo visibility
+    - **Inline Animation**: Dots now appear at end of loading text using horizontal frame layout
+    - **Improved Timing**: Messages distribute evenly across 5-second duration
+    - **Enhanced Animation**: 4-dot cycling (....to.) for smoother visual effect
+    - **Better Completion**: "Ready!" with exclamation mark for clear completion state
+    - **Layout Fix**: Increased window size (650x450) and improved text positioning
+    - **Text Clarity**: Removed "..." from messages since animation provides feedback
+    - Loading sequence feels more polished and professional
+
+### Fixed
+- **Crystal Golem Dice Lock Ability**: Complete overhaul of boss ability system for proper dice locking
+  - WHY: Multiple issues caused dice lock to fail - timing, value preservation, visual display, and turn counting
+  - PROBLEM SOLVED: Comprehensive fix across combat system, dice manager, and curse processing
+  - TECHNICAL IMPLEMENTATION:
+    - Fixed curse timing: Moved curse processing from start-of-turn to end-of-round for proper duration
+    - Fixed turn counting: Removed duplicate turn counter increment in enemy phase that broke spawn detection
+    - Fixed dice values: Crystal Golem now sets locked dice to random values (1-6) that persist through turn transitions
+    - Fixed value preservation: Both `start_combat_turn()` and `reset_turn()` now preserve force-locked dice values
+    - Fixed visual display: Added proper `update_dice_display()` calls and removed manual "?" rendering that overrode values
+    - Dice lock now properly freezes 2 random dice at random values for player's next turn every 3 turns
+
+- **Split Enemy Immediate Attack Bug**: Fixed Crystal Shards and other split enemies attacking immediately when spawned
+  - WHY: Turn counter was incremented twice per round, breaking newly spawned enemy detection logic
+  - PROBLEM SOLVED: Removed redundant turn counter increment from `_start_enemy_turn_sequence()`
+  - TECHNICAL IMPLEMENTATION:
+    - Turn counter now only increments once per round in `start_combat_turn()`
+    - Split enemies created with `turn_spawned = current_turn` are properly skipped during attack phase
+    - Players see "Crystal Shard is too dazed to attack (just spawned)!" message
+
+- **Item Statistics Tracking**: Centralized scattered item acquisition tracking code
+  - WHY: Item tracking logic was duplicated across multiple files with inconsistent implementation
+  - PROBLEM SOLVED: Created centralized `track_item_acquisition()` function in inventory manager
+  - TECHNICAL IMPLEMENTATION:
+    - Added `track_item_acquisition(item_name, source)` to `inventory_equipment.py`
+    - Updated `add_item_to_inventory()` to use centralized tracking
+    - Replaced 3 instances of duplicate tracking code in main file with centralized function calls
+    - Consistent tracking across all acquisition methods: found, reward, chest, purchase, ground
+
+- **Force-Locked Dice Visual System**: Enhanced dice manager to properly handle boss ability dice locks
+  - WHY: DiceManager wasn't checking `forced_dice_locks` array, only manual `dice_locked` array
+  - PROBLEM SOLVED: Updated dice system to respect and display force-locked dice from boss abilities
+  - TECHNICAL IMPLEMENTATION:
+    - `roll_dice()` now excludes `forced_dice_locks` from rollable dice
+    - `update_dice_display()` shows force-locked dice with "CURSED" label in red vs "LOCKED" in gold
+    - `toggle_dice()` prevents clicking force-locked dice with warning message
+    - `reset_turn()` preserves both lock states and values for force-locked dice
+
+- **Developer Tools Tab Structure**: Fixed critical Tkinter error preventing dev menu from opening
+  - WHY: Dev tools crashed with "can't add .!frame6.!notebook.!frame3.!canvas.!frame as slave of .!frame6.!notebook" 
+  - PROBLEM SOLVED: Duplicate `notebook.add(player_tab, text="Player")` call was trying to add nested frame directly
+  - TECHNICAL IMPLEMENTATION:
+    - Removed duplicate line 8110 in `show_dev_tools()` function
+    - All 6 tabs (Enemies, Items, Player, Parameters, World, Info) now work correctly
+
+- **Split Enemy HP Fixed to 30**: Split enemies (like Crystal Shards) now have exactly 30 HP instead of scaling with floor
+  - WHY: Crystal Shards were getting 30+(floor*10) HP instead of consistent 30 HP like other small enemies
+  - PROBLEM SOLVED: Changed split_enemy() function to use fixed 30 HP instead of calculated base_hp
+  - TECHNICAL IMPLEMENTATION:
+    - Removed floor-based HP calculation from split_enemy() function
+    - All split enemies now consistent with spawned enemy HP standard (30 HP, 2 dice)
+    - Tab structure now properly creates outer frames first, then nested scrollable content
+    - Player tab: `player_tab_outer` → `player_outer_canvas` → `player_tab` (proper hierarchy)
+    - Enemy tab: `enemy_tab_outer` → `enemy_canvas` → `enemy_tab` (proper hierarchy)  
+    - Item tab: `item_tab_outer` → `item_outer_canvas` → `item_tab` (proper hierarchy)
+  - All 6 tabs now load correctly: Enemies, Items, Player, Parameters, World, Info
+
+- **Developer Tools Enemy List Completeness**: Fixed spawner showing only 11 enemies instead of full 288+ roster
+  - WHY: Dev tools loaded from `enemy_types.json` (special mechanics only) instead of complete enemy catalog
+  - PROBLEM SOLVED: Now loads from sprite system which contains full enemy roster
+  - TECHNICAL IMPLEMENTATION:
+    - Changed enemy loading from `self.enemy_types.keys()` to `self.enemy_sprites.keys()`
+    - Combined sprite-based enemies (288+) with config enemies (11) to get complete list
+    - Removed duplicates and sorted alphabetically for clean display
+    - Debug output: "Found X total enemies from sprites and config" 
+    - Sample shown: "Sample enemies: ['Acid Hydra', 'Acid Slime', 'Actor Shade'...]"
+  - Enemy spawner now shows complete catalog: 288+ unique enemies instead of just 11
+
+- **Developer Tools Enemy Stats Accuracy**: Fixed enemy HP/dice calculations to match actual combat values
+  - WHY: Dev menu showed generic "HP:~45 | Dice:3" estimates that didn't match real combat stats
+  - PROBLEM SOLVED: Implemented exact same calculation logic as `trigger_combat()` function
+  - TECHNICAL IMPLEMENTATION:
+    - Created `calculate_enemy_stats(enemy_name, as_boss, as_mini_boss)` function
+    - Uses identical formula: `base_hp = 30 + (floor * 10)` with ±5 to +10 random range
+    - Applies boss multipliers: 8x for bosses, 3x for mini-bosses
+    - Applies difficulty multipliers from current game settings
+    - Applies dev mode multipliers from Parameters tab
+    - Dice calculation: Regular 3+(floor//2) capped at 6, Mini-boss +1, Boss +2
+    - Enemy-specific HP multipliers added for diversity:
+      * **Weak enemies**: Bat (0.5x), Rat (0.6x), Spider (0.6x), Imp (0.7x), Goblin (0.7x)
+      * **Normal enemies**: Skeleton (1.0x), Orc (1.0x), Zombie (1.1x), Bandit (0.9x) 
+      * **Strong enemies**: Troll (1.5x), Ogre (1.4x), Knight (1.3x), Guard (1.2x), Warrior (1.1x)
+      * **Elite enemies**: Dragon (2.5x), Demon (2.0x), Lich (1.8x), Vampire (1.6x), Golem (2.2x)
+      * **Boss enemies**: Ancient (3.2x), Primordial (4.0x), Lord (3.0x), King (3.5x)
+    - HP ranges displayed: "HP:24-39" for ranges, "HP:45" for fixed values
+    - Stats update dynamically when changing Boss/Mini-Boss checkboxes
+  - Dev menu stats now perfectly match what appears in actual combat
+  - Updated combat.py to use same enemy-specific multipliers for consistency
+
+### Enhanced
+- **Items Found Stat Tracking Completeness**: Ensured all item acquisition methods properly track to character stats
+  - WHY: Some item sources weren't incrementing the "Items Found" counter in character status screen
+  - COMPREHENSIVE AUDIT COMPLETED: All acquisition paths now tracked
+  - TECHNICAL IMPLEMENTATION - Added `self.stats["items_found"] += 1` to:
+    - **Store Purchases**: Both consumables and equipment purchases count as "found"
+    - **Container Searches**: Items from chests, barrels, crates, etc. already tracked
+    - **Ground Pickups**: Loose items, uncollected items, dropped items already tracked  
+    - **Enemy Rewards**: Boss and mini-boss drops already tracked via `source="reward"`
+    - **Starter Chests**: Tutorial area loot already tracked
+    - **Dev Tool Spawning**: Manual item addition via developer tools now tracked
+    - **Quest Rewards**: Room completion rewards already tracked
+    - **Equipment System**: Internal item additions now tracked
+  - VERIFIED WORKING SOURCES:
+    - `try_add_to_inventory(item, "found")` → triggers items_found increment
+    - `try_add_to_inventory(item, "reward")` → triggers items_found increment  
+    - Container searches via `search_container()` → tracked in pickup manager
+    - Ground item pickup via `pickup_ground_item()` → tracked in pickup manager
+    - Uncollected item recovery via `pickup_uncollected_item()` → tracked in pickup manager
+    - Starter chest opening via `open_starter_chest()` → tracked in navigation manager
+    - Enemy defeat rewards in `enemy_defeated()` → tracked via "reward" source
+  - CHARACTER STATS ACCURACY: "Items Found" counter now comprehensively tracks all acquisition
+  - Items Collected dictionary also tracks individual item counts for detailed statistics
+
+### Added
+- **Dynamic Enemy Diversity System**: Implemented enemy-specific HP multipliers for varied combat experiences  
+  - WHY: All enemies had identical HP calculations making combat repetitive and predictable
+  - ENEMY TIER SYSTEM IMPLEMENTED:
+    - **Tier 1 - Weak (0.4x-0.8x HP)**: Grub, Bat, Sprite, Wisp, Rat, Spider, Imp, Slime, Goblin
+    - **Tier 2 - Normal (0.9x-1.1x HP)**: Bandit, Skeleton, Orc, Zombie, Warrior
+    - **Tier 3 - Strong (1.1x-1.5x HP)**: Wolf, Boar, Beast, Guard, Knight, Ogre, Troll, Bear
+    - **Tier 4 - Elite (1.4x-2.8x HP)**: Wraith, Vampire, Lich, Phoenix, Demon, Dragon, Hydra, Titan, Golem
+    - **Tier 5 - Legendary (1.6x-4.0x HP)**: Named bosses, Crystal Golem, Necromancer, Demon Lord/Prince
+  - TECHNICAL IMPLEMENTATION:
+    - Added `enemy_hp_multipliers` dictionary in both dev menu and combat systems
+    - Multipliers applied to base HP before random variation: `base_hp = int(base_hp * multiplier)`
+    - Partial name matching: "Dragon" keyword applies to "Ancient Dragon", "Fire Dragon", etc.
+    - Consistent across dev menu preview and actual combat spawning
+    - Combined with existing floor scaling: `base_hp = 30 + (floor * 10)`
+    - Applied before boss multipliers (8x boss, 3x mini-boss) and difficulty modifiers
+  - PLAYER EXPERIENCE:
+    - Early floors: Rats ~18 HP, Goblins ~25 HP, Skeletons ~35 HP, Trolls ~53 HP
+    - Mid floors: Bats ~25 HP, Orcs ~50 HP, Knights ~65 HP, Dragons ~125 HP  
+    - Late floors: Sprites ~40 HP, Warriors ~88 HP, Demons ~160 HP, Titans ~224 HP
+    - Boss multipliers create extreme variety: Regular Dragon ~125 HP, Boss Dragon ~1000 HP
+  - Dev menu and combat now show identical, properly diversified enemy statistics
+  - Combat feels more tactical with weak swarm enemies vs. elite powerhouses
+
+### Added
+- **Boss Abilities System**: Mini-bosses and floor bosses now have unique special abilities
+  - WHY: Bosses felt like regular enemies with more HP - needed unique mechanics for memorable fights
+  - WHAT'S NEW:
+    - **6 Ability Types**: Dice manipulation, curses, spawning, and transformations
+    - **4 Trigger Types**: Combat start, HP thresholds, enemy turns, and on death
+    - **Unique Boss Identities**: Each boss has distinct abilities matching their theme
+  - TECHNICAL IMPLEMENTATION:
+    - Added `boss_abilities` field to enemy_types.json with ability configurations
+    - Implemented ability execution system in combat.py with trigger handlers
+    - Active curse tracking with turn-based countdowns and effect cleanup
+    - Dice manipulation: obscuring (hide values), restricting (limit rolls), force-locking
+    - Status effects: reroll limits, damage over time
+    - Enhanced spawning: spawn on death with configured enemy stats
+    - Transformation: replace boss with new form when defeated
+  - BOSS ABILITIES IMPLEMENTED:
+    * **Gelatinous Slime**: Obscures dice for 2 turns at combat start
+    * **Necromancer**: Limits rerolls to 1/turn at 50% HP, spawns 3 Skeletons on death
+    * **Shadow Hydra**: Restricts dice to 1s and 2s every 4 turns for 2 turns
+    * **Demon Lord**: 3 damage/turn curse, transforms into Demon Prince on death
+    * **Demon Prince**: Permanently obscures dice at 50% HP
+    * **Crystal Golem**: Force-locks 2 random dice every 3 turns
+  - PLAYER EXPERIENCE:
+    - Cursed dice show purple "?" with "CURSED" text when obscured
+    - Reroll curse shows "[CURSED]" in rolls remaining label
+    - Boss ability messages announce each effect trigger
+    - Curse effects expire automatically with countdown messages
+    - Can use items and mystic ring even when cursed
+  - INTEGRATION:
+    - Abilities trigger at: combat start, player turn start, enemy damage, enemy turn, enemy death
+    - Cooldown system prevents repeated hp_threshold triggers
+    - Turn-based interval tracking for recurring enemy_turn abilities
+    - Transform_on_death replaces enemy instead of removing for seamless transition
+  - DOCUMENTATION:
+    - Created BOSS_ABILITIES_GUIDE.md with full system documentation
+    - Includes ability types, triggers, boss strategies, and implementation guide
+    - Guidelines for adding new abilities and balancing considerations
+  - BALANCE:
+    - Curse durations: 2-3 turns for major effects, 1 turn for minor
+    - Spawn stats: 30-40% HP multiplier, 2-3 dice for minions
+    - HP thresholds: 50-75% for early triggers, 25% for desperation
+    - All curses have counterplay (wait out, use items, adapt strategy)
+
+## [Unreleased] - 2025-12-13
+
+### Fixed
+- **Extra Die Purchase System**: Fixed critical bug preventing Extra Die upgrades from working
+  - WHY: Extra Die wasn't applying when purchased from store, despite gold being deducted
+  - PROBLEM SOLVED: 
+    - Extra Die has `"type": "upgrade"` in items_definitions.json
+    - Generic upgrade handler checked for `max_hp_bonus`, `damage_bonus`, `reroll_bonus`, `crit_bonus` fields
+    - Extra Die has none of these fields, so handler took gold but applied nothing
+    - Handler returned early before Extra Die-specific code could execute
+  - TECHNICAL IMPLEMENTATION:
+    - Moved Extra Die handling BEFORE generic upgrade handler in `_buy_item()` (explorer/store.py lines 728-792)
+    - Extra Die check now at line 728, generic upgrades at line 795
+    - Ensures `self.game.num_dice += 1` executes properly
+    - Updates dice_values and dice_locked arrays to match new dice count
+    - Added comprehensive debug output tracking each step of purchase process
+    - Logs purchase message: "Purchased Extra Die! Now have X dice."
+    - Adds to purchased_upgrades_this_floor set to prevent re-buying on same floor
+  - Extra Die now correctly increases dice pool from 3 → 4 → 5
+  - Purchase message appears in adventure log
+  - Character status screen shows updated dice count in Combat Stats section
+- **Store Refresh on Purchase**: Removed unnecessary store refresh after buying Extra Die
+  - WHY: Store was refreshing entire UI and scrolling to top after Extra Die purchase
+  - PROBLEM SOLVED: Removed `self._show_store_buy_content()` call from Extra Die purchase handler
+  - TECHNICAL IMPLEMENTATION:
+    - Extra Die purchase (lines 728-792) now only updates gold label, not entire store
+    - Gold label update: `self.gold_label.config(text=f"Your Gold: {self.game.gold}")`
+    - Removed lines that were calling store refresh and saving/restoring scroll position
+    - Store remains at same scroll position with same items visible
+    - Buy button stays available until store is closed/reopened (then greys out properly)
+  - No more jarring UI refresh or scroll jumping when buying permanent upgrades
+- **Critical Hit Chance Corruption**: Fixed negative crit chance in save file
+  - WHY: Save file had `"crit_chance": -0.04999999999999999` (-5%) instead of default 0.1 (10%)
+  - PROBLEM SOLVED: Directly edited save file to restore correct base crit chance
+  - TECHNICAL IMPLEMENTATION:
+    - Located crit_chance at line 12600 in saves/dice_dungeon_save_slot_1.json
+    - Changed value from -0.04999999999999999 to 0.1
+    - Base crit is 10%, can be increased through upgrades and equipment
+  - Character status screen now shows correct "10.0%" critical hit chance
+  - Likely caused by earlier game state or calculation bug (now prevented by proper upgrade handling)
+
+### Added
+- **Character Status Tooltips**: Added cursor-following tooltips with detailed stat breakdowns
+  - WHY: Players couldn't see where combat bonuses were coming from (equipment vs permanent upgrades)
+  - IMPLEMENTATION:
+    - Created `create_tooltip_follower()` helper function in ui_character_menu.py (lines 15-44)
+    - Tooltip appears at cursor position (+15px right, +15px down) with light yellow background
+    - Updates position as mouse moves using `<Motion>` event binding
+    - Destroys automatically when cursor leaves widget using `<Leave>` event
+  - TECHNICAL DETAILS - Tooltip Content:
+    - **Dice Pool**: Shows "Total Dice: X\n\nBase: X dice\n(Permanent upgrade)"
+    - **Damage Bonus**: Shows total first, then "Permanent Upgrade: +X" and equipment list
+    - **Multiplier**: Shows total multiplier with equipment and permanent sources
+    - **Crit Chance**: Shows percentage total, permanent upgrades, and equipment bonuses
+    - **Healing Bonus**: Shows total HP bonus from all sources
+    - **Rerolls**: Shows total bonus rerolls with source breakdown
+  - Equipment contributions calculated by examining all equipped items:
+    - Checks weapon, armor, accessory, backpack slots
+    - Applies floor scaling bonus (floor_level - 1) to damage
+    - Stores equipment sources as list of tuples: (item_name, bonus_value)
+  - Tooltips applied to label, value, and entire row frame for easy triggering
+  - Permanent values calculated by subtracting equipment totals from current stats
+- **Character Status Screen Manager**: Migrated UI to dedicated module
+  - WHY: Following architecture pattern to keep main file clean and modular
+  - CREATED: `explorer/ui_character_menu.py` (825 lines)
+  - REMOVED: 748 lines from dice_dungeon_explorer.py
+  - TECHNICAL IMPLEMENTATION:
+    - Module contains 4 main functions:
+      - `show_character_status(game)` - Creates tabbed interface with Character/Stats/Lore tabs
+      - `_populate_character_tab(game, parent)` - Shows equipment, combat stats, effects, resources, upgrades
+      - `_populate_stats_tab(game, parent)` - Shows combat/economy/items/equipment/lore/exploration statistics
+      - `_populate_lore_tab(game, parent)` - Shows expandable lore categories with read buttons
+      - `_add_stats_section(game, parent, title, items)` - Helper for stats sections
+      - `create_tooltip_follower(game, widget, get_tooltip_text)` - Tooltip system
+    - Main file import: `from explorer import ui_character_menu` (line 15)
+    - Main file delegation: `self.show_character_status()` → `ui_character_menu.show_character_status(self)`
+    - All functionality preserved: tabs, scrolling, lazy loading, expandable sections
+  - CRITICAL PRESERVED FEATURES:
+    - Tabbed notebook with custom styling (gold selected, cyan unselected)
+    - Lazy loading: Stats and Lore tabs only populate when clicked
+    - Scrollable canvas with mousewheel support on all tabs
+    - Equipped Gear section with durability display
+    - Combat Stats with tooltips showing breakdown
+    - Active Effects (shield, discount, tokens, temp effects)
+    - Resources (health, gold, inventory space, rest cooldown)
+    - Permanent Upgrades calculation (shows count and total bonus)
+    - Lore Codex with expandable categories and read buttons
+    - Red X close button in top-right corner
+    - Responsive dialog sizing (75% width, 90% height)
+  - Main file reduced by 748 lines, now only contains delegation
+  - Follows established manager architecture pattern
+
 ## [Unreleased] - 2025-12-11
 
 ### Added

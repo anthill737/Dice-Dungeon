@@ -333,13 +333,13 @@ class InventoryPickupManager:
             self.game.inventory.append(item_name)
             self.game.current_room.uncollected_items.remove(item_name)
             self.game.stats["items_found"] += 1
-            self.game.log(f"▢ [PICKUP] Picked up {item_name}! ({len(self.game.inventory)}/{self.game.max_inventory} slots)", 'loot')
+            self.game.log(f"▢ Picked up {item_name}! ({len(self.game.inventory)}/{self.game.max_inventory} slots)", 'loot')
         else:
             self.game.log(f"❌ INVENTORY STILL FULL! Can't pick up {item_name}. ({len(self.game.inventory)}/{self.game.max_inventory})", 'system')
         
         if not skip_refresh:
             self.game.update_display()
-            self.game.show_exploration_options()
+            # Don't call show_exploration_options here - let caller handle refresh
     
     def pickup_dropped_item(self, item_name, skip_refresh=False):
         """Pick up an item that was previously dropped by the player"""
@@ -352,12 +352,16 @@ class InventoryPickupManager:
         # Try to add to inventory
         if len(self.game.inventory) < self.game.max_inventory:
             self.game.inventory.append(item_name)
+            # Track item collection (even for picked up dropped items)
+            if "items_collected" not in self.game.stats:
+                self.game.stats["items_collected"] = {}
+            self.game.stats["items_collected"][item_name] = self.game.stats["items_collected"].get(item_name, 0) + 1
             self.game.current_room.dropped_items.remove(item_name)
             # Don't count dropped items as found (player already had them)
-            self.game.log(f"▢ [PICKUP] Picked up {item_name}! ({len(self.game.inventory)}/{self.game.max_inventory})", 'loot')
+            self.game.log(f"▢ Picked up {item_name}! ({len(self.game.inventory)}/{self.game.max_inventory})", 'loot')
         else:
             self.game.log(f"❌ INVENTORY FULL! Can't pick up {item_name}. ({len(self.game.inventory)}/{self.game.max_inventory})", 'system')
         
         if not skip_refresh:
             self.game.update_display()
-            self.game.show_exploration_options()
+            # Don't call show_exploration_options here - let caller handle refresh
