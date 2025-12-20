@@ -62,18 +62,27 @@ def show_character_status(game: 'DiceDungeonExplorer'):
     game.dialog_frame.place(relx=0.5, rely=0.5, anchor='center', 
                             width=dialog_width, height=dialog_height)
     
-    # Header with close button
-    header_frame = tk.Frame(game.dialog_frame, bg=game.current_colors["bg_panel"])
-    header_frame.pack(fill=tk.X, pady=(10, 5))
+    # Title bar with close button
+    title_bar = tk.Frame(game.dialog_frame, bg=game.current_colors["bg_panel"])
+    title_bar.pack(fill=tk.X, pady=(5, 0))
     
-    # Red X close button (top right)
-    close_btn = tk.Label(header_frame, text="✕", font=('Arial', 16, 'bold'),
+    # Title (centered)
+    tk.Label(title_bar, text="CHARACTER STATUS", 
+            font=('Arial', 16, 'bold'),
+            bg=game.current_colors["bg_panel"],
+            fg=game.current_colors["text_gold"]).pack(pady=5)
+    
+    # Red X close button (absolute position in top right)
+    close_btn = tk.Label(game.dialog_frame, text="✕", font=('Arial', 18, 'bold'),
                         bg=game.current_colors["bg_panel"], fg='#ff4444',
-                        cursor="hand2", padx=5)
-    close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=0)
+                        cursor="hand2", padx=8, pady=2)
+    close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-5, y=5)
     close_btn.bind('<Button-1>', lambda e: game.close_dialog())
     close_btn.bind('<Enter>', lambda e: close_btn.config(fg='#ff0000'))
     close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
+    
+    # Ensure close button stays on top
+    close_btn.lift()
     
     # Create tabbed notebook
     style = ttk.Style()
