@@ -66,6 +66,8 @@ def build_executable():
         "--add-data=dice_dungeon_content;dice_dungeon_content",
         "--add-data=explorer;explorer",
         "--add-data=saves;saves",
+        "--hidden-import=dice_dungeon_rpg",  # Include classic mode
+        "--hidden-import=dice_dungeon_explorer",  # Include explorer mode
         "--noconsole",
     ]
     
