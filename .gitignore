@@ -67,3 +67,6 @@ saves/
 *.tmp
 *.bak
 *.old
+
+# Build output folders (created by build_exe.py)
+DiceDungeon_Portable/

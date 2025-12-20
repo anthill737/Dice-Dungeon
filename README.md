@@ -1,8 +1,48 @@
-# Dice Dungeon Explorer
+# 🎲 Dice Dungeon Explorer
 
 A roguelike dungeon crawler where you roll dice to fight enemies, explore procedurally generated dungeons, and collect loot!
 
-## Features
+![GitHub last commit](https://img.shields.io/github/last-commit/anthill737/dice-dungeon)
+![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+
+---
+
+## 📥 Installation
+
+### Windows
+
+1. [Download this repository](https://github.com/anthill737/dice-dungeon/archive/refs/heads/main.zip)
+2. Extract the ZIP file
+3. Double-click **`SETUP.bat`**
+4. A graphical installer opens - choose where to install
+5. Click "Install" - done in seconds!
+6. Launch from your desktop shortcut
+
+**That's it!** The installer copies the pre-built DiceDungeon.exe to your chosen location and creates shortcuts.
+
+**No Python required to play!**
+
+### Mac / Linux
+
+```bash
+git clone https://github.com/anthill737/dice-dungeon.git
+cd dice-dungeon
+chmod +x setup.sh
+./setup.sh
+```
+
+**That's it!** The installer:
+- Copies the pre-built DiceDungeon.exe to your chosen location
+- Creates desktop and Start Menu shortcuts
+- Takes about 10 seconds
+- The downloaded folder can be deleted after installation
+
+**No Python needed!** The EXE runs on any Windows PC.
+
+---
+
+## 🎮 Features
 
 - **Dice-Based Combat**: Roll dice to attack enemies with strategic locking and re-rolling
 - **Procedurally Generated Dungeons**: Each floor is unique with varied room types
@@ -17,27 +57,9 @@ A roguelike dungeon crawler where you roll dice to fight enemies, explore proced
 - **Theme System**: Multiple color themes (Light/Dark modes)
 - **Difficulty Settings**: Easy, Normal, Hard, and Nightmare modes
 
-## Installation
+## 🎮 How to Play
 
-### Requirements
-- Python 3.11 or higher
-- Tkinter (usually included with Python)
-- PIL/Pillow for image handling
-
-### Setup
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/dice-dungeon.git
-cd dice-dungeon
-
-# Install dependencies
-pip install pillow
-
-# Run the game
-python dice_dungeon_launcher.py
-```
-
-## How to Play
+Launch the game from your desktop shortcut or Start Menu.
 
 ### Controls
 - **Arrow Keys**: Navigate menus and move through rooms
@@ -63,7 +85,7 @@ python dice_dungeon_launcher.py
 - Some enemies have special abilities
 - Equipment provides bonuses to damage and defense
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 dice-dungeon/
@@ -78,23 +100,27 @@ dice-dungeon/
 │   ├── lore.py                 # Lore system
 │   └── store.py                # Shop system
 ├── dice_dungeon_content/       # Content engine
-│   ├── content_loader.py       # Dynamic content loading
-│   ├── enemy_data.py           # Enemy definitions
-│   └── room_data.py            # Room templates
+│   └── data/                   # Game data (enemies, items, rooms)
 ├── assets/                      # Game assets
-│   └── enemy_sprites/          # Enemy sprite images
-└── logs/                        # Debug logs (generated)
+│   └── sprites/                # Enemy sprite images
+└── saves/                       # Save files
 ```
 
-## Modding
+## 🛠️ Modding & Development
 
+### Creating Custom Content
 See [MODDING_GUIDE.md](MODDING_GUIDE.md) for information on:
 - Adding new enemies
 - Creating custom rooms
 - Modifying game balance
 - Adding new items
 
-## Development
+### Building Standalone EXE
+Want to create an `.exe` that doesn't require Python? Run:
+```bash
+python build_exe.py
+```
+This creates a portable version that runs on any Windows PC.
 
 ### Debug Mode
 Enable debug logging by setting the debug flag in the launcher:
@@ -104,33 +130,42 @@ DEBUG_MODE = True
 
 See [DEBUG_LOGGING_GUIDE.md](DEBUG_LOGGING_GUIDE.md) for more details.
 
-### Lore System
-The game includes a dynamic lore system. See [LORE_SYSTEM_README.md](LORE_SYSTEM_README.md) for implementation details.
-
 ### Settings System
 Configuration and settings management is documented in [SETTINGS_SYSTEM_GUIDE.md](SETTINGS_SYSTEM_GUIDE.md).
 
-## Credits
+## 🆘 Troubleshooting
+Installer won't run / "Python is not recognized"**
+- The installer should handle Python installation automatically
+- If it fails, you can manually install Python from https://www.python.org/downloads/
+- Make sure to check "Add Python to PATH" during installation
+- Then run SETUP.bat againg/downloads/
+- During installation, check "Add Python to PATH"
+
+**"No module named 'PIL'"**
+- The installer should handle this, but you can manually run: `pip install pillow`
+
+**Game won't launch**
+- Make sure the installation completed successfully
+- Try running `Launch Dice Dungeon.bat` from your install folder
+- Verify Python 3.11+: `python --version`
+anthill737
+**Need more help?**
+- [Open an issue on GitHub](https://github.com/yourusername/dice-dungeon/issues)
+
+## 📝 Credits
 
 - Game Design & Programming: [Your Name]
 - Enemy Sprites: Generated with AI assistance
 - Built with Python & Tkinter
 
-## License
+## 📄 License
 
 [Add your chosen license here - MIT, GPL, etc.]
 
-## Changelog
+## 📜 Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for version history and updates.
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.
-
-## Support
-
-If you encounter any issues or have questions:
-1. Check the documentation files
-2. Review existing issues on GitHub
-3. Open a new issue with details about your problem

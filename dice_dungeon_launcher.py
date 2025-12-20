@@ -15,6 +15,17 @@ class GameLauncher:
         self.root.configure(bg='#2c1810')
         self.root.resizable(False, False)
         
+        # Set DD Icon for the window
+        try:
+            icon_path = os.path.join("assets", "DD Icon.png")
+            if os.path.exists(icon_path):
+                from PIL import Image, ImageTk
+                icon_img = Image.open(icon_path)
+                icon_photo = ImageTk.PhotoImage(icon_img)
+                self.root.iconphoto(True, icon_photo)
+        except:
+            pass  # Use default icon if loading fails
+        
         # Center window
         self.root.update_idletasks()
         x = (self.root.winfo_screenwidth() // 2) - (600 // 2)
