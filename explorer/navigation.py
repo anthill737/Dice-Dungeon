@@ -811,35 +811,35 @@ class NavigationManager:
         starter_data = self.game.world_lore['starting_area']
         
         title = tk.Label(main_area, text=starter_data['name'],
-                        font=('Arial', self.game.scale_font(20), 'bold'), bg=self.game.current_colors["bg_primary"], fg=self.game.current_colors["text_gold"],
+                        font=('Arial', self.game.scale_font(18), 'bold'), bg=self.game.current_colors["bg_primary"], fg=self.game.current_colors["text_gold"],
                         wraplength=self.game.get_scaled_wraplength(700), justify=tk.CENTER)
-        title.pack(pady=self.game.scale_padding(20))
+        title.pack(pady=self.game.scale_padding(15))
         
         desc = tk.Label(main_area, text=starter_data['description'],
-                       font=('Arial', self.game.scale_font(14)), bg=self.game.current_colors["bg_primary"], fg=self.game.current_colors["text_primary"],
+                       font=('Arial', self.game.scale_font(12)), bg=self.game.current_colors["bg_primary"], fg=self.game.current_colors["text_primary"],
                        wraplength=self.game.get_scaled_wraplength(700), justify=tk.LEFT)
-        desc.pack(pady=self.game.scale_padding(10), padx=self.game.scale_padding(30))
+        desc.pack(pady=self.game.scale_padding(8), padx=self.game.scale_padding(30))
         
         # Ambient details
         ambient = tk.Label(main_area, text="• " + "\n• ".join(starter_data['ambient_details']),
                           font=('Arial', self.game.scale_font(9), 'italic'), bg=self.game.current_colors["bg_primary"], fg=self.game.current_colors["text_secondary"],
                           wraplength=self.game.get_scaled_wraplength(700), justify=tk.LEFT)
-        ambient.pack(pady=self.game.scale_padding(10), padx=self.game.scale_padding(40))
+        ambient.pack(pady=self.game.scale_padding(5), padx=self.game.scale_padding(40))
         
         # Interactive elements frame
         interact_container = tk.Frame(main_area, bg=self.game.current_colors["bg_primary"])
-        interact_container.pack(fill=tk.BOTH, expand=True, pady=self.game.scale_padding(20))
+        interact_container.pack(fill=tk.BOTH, expand=True, pady=self.game.scale_padding(10))
         
         interact_frame = tk.Frame(interact_container, bg=self.game.current_colors["bg_secondary"], relief=tk.RAISED, borderwidth=2)
         interact_frame.pack(fill=tk.BOTH, expand=True, padx=self.game.scale_padding(50))
         
         tk.Label(interact_frame, text="Welcome, Adventurer. Study these teachings before your journey begins.",
-                font=('Arial', self.game.scale_font(12)), bg=self.game.current_colors["bg_secondary"], fg=self.game.current_colors["text_gold"],
-                wraplength=self.game.get_scaled_wraplength(600), justify=tk.CENTER).pack(pady=self.game.scale_padding(10))
+                font=('Arial', self.game.scale_font(11)), bg=self.game.current_colors["bg_secondary"], fg=self.game.current_colors["text_gold"],
+                wraplength=self.game.get_scaled_wraplength(600), justify=tk.CENTER).pack(pady=self.game.scale_padding(8))
         
         # Signs
         signs_frame = tk.Frame(interact_frame, bg=self.game.current_colors["bg_secondary"])
-        signs_frame.pack(fill=tk.X, padx=self.game.scale_padding(20), pady=self.game.scale_padding(10))
+        signs_frame.pack(fill=tk.X, padx=self.game.scale_padding(20), pady=self.game.scale_padding(5))
         
         tk.Label(signs_frame, text="Signs & Inscriptions:",
                 font=('Arial', self.game.scale_font(11), 'bold'), bg=self.game.current_colors["bg_secondary"], fg=self.game.current_colors["text_primary"]).pack(anchor='w')
@@ -853,7 +853,7 @@ class NavigationManager:
         
         # Chests
         self.starter_chests_frame = tk.Frame(interact_frame, bg=self.game.current_colors["bg_secondary"])
-        self.starter_chests_frame.pack(fill=tk.X, padx=self.game.scale_padding(20), pady=self.game.scale_padding(10))
+        self.starter_chests_frame.pack(fill=tk.X, padx=self.game.scale_padding(20), pady=self.game.scale_padding(5))
         
         tk.Label(self.starter_chests_frame, text="Chests:",
                 font=('Arial', self.game.scale_font(11), 'bold'), bg=self.game.current_colors["bg_secondary"], fg=self.game.current_colors["text_primary"]).pack(anchor='w')
@@ -864,15 +864,15 @@ class NavigationManager:
         
         # Enter dungeon button
         enter_frame = tk.Frame(interact_frame, bg=self.game.current_colors["bg_secondary"])
-        enter_frame.pack(pady=self.game.scale_padding(20))
+        enter_frame.pack(pady=self.game.scale_padding(10))
         
         tk.Label(enter_frame, text="Beyond lies the First Calculation...",
-                font=('Arial', self.game.scale_font(10), 'italic'), bg=self.game.current_colors["bg_secondary"], fg=self.game.current_colors["text_secondary"]).pack(pady=self.game.scale_padding(5))
+                font=('Arial', self.game.scale_font(9), 'italic'), bg=self.game.current_colors["bg_secondary"], fg=self.game.current_colors["text_secondary"]).pack(pady=self.game.scale_padding(3))
         
         tk.Button(enter_frame, text="ENTER THE DUNGEON - FLOOR 1",
                  command=self.enter_dungeon_from_starter,
-                 font=('Arial', self.game.scale_font(14), 'bold'), bg=self.game.current_colors["text_red"], fg='#ffffff',
-                 width=30, pady=self.game.scale_padding(15)).pack(pady=self.game.scale_padding(5))
+                 font=('Arial', self.game.scale_font(13), 'bold'), bg=self.game.current_colors["text_red"], fg='#ffffff',
+                 width=28, pady=self.game.scale_padding(10)).pack(pady=self.game.scale_padding(3))
         
         # Update scroll region after all content is added
         main_area.update_idletasks()

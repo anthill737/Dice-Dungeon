@@ -7,6 +7,15 @@ import tkinter as tk
 import sys
 import os
 
+def get_resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 class GameLauncher:
     def __init__(self, root):
         self.root = root
@@ -20,7 +29,7 @@ class GameLauncher:
         
         # Set DD Icon for the window
         try:
-            icon_path = os.path.join("assets", "DD Icon.png")
+            icon_path = get_resource_path(os.path.join("assets", "DD Icon.png"))
             if os.path.exists(icon_path):
                 from PIL import Image, ImageTk
                 icon_img = Image.open(icon_path)
@@ -43,7 +52,7 @@ class GameLauncher:
     def setup_ui(self):
         # Logo
         try:
-            logo_path = os.path.join("assets", "DD Logo.png")
+            logo_path = get_resource_path(os.path.join("assets", "DD Logo.png"))
             if os.path.exists(logo_path):
                 from PIL import Image, ImageTk
                 img = Image.open(logo_path)
@@ -152,7 +161,7 @@ Dynamic map • Mysterious lore"""
         # Logo
         logo_image = None
         try:
-            logo_path = os.path.join("assets", "DD Logo.png")
+            logo_path = get_resource_path(os.path.join("assets", "DD Logo.png"))
             if os.path.exists(logo_path):
                 from PIL import Image, ImageTk
                 img = Image.open(logo_path)
@@ -245,7 +254,7 @@ Dynamic map • Mysterious lore"""
         # Logo
         logo_image = None
         try:
-            logo_path = os.path.join("assets", "DD Logo.png")
+            logo_path = get_resource_path(os.path.join("assets", "DD Logo.png"))
             if os.path.exists(logo_path):
                 from PIL import Image, ImageTk
                 img = Image.open(logo_path)

@@ -16,15 +16,15 @@ class SimpleInstallerGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Dice Dungeon Explorer - Installer")
-        self.root.geometry("600x450")
+        self.root.geometry("600x550")
         self.root.resizable(False, False)
         self.root.configure(bg='#2c1810')
         
         # Center window
         self.root.update_idletasks()
         x = (self.root.winfo_screenwidth() // 2) - (300)
-        y = (self.root.winfo_screenheight() // 2) - (225)
-        self.root.geometry(f'600x450+{x}+{y}')
+        y = (self.root.winfo_screenheight() // 2) - (275)
+        self.root.geometry(f'600x550+{x}+{y}')
         
         self.install_dir = None
         self.source_dir = os.path.dirname(os.path.abspath(__file__))
@@ -200,12 +200,14 @@ class SimpleInstallerGUI:
         try:
             # Try to install pywin32 if not available
             try:
-                import winshell
                 from win32com.client import Dispatch
             except ImportError:
-                subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "pywin32"], 
-                              capture_output=True, timeout=30)
-                import winshell
+                # Install pywin32
+                result = subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "pywin32"], 
+                              capture_output=True, timeout=60)
+                if result.returncode != 0:
+                    print("Warning: Could not install pywin32 for shortcuts")
+                    return
                 from win32com.client import Dispatch
             
             exe_path = os.path.join(self.install_dir, "DiceDungeon.exe")
@@ -213,20 +215,22 @@ class SimpleInstallerGUI:
             
             # Desktop shortcut
             try:
-                desktop = winshell.desktop()
+                desktop = os.path.join(os.path.expanduser('~'), 'Desktop')
                 shortcut_path = os.path.join(desktop, "Dice Dungeon.lnk")
                 shortcut = shell.CreateShortCut(shortcut_path)
                 shortcut.Targetpath = exe_path
                 shortcut.WorkingDirectory = self.install_dir
                 shortcut.Description = "Dice Dungeon Explorer"
+                shortcut.IconLocation = exe_path
                 shortcut.save()
-            except:
-                pass
+                print(f"Created desktop shortcut: {shortcut_path}")
+            except Exception as e:
+                print(f"Could not create desktop shortcut: {e}")
             
             # Start menu
             try:
-                start_menu = winshell.start_menu()
-                programs = os.path.join(start_menu, "Programs", "Dice Dungeon")
+                appdata = os.environ.get('APPDATA')
+                programs = os.path.join(appdata, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Dice Dungeon')
                 os.makedirs(programs, exist_ok=True)
                 
                 start_shortcut_path = os.path.join(programs, "Dice Dungeon.lnk")
@@ -234,9 +238,11 @@ class SimpleInstallerGUI:
                 shortcut.Targetpath = exe_path
                 shortcut.WorkingDirectory = self.install_dir
                 shortcut.Description = "Dice Dungeon Explorer"
+                shortcut.IconLocation = exe_path
                 shortcut.save()
-            except:
-                pass
+                print(f"Created start menu shortcut: {start_shortcut_path}")
+            except Exception as e:
+                print(f"Could not create start menu shortcut: {e}")
         
         except:
             # If shortcuts fail, that's okay - user can still run the EXE directly
@@ -274,26 +280,25 @@ pause
         self.clear_window()
         
         tk.Label(self.root, text="✓ Installation Complete!", 
-                font=('Arial', 24, 'bold'), bg='#2c1810', fg='#4ecdc4').pack(pady=40)
+                font=('Arial', 24, 'bold'), bg='#2c1810', fg='#4ecdc4').pack(pady=30)
         
         info_text = f"""Dice Dungeon has been successfully installed!
 
 Installed to:
 {self.install_dir}
 
-You can now:
+To play the game:
 • Double-click 'Dice Dungeon' on your Desktop
-• Find it in your Start Menu
-• Run DiceDungeon.exe from the install folder
+• OR find it in your Start Menu
+• OR navigate to the install folder and double-click DiceDungeon.exe
 
-The downloaded folder can be safely deleted:
-{self.source_dir}
+The downloaded folder can be safely deleted after installation.
 
 Enjoy the game! 🎲"""
         
         tk.Label(self.root, text=info_text,
-                font=('Arial', 11), bg='#2c1810', fg='#ffffff',
-                justify='left').pack(pady=20)
+                font=('Arial', 10), bg='#2c1810', fg='#ffffff',
+                justify='left').pack(pady=15)
         
         btn_frame = tk.Frame(self.root, bg='#2c1810')
         btn_frame.pack(pady=20)
