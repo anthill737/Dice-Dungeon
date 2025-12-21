@@ -1,4 +1,4 @@
-# 🎲 Dice Dungeon Explorer
+# 🎲 Dice Dungeon
 
 A roguelike dungeon crawler where you roll dice to fight enemies, explore procedurally generated dungeons, and collect loot!
 
