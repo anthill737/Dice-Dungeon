@@ -1,4 +1,4 @@
-# 🎲 Dice Dungeon Explorer
+# 🎲 Dice Dungeon
 
 A roguelike dungeon crawler where you roll dice to fight enemies, explore procedurally generated dungeons, and collect loot!
 
@@ -16,12 +16,10 @@ A roguelike dungeon crawler where you roll dice to fight enemies, explore proced
 2. Extract the ZIP file
 3. Double-click **`SETUP.bat`**
 4. A graphical installer opens - choose where to install
-5. Click "Install" - done in seconds!
-6. Launch from your desktop shortcut
+5. Click "Install"
+6. Launch 
 
-**That's it!** The installer copies the pre-built DiceDungeon.exe to your chosen location and creates shortcuts.
-
-**No Python required to play!**
+**That's it** The installer copies the pre-built DiceDungeon.exe to your chosen location and creates shortcuts.
 
 ### Mac / Linux
 
@@ -32,13 +30,10 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-**That's it!** The installer:
+**That's it** The installer:
 - Copies the pre-built DiceDungeon.exe to your chosen location
-- Creates desktop and Start Menu shortcuts
 - Takes about 10 seconds
 - The downloaded folder can be deleted after installation
-
-**No Python needed!** The EXE runs on any Windows PC.
 
 ---
 
@@ -46,7 +41,7 @@ chmod +x setup.sh
 
 - **Dice-Based Combat**: Roll dice to attack enemies with strategic locking and re-rolling
 - **Procedurally Generated Dungeons**: Each floor is unique with varied room types
-- **Character Progression**: Level up, find equipment, and unlock abilities
+- **Character Progression**: Find equipment, and unlock abilities
 - **Multiple Enemy Types**: Fight 288 different enemies with unique sprites
 - **Boss Battles**: Epic encounters with special enemies
 - **Lore System**: Discover the story through found lore items
@@ -54,20 +49,14 @@ chmod +x setup.sh
 - **Item Management**: Potions, keys, and special items
 - **Save System**: Multiple save slots to track your progress
 - **Customizable Keybindings**: Configure controls to your preference
-- **Theme System**: Multiple color themes (Light/Dark modes)
 - **Difficulty Settings**: Easy, Normal, Hard, and Nightmare modes
 
 ## 🎮 How to Play
 
-Launch the game from your desktop shortcut or Start Menu.
-
 ### Controls
-- **Arrow Keys**: Navigate menus and move through rooms
+- **Arrow Keys or WASD**: Navigate menus and move through rooms
 - **Space/Enter**: Confirm actions, roll dice
-- **R**: Re-roll unlocked dice
-- **L**: Lock/unlock individual dice
-- **A**: Attack enemy
-- **I**: Open inventory
+- **Tab**: Open inventory
 - **ESC**: Open menu/close dialogs
 
 ### Gameplay Loop
@@ -114,21 +103,6 @@ See [MODDING_GUIDE.md](MODDING_GUIDE.md) for information on:
 - Creating custom rooms
 - Modifying game balance
 - Adding new items
-
-### Building Standalone EXE
-Want to create an `.exe` that doesn't require Python? Run:
-```bash
-python build_exe.py
-```
-This creates a portable version that runs on any Windows PC.
-
-### Debug Mode
-Enable debug logging by setting the debug flag in the launcher:
-```python
-DEBUG_MODE = True
-```
-
-See [DEBUG_LOGGING_GUIDE.md](DEBUG_LOGGING_GUIDE.md) for more details.
 
 ### Settings System
 Configuration and settings management is documented in [SETTINGS_SYSTEM_GUIDE.md](SETTINGS_SYSTEM_GUIDE.md).
