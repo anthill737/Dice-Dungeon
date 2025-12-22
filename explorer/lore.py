@@ -285,6 +285,8 @@ class LoreManager:
             if self.lore_overlay_frame:
                 self.lore_overlay_frame.destroy()
                 self.lore_overlay_frame = None
+            # Return focus to root window so keybindings work
+            self.game.root.focus_force()
             if return_callback:
                 return_callback()
         

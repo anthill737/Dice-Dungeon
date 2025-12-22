@@ -130,6 +130,10 @@ class CombatManager:
         self.game.current_room.enemies_defeated = True
         self.game.enemies_killed += 1
         
+        # Clear status effects after combat
+        if self.game.flags.get('statuses'):
+            self.game.flags['statuses'] = []
+        
         # Hide enemy column and dice section after combat
         if hasattr(self.game, 'enemy_column'):
             self.game.enemy_column.pack_forget()
@@ -294,6 +298,9 @@ class CombatManager:
             self.game.flags['escape_token'] -= 1
             self.game.log("✨ Used Escape Token - fled safely without damage!", 'success')
             self.game.in_combat = False
+            # Clear status effects after fleeing
+            if self.game.flags.get('statuses'):
+                self.game.flags['statuses'] = []
             self.game.update_display()
             self.game.show_exploration_options()
         else:
@@ -307,6 +314,9 @@ class CombatManager:
                     self.game.game_over()
                 else:
                     self.game.in_combat = False
+                    # Clear status effects after fleeing
+                    if self.game.flags.get('statuses'):
+                        self.game.flags['statuses'] = []
                     self.game.update_display()
                     self.game.show_exploration_options()
             else:
@@ -343,30 +353,46 @@ class CombatManager:
         self.game.dice_locked = [False] * self.game.num_dice
         
         # Scale enemy with floor
-        base_hp = 30 + (self.game.floor * 10)
+        base_hp = 50 + (self.game.floor * 10)
         
-        # Add enemy-specific HP multipliers based on enemy name/type
+        # Enemy HP multipliers (applied before boss/mini-boss multipliers)
+        # Regular enemies use partial name matching (Rat, Goblin, etc.)
+        # Mini-bosses and Floor Bosses get specific entries to override partial matches
         enemy_hp_multipliers = {
-            # Weak enemies
-            "Goblin": 0.7, "Rat": 0.6, "Spider": 0.6, "Imp": 0.7, "Slime": 0.8,
-            "Bat": 0.5, "Sprite": 0.6, "Wisp": 0.5, "Grub": 0.4,
-            
-            # Normal enemies (1.0 multiplier - default)
+            # REGULAR ENEMIES - Partial name matches (default 1.0x)
+            "Goblin": 0.7, "Spider": 0.6, "Bat": 0.5, "Grub": 0.4,
+            "Slime": 0.8, "Sprite": 0.6, "Wisp": 0.5,
             "Skeleton": 1.0, "Orc": 1.0, "Zombie": 1.1, "Bandit": 0.9,
-            
-            # Strong enemies
             "Troll": 1.5, "Ogre": 1.4, "Knight": 1.3, "Guard": 1.2, "Warrior": 1.1,
             "Beast": 1.3, "Wolf": 1.1, "Bear": 1.4, "Boar": 1.2,
             
-            # Elite enemies
-            "Demon": 2.0, "Dragon": 2.5, "Lich": 1.8, "Vampire": 1.6, "Wraith": 1.4,
-            "Golem": 2.2, "Hydra": 2.3, "Phoenix": 2.0, "Titan": 2.8, "Reaper": 1.9,
+            # ELITE ENEMIES - Partial name matches
+            "Demon": 2.0, "Dragon": 2.5, "Lich": 1.8, "Vampire": 1.6,
+            "Phoenix": 2.0, "Titan": 2.8,
             
-            # Special/Boss enemies
-            "Lord": 3.0, "King": 3.5, "Ancient": 3.2, "Primordial": 4.0,
-            "Crystal Golem": 1.8, "Shadow Hydra": 2.1, "Necromancer": 1.6,
-            "Gelatinous Slime": 1.3, "Demon Lord": 2.8, "Demon Prince": 2.4,
-            "Acid Hydra": 3.3, "Void Wraith": 2.7, "Bone Reaper": 2.85
+            # MINI-BOSSES - Specific names (then multiplied by 3x)
+            "Gelatinous Slime": 1.3, "Slime Blob": 1.0,
+            "Shadow Hydra": 2.1, "Crystal Golem": 1.8, "Crystal Shard": 1.0,
+            "Acid Hydra": 2.3, "Void Wraith": 1.4, "Shadow Head": 1.0,
+            "Imp": 0.7, "Incense Spirit": 1.5, "Lightning Warden": 1.7,
+            # REGULAR ENEMIES WITH STATUS EFFECTS - Specific names
+            "Rat Swarm": 1.375, "Angler Slime": 1.375, "Angry Swarm": 1.375,
+            "Agitated Bees": 1.375, "Ash Elemental": 1.375, "Ash Imp": 1.375,
+            "Ash Angel": 1.375, "Arrow Demon": 1.375, "Blade Angel": 1.375,
+            "Blade Demon": 1.375, "Blade Imp": 1.375, "Blood Sprite": 1.375,
+            "Bioluminescent Leech": 1.375, "Bone Worm": 1.375, "Butcher Shade": 1.375,
+            "Cave Salamander": 1.375, "Chain Beast": 1.375, "Chain Wraith": 1.375,
+            "Cinder Wraith": 1.375, "Corpse Flower": 1.375, "Dozing Slime": 1.375,
+            "Dust Wraith": 1.375, "Fire Beetle": 1.375, "Fire Elemental": 1.375,
+            "Firefly Swarm": 1.375, "Grease Ooze": 1.375, "Hellfire Imp": 1.375,
+            "Hungry Specter": 1.375, "Jailer Wraith": 1.375, "Lava Ooze": 1.375,
+            "Lava Serpent": 1.375, "Leech": 1.375, "Lurking Spider": 1.375,
+            "Pipe Rats": 1.375, "Poison Rat": 1.375, "Rope Worm": 1.375,
+            "Serpent": 1.375, "Spike Beast": 1.375, "Thorn Beast": 1.375,
+            "Thorn Creeper": 1.375, "Toxic Mushroom": 1.375, "Toxic Ooze": 1.375,
+            "Wailing Ghost Woman": 1.375, "Bitter Ghost": 1.375, "Basket Serpent": 1.375,
+            "Pack Rat": 1.375, "Crate Rat": 1.375, "Honey Ooze": 1.375,
+            "Name Leech": 1.375, "Multi Headed Serpent": 1.375, "Echo Phantom": 1.375
         }
         
         # Find multiplier for this enemy (check for partial name matches)
@@ -559,6 +585,42 @@ class CombatManager:
         # Update display to show multiple enemies
         self.update_enemy_display()
     
+
+    # ======================================================================
+    # restore_encounter_buttons
+    # ======================================================================
+    def restore_encounter_buttons(self):
+        """Restore Attack/Flee buttons when returning from pause menu during encounter"""
+        # Only restore if we're in combat but haven't started combat turn yet
+        # (i.e., player encountered enemy but hasn't clicked Attack yet)
+        if not self.game.in_combat:
+            return
+        
+        # Check if we're in the pre-combat state (no dice UI shown yet)
+        # If dice_section is not packed or action_buttons_strip is empty, restore buttons
+        if hasattr(self.game, 'action_buttons_strip') and not self.game.action_buttons_strip.winfo_children():
+            # Clear and recreate the attack/flee buttons
+            for widget in self.game.action_buttons_strip.winfo_children():
+                widget.destroy()
+            
+            combat_frame = tk.Frame(self.game.action_buttons_strip, bg=self.game.current_colors["bg_panel"])
+            combat_frame.pack(pady=self.game.scale_padding(1))
+            
+            attack_btn = tk.Button(combat_frame, text="Attack",
+                     command=self.start_combat_turn,
+                     font=('Arial', self.game.scale_font(9), 'bold'), bg='#e74c3c', fg='white',
+                     width=12, pady=self.game.scale_padding(4))
+            attack_btn.pack(side=tk.LEFT, padx=2)
+            self.debug_logger.button("Attack button restored after dialog", command="start_combat_turn")
+            
+            self.game.flee_button = tk.Button(combat_frame, text="Flee",
+                     command=self.attempt_flee,
+                     font=('Arial', self.game.scale_font(9), 'bold'), bg='#f39c12', fg='#000000',
+                     width=12, pady=self.game.scale_padding(4))
+            self.game.flee_button.pack(side=tk.LEFT, padx=2)
+            
+            # Update scroll region
+            self.game.update_scroll_region()
 
 
     # ======================================================================
@@ -885,6 +947,14 @@ class CombatManager:
                 "message": f"You take {damage} damage per turn!"
             })
         
+        # Inflict status - adds negative status effects (poison, burn, bleed, etc.)
+        elif ability_type == "inflict_status":
+            status_name = ability.get("status_name", "Poison")
+            # Only add if not already afflicted
+            if status_name not in self.game.flags.get("statuses", []):
+                self.game.flags["statuses"].append(status_name)
+                self.game.log(f"⚠️ You are now afflicted with {status_name}!", 'enemy')
+        
         # Heal over time - enemy regenerates HP
         elif ability_type == "heal_over_time":
             duration = ability.get("duration_turns", 5)
@@ -962,7 +1032,7 @@ class CombatManager:
             dice_count = ability.get("dice_count", 4)
             
             # Calculate transformed enemy stats
-            base_hp = 30 + (self.game.floor * 10)
+            base_hp = 50 + (self.game.floor * 10)
             transform_hp = int(base_hp * hp_mult * 1.5)  # Buff transformed form
             
             # Apply difficulty multiplier
@@ -1121,9 +1191,9 @@ class CombatManager:
             return
         
         for status in statuses:
-            # Damage-over-time effects
+            # Damage-over-time effects - all deal 5 damage per turn
             if 'poison' in status.lower() or 'rot' in status.lower():
-                damage = 3  # Base DoT damage
+                damage = 5
                 if not self.game.dev_invincible:
                     self.game.health -= damage
                     self.game.log(f"☠ [{status}] You take {damage} damage!", 'enemy')
@@ -1131,7 +1201,7 @@ class CombatManager:
                     self.game.log(f"☠ [{status}] Blocked by God Mode!", 'system')
             
             elif 'bleed' in status.lower():
-                damage = 2
+                damage = 5
                 if not self.game.dev_invincible:
                     self.game.health -= damage
                     self.game.log(f"▪ [{status}] You take {damage} bleed damage!", 'enemy')
@@ -1139,7 +1209,7 @@ class CombatManager:
                     self.game.log(f"▪ [{status}] Blocked by God Mode!", 'system')
             
             elif 'burn' in status.lower() or 'heat' in status.lower():
-                damage = 2
+                damage = 5
                 if not self.game.dev_invincible:
                     self.game.health -= damage
                     self.game.log(f"✹ [{status}] You take {damage} fire damage!", 'fire')

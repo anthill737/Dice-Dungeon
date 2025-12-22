@@ -29,3 +29,5 @@ class Room:
         self.ground_gold = 0  # Loose gold on ground
         self.container_searched = False  # Whether container has been opened
         self.container_locked = False  # Whether container is locked (requires lockpick)
+        self.container_gold = 0  # Gold inside container (once rolled)
+        self.container_item = None  # Item inside container (once rolled)

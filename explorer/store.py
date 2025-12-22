@@ -453,6 +453,8 @@ class StoreManager:
             buy_price = 120 + (self.game.floor * 30)
         elif item_name == "Steel Dagger":
             buy_price = 100 + (self.game.floor * 25)
+        elif item_name == "Hand Axe":
+            buy_price = 120 + (self.game.floor * 30)
         elif item_name == "War Axe":
             buy_price = 180 + (self.game.floor * 40)
         elif item_name == "Rapier":

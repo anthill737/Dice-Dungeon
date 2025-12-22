@@ -253,7 +253,8 @@ class InventoryEquipmentManager:
             base_hp = item_def['max_hp_bonus']
             scaled_hp = base_hp + (floor_bonus * 3)  # +3 HP per floor after 1
             self.game.max_health += scaled_hp
-            # Don't heal when equipping - only increase max HP capacity
+            # Increase current health by the amount armor adds
+            self.game.health += scaled_hp
         if 'armor_bonus' in item_def:
             self.game.armor += item_def['armor_bonus']
         if 'inventory_bonus' in item_def:
@@ -289,8 +290,10 @@ class InventoryEquipmentManager:
             base_hp = item_def['max_hp_bonus']
             scaled_hp = base_hp + (floor_bonus * 3)
             self.game.max_health -= scaled_hp
-            # Don't reduce current HP below 1
-            self.game.health = max(1, min(self.game.health, self.game.max_health))
+            # Decrease current health by the amount armor provided, but not below 1
+            self.game.health = max(1, self.game.health - scaled_hp)
+            # Ensure health doesn't exceed new max
+            self.game.health = min(self.game.health, self.game.max_health)
         if 'armor_bonus' in item_def:
             self.game.armor -= item_def['armor_bonus']
         if 'inventory_bonus' in item_def:
