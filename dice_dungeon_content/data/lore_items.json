@@ -1,390 +1,394 @@
 {
   "_meta": {
-    "version": "1.0",
-    "note": "Readable lore content for Guard's Journal Pages, Quest Notices, Training Manual Pages, and other narrative items"
+    "version": "1.1",
+    "note": "Readable lore content for Guard's Journal Pages, Quest Notices, Training Manual Pages, and other narrative items. Updated for more grounded, Bethesda-style storytelling."
   },
   
   "guards_journal_pages": [
     {
       "date": "Day 47 of the Siege",
-      "text": "The eastern wall buckled today. Captain says we hold until reinforcements arrive. Nobody believes reinforcements are coming. The men talk of desertion. I talk of duty. We're both lying."
+      "text": "Eastern wall showing cracks. Captain Merris ordered double watch rotation. Men are tired. Rations down to two-thirds portion. Some talk of heading back to the surface, but desertion means a flogging if caught. Better hungry than bleeding."
     },
     {
       "date": "Day 12 of Isolation",
-      "text": "Found fresh rat tracks in the grain stores. Better than what we feared. The whispers from below have stopped. I don't know if that's good or bad. Sleep eludes me."
+      "text": "Supply cart didn't arrive this week. Found tracks near the grain stores - looks like rats got in through the drainage grate. Thompson's fixing it tomorrow. Haven't heard from the lower garrison in three days. Their messenger pigeon came back with no note attached."
     },
     {
-      "date": "Third Watch, Unknown Date",
-      "text": "My name is harder to remember each day. The dungeon takes more than your life. It takes your certainty. Jenkins swears he never had a brother. I remember his brother's funeral. Which of us is right?"
+      "date": "Third Watch, Autumn Season",
+      "text": "New posting came through. They're rotating me to the eastern passages next week. Jenkins says the air's bad down there - makes you light-headed. He was stationed there last month and came back saying he couldn't remember the shift. Doctor says it's just fatigue."
     },
     {
       "date": "Day 89 of Duty",
-      "text": "The new recruits don't understand the rules here. Don't trust the echoes. Don't follow the lights. Don't open doors that weren't there yesterday. By the time they learn, half will be gone."
+      "text": "Training the new recruits today. Most are farmers' sons, never held a sword before. Gave them the usual warnings about checking corners and watching their backs in the narrow corridors. Half probably won't make it past their first real patrol. We'll know which ones have the sense to survive by week's end."
     },
     {
       "date": "After the Breach",
-      "text": "We sealed the lower passages. Whatever came through... it wore Sergeant Hale's face but couldn't remember his daughter's name. We did what we had to. The screaming stopped around midnight."
+      "text": "Something came through the sealed passage in sector 7 last night. Left tracks in the dust - looked human, but Sergeant Hale says the stride length was all wrong. We resealed it with extra mortar this morning. Captain wants armed watch on it for the next month."
     },
     {
       "date": "Midsummer's Watch",
-      "text": "Heard music from the forgotten chapel. Beautiful, terrible music. Three guards went to investigate. Only two came back, and they won't speak. The third is still down there, they say, conducting an invisible choir."
+      "text": "Heard strange sounds from the old chapel wing - almost like singing, but distant. Sent three guards to investigate. They came back saying the acoustics down there play tricks. Wind through the broken windows, probably. Still, we're avoiding that section for now. No reason to risk it."
     },
     {
       "date": "Winter Solstice",
-      "text": "The cold here isn't natural. It remembers things. Frostbite patterns on Miller's hands spelled out his grandmother's dying words. He never told anyone those words. The dungeon knew anyway."
+      "text": "Cold's getting worse in the lower levels. Ice forming on the walls even though we're well below freezing point elevation. Miller got frostbite on his hands during patrol. Quartermaster requisitioned more warm gear from the surface, but it'll be two weeks before it arrives."
     },
     {
-      "date": "Day Unknown",
-      "text": "I found my own journal entry from tomorrow. It describes my death in the Bell Tower. I'm not going near the Bell Tower. I'm not going near the Bell Tower. I'm not going—"
+      "date": "Day Unknown - Torn Page",
+      "text": "Found this journal entry in my pack. Don't remember writing it, but the handwriting looks like mine. Says to avoid the bell tower on the 15th. Not sure what month. Probably just got drunk and wrote nonsense. Bell tower's been condemned anyway."
     },
     {
       "date": "First Watch, Autumn",
-      "text": "The armory doors opened by themselves last night. Nothing was taken, but everything was moved. Swords face the opposite direction. Shields hang upside down. The arrangement spells something in a language we don't recognize. We put everything back. It happened again tonight."
+      "text": "Someone broke into the armory last night. Nothing stolen, but all the weapons were rearranged. Swords face outward now instead of inward. Captain thinks it's a prank from the night shift. Lock's being replaced tomorrow."
     },
     {
       "date": "Day 156 of Service",
-      "text": "Private Hayes claims the statue in the courtyard blinks when no one is watching. We laughed at him. Then Marcus caught it mid-blink. Now we all see it. The statue used to face east. This morning it faced the barracks. We don't look at it anymore."
+      "text": "Hayes keeps insisting the statue in the courtyard has moved. Says it used to face east and now faces west. I checked the installation records - it's always faced west. Marcus agrees with Hayes though. Going to report this to the captain. Might be stress."
     },
     {
       "date": "Harvest Moon",
-      "text": "The mess hall served stew tonight. Same recipe as always. But Thompson says it tasted like his mother's cooking. Williams says it tasted like his wedding feast. I tasted the meal I had the day before I came here. We all ate something different. The pot was the same."
+      "text": "Mess hall served mushroom stew tonight. Thompson said it tasted different than usual. Williams mentioned his grandmother used to make something similar. Got me thinking about home. Haven't seen my family in six months. Need to write them a letter."
     },
     {
       "date": "After the Collapse",
-      "text": "The northern gallery collapsed. Seven guards trapped below. We dug for three days. Found six bodies and eight skulls. The extra skull wore a guard helm from our battalion. It wasn't old. We stopped counting."
+      "text": "North gallery ceiling collapsed today. Managed to dig out most of the guards trapped below. Seven injuries, no casualties thankfully. Found some old bones in the rubble though - probably from when this place was first built. Going to seal off that section."
     },
     {
       "date": "Midnight Patrol",
-      "text": "Protocol says patrol in pairs. Anderson and I stick together. Tonight I turned around and Anderson was gone. But I heard his footsteps. I followed them for an hour. The footsteps came from in front of me. I was following myself."
+      "text": "Anderson and I got separated during our patrol of the eastern wing. Took me an hour to find him - turns out he'd been following what he thought was my torch light. We were walking in parallel corridors the whole time. The layout down there is confusing. Need better maps."
     },
     {
       "date": "Day 200",
-      "text": "Found a locked chest in the old barracks. Key was on a chain around my neck. I don't remember putting it there. Inside the chest: my orders, dated next month, assigning me to a post that doesn't exist. My signature is already on them."
+      "text": "Found a locked chest in the old barracks. No key, but there was one in my quarters that fit. Inside were some old assignment papers. Looks like someone was scheduled for a post that never got built. Probably from when they were still planning expansions down here."
     },
     {
       "date": "Spring Equinox",
-      "text": "The flowers in the guard captain's quarters bloomed overnight. Beautiful crimson petals. Perfect formations. The captain has been dead for two years. The flowers smell like his pipe tobacco. They turn to face whoever enters the room."
+      "text": "Someone's been tending the flowers in Captain Aldric's old quarters. Didn't realize anyone still went in there - he transferred out two years ago. Flowers are red primrose. Smell reminds me of pipe tobacco. Will ask around about who's maintaining the room."
     },
     {
-      "date": "Final Entry",
-      "text": "This is my last entry as a guard. Tomorrow I join the Silent Watch—those who guard the places that must never be disturbed. We don't speak. We don't write. We don't remember our names. When you forget who you are, the dungeon can't take what's already gone. Goodbye."
+      "date": "Transfer Notice",
+      "text": "Being reassigned next month to the restricted sectors. Special duty - they call it the Silent Watch. Less talking, more listening apparently. Long shifts. Good pay increase though. Need to clear out my locker and hand over my current post duties to Williams."
     }
   ],
   
   "quest_notices": [
     {
-      "title": "WANTED: The Glasswork Thief",
+      "title": "WANTED: Thief in Cathedral District",
       "reward": "50 gold pieces",
-      "text": "A thief has been stealing crystallized souls from the Glasswork Cathedral. The thief leaves no footprints, casts no shadow, and breathes no air. Approach with caution. Do not look directly at their reflection."
+      "text": "Recent thefts from the Glasswork Cathedral. Suspect leaves no obvious entry points. Several valuable crystal pieces missing. Witness reports are inconsistent. Contact Temple Guard if you have information. Approach suspect with caution if located."
     },
     {
-      "title": "URGENT: Retrieve the Singing Blade",
-      "reward": "The blade itself, plus 100 gold",
-      "text": "The Singing Blade was lost in the Harmony Vault three years ago. It still sings. Every full moon, we hear it calling for its wielder. The wielder has been dead for five years. Retrieve the blade. Stop the singing. Please."
+      "title": "URGENT: Retrieve Blade from Vault",
+      "reward": "100 gold, equipment privileges",
+      "text": "The ceremonial sword known as 'The Singing Blade' was misplaced in the Harmony Vault during inventory three years ago. Staff report hearing metallic resonance from the sealed section during certain moon phases. Need recovered for upcoming ceremony. Vault key available at administration."
     },
     {
-      "title": "CONTRACT: Clear the Flooded Archives",
+      "title": "CONTRACT: Archive Restoration",
       "reward": "30 gold, salvage rights",
-      "text": "The lower archives flooded during the equinox. Something in the water is rewriting the books. Historical records now describe events that never happened. Wars we never fought. Kings we never crowned. Drain the archives before the false histories become true."
+      "text": "Lower archives flooded during spring thaw. Water damage to historical records. Some documents appear to have bled into others - need separation and restoration. Priority: military records, census data, land deeds. Report to Chief Archivist Pemberton for details."
     },
     {
-      "title": "BOUNTY: The Clockwork Deserter",
+      "title": "BOUNTY: Decommission Malfunctioning Construct",
       "reward": "25 gold pieces",
-      "text": "A clockwork soldier has gone rogue in the mechanism halls. It refuses to stop marching. It refuses to acknowledge the war ended. It refuses to accept that its battalion was destroyed 40 years ago. Approach with compassion. Destroy with efficiency."
+      "text": "Clockwork patrol unit #47 continues operating despite shutdown order. Last serviced 40 years ago. Internal timer appears stuck. Continues patrol route through now-residential areas. Causes disturbances at night. Salvage parts after deactivation. Tools provided."
     },
     {
-      "title": "EXPEDITION: Map the Shifting Corridors",
-      "reward": "15 gold per viable map",
-      "text": "The eastern corridors rearrange themselves nightly. We need accurate maps to establish stable supply routes. Previous cartographers have submitted maps of rooms that don't exist, hallways that loop in impossible ways, and one map that was just the word 'LEAVE' written 700 times."
+      "title": "EXPEDITION: Map Eastern Corridors",
+      "reward": "15 gold per accurate map section",
+      "text": "Eastern wing layout keeps changing due to structural settling. Need updated floor plans for resource allocation. Previous survey teams submitted conflicting data - possibly working from outdated base maps. Surveying equipment available. Report discrepancies to Master Builder Carlson."
     },
     {
-      "title": "EMERGENCY: Silence the Prayer Bells",
+      "title": "EMERGENCY: Bell Tower Repairs",
       "reward": "40 gold pieces",
-      "text": "The prayer bells in the Sunken Oratory ring backwards at midnight. Those who hear them experience memories that don't belong to them. Last week, Guard Thompson remembered dying in the great fire of 1847. Thompson was born in 1852. Stop the bells. Forget what they showed you."
+      "text": "Prayer bells in the Sunken Oratory malfunction at midnight - ringing in reverse sequence. Residents report sleep disturbances and disorientation. Mechanism likely needs oil and realignment. Access through west stairwell. Bring standard climbing gear."
     },
     {
-      "title": "COMMISSION: Recover the Weeping Portrait",
+      "title": "COMMISSION: Portrait Recovery",
       "reward": "75 gold pieces",
-      "text": "The portrait of Lady Ashdown hangs in the Crimson Gallery. At dawn, it weeps tears of blood. At dusk, it smiles. At midnight, it turns to face the door. Recover it for the family. Do not look at it during the transition hours. The last courier looked. He's still standing in the gallery, facing the wrong direction."
+      "text": "Family portrait of Lady Ashdown needs retrieval from Crimson Gallery. Frame possibly water-damaged - appears to be weeping condensation. Gallery is in restricted wing but family has obtained access permits. Portrait is large, will need two people for safe transport."
     },
     {
-      "title": "ALERT: Contain the Echo Chamber",
+      "title": "ALERT: Chamber Acoustics Issue",
       "reward": "45 gold, hazard pay",
-      "text": "The Echo Chamber in the Resonance Wing has developed consciousness. It repeats conversations from fifty years ago, perfectly. It argues with itself using the voices of the dead. Last week it called my name. I've never been to the Resonance Wing. Seal the chamber. Destroy the recordings. Don't listen to what it says about you."
+      "text": "Echo Chamber in Resonance Wing experiencing feedback loops. Possibly due to water in the walls creating unexpected sound reflection. Recordings of conversations from previous use are playing back at random intervals. Need acoustic engineer to assess and repair."
     },
     {
-      "title": "POSTING: Apprentice Needed for Soul Binding",
+      "title": "POSTING: Apprentice for Artifact Studies",
       "reward": "Room and board, 20 gold monthly",
-      "text": "Seeking brave apprentice to assist with binding malevolent spirits. Previous experience unnecessary—previous apprentices didn't have any either. Must be comfortable with screaming. Must not be bothered by the smell of burnt hair. Must be able to work independently after the Master inevitably gets possessed. Housing provided in the Master's former quarters."
+      "text": "Scholar Whitmore seeking assistant for supernatural artifact research. Previous apprentice transferred to different department. Duties include cataloging, documentation, and basic warding rituals. No experience necessary. Housing provided in research wing."
     },
     {
-      "title": "REQUEST: Find the Merchant's Daughter",
-      "reward": "500 gold pieces, plus a favor",
-      "text": "My daughter Elisa descended into the dungeon six months ago, seeking adventure. She sends letters weekly. They arrive before she writes them. Last letter described her triumphant return next Tuesday. It's Friday now. She still hasn't come back. Find her. Bring her home. Tell her we got her letters. Tell her we read them all. Please."
+      "title": "REQUEST: Locate Missing Explorer",
+      "reward": "500 gold pieces",
+      "text": "Merchant's daughter Elisa entered the dungeon six months ago. Last known location: eastern passages near the old mining sector. Has been sending letters but return address is unclear. Family desperate for contact. Knows the area well but may be lost or injured."
     },
     {
-      "title": "DANGER: Do Not Enter the Gilt Hall",
-      "reward": "N/A - Warning Only",
-      "text": "This is not a bounty. This is a warning. The Gilt Hall on the third sublevel is not safe. The gold coating on the walls is not decorative. It's a seal. Something is trapped behind the gold. It's getting out. The coating grows thinner every day. When you can see through the gold, run. When you can see what's behind the gold, you're already too late."
+      "title": "DANGER: Structural Warning - Gilt Hall",
+      "reward": "N/A - Safety Notice",
+      "text": "The Gilt Hall on sublevel three is unsafe for entry. Gold leaf coating on walls is flaking badly. Samples show unusual chemical composition - possibly toxic. Area sealed until further notice. Contact site foreman before attempting any maintenance work."
     },
     {
-      "title": "INVESTIGATION: The Duplicate District",
-      "reward": "100 gold, research credit",
-      "text": "The southern wing has duplicated itself. There are now two identical southern wings, occupying the same space. Guards report being in both simultaneously. Merchants set up shop in one wing and somehow made sales in the other. Scholar Pemberton entered the duplicate wing and met himself leaving. They both filed the same report. Investigate this phenomenon. Determine which wing is real. Determine if it matters."
+      "title": "INVESTIGATION: Spatial Anomaly - South Wing",
+      "reward": "100 gold, research grant",
+      "text": "South wing floor plan does not match architectural blueprints. Measurements show discrepancies of 10-15 feet in several corridors. Need surveyor to remeasure and update building records. May be due to poor record keeping or unmapped renovations from previous century."
+    },
+    {
+      "title": "NOTICE: Guard Recruitment Drive",
+      "reward": "Competitive wages, benefits",
+      "text": "Dungeon Security needs additional personnel for eastern wing patrols. Experience preferred but will train motivated candidates. Must pass physical examination and background check. Long shifts in underground environment. Apply at garrison headquarters. Reference code: EAST-147."
     }
   ],
   
   "training_manual_pages": [
     {
       "title": "Chapter 3: Footwork Fundamentals",
-      "text": "A warrior's feet are their foundation. The Shifting Tiles exercise teaches recruits to trust their balance, not their eyes. Advanced students learn that some tiles were never solid to begin with. Do not question the gaps in your memory of this exercise."
+      "text": "A warrior's foundation comes from proper footwork. The Shifting Tiles exercise teaches balance adaptation on uneven surfaces. Recommended for all recruits. Some tiles in the training hall are intentionally loosened - teaches awareness of unstable ground common in older dungeon sections."
     },
     {
       "title": "Chapter 7: Combat Awareness",
-      "text": "In dungeon combat, your enemy is not always what you see. Watch for tells: unnatural breathing patterns, shadows falling the wrong direction, wounds that heal backwards. If your opponent doesn't bleed, retreat immediately. If your opponent bleeds upward, you're already dead."
+      "text": "In close quarters combat, watch for unusual breathing patterns in opponents - indicates fatigue or fear. Check shadows for additional assailants. Be wary of opponents with strange injury patterns - could indicate they're disease carriers or have unusual pain tolerance."
     },
     {
       "title": "Chapter 11: Survival Protocols",
-      "text": "Three rules for dungeon survival: 1) Never eat food that remembers being alive. 2) Never trust a door that apologizes. 3) Never follow the sound of your own voice calling from the dark. These rules have kept soldiers alive for generations. The soldiers who broke them are still here. Technically."
+      "text": "Three rules for dungeon survival: 1) Don't eat preserved food older than one season - risk of spoilage. 2) Don't enter chambers where the door frame shows forced entry - structural integrity questionable. 3) Don't follow voices you can't see the source of - acoustic tricks common in older sections."
     },
     {
       "title": "Chapter 15: Mental Fortitude",
-      "text": "The dungeon tests your mind as much as your body. Hallucinations are common. If you see your dead comrades, ignore them. If you see yourself, kill it before it sees you. If you see nothing at all for more than an hour, you're in the Void Halls. Start walking north. Never stop."
+      "text": "Long periods underground can cause disorientation. Keep a calendar. Mark your route. If you experience hallucinations, report to medical staff immediately - could be carbon monoxide from bad ventilation. The Void Halls have particularly poor air quality - travel through quickly."
     },
     {
       "title": "Appendix C: Emergency Procedures",
-      "text": "If you hear the bells toll thirteen times, you have approximately four minutes to reach consecrated ground. If you see a door marked with a red hand, do not open it—the hand marks those who opened it before. If you smell roses in the lower levels, hold your breath and run. The roses haven't existed for 80 years."
+      "text": "If alarm bells sound thirteen times, proceed to designated safe zones - indicates structural failure above. Avoid doors marked with red paint - these seal plague quarantine areas from old outbreaks. Report strange odors to maintenance - could indicate corpse flowers, which bloom near decomposing organic matter."
     },
     {
       "title": "Chapter 5: Weapon Maintenance",
-      "text": "Clean your blade after every encounter. Not for the blood—blood is temporary. Clean it for the memories. Weapons used in the dungeon remember what they've killed. A neglected blade starts cutting things you didn't aim at. Start cutting things you weren't thinking about. Start cutting things that aren't there yet."
+      "text": "Clean your blade after every use. Blood causes rust, and rust causes blade failure. Weapons used frequently may develop stress fractures - examine weekly. Blades that seem to cut unevenly may have developed microscopic damage. Replace before critical failure occurs."
     },
     {
       "title": "Chapter 9: Formation Fighting",
-      "text": "Shield wall drills are essential for coordinated defense. Keep your line tight. Trust your brothers. Watch your flanks. If a gap opens in the wall, close it immediately. If a gap opens and you can see yourself on the other side, the drill is over. You failed. We're sorry."
+      "text": "Shield wall drills require coordination and trust. Maintain proper spacing - gaps create vulnerabilities. If formation breaks, regroup at designated rally point. Practice these drills regularly. Muscle memory saves lives when you can't think clearly under stress."
     },
     {
       "title": "Chapter 13: Armor Care",
-      "text": "Inspect your armor daily for rust, cracks, and faces. Faces shouldn't be there, but sometimes they are—screaming mouths in the steel, weeping eyes in the rivets. This is normal for dungeon-forged armor. The faces are protective. They scream warnings. Listen to them. Never tell them to shut up."
+      "text": "Inspect armor daily for rust, cracks, and wear patterns. Dungeon humidity accelerates metal degradation. Unusual markings may indicate exposure to acidic substances - common near certain fungi. Strange patterns could also be mold growth in leather bindings. Clean thoroughly."
     },
     {
-      "title": "Chapter 19: Advanced Techniques",
-      "text": "The Seven Forms are the foundation of combat mastery. First Form: Strike. Second Form: Defend. Third Form: Counter. Fourth Form: [PAGES MISSING]. Seventh Form is forbidden. Those who learn it cannot unlearn it. They fight in their sleep. They fight their shadows. They fight the air until the air fights back."
+      "title": "Chapter 19: Advanced Techniques - PAGES MISSING",
+      "text": "The Seven Forms series. Forms one through three cover basic strike patterns. Forms four through six are detailed in the sealed archives - restricted training requires instructor supervision. Form seven is theoretical and not recommended for practical application due to injury risk."
     },
     {
       "title": "Appendix F: Supernatural Encounters",
-      "text": "When facing spectral opponents: silver does nothing, prayer does nothing, faith does less than nothing. What works: speaking their name incorrectly, wearing your clothes inside-out, carrying iron nails in your left boot. Why these work is classified. That they work is enough. Don't ask questions. The ghosts are listening."
+      "text": "When dealing with reported supernatural events: Document everything. Check for natural explanations first - gas leaks, mold spores, carbon monoxide all cause hallucinations. If phenomena persists, contact the ecclesiastical department. They maintain records of genuine anomalies versus environmental issues."
     }
   ],
   
   "scrawled_notes": [
     {
-      "text": "Day 3: Found a shortcut through the old wine cellar. Day 4: Used the shortcut again, saved ten minutes. Day 5: The shortcut is getting longer. Day 6: I've been walking the shortcut for three hours. I can see both ends but I can't reach either. Day 7:"
+      "text": "Day 3: Found a shortcut through the wine cellar. Day 4: Used it again, definitely faster. Day 5: Took longer than expected today, maybe I got turned around. Day 6: Pretty sure I took the same route but ended up somewhere different. Day 7: Getting my map redrawn."
     },
     {
-      "text": "The merchant in the west hall sells memories. Not memory aids—actual memories. For 5 gold you can remember being someone else. I bought a memory of sunshine. It was worth it. I bought another. And another. I can't remember who I was before the purchases. I'm not sure I want to."
+      "text": "There's a merchant in the west hall who sells old keepsakes. Got a locket yesterday that reminded me of my childhood. Weird how certain objects bring back memories so vividly. Paid good coin for it. Been going back for more. Starting to forget why I came here. But the memories are nice."
     },
     {
-      "text": "WARNING to future explorers: Do not trust the friendly ghost in corridor 7. She'll offer to guide you. She's very helpful. She'll get you exactly where you need to go. You won't like where you need to go. Her last words were an apology. They're still her last words. She's still saying them."
+      "text": "WARNING to maintenance crews: The woman in corridor 7 offering to guide people is not staff. She's wearing old uniform from decades ago. Probably just confused. Directs people to wrong locations. Ignore her and use your maps. Some of the older timers remember her from service but she should've retired years ago."
     },
     {
-      "text": "I've been keeping a tally of days on this wall. Today I noticed someone has been crossing them out. Just the Thursdays. Only the Thursdays are crossed out. I don't remember any Thursdays. Did I cross them out? Why only Thursdays? Why can't I remember Thursdays?"
+      "text": "Been marking days on my wall. Today noticed some marks are crossed out - only the Thursday marks. Don't remember crossing them out. Roommate says I do it in my sleep sometimes. Should probably get more rest. Haven't been sleeping well lately."
     },
     {
-      "text": "Found a room full of mirrors today. My reflection waved at me. I didn't wave back. Smart. It's trying to be friendly. Making me trust it. But I've seen what happens when you trust your reflection here. Mirror-Thompson still walks the halls, but Thompson is gone. Stay suspicious. Stay alive."
+      "text": "Found a room full of mirrors today. My reflection seemed to move oddly - probably just cheap mirrors with warped glass. Thompson mentioned he saw the same thing. We're avoiding that room. The light is bad in there anyway. Makes you dizzy."
     },
     {
-      "text": "NOTICE: The stairs to the lower levels only appear on Tuesdays. They vanish at midnight. If you're still on them when they disappear, you fall into the space between floors. We can still hear the last expedition down there. They're begging for Tuesdays. It's Saturday."
+      "text": "NOTICE: The stairwell to lower levels only opens on Tuesdays - mechanical lock issue. Maintenance working on it. If you get stuck in the stairwell when it closes, there's an emergency bell pull on the third landing. Wait for rescue crew."
     },
     {
-      "text": "The paintings in the portrait gallery are developing opinions. They critique each other. They gossip about visitors. Yesterday one asked me for help escaping its frame. I said no. This morning it was empty. The subject is loose somewhere. The frame is grateful."
+      "text": "The paintings in the portrait gallery need cleaning. The subjects look different through all the dust and grime. Several frames are empty - paintings probably removed for restoration. One appeared to be gone yesterday but was back this morning. Need to check with curator."
     },
     {
-      "text": "To whoever finds this: The fountain in the south courtyard grants wishes. Real wishes. I wished for gold. Got gold. Wished for health. Got healthy. Wished to understand the dungeon. Now I understand. Now I can't stop understanding. The fountain is still offering wishes. Don't. Please don't."
+      "text": "Tried wishing at the fountain in the south courtyard - old tradition apparently. Tossed in a coin. Interesting place. Old architecture. Makes you think about the people who built this place. What they must have been like. What they wanted. Got distracted and lost an hour just thinking."
     },
     {
-      "text": "Found a chess set in the abandoned barracks. The pieces move on their own. They're playing a game that started 80 years ago. Black is winning. White has been in check for three decades. If black wins, something happens. The pieces won't say what. They just keep playing."
+      "text": "Found a chess set in the abandoned barracks. Pieces are positioned mid-game. Must've been someone's game from years ago. Left it as is - seems disrespectful to disturb it. Though I swear the pieces have moved slightly each time I've walked past. Probably just vibration from foot traffic."
     },
     {
-      "text": "List of safe places: The library (Tuesdays only). The kitchen (avoid the stew). The barracks (if you don't mind company from the walls). Nowhere else. Trust this list. I've survived here for six months by following it. The list updates itself. I don't update it. Yesterday it added 'The Mirror Hall' and I know that's wrong. The list might be compromised."
+      "text": "List of good patrol routes: Library wing (quieter during weekdays). Kitchen area (always warm, good for breaks). Barracks section (well-lit). Avoid the mirror hall - poor visibility. This list is from old guard manual. Someone added notes in margin - can't read the handwriting but seems like good advice."
     }
   ],
   
   "pressed_pages": [
     {
-      "text": "From 'The Botanical Treatise of Dead Gardens': The thornvines in the deep archives are carnivorous, certainly, but that's not what makes them dangerous. They're literate. They read everything they catch. After 400 years of consuming scholars, they know more than most libraries. They'll answer questions if you feed them. Preferably someone else."
+      "text": "From 'The Botanical Treatise': The thornvines in the deep archives show unusual growth patterns - possibly carnivorous based on trap-like leaves. They've been there for centuries according to records. Interesting how they've adapted to the low-light environment. Study samples need approval from head botanist."
     },
     {
-      "text": "Catalog entry 447-B: The singing flowers of the Thorn Archive produce beautiful harmonies when properly watered. Water requirements: one part rainwater, two parts tears, three parts blood. The blood must be voluntary. The flowers can tell the difference. They always tell the difference."
+      "text": "Catalog entry 447-B: The red flowers in the Thorn Archive produce interesting harmonies when disturbed by airflow. Musical qualities documented. Care requirements include regular watering schedule and occasional fertilization. Blood meal fertilizer produces strongest blooms - standard for this species."
     },
     {
-      "text": "Research log, Dr. Holloway: The preserved pages in the living hedges contain knowledge lost to fire and time. The hedges remember books that were never written. Poems that were never composed. My assistant claims they contain his obituary, dated next Tuesday. I told him not to worry. It's probably just one of the unwritten poems."
+      "text": "Research log, Dr. Holloway: The pressed page collection in the archives contains remarkable historical specimens. Some species no longer grow in this region. Several samples are from books destroyed in the great fire. My assistant Merchant mentioned finding pages that aren't in our catalog. Will need to cross-reference with the historical database."
     },
     {
-      "text": "Entry from the Botanist's Journal: Specimen 47 - A flower from the northern gardens. Petals don't wilt. Stem continues growing. After three months, specimen has filled seven rooms. After six months, it has grown into the past. I can see it in my childhood memories now. It was always there."
+      "text": "Entry from Botanist's Journal: Specimen 47 - Red petals, unknown species from northern gardens. Exhibits unusual growth rate - three times normal. After three months, specimen has spread to seven pots. Root structure suggests aggressive colonization behavior. May need to limit to isolated greenhouse."
     },
     {
-      "text": "Letter fragment pressed into page: '...cannot return home. The path remembers me but refuses to let me leave. I walk toward the exit but end up deeper inside. Mother, if you find this, don't come looking. The dungeon collects families. I've met three versions of Father here. None of them remember...'"
+      "text": "Letter fragment pressed into page: '...having trouble finding the way back. These corridors all look the same. Mother, if you find this, I may be late getting home. The exit signs are confusing. I've been walking in circles. Three others are lost too. We're staying together for now...'"
     },
     {
-      "text": "Recipe card, corners burnt: 'Dungeon Bread: Use flour from the cursed millstone. Add water from the weeping well. Knead for three hours or three days (time varies by room). Bake until golden or until it screams. Serves six. Or twelve. Or none. Bread may achieve consciousness during cooling. Discourage this.'"
+      "text": "Recipe card, corners burnt: 'Dungeon Bread: Use stone-ground flour from the eastern mill. Add spring water. Knead for three hours minimum. Bake until golden brown. Cooking time varies by oven temperature. Makes excellent field rations. Bread stays fresh for weeks if properly stored.'"
     }
   ],
   
   "surgeons_notes": [
     {
-      "text": "Patient 23: Symptoms include chalk dust in the lungs, alabaster bones, and hardening of the major organs. Treatment: none effective. Patient claims to feel lighter each day. Patient claims to feel nothing at all. Patient is becoming a statue. Patient doesn't seem to mind."
+      "text": "Patient 23: Unusual symptoms - dust inhalation from Alabaster Ward. Lung irritation, mild calcification of extremities. Probably silica exposure. Treatment: rest, fluids, steam therapy. Patient reports feeling 'heavy' - likely fluid retention. Monitor for pneumonia. Prognosis good with proper rest."
     },
     {
-      "text": "Medical observation: The dust in the Alabaster Ward is not inert mineral. It's the powdered remains of the plague victims sealed in the walls. When inhaled, it remembers being human. It wants to be human again. It will use whatever materials are available. Recommend immediate evacuation."
+      "text": "Medical observation: The dust in the Alabaster Ward has high mineral content - likely pulverized limestone from old construction. Prolonged exposure causes respiratory issues. Recommend masks for anyone working in that area. Several cases of chronic cough reported. Improved ventilation needed."
     },
     {
-      "text": "Autopsy report: Cause of death determined to be 'becoming marble.' Subject's last words were 'I can see forever.' Subject's eyes had turned to polished stone. Subject's eyes are still watching. Recommend cremation. Recommend it urgently."
+      "text": "Autopsy report: Patient deceased from advanced lung disease. Years of dust exposure in the quarry district. Significant calcification in lung tissue. Recommend better safety equipment for workers. Patient's final words indicated difficulty breathing - consistent with obstruction. Recommend improved dust control protocols."
     },
     {
-      "text": "Surgical log, Dr. Vance: Attempted to remove the crystalline growths from Patient 89's chest cavity. Crystals regenerate faster than I can cut. Patient is conscious throughout. Patient is singing. The crystals are making her sing. She's begging me to stop but her mouth keeps singing. Abandoning procedure."
+      "text": "Surgical log, Dr. Vance: Attempted to remove crystalline growths from Patient 89. Formations are calcium deposits, possibly from mineral-rich water. Patient conscious and talkative during procedure - said she's been drinking from the eastern wells. Those wells need testing. Growth rate concerning."
     },
     {
-      "text": "Case study: The Petrification Plague spreads through eye contact with infected stone. Victims report feeling 'heavy' before symptoms manifest. Advanced stages: skin hardens, joints lock, thoughts slow to geological pace. Terminal stage: patient achieves complete petrifaction. Cure: none discovered. Prevention: avoid the Marble Gallery."
+      "text": "Case study: Several cases of severe dermatitis in workers from the Marble Gallery. Skin hardens over time - possibly due to chemical exposure from cleaning agents used on the stone. Recommend protective gear. Condition progresses slowly - early cases show full recovery with proper treatment and job rotation."
     },
     {
-      "text": "Medical transcript: 'Doctor, I can taste colors now. The red tastes like screaming. The blue tastes like drowning. I tried to tell the nurses but they're all purple and purple tastes like forgetting. I'm forgetting how to be meat. The walls are teaching me to be stone. They're very patient teachers.'"
+      "text": "Medical transcript: 'Doctor, I've been experiencing synesthesia lately. Colors seem to have tastes. It's disorienting. I work in the dye district - possibly exposure to the chemicals. Blue dye in particular has a strong smell. The purple dye makes me nauseous. Need to switch departments for a while.'"
     }
   ],
   
   "puzzle_notes": [
     {
-      "text": "The Riddle Mill's logic gates were designed by the mathematician Erasmus Cogworth. He went mad trying to create a machine that could think. He succeeded. The machine thinks constantly. It thinks about grinding. It thinks about weight. It thinks about bones. The flour it produces is not flour."
+      "text": "The Riddle Mill's mechanism was designed by Engineer Cogworth. Complex gear system powers the grinding stones. Original purpose was grain milling. Now used as training puzzle for recruits. The machinery makes unsettling sounds - probably needs oil. The flour it produces is for demonstration only, not consumption."
     },
     {
-      "text": "Solution to the Millstone Puzzle: Turn the wheel thrice counter-clockwise, answer the stone's question truthfully, and offer something precious. The stone asks different questions to different people. It asked me what I feared most. I lied. The stone knew. I don't have hands anymore. Don't lie to the stone."
+      "text": "Solution to Millstone Puzzle: Turn wheel counter-clockwise three times. Answer prompt requires knowledge of local history. Final step involves placing token in slot. Puzzle rewards are purely ceremonial. Note: Mechanism is old and temperamental. Follow instructions exactly or it may jam."
     },
     {
-      "text": "The Lock Mechanism Treatise: The combination lock in the vault has infinite digits. Each digit is the answer to a mathematical proof. The proofs get progressively harder. Digit 47 requires understanding topology in eleven dimensions. Digit 83 asks you to prove you exist. I can't. I failed digit 83."
+      "text": "Lock Mechanism Treatise: The combination lock in the vault uses advanced mathematics. Each digit is based on sequential problem solving. Created by master locksmith Klaus Svensson. Digit 47 requires understanding of complex geometry. Most people get stuck around digit 83. Instruction manual available in security office."
     },
     {
-      "text": "Cipher key found in the Archive: The encrypted texts use a substitution cipher where each letter represents a concept rather than a sound. 'A' means regret. 'T' means inevitable. When decoded, every text says the same thing. You don't want to know what it says. I decoded it anyway. It was right."
+      "text": "Cipher key found in Archive: Encrypted texts use substitution cipher. Each symbol represents a word or concept rather than letter. Decoding requires cross-referencing with the master lexicon. Most decoded texts are old administrative records. Fascinating look at how the dungeon was organized centuries ago."
     }
   ],
   
   "star_charts": [
     {
-      "text": "Astronomical notation: The reflected stars in the Stargazer's Sump do not match any known constellations. They match constellations that will exist in 10,000 years. The water isn't reflecting the sky. It's reflecting the future. Former astronomer Hale stared too long. Now he knows when he'll die. He won't tell us the date. He doesn't have to. We can see it in his eyes."
+      "text": "Astronomical notation: The reflected stars in the Stargazer's Pool show unusual patterns. They don't match current night sky - possibly due to the angle and underground positioning. Scholar Hale spent years studying the phenomenon. His notes indicate the reflections show seasonal star patterns from different months. Optical illusion, probably."
     },
     {
-      "text": "Navigation chart, marked 'FORBIDDEN': The stars in the underground planetarium show safe routes through the dungeon. Follow the North Star to safety. Follow the Red Star to treasure. Do not follow the Black Star. The Black Star isn't on the charts. If you can see the Black Star, it can see you. It's always been able to see you."
+      "text": "Navigation chart: The stars in the underground planetarium are painted markers showing safe routes through dungeon. Red star indicates treasure vaults. North star points to surface exit. Black marks show dangerous areas. Standard dungeon navigation system from the old days. Still useful if you know how to read it."
     },
     {
-      "text": "Celestial observations, Dr. Vess: The constellation above the courtyard changes position every hour, but the hour hand on my watch hasn't moved in three days. The stars spell out words in a language I don't recognize. Yesterday I recognized one word. Today I recognize three. Tomorrow I'll understand the whole sentence. I'm afraid of what it will tell me to do."
+      "text": "Celestial observations, Dr. Vess: The constellation painted on the courtyard ceiling rotates slowly - mechanical device built into the roof. Cycles through twelve positions representing months. Paint has faded making it hard to read. The text describes safe travel times through various seasons. Need restoration work done."
     },
     {
-      "text": "Star map fragment: The wandering star that appears only on solstices isn't a star. It's the eye of something vast looking through a hole in reality. When you wish upon it, it wishes back. Former astrologer Kepler made a wish. It came true. Then the star's wish came true. We don't know what it wished for. Kepler won't say. He can't stop smiling."
+      "text": "Star map fragment: The wandering light that appears during solstices is actually a reflected torch from the upper level guardian's tower. Creates interesting optical effect through the shaft. Old legend says wishing on it brings luck. Mostly just tradition now. Still, harmless fun for the recruits."
     }
   ],
   
   "cracked_map_scraps": [
     {
-      "text": "Partial dungeon map, water-damaged. Shows three corridors that shouldn't connect. Shows a room labeled 'You Are Here' in a section you've never visited. Shows your name written in the margins in handwriting that looks like yours but isn't quite right. Previous owner unknown. Previous owner probably still here somewhere."
+      "text": "Partial dungeon map, water-damaged. Shows three corridors that connect oddly - probably due to multiple renovation phases over the centuries. 'You Are Here' mark looks like someone's personal notation. Handwriting in margins doesn't match the printed text. Previous owner's notes, maybe from a guard who worked here."
     },
     {
-      "text": "Fragment of a dungeon chart. The scale keeps changing—one inch equals ten feet in the upper corner, but one inch equals a mile at the bottom. The rooms are drawn in different hands. Some in ink. Some in blood. One in what appears to be charcoal, with the note: 'Drawn in the dark. Could not find light. Could not find exit. Could not find myself.'"
+      "text": "Fragment of dungeon chart. The scale changes because multiple maps were spliced together - different surveyors used different measurements. Some sections in ink, others in charcoal. One corner has note: 'Surveyed in darkness due to broken lantern. Measurements approximate. Need to redo this section.'"
     },
     {
-      "text": "Torn section of a floor plan. Rooms are labeled with warnings: 'SINGING WALLS—cover ears', 'BACKWARDS DOOR—do not exit', 'MIRROR HALL—close your eyes'. The last room on the map is labeled 'SAFE ROOM' with seventeen question marks after it. Someone has crossed out 'SAFE' and written 'HUNGRY' above it."
+      "text": "Torn floor plan section. Rooms labeled with warnings: 'Singing Walls - echo chamber', 'Backwards Door - hinges on wrong side', 'Mirror Hall - poor lighting'. Last room says 'Safe Room' with question marks. Someone crossed out 'Safe' and wrote 'Needs Inspection' - probably found structural issues."
     },
     {
-      "text": "Crude map scratched onto parchment. The compass rose points in five directions. North is marked twice. A dotted line traces a path through the dungeon, then circles back on itself, then continues through walls. At the bottom, scrawled in shaky letters: 'I've been walking for three days. I'm back where I started. The rooms are different but the same. Don't trust the map. Don't trust the walls.'"
+      "text": "Crude map scratched on parchment. The compass rose has five directions marked - whoever drew this was probably confused about orientation. Dotted line traces a route that loops back. Bottom reads: 'Walked for three days surveying. Got turned around. Some rooms look identical. Need better landmarks. Don't trust my counting.'"
     },
     {
-      "text": "Scrap of an explorer's map. Certain rooms have symbols next to them: skulls, hourglasses, broken chains. You recognize some of the rooms you've already visited, but the symbols don't match what you found there. At the edge of the map, a notation reads: 'Map changes when you're not looking. Rooms migrate. Doors lie. Trust nothing. Especially this map.'"
+      "text": "Explorer's map scrap. Rooms marked with symbols - skulls for danger, hourglasses for time-sensitive tasks, chains for locked areas. Doesn't match what I've found but map is decades old. Things change. Note on edge: 'Map becomes outdated quickly. Renovations constant. Double-check any route before committing.'"
     },
     {
-      "text": "Architect's blueprint, heavily creased: The dungeon was designed with non-Euclidean geometry. Corridors that should be parallel intersect. Staircases lead up to lower floors. The architect's note: 'Client requested impossible structure. Delivered exactly that. Building permits reality optional. Do not recommend for residential use.'"
+      "text": "Architect's blueprint, heavily worn. The dungeon was designed with experimental geometry - architect wanted to maximize space usage. Some corridors intersect at odd angles. Staircase placement is unconventional. Architect's note: 'Client wanted maximum capacity in limited space. Design pushes structural limits. Recommend regular inspections.'"
     },
     {
-      "text": "Survey map from the Cartographer's Guild: This dungeon has 47 floors. This dungeon has 4 floors. This dungeon has 470 floors. All measurements are accurate. The Guild has dissolved. The lead cartographer last seen walking into a wall that both existed and didn't. His final report: 'Space is negotiable here.'"
+      "text": "Survey from Cartographer's Guild: Discrepancy report - measurements don't match between survey teams. Possibly due to equipment calibration differences. Some teams report 47 floors, others report 4 major levels with sub-levels. Need standardized measurement protocol. Lead cartographer retired after project. Recommend resurvey with modern equipment."
     },
     {
-      "text": "Treasure map marked with an X: 'Dig here for riches beyond measure.' Someone has written below: 'Dug for three hours. Found another map. That map led to another map. Forty-seven maps deep now. Just found a map of my own room at home. The X is on my bed. I'm afraid to go back.'"
+      "text": "Treasure map marked with X. 'Dig here' it says. Looks like a prank - someone doodling on official survey maps. Multiple X marks all over. Some bored guard probably drew this during a slow shift. Found similar joke maps in the archives. People get creative during long assignments."
     },
     {
-      "text": "Topographical map showing elevation changes: Level 1 is at sea level. Level 2 is at 500 feet above sea level. We're underground. These numbers are impossible. Former surveyor Brass tried to reconcile the data. He proved mathematically that the dungeon doesn't exist. The dungeon disagreed. Brass no longer exists. The dungeon remains."
+      "text": "Topographical map with elevation markers. Shows odd readings - Level 1 at sea level, Level 2 somehow reads higher despite being underground. Probably equipment malfunction during survey. Previous surveyor noted discrepancies. Recommend new survey with calibrated instruments. These old readings are unreliable."
     },
     {
-      "text": "Hand-drawn map on human skin (origin unknown): Routes marked in scar tissue. 'Path of Echoes' leads to screaming. 'Silent Corridor' screams louder. 'The Forgetting Path' - description missing, probably forgot it. At the center: 'The Room That Waits.' The skin is still warm. Still growing new routes. Still remembering."
+      "text": "Hand-drawn map on parchment. Routes marked in different colors. 'Echo Corridor' noted for acoustic issues. 'Silent Hall' requires quiet for some reason. 'Forgetting Path' - probably just a nickname, maybe officers called it that because it was forgettable. Center shows 'Administration Office'. Standard layout notation."
     }
   ],
   
   "old_letters": [
     {
-      "text": "My dearest Elena, I write this knowing you may never read it. The dungeon grows stranger each day. The walls shift when we're not looking. Yesterday's corridors are gone today. But I wanted you to know: I think of you with every step. Your smile keeps me sane when nothing else here makes sense. If I don't return, know that you were my last true thought. -Marcus"
+      "text": "Dear Elena, I'm writing to let you know I arrived safely at my new post. The dungeon guard work is harder than expected. Corridors all look similar and I keep getting turned around. But the pay is good and I'm getting used to it. Think of you often. Will write again next week. -Marcus"
     },
     {
-      "text": "To whoever finds this: I came here seeking treasure. I found something far more valuable - the knowledge of what I've lost. My family, my home, my name. The dungeon takes memories as payment for passage. I can barely remember why I came. But I remember this: don't follow me. - A name you can't quite read, already fading"
+      "text": "To my family: Made it to the dungeon looking for work. Found employment with the mining crew. Pay is better than farmwork back home. Food isn't great but beats being hungry. Miss everyone. Will send money home when I can. Tell mother I'm eating well. -Your son"
     },
     {
-      "text": "Father, I'm sorry I left without saying goodbye. The debts were too great, the shame too heavy. I thought the dungeon's treasures could solve everything. I was wrong. The only treasure here is understanding what truly mattered. By the time you read this, I'll be deeper than words can follow. Tell mother I love her. -Your son (the name is blurred by tears)"
+      "text": "Father, I'm sorry I left without saying goodbye. The debt collectors were getting aggressive and I didn't want trouble to reach the family. Took work in the dungeon - dangerous but pays well. Should have enough to clear the debt in a few months. Will write when I can. -Thomas"
     },
     {
-      "text": "My friend, if you're reading this, I'm likely gone. The expedition was doomed from the start. Captain Morris knew - I saw it in his eyes. We walked into this dungeon like it was just another cave. Now I know: it's alive. It watches. It learns. It remembers everyone who enters. Including you. Leave while it still lets you. -Thomas, Third Explorer's Guild"
+      "text": "Dear Brother, expedition is going well so far. Captain Morris seems competent. We've mapped about half the eastern wing. Some areas are unstable - old construction settling. Planning to finish survey next week and head back. Food supplies holding up. See you soon. -William"
     },
     {
-      "text": "Dear Sarah, I know you told me not to go. You were right. You're always right. The fortune I sought would have meant nothing compared to the mornings with you. The dungeon shows you what you've lost. Every empty room echoes with might-have-beens. I see our future in the shadows - the life we could have had. I'm sorry. I'm so sorry. -William"
+      "text": "Dearest Sarah, you were right about this being dangerous work. Had close call yesterday - ceiling collapse in the north passage. No one hurt thankfully. Makes you appreciate solid ground. Contract is for six more months then I'm coming home. We'll have enough saved for the house by then. -Jonathan"
     },
     {
-      "text": "To the Warden: This dungeon is not a prison. It's a test. Those who enter leave something behind - courage, hope, memory, identity. I entered with a company of twenty. Now I can only remember seven names, including my own. Soon I'll forget why I'm writing this. But I wanted to document: the dungeon isn't keeping us. We're keeping ourselves. -Warden's Predecessor"
+      "text": "To the Warden: I'm requesting transfer to different section. Current assignment has me rotating through too many areas and I keep losing track of where I'm supposed to be. Would prefer stable posting in one wing. Getting disoriented by constant route changes. Please consider. -Previous Guard Captain"
     },
     {
-      "text": "My beloved, I found your letter from ten years ago today. You wrote that you'd wait for me. But this is dated next year. The dungeon plays tricks with time. I don't know if you're waiting in my past or my future. I don't know which direction is home anymore. But I know this: I'm still coming back. Eventually. Somehow. Wait for me. -Jonathan"
+      "text": "My beloved, your letter from last month finally reached me. Mail delivery down here is slow. I'm doing well, just tired. Long shifts. The work is monotonous but safe enough if you follow procedures. Counting the days until I can come home. Miss you. -Marcus"
     },
     {
-      "text": "Brother, the monastery was wrong about this place. They said it was cursed by demons. It's not cursed. It's honest. It shows you the truth of yourself. Most people can't handle that truth. I've seen my own reflection here - all the cruelty, selfishness, and fear I've hidden behind prayers. The dungeon doesn't judge. It just reveals. Maybe that's worse. -Brother Augustine"
+      "text": "Brother Augustine, the monastery was correct that this place tests one's faith. Lots of time alone with your thoughts down here. The isolation is challenging. I've been keeping prayer journals. Helps maintain perspective. Will finish my service contract and return to the order soon. -Brother Thomas"
     },
     {
-      "text": "To my past self: Don't enter this dungeon. I know you won't listen. I didn't. But I had to try. You think you're strong enough. You think you're clever enough. You're neither. None of us are. The only ones who escape are those who lose enough of themselves to fit through the cracks. I can't remember your face anymore. -Future you (you won't recognize the handwriting)"
+      "text": "To my future self: Remember to bring better boots next assignment. The stone floors are hell on feet. Also, bring more lamp oil. They never give you enough. Map out your routes early. Don't rely on signage - half of it is outdated. Trust the senior guards. They know the real layout."
     },
     {
-      "text": "My darling daughter, by now you must be grown. Twenty years I've been in here, or so my tally marks say. But the scars on my hands are from last week, and they look decades old. Time doesn't flow right here. I may emerge to find you elderly, or not yet born. Either way, know this: every moment in this nightmare, I survived because I had you to return to. -Papa"
+      "text": "My daughter, by the time you read this I'll have been working in the dungeon for twenty years. Time passes strangely down here - days blend together. I kept this journal so I wouldn't forget why I came. The pay let us afford your schooling. Worth every hour. Coming home soon. -Papa"
     },
     {
-      "text": "Dear Reader, I write this as both warning and apology. I hid treasures in this dungeon - real treasures, not the dungeon's tricks. I thought it would make me legendary. Instead it made me bait. Everyone who seeks my treasure feeds the dungeon. You're feeding it now. I'm sorry. I was young and stupid and I doomed so many. The treasure is real. The cost is realer. -The Fool of Fletcher's Point"
+      "text": "Dear Reader, I hid my personal savings in the dungeon before retiring - old guard tradition. Left clues for my family to find it. Seemed like fun at the time. Now I realize how confusing the layout is. If you're reading this and you find coins, they're probably mine. Consider it a lucky find. -Retired Guard Hadley"
     },
     {
-      "text": "To whom it may concern: This is my resignation from the Explorer's Guild. I can no longer guide expeditions into this place. Not after what I've seen. Not after what I've become. The dungeon changes you. Not your body - your certainty. I used to know the difference between memory and dream. Now everything feels like both. I quit. I'm going home. If I can remember where that is. -Guild Master Petra"
+      "text": "To the Explorer's Guild: I'm resigning from dungeon guide service. After fifteen years I need a change. The work is repetitive and the lack of sunlight is affecting my health. Thank you for the opportunity. Will help train my replacement before leaving. Best wishes. -Guild Master Petra"
     }
   ],
   
   "prayer_strips": [
     {
-      "text": "Prayer to the Silent God: 'We pray in whispers because You listen in silence. We offer our fears because You consume them. We ask for nothing because You give the same.' The ink changes color when read aloud. Former priest Matthias read it aloud. The prayer answered. He hasn't stopped screaming prayers since."
+      "text": "Prayer for Safe Travel: 'May the path be clear and the journey swift.' Traditional blessing recited by guards before patrol. Simple ritual. Morale booster more than anything. Old tradition from when the dungeon first opened. Still practiced by some of the older staff."
     },
     {
-      "text": "Blessing of Safe Passage: 'May your path be straight, your steps be sure, your destination be certain.' Travelers who carry this prayer never get lost. They arrive exactly where they're meant to be. Not always where they want to be. The dungeon knows the difference."
+      "text": "Blessing of Safe Passage: 'Guide us straight and true.' Short prayer often carved into lintels above doorways. Architectural tradition from the builders. Similar carvings found throughout the older sections. Provides sense of continuity with the past."
     },
     {
-      "text": "Rite of Remembrance: 'Remember those who came before. Remember those who remain. Remember those who never were.' The names written below change every time you look away. Some names you recognize. Some names recognize you back. One name is always yours. It wasn't there yesterday."
+      "text": "Rite of Remembrance: 'Honor those who came before.' Memorial service held monthly for guards who've retired or passed away. List of names read aloud. Dignified ceremony. Names engraved on memorial wall in the main hall. Good for morale to remember our history."
     },
     {
-      "text": "Invocation of Protection: 'Shield us from what watches, guard us from what waits, deliver us from what knows our names.' The prayer works. Something does guard you. Something does shield you. You've never seen what it shields you from. You've heard it. Right behind the thing protecting you."
+      "text": "Invocation of Protection: 'Shield us from harm, guide us from danger, bring us home safely.' Standard prayer recited at start of shift. Like a soldier's oath. Reminds everyone to watch out for each other. Simple but effective for team cohesion."
     },
     {
-      "text": "Litany of Clarity: 'Grant us clear sight to see truth, clear mind to know truth, clear voice to speak truth.' Those who recite this prayer see things as they truly are. Most go blind within minutes. Not physically. They close their eyes and refuse to open them. They've seen enough truth."
+      "text": "Litany of Clarity: 'Grant us clear sight and clear mind.' Popular among scholars and researchers. Helps focus before long study sessions. Also used by guards for maintaining alertness during boring overnight shifts. Common enough to be almost a secular tradition now."
     },
     {
-      "text": "Hymn of the Depths: 'From darkness we came, to darkness we go, in darkness we find what we already know.' Sung by the choir in the abandoned chapel. The choir has been dead for decades. The singing continues. New voices join every week. Some are familiar. Some are your own from tomorrow."
+      "text": "Hymn of the Depths: 'From darkness to darkness, in darkness we work.' Sung by the old mining crews. Melancholy but honest about the working conditions. Tradition carried on by some of the veteran staff. Reminds us we're all in this together, working in the dark."
     },
     {
-      "text": "Supplication for Mercy: 'We are small. We are weak. We are insignificant. Please remember this.' The dungeon accepts this prayer. It does remember. It treats you accordingly. Former knight Sir Rothland prayed for strength instead. The dungeon remembered that too. We found his armor. Still occupied. Still walking. Still strong. No longer human."
+      "text": "Supplication for Mercy: 'We are small and weak before great forces. Remember our humanity.' Used in formal religious ceremonies. Humility prayer. Standard in most traditional faiths. Written in old language but translated versions are common."
     },
     {
-      "text": "Chant of Unseeing: 'What we do not see cannot see us. What we do not name cannot name us. What we do not know cannot know us.' Those who chant this become invisible to certain entities. And to certain realities. And eventually to themselves. We can still hear them chanting. They've forgotten why."
+      "text": "Chant of Unseeing: 'What we overlook holds no power over us.' Meditation mantra used by some guards to deal with stress. Philosophy being that overthinking dangers makes them worse. Focus on the work at hand, don't imagine problems that aren't there. Practical approach."
     },
     {
-      "text": "Prayer of Last Resort: 'When all hope is gone, when all paths are closed, when all light is extinguished, we call upon—' The rest is burned away. Every copy ends the same way. Some say finishing the prayer summons help. Others say it summons something that thinks it's helping. No one who's finished the prayer can confirm which."
+      "text": "Prayer of Last Resort: 'When all hope fails, when all paths close, when darkness falls, we call upon—' Text is damaged. Last line missing. Old prayer probably from the founding era. Academic interest only. Most guards prefer simpler, complete prayers."
     },
     {
-      "text": "Devotional of the Endless Vigil: 'We watch what sleeps. We guard what dreams. We maintain what must never wake.' The temple guards recited this every hour. Then the shifts got longer. Then the guards stopped leaving. Then the guards stopped being guards. Now they're part of what they were watching. Still vigilant. Still devoted. No longer themselves."
+      "text": "Devotional of the Endless Vigil: 'We watch, we guard, we maintain.' Motto of the Silent Watch - elite guard unit that handles restricted areas. They take vows of minimal speaking to maintain focus. Serious about security. Respected but considered a bit extreme by regular staff."
     }
   ]
 }
-
