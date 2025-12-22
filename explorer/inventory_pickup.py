@@ -55,58 +55,70 @@ class InventoryPickupManager:
             self.game.log(f"The {container_name} is locked! You need a Lockpick Kit to open it.", 'system')
             return
         
-        # Mark container as searched immediately when opened
+        # Check if this is first time opening container
+        first_time_opening = not self.game.current_room.container_searched
+        
+        # Mark container as searched
         self.game.current_room.container_searched = True
         
-        # Track containers searched stat
-        self.game.stats["containers_searched"] += 1
-        
-        # Increment chests opened counter (containers count as chests)
-        self.game.chests_opened += 1
+        # Track stats only on first opening
+        if first_time_opening:
+            self.game.stats["containers_searched"] += 1
+            self.game.chests_opened += 1
         
         container = self.game.container_definitions[container_name]
         loot_table = container["loot_table"]
         weights = container["weights"]
         loot_pools = container["loot_pools"]
         
-        # Roll for loot - can get gold, item, both, or nothing
-        # Adjusted weights: 15% nothing, 35% gold only, 30% item only, 20% both
-        loot_roll = random.random()
-        
-        found_gold = 0
-        found_item = None
-        
-        if loot_roll < 0.15:
-            # Nothing
-            pass
-        elif loot_roll < 0.50:
-            # Gold only
-            gold_data = loot_pools.get("gold", {"min": 5, "max": 15})
-            found_gold = random.randint(gold_data["min"], gold_data["max"])
-            self.game.stats["gold_found"] += found_gold
-        elif loot_roll < 0.80:
-            # Item only
-            # Pick a random loot category (excluding "gold" and "nothing")
-            item_categories = [cat for cat in loot_table if cat not in ["gold", "nothing"]]
-            if item_categories:
-                category = random.choice(item_categories)
-                item_pool = loot_pools.get(category, [])
-                if item_pool:
-                    found_item = random.choice(item_pool)
-                    self.game.stats["items_found"] += 1
+        # Check if container already has rolled contents (player re-opened it)
+        if self.game.current_room.container_gold > 0 or self.game.current_room.container_item is not None:
+            # Use existing contents
+            found_gold = self.game.current_room.container_gold
+            found_item = self.game.current_room.container_item
         else:
-            # Both gold and item
-            gold_data = loot_pools.get("gold", {"min": 5, "max": 15})
-            found_gold = random.randint(gold_data["min"], gold_data["max"])
-            self.game.stats["gold_found"] += found_gold
+            # Roll for loot - can get gold, item, both, or nothing
+            # Adjusted weights: 15% nothing, 35% gold only, 30% item only, 20% both
+            loot_roll = random.random()
             
-            item_categories = [cat for cat in loot_table if cat not in ["gold", "nothing"]]
-            if item_categories:
-                category = random.choice(item_categories)
-                item_pool = loot_pools.get(category, [])
-                if item_pool:
-                    found_item = random.choice(item_pool)
-                    self.game.stats["items_found"] += 1
+            found_gold = 0
+            found_item = None
+            
+            if loot_roll < 0.15:
+                # Nothing
+                pass
+            elif loot_roll < 0.50:
+                # Gold only
+                gold_data = loot_pools.get("gold", {"min": 5, "max": 15})
+                found_gold = random.randint(gold_data["min"], gold_data["max"])
+                self.game.stats["gold_found"] += found_gold
+            elif loot_roll < 0.80:
+                # Item only
+                # Pick a random loot category (excluding "gold" and "nothing")
+                item_categories = [cat for cat in loot_table if cat not in ["gold", "nothing"]]
+                if item_categories:
+                    category = random.choice(item_categories)
+                    item_pool = loot_pools.get(category, [])
+                    if item_pool:
+                        found_item = random.choice(item_pool)
+                        self.game.stats["items_found"] += 1
+            else:
+                # Both gold and item
+                gold_data = loot_pools.get("gold", {"min": 5, "max": 15})
+                found_gold = random.randint(gold_data["min"], gold_data["max"])
+                self.game.stats["gold_found"] += found_gold
+                
+                item_categories = [cat for cat in loot_table if cat not in ["gold", "nothing"]]
+                if item_categories:
+                    category = random.choice(item_categories)
+                    item_pool = loot_pools.get(category, [])
+                    if item_pool:
+                        found_item = random.choice(item_pool)
+                        self.game.stats["items_found"] += 1
+            
+            # Store contents on room so they persist if not taken
+            self.game.current_room.container_gold = found_gold
+            self.game.current_room.container_item = found_item
         
         # Show container contents submenu
         self.show_container_contents(container_name, found_gold, found_item)
@@ -227,6 +239,7 @@ class InventoryPickupManager:
         # Don't increment stats["gold_found"] - already counted in search_container
         self.game.log(f"Collected {amount} gold!", 'loot')
         self.game.current_container_gold = 0
+        self.game.current_room.container_gold = 0  # Remove from room storage
         # Refresh the container display with updated contents
         self.show_container_contents(self.game.current_container_name, self.game.current_container_gold, self.game.current_container_item)
     
@@ -235,6 +248,7 @@ class InventoryPickupManager:
         item_name = self.game.current_container_item
         self.game.try_add_to_inventory(item_name, "container")
         self.game.current_container_item = None
+        self.game.current_room.container_item = None  # Remove from room storage
         # Refresh the container display with updated contents
         self.show_container_contents(self.game.current_container_name, self.game.current_container_gold, self.game.current_container_item)
     
@@ -245,19 +259,24 @@ class InventoryPickupManager:
             self.game.total_gold_earned += gold_amount
             # Don't increment stats["gold_found"] - already counted in search_container
             self.game.log(f"Collected {gold_amount} gold!", 'loot')
+            self.game.current_room.container_gold = 0  # Remove from room storage
         
         if item_name:
             self.game.try_add_to_inventory(item_name, "container")
+            self.game.current_room.container_item = None  # Remove from room storage
         
         self.close_container_and_refresh()
     
     def close_container_and_refresh(self):
         """Close container dialog and return to ground items view"""
         self.game.close_dialog()
-        # Check if there are still items on ground
+        # Check if there are still items on ground (including container items)
+        container_has_items = (self.game.current_room.container_gold > 0 or 
+                              self.game.current_room.container_item is not None)
         if self.game.current_room.ground_gold > 0 or self.game.current_room.ground_items or \
            (hasattr(self.game.current_room, 'uncollected_items') and self.game.current_room.uncollected_items) or \
-           (hasattr(self.game.current_room, 'dropped_items') and self.game.current_room.dropped_items):
+           (hasattr(self.game.current_room, 'dropped_items') and self.game.current_room.dropped_items) or \
+           container_has_items:
             self.game.show_ground_items()
             self.game.show_exploration_options()  # Update button count
         else:
@@ -334,6 +353,27 @@ class InventoryPickupManager:
             self.game.current_room.uncollected_items.remove(item_name)
             self.game.stats["items_found"] += 1
             self.game.log(f"▢ Picked up {item_name}! ({len(self.game.inventory)}/{self.game.max_inventory} slots)", 'loot')
+            
+            # Refresh or close dialog
+            if self.game.current_room.ground_container and not self.game.current_room.container_searched:
+                self.game.show_ground_items()
+                self.game.show_exploration_options()  # Update button count
+            elif self.game.current_room.ground_gold > 0:
+                self.game.show_ground_items()
+                self.game.show_exploration_options()  # Update button count
+            elif self.game.current_room.ground_items:
+                self.game.show_ground_items()
+                self.game.show_exploration_options()  # Update button count
+            elif hasattr(self.game.current_room, 'uncollected_items') and self.game.current_room.uncollected_items:
+                self.game.show_ground_items()
+                self.game.show_exploration_options()  # Update button count
+            elif hasattr(self.game.current_room, 'dropped_items') and self.game.current_room.dropped_items:
+                self.game.show_ground_items()
+                self.game.show_exploration_options()  # Update button count
+            else:
+                self.game.close_dialog()
+                self.game.update_display()
+                self.game.show_exploration_options()
         else:
             self.game.log(f"❌ INVENTORY STILL FULL! Can't pick up {item_name}. ({len(self.game.inventory)}/{self.game.max_inventory})", 'system')
         

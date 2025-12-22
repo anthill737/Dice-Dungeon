@@ -308,8 +308,13 @@ class InventoryDisplayManager:
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
         
-        # Container section (if exists and not searched)
-        if self.game.current_room.ground_container and not self.game.current_room.container_searched:
+        # Container section (if exists and either not searched OR has remaining items)
+        container_has_items = (self.game.current_room.container_gold > 0 or 
+                              self.game.current_room.container_item is not None)
+        show_container = (self.game.current_room.ground_container and 
+                         (not self.game.current_room.container_searched or container_has_items))
+        
+        if show_container:
             tk.Label(scrollable_frame, text="Container:", 
                     font=('Arial', 10, 'bold'),
                     bg=self.game.current_colors["bg_secondary"], 
@@ -359,7 +364,8 @@ class InventoryDisplayManager:
                             anchor='w').pack(side=tk.RIGHT, padx=5)
             else:
                 # Normal unlocked container
-                tk.Button(item_frame, text="Search", 
+                button_text = "Open" if self.game.current_room.container_searched else "Search"
+                tk.Button(item_frame, text=button_text, 
                          command=lambda c=container: self.game.search_container(c),
                          font=('Arial', 9), bg=self.game.current_colors["text_cyan"], fg='#000000',
                          width=10).pack(side=tk.RIGHT, padx=5, pady=2)

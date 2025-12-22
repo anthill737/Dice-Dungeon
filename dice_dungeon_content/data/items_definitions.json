@@ -68,7 +68,7 @@
   "Phylactery Dust": { "type": "boss_drop", "gold_flat": 15, "desc": "Powdered soul-hoard; convert to gold." },
   "Glistening Scale": { "type": "status_buff", "status": "poison-resist", "duration": "floor", "desc": "Resist poison for a floor." },
 
-  "Antivenom Leaf": { "type": "cleanse", "cleanse": true, "desc": "Cure poison." },
+  "Antivenom Leaf": { "type": "cleanse", "cleanse": true, "desc": "Removes all negative status effects including poison." },
   "Tar Rag": { "type": "utility", "desc": "Treat as narrative or small trap bonus." },
   "Perfumed Coal": { "type": "utility", "desc": "Scented coal; narrative or minor cleanse." },
   "Waterbreath Reed": { "type": "utility", "desc": "Breathe briefly underwater; narrative tool." },

@@ -15,7 +15,16 @@
     ]
   },
   "Slime Blob": {
-    "splits_on_death": false
+    "splits_on_death": false,
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Poison",
+        "message": "The Slime Blob splashes toxic ooze on you! You are now Poisoned (5 damage per turn)."
+      }
+    ]
   },
   "Necromancer": {
     "boss_abilities": [
@@ -94,6 +103,13 @@
         "message": "The Demon Lord's aura burns you! You take 3 damage at the start of each turn."
       },
       {
+        "type": "inflict_status",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.4,
+        "status_name": "Burn",
+        "message": "The Demon Lord engulfs you in flames! You are now Burning (5 damage per turn)."
+      },
+      {
         "type": "spawn_minions_periodic",
         "trigger": "enemy_turn",
         "interval_turns": 3,
@@ -146,7 +162,16 @@
     ]
   },
   "Crystal Shard": {
-    "can_spawn": false
+    "can_spawn": false,
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Bleed",
+        "message": "Razor crystals slice! You are now Bleeding (5 damage per turn)."
+      }
+    ]
   },
   "Acid Hydra": {
     "boss_abilities": [
@@ -171,7 +196,15 @@
     ]
   },
   "Acid Slime": {
-    "can_spawn": false
+    "can_spawn": false,
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "combat_start",
+        "status_name": "Poison",
+        "message": "Acid burns your skin! You are now Poisoned (5 damage per turn)."
+      }
+    ]
   },
   "Void Wraith": {
     "boss_abilities": [
@@ -195,6 +228,12 @@
   "Bone Reaper": {
     "boss_abilities": [
       {
+        "type": "inflict_status",
+        "trigger": "combat_start",
+        "status_name": "Bleed",
+        "message": "The Bone Reaper's scythe cuts deep! You are now Bleeding (5 damage per turn)."
+      },
+      {
         "type": "curse_damage",
         "trigger": "combat_start",
         "damage_per_turn": 2,
@@ -217,5 +256,612 @@
         "message": "Death's grip weakens you! Your dice can only roll 1-3 for 3 turns."
       }
     ]
+  },
+  "Incense Spirit": {
+    "boss_abilities": [
+      {
+        "type": "heal_over_time",
+        "trigger": "combat_start",
+        "heal_per_turn": 10,
+        "duration_turns": 999,
+        "message": "The Incense Spirit surrounds itself with restorative smoke! It heals 10 HP each turn."
+      },
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Poison",
+        "message": "Toxic incense clouds choke you! You are now Poisoned (5 damage per turn)."
+      },
+      {
+        "type": "dice_obscure",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.5,
+        "duration_turns": 3,
+        "message": "Thick smoke obscures your vision! Your dice values are hidden for 3 turns."
+      }
+    ]
+  },
+  "Lightning Warden": {
+    "boss_abilities": [
+      {
+        "type": "damage_reduction",
+        "trigger": "combat_start",
+        "reduction_amount": 8,
+        "duration_turns": 999,
+        "message": "The Lightning Warden crackles with defensive energy! Reduces all damage by 8."
+      },
+      {
+        "type": "dice_lock_random",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "lock_count": 2,
+        "duration_turns": 1,
+        "message": "Lightning arcs through your dice! 2 dice are shocked and frozen!"
+      },
+      {
+        "type": "curse_damage",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.5,
+        "damage_per_turn": 4,
+        "duration_turns": 999,
+        "message": "The warden's electric field intensifies! You take 4 shock damage per turn."
+      }
+    ]
+  },
+  "Rat Swarm": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Poison",
+        "message": "The rats bite and spread disease! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Angler Slime": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Poison",
+        "message": "The angler's toxin spreads! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Angry Swarm": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Poison",
+        "message": "Countless stings poison you! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Agitated Bees": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Poison",
+        "message": "Bee venom courses through you! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Ash Elemental": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Burn",
+        "message": "Searing ash engulfs you! You are now Burning (5 damage per turn)."
+      }
+    ]
+  },
+  "Ash Imp": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Burn",
+        "message": "The imp's flames scorch you! You are now Burning (5 damage per turn)."
+      }
+    ]
+  },
+  "Ash Angel": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.5,
+        "status_name": "Burn",
+        "message": "Holy fire burns sinners! You are now Burning (5 damage per turn)."
+      }
+    ]
+  },
+  "Arrow Demon": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Bleed",
+        "message": "Barbed arrows pierce deep! You are now Bleeding (5 damage per turn)."
+      }
+    ]
+  },
+  "Blade Angel": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Bleed",
+        "message": "Divine blades cut deep! You are now Bleeding (5 damage per turn)."
+      }
+    ]
+  },
+  "Blade Demon": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Bleed",
+        "message": "Cursed blades leave bleeding wounds! You are now Bleeding (5 damage per turn)."
+      }
+    ]
+  },
+  "Blade Imp": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Bleed",
+        "message": "The imp's blade finds flesh! You are now Bleeding (5 damage per turn)."
+      }
+    ]
+  },
+  "Blood Sprite": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "combat_start",
+        "status_name": "Bleed",
+        "message": "The sprite drinks your blood! You are now Bleeding (5 damage per turn)."
+      }
+    ]
+  },
+  "Bioluminescent Leech": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Bleed",
+        "message": "The leech latches on and drains! You are now Bleeding (5 damage per turn)."
+      }
+    ]
+  },
+  "Bone Worm": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Rot",
+        "message": "The worm spreads decay! You are now Rotting (5 damage per turn)."
+      }
+    ]
+  },
+  "Butcher Shade": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Bleed",
+        "message": "The butcher's cleaver opens wounds! You are now Bleeding (5 damage per turn)."
+      }
+    ]
+  },
+  "Cave Salamander": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Poison",
+        "message": "Salamander venom seeps in! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Chain Beast": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Bleed",
+        "message": "Barbed chains tear flesh! You are now Bleeding (5 damage per turn)."
+      }
+    ]
+  },
+  "Chain Wraith": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "combat_start",
+        "status_name": "Rot",
+        "message": "Cursed chains drain life! You are now Rotting (5 damage per turn)."
+      }
+    ]
+  },
+  "Cinder Wraith": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Burn",
+        "message": "Smoldering essence burns you! You are now Burning (5 damage per turn)."
+      }
+    ]
+  },
+  "Corpse Flower": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.5,
+        "status_name": "Rot",
+        "message": "Putrid spores spread decay! You are now Rotting (5 damage per turn)."
+      }
+    ]
+  },
+  "Dozing Slime": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 5,
+        "status_name": "Poison",
+        "message": "Toxic slime seeps into wounds! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Dust Wraith": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Rot",
+        "message": "Ancient dust corrupts! You are now Rotting (5 damage per turn)."
+      }
+    ]
+  },
+  "Fire Beetle": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Burn",
+        "message": "Beetle flames scorch you! You are now Burning (5 damage per turn)."
+      }
+    ]
+  },
+  "Fire Elemental": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "combat_start",
+        "status_name": "Burn",
+        "message": "Living fire engulfs you! You are now Burning (5 damage per turn)."
+      }
+    ]
+  },
+  "Firefly Swarm": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Burn",
+        "message": "Burning insects swarm! You are now Burning (5 damage per turn)."
+      }
+    ]
+  },
+  "Grease Ooze": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Poison",
+        "message": "Foul grease coats you! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Hellfire Imp": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Burn",
+        "message": "Hellfire scorches your flesh! You are now Burning (5 damage per turn)."
+      }
+    ]
+  },
+  "Hungry Specter": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Rot",
+        "message": "The specter drains vitality! You are now Rotting (5 damage per turn)."
+      }
+    ]
+  },
+  "Jailer Wraith": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "combat_start",
+        "status_name": "Rot",
+        "message": "Cursed shackles bind you! You are now Rotting (5 damage per turn)."
+      }
+    ]
+  },
+  "Lava Ooze": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "hp_threshold",
+        "hp_threshold": 0.6,
+        "status_name": "Burn",
+        "message": "Molten ooze splatters! You are now Burning (5 damage per turn)."
+      }
+    ]
+  },
+  "Lava Serpent": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Burn",
+        "message": "Molten fangs sear flesh! You are now Burning (5 damage per turn)."
+      }
+    ]
+  },
+  "Leech": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Bleed",
+        "message": "The leech drains blood! You are now Bleeding (5 damage per turn)."
+      }
+    ]
+  },
+  "Lurking Spider": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Poison",
+        "message": "Spider venom paralyzes! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Pipe Rats": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Poison",
+        "message": "Sewer rats spread disease! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Poison Rat": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "combat_start",
+        "status_name": "Poison",
+        "message": "Toxic bite infects you! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Rope Worm": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Poison",
+        "message": "The worm injects venom! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Serpent": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Poison",
+        "message": "Venomous fangs strike! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Spike Beast": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Bleed",
+        "message": "Spikes pierce deeply! You are now Bleeding (5 damage per turn)."
+      }
+    ]
+  },
+  "Thorn Beast": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Bleed",
+        "message": "Thorns pierce and tear! You are now Bleeding (5 damage per turn)."
+      }
+    ]
+  },
+  "Thorn Creeper": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Bleed",
+        "message": "Thorny vines constrict! You are now Bleeding (5 damage per turn)."
+      }
+    ]
+  },
+  "Toxic Mushroom": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Poison",
+        "message": "Toxic spores infect you! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Toxic Ooze": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "combat_start",
+        "status_name": "Poison",
+        "message": "Toxic sludge coats you! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Wailing Ghost Woman": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Rot",
+        "message": "Mournful wails drain life! You are now Rotting (5 damage per turn)."
+      }
+    ]
+  },
+  "Bitter Ghost": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Rot",
+        "message": "Bitter hatred corrodes! You are now Rotting (5 damage per turn)."
+      }
+    ]
+  },
+  "Basket Serpent": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 3,
+        "status_name": "Poison",
+        "message": "Hidden fangs inject venom! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Pack Rat": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 5,
+        "status_name": "Poison",
+        "message": "Rat swarm spreads filth! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Crate Rat": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 5,
+        "status_name": "Poison",
+        "message": "Storage rats bite! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Honey Ooze": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Poison",
+        "message": "Sticky toxin clings! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Name Leech": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "combat_start",
+        "status_name": "Rot",
+        "message": "Identity drains away! You are now Rotting (5 damage per turn)."
+      }
+    ]
+  },
+  "Multi Headed Serpent": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 2,
+        "status_name": "Poison",
+        "message": "Multiple bites inject venom! You are now Poisoned (5 damage per turn)."
+      }
+    ]
+  },
+  "Echo Phantom": {
+    "boss_abilities": [
+      {
+        "type": "inflict_status",
+        "trigger": "enemy_turn",
+        "interval_turns": 4,
+        "status_name": "Rot",
+        "message": "Echoing curse spreads! You are now Rotting (5 damage per turn)."
+      }
+    ]
   }
 }
+

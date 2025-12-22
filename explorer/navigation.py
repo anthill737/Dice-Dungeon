@@ -487,8 +487,10 @@ class NavigationManager:
                      width=7, height=1).pack(side=tk.LEFT, padx=1)
         
         # Check Ground button (if items exist)
+        container_has_items = (self.game.current_room.container_gold > 0 or 
+                              self.game.current_room.container_item is not None)
         ground_items_exist = (
-            (self.game.current_room.ground_container and not self.game.current_room.container_searched) or
+            (self.game.current_room.ground_container and (not self.game.current_room.container_searched or container_has_items)) or
             self.game.current_room.ground_gold > 0 or
             len(self.game.current_room.ground_items) > 0 or
             (hasattr(self.game.current_room, 'uncollected_items') and self.game.current_room.uncollected_items) or
@@ -498,7 +500,7 @@ class NavigationManager:
         if ground_items_exist:
             # Count total items on ground
             total_ground_items = 0
-            if self.game.current_room.ground_container and not self.game.current_room.container_searched:
+            if self.game.current_room.ground_container and (not self.game.current_room.container_searched or container_has_items):
                 total_ground_items += 1
             if self.game.current_room.ground_gold > 0:
                 total_ground_items += 1
@@ -566,6 +568,9 @@ class NavigationManager:
         
         # Update scroll region to ensure all content is visible
         self.game.update_scroll_region()
+        
+        # Return focus to root window to ensure keybindings work
+        self.game.root.focus_force()
     
     def generate_ground_loot(self, room):
         """Generate what spawns on the ground when first entering a room"""

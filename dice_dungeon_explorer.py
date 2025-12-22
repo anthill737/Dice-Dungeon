@@ -4305,6 +4305,13 @@ class DiceDungeonExplorer:
             self.dialog_frame = None
             # Re-apply keybindings to ensure they work after dialog closes
             self.apply_keybindings()
+            
+            # Return focus to root window so keybindings work
+            self.root.focus_force()
+            
+            # If we're in combat encounter (but haven't started turn), restore attack/flee buttons
+            if hasattr(self, 'combat_manager') and self.combat_manager:
+                self.combat_manager.restore_encounter_buttons()
     
     def close_dialog_and_refresh_inventory(self):
         """Close dialog and refresh inventory (for lore items)"""
@@ -4376,8 +4383,12 @@ class DiceDungeonExplorer:
         if self.dialog_frame:
             self.dialog_frame.destroy()
         
-        self.dialog_frame = tk.Frame(self.root, bg='#1a0f08', relief=tk.RAISED, borderwidth=3)
-        self.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, width=950, height=700)
+        dialog_width, dialog_height = self.get_responsive_dialog_size(950, 700, 0.85, 0.9)
+        
+        self.dialog_frame = tk.Frame(self.game_frame, bg=self.current_colors["bg_panel"], 
+                                     relief=tk.RIDGE, borderwidth=3)
+        self.dialog_frame.place(relx=0.5, rely=0.5, anchor='center', 
+                               width=dialog_width, height=dialog_height)
         
         # Track current mode and selected slot
         self.save_load_mode = mode
@@ -4385,27 +4396,36 @@ class DiceDungeonExplorer:
         self.selected_slot_frame = None
         
         # Title
-        title_text = "SAVE GAME" if mode == "save" else "LOAD GAME"
+        title_text = "💾 SAVE GAME 💾" if mode == "save" else "📂 LOAD GAME 📂"
         tk.Label(self.dialog_frame, text=title_text, font=('Arial', 18, 'bold'),
-                bg='#1a0f08', fg='#ffd700', pady=10).pack()
+                bg=self.current_colors["bg_panel"], fg=self.current_colors["text_gold"], pady=10).pack()
+        
+        # Red X close button (top right corner)
+        close_btn = tk.Label(self.dialog_frame, text="✕", font=('Arial', 16, 'bold'),
+                            bg=self.current_colors["bg_panel"], fg='#ff4444',
+                            cursor="hand2", padx=5)
+        close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=5)
+        close_btn.bind('<Button-1>', lambda e: self.close_dialog())
+        close_btn.bind('<Enter>', lambda e: close_btn.config(fg='#ff0000'))
+        close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
         
         # Main content frame (left list + right details)
-        content_frame = tk.Frame(self.dialog_frame, bg='#1a0f08')
+        content_frame = tk.Frame(self.dialog_frame, bg=self.current_colors["bg_panel"])
         content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
         
         # LEFT PANEL - Save slot list
-        left_panel = tk.Frame(content_frame, bg='#2c1810', relief=tk.SUNKEN, borderwidth=2)
+        left_panel = tk.Frame(content_frame, bg=self.current_colors["bg_secondary"], relief=tk.SUNKEN, borderwidth=2)
         left_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=False, padx=(0, 5))
         left_panel.config(width=380)
         
         tk.Label(left_panel, text="Save Slots", font=('Arial', 12, 'bold'),
-                bg='#2c1810', fg='#ffd700', pady=5).pack()
+                bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"], pady=5).pack()
         
         # Scrollable list of saves
-        list_canvas = tk.Canvas(left_panel, bg='#2c1810', highlightthickness=0, width=360)
+        list_canvas = tk.Canvas(left_panel, bg=self.current_colors["bg_secondary"], highlightthickness=0, width=360)
         list_scrollbar = tk.Scrollbar(left_panel, orient="vertical", command=list_canvas.yview, width=10,
-                                     bg='#2c1810', troughcolor='#1a0f08')
-        self.slots_list_frame = tk.Frame(list_canvas, bg='#2c1810')
+                                     bg=self.current_colors["bg_secondary"], troughcolor=self.current_colors["bg_dark"])
+        self.slots_list_frame = tk.Frame(list_canvas, bg=self.current_colors["bg_secondary"])
         
         self.slots_list_frame.bind("<Configure>", lambda e: list_canvas.configure(scrollregion=list_canvas.bbox("all")))
         list_canvas.create_window((0, 0), window=self.slots_list_frame, anchor="nw", width=340)
@@ -4417,13 +4437,13 @@ class DiceDungeonExplorer:
         list_scrollbar.pack(side="right", fill="y", pady=5)
         
         # RIGHT PANEL - Selected save details (scrollable)
-        details_container = tk.Frame(content_frame, bg='#2c1810', relief=tk.SUNKEN, borderwidth=2)
+        details_container = tk.Frame(content_frame, bg=self.current_colors["bg_secondary"], relief=tk.SUNKEN, borderwidth=2)
         details_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
-        details_canvas = tk.Canvas(details_container, bg='#2c1810', highlightthickness=0)
+        details_canvas = tk.Canvas(details_container, bg=self.current_colors["bg_secondary"], highlightthickness=0)
         details_scrollbar = tk.Scrollbar(details_container, orient="vertical", command=details_canvas.yview, width=10,
-                                        bg='#2c1810', troughcolor='#1a0f08')
-        self.details_panel = tk.Frame(details_canvas, bg='#2c1810')
+                                        bg=self.current_colors["bg_secondary"], troughcolor=self.current_colors["bg_dark"])
+        self.details_panel = tk.Frame(details_canvas, bg=self.current_colors["bg_secondary"])
         
         self.details_panel.bind("<Configure>", lambda e: details_canvas.configure(scrollregion=details_canvas.bbox("all")))
         details_canvas.create_window((0, 0), window=self.details_panel, anchor="nw")
@@ -4435,7 +4455,7 @@ class DiceDungeonExplorer:
         details_scrollbar.pack(side="right", fill="y", pady=5)
         
         tk.Label(self.details_panel, text="Select a save slot", font=('Arial', 14),
-                bg='#2c1810', fg='#888888', pady=180).pack()
+                bg=self.current_colors["bg_secondary"], fg='#888888', pady=180).pack()
         
         # Create save slot list items
         self.slot_widgets = {}
@@ -4460,14 +4480,6 @@ class DiceDungeonExplorer:
                 bind_details_mousewheel(child)
         bind_details_mousewheel(self.details_panel)
         
-        # Bottom buttons
-        btn_frame = tk.Frame(self.dialog_frame, bg='#1a0f08')
-        btn_frame.pack(pady=10)
-        
-        tk.Button(btn_frame, text="Back", command=self.close_dialog,
-                 font=('Arial', 12), bg='#ff6b6b', fg='#000000',
-                 width=15, pady=10).pack()
-        
         # Bind keyboard shortcuts
         self.dialog_frame.bind('<Up>', lambda e: self._navigate_slots(-1))
         self.dialog_frame.bind('<Down>', lambda e: self._navigate_slots(1))
@@ -4476,7 +4488,6 @@ class DiceDungeonExplorer:
         self.dialog_frame.bind('<F2>', lambda e: self._rename_selected_slot())
         self.dialog_frame.bind('<Escape>', lambda e: self.close_dialog())
         self.dialog_frame.focus_set()
-    
     def _disable_menu_keybinds(self):
         """Disable menu keybindings when typing in entry fields"""
         if hasattr(self, 'dialog_frame') and self.dialog_frame:
@@ -4599,10 +4610,10 @@ class DiceDungeonExplorer:
         
         # Header
         tk.Label(self.details_panel, text=f"Save Slot {slot_num}", font=('Arial', 16, 'bold'),
-                bg='#2c1810', fg='#ffd700', pady=10).pack(anchor='center')
+                bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"], pady=10).pack(anchor='center')
         
         # Details frame
-        details = tk.Frame(self.details_panel, bg='#2c1810')
+        details = tk.Frame(self.details_panel, bg=self.current_colors["bg_secondary"])
         details.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
         
         if is_occupied and save_data:
@@ -4610,27 +4621,27 @@ class DiceDungeonExplorer:
             save_name = save_data.get('save_name', '(Unnamed Save)')
             
             # Custom name - on same line
-            name_line = tk.Frame(details, bg='#2c1810')
+            name_line = tk.Frame(details, bg=self.current_colors["bg_secondary"])
             name_line.pack(fill=tk.X, pady=(0, 10))
             tk.Label(name_line, text="Save Name: ", font=('Arial', 10, 'bold'),
-                    bg='#2c1810', fg='#ffd700', anchor='w').pack(side=tk.LEFT)
+                    bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"], anchor='w').pack(side=tk.LEFT)
             tk.Label(name_line, text=save_name if save_name else "(Unnamed Save)", 
-                    font=('Arial', 10), bg='#2c1810', fg='#ffffff', anchor='w').pack(side=tk.LEFT)
+                    font=('Arial', 10), bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_primary"], anchor='w').pack(side=tk.LEFT)
             
             # Location - on same line
             floor = save_data.get('floor', 1)
-            location_line = tk.Frame(details, bg='#2c1810')
+            location_line = tk.Frame(details, bg=self.current_colors["bg_secondary"])
             location_line.pack(fill=tk.X, pady=(0, 15))
             tk.Label(location_line, text="Current Location: ", font=('Arial', 10, 'bold'),
-                    bg='#2c1810', fg='#ffd700', anchor='w').pack(side=tk.LEFT)
+                    bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"], anchor='w').pack(side=tk.LEFT)
             tk.Label(location_line, text=f"Floor {floor} - The Depths", font=('Arial', 10),
-                    bg='#2c1810', fg='#ffffff', anchor='w').pack(side=tk.LEFT)
+                    bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_primary"], anchor='w').pack(side=tk.LEFT)
             
             # Character stats
             tk.Label(details, text="Character Stats:", font=('Arial', 10, 'bold'),
-                    bg='#2c1810', fg='#ffd700', anchor='w').pack(fill=tk.X, pady=(0, 5))
+                    bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"], anchor='w').pack(fill=tk.X, pady=(0, 5))
             
-            stats_frame = tk.Frame(details, bg='#3d2415', relief=tk.SUNKEN, borderwidth=1)
+            stats_frame = tk.Frame(details, bg=self.current_colors["bg_panel"], relief=tk.SUNKEN, borderwidth=1)
             stats_frame.pack(fill=tk.X, pady=(0, 10))
             
             health = save_data.get('health', 0)
@@ -4639,29 +4650,29 @@ class DiceDungeonExplorer:
             score = save_data.get('run_score', 0)
             
             tk.Label(stats_frame, text=f"HP: {health} / {max_health}", font=('Consolas', 11),
-                    bg='#3d2415', fg='#ffffff', anchor='w').pack(fill=tk.X, padx=10, pady=3)
+                    bg=self.current_colors["bg_panel"], fg=self.current_colors["text_primary"], anchor='w').pack(fill=tk.X, padx=10, pady=3)
             tk.Label(stats_frame, text=f"Gold: {gold}", font=('Consolas', 11),
-                    bg='#3d2415', fg='#ffd700', anchor='w').pack(fill=tk.X, padx=10, pady=3)
+                    bg=self.current_colors["bg_panel"], fg=self.current_colors["text_gold"], anchor='w').pack(fill=tk.X, padx=10, pady=3)
             tk.Label(stats_frame, text=f"Score: {score}", font=('Consolas', 11),
-                    bg='#3d2415', fg='#4ecdc4', anchor='w').pack(fill=tk.X, padx=10, pady=3)
+                    bg=self.current_colors["bg_panel"], fg=self.current_colors["text_cyan"], anchor='w').pack(fill=tk.X, padx=10, pady=3)
             
             # Last accessed - on same line
             save_time = save_data.get('save_time', 'Unknown time')
-            time_line = tk.Frame(details, bg='#2c1810')
+            time_line = tk.Frame(details, bg=self.current_colors["bg_secondary"])
             time_line.pack(fill=tk.X, pady=(5, 15))
             tk.Label(time_line, text="Last Saved: ", font=('Arial', 10, 'bold'),
-                    bg='#2c1810', fg='#ffd700', anchor='w').pack(side=tk.LEFT)
+                    bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"], anchor='w').pack(side=tk.LEFT)
             tk.Label(time_line, text=save_time, font=('Arial', 10),
-                    bg='#2c1810', fg='#ffffff', anchor='w').pack(side=tk.LEFT)
+                    bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_primary"], anchor='w').pack(side=tk.LEFT)
             
             # Rename section
-            rename_frame = tk.Frame(details, bg='#2c1810')
+            rename_frame = tk.Frame(details, bg=self.current_colors["bg_secondary"])
             rename_frame.pack(fill=tk.X, pady=(10, 15))
             
             tk.Label(rename_frame, text="Rename Save:", font=('Arial', 9, 'bold'),
-                    bg='#2c1810', fg='#ffd700').pack(anchor='w')
+                    bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"]).pack(anchor='w')
             
-            name_input_frame = tk.Frame(rename_frame, bg='#2c1810')
+            name_input_frame = tk.Frame(rename_frame, bg=self.current_colors["bg_secondary"])
             name_input_frame.pack(fill=tk.X, pady=(5, 0))
             
             self.rename_entry = tk.Entry(name_input_frame, font=('Arial', 10), width=25)
@@ -4678,10 +4689,10 @@ class DiceDungeonExplorer:
                      width=10, pady=3).pack(side=tk.LEFT)
             
             # Spacer
-            tk.Frame(details, bg='#2c1810', height=20).pack()
+            tk.Frame(details, bg=self.current_colors["bg_secondary"], height=20).pack()
             
             # Action buttons in one centered row
-            action_frame = tk.Frame(details, bg='#2c1810')
+            action_frame = tk.Frame(details, bg=self.current_colors["bg_secondary"])
             action_frame.pack(pady=10)
             
             # Determine which button should be highlighted based on mode
@@ -4719,17 +4730,17 @@ class DiceDungeonExplorer:
         else:
             # Empty slot
             tk.Label(details, text="Empty Slot", font=('Arial', 14, 'bold'),
-                    bg='#2c1810', fg='#888888', pady=20).pack()
+                    bg=self.current_colors["bg_secondary"], fg='#888888', pady=20).pack()
             
             tk.Label(details, text="No save data in this slot.\nYou can save your current game here.", 
-                    font=('Arial', 10), bg='#2c1810', fg='#666666', 
+                    font=('Arial', 10), bg=self.current_colors["bg_secondary"], fg='#666666', 
                     justify=tk.CENTER, pady=10).pack()
             
             # Spacer
-            tk.Frame(details, bg='#2c1810', height=30).pack()
+            tk.Frame(details, bg=self.current_colors["bg_secondary"], height=30).pack()
             
             # Action buttons for empty slot
-            action_frame = tk.Frame(details, bg='#2c1810')
+            action_frame = tk.Frame(details, bg=self.current_colors["bg_secondary"])
             action_frame.pack(fill=tk.X, pady=20)
             
             # Only allow saving if currently in a game and not in combat
@@ -4797,17 +4808,8 @@ class DiceDungeonExplorer:
             self.rename_entry.select_range(0, tk.END)
     
     def _save_to_empty_slot(self, slot_num):
-        """Save to an empty slot"""
-        # Get custom name if rename entry exists and is still valid
-        custom_name = ""
-        try:
-            if hasattr(self, 'rename_entry') and self.rename_entry.winfo_exists():
-                custom_name = self.rename_entry.get().strip()
-        except:
-            pass
-        
-        self.save_to_slot(slot_num, custom_name)
-        self.close_dialog()
+        """Save to an empty slot - prompts for name first"""
+        self.save_system.show_name_save_dialog(slot_num)
     
     def _confirm_overwrite(self, slot_num):
         """Show in-game confirmation overlay before overwriting"""
@@ -5588,6 +5590,10 @@ Chests Opened: {self.chests_opened}"""
     def game_over(self):
         """Handle game over"""
         self.game_active = False
+        
+        # Clear status effects on death
+        if self.flags.get('statuses'):
+            self.flags['statuses'] = []
         
         self.log("\n" + "="*50, 'system')
         self.log("☠ YOU DIED", 'enemy')
@@ -7764,18 +7770,6 @@ Final Score: {self.run_score}
                     fg='#ffffff', width=10, pady=4)
             btn.pack(side=tk.LEFT, padx=2)
         
-        # Spawn options
-        options_frame = tk.Frame(enemy_tab, bg=self.current_colors["bg_secondary"])
-        options_frame.pack(fill=tk.X, padx=20, pady=5)
-        
-        is_boss_var = tk.BooleanVar(value=False)
-        tk.Checkbutton(options_frame, text="Spawn as Boss", variable=is_boss_var, bg=self.current_colors["bg_secondary"],
-                      fg='#ffffff', selectcolor='#000000', font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
-        
-        is_miniboss_var = tk.BooleanVar(value=False)
-        tk.Checkbutton(options_frame, text="Spawn as Mini-Boss", variable=is_miniboss_var, bg=self.current_colors["bg_secondary"],
-                      fg='#ffffff', selectcolor='#000000', font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
-        
         # Create scrollable canvas for enemy list
         enemy_list_canvas = tk.Canvas(enemy_tab, bg=self.current_colors["bg_primary"], highlightthickness=0, height=400)
         enemy_list_scrollbar = tk.Scrollbar(enemy_tab, orient="vertical", command=enemy_list_canvas.yview, width=10)
@@ -7798,29 +7792,46 @@ Final Score: {self.run_score}
         def calculate_enemy_stats(enemy_name, as_boss=False, as_mini_boss=False):
             """Calculate enemy stats using exact same logic as trigger_combat"""
             # Base stats
-            base_hp = 30 + (self.floor * 10)
+            base_hp = 50 + (self.floor * 10)
             
-            # Add enemy-specific HP multipliers based on enemy name/type
+            # Enemy HP multipliers (applied before boss/mini-boss multipliers)
+            # Regular enemies use partial name matching (Rat, Goblin, etc.)
+            # Mini-bosses and Floor Bosses get specific entries to override partial matches
             enemy_hp_multipliers = {
-                # Weak enemies
-                "Goblin": 0.7, "Rat": 0.6, "Spider": 0.6, "Imp": 0.7, "Slime": 0.8,
-                "Bat": 0.5, "Sprite": 0.6, "Wisp": 0.5, "Grub": 0.4,
-                
-                # Normal enemies (1.0 multiplier - default)
+                # REGULAR ENEMIES - Partial name matches (default 1.0x)
+                "Goblin": 0.7, "Spider": 0.6, "Bat": 0.5, "Grub": 0.4,
+                "Slime": 0.8, "Sprite": 0.6, "Wisp": 0.5,
                 "Skeleton": 1.0, "Orc": 1.0, "Zombie": 1.1, "Bandit": 0.9,
-                
-                # Strong enemies
                 "Troll": 1.5, "Ogre": 1.4, "Knight": 1.3, "Guard": 1.2, "Warrior": 1.1,
                 "Beast": 1.3, "Wolf": 1.1, "Bear": 1.4, "Boar": 1.2,
                 
-                # Elite enemies
-                "Demon": 2.0, "Dragon": 2.5, "Lich": 1.8, "Vampire": 1.6, "Wraith": 1.4,
-                "Golem": 2.2, "Hydra": 2.3, "Phoenix": 2.0, "Titan": 2.8,
+                # ELITE ENEMIES - Partial name matches
+                "Demon": 2.0, "Dragon": 2.5, "Lich": 1.8, "Vampire": 1.6,
+                "Phoenix": 2.0, "Titan": 2.8,
                 
-                # Special/Boss enemies
-                "Lord": 3.0, "King": 3.5, "Ancient": 3.2, "Primordial": 4.0,
-                "Crystal Golem": 1.8, "Shadow Hydra": 2.1, "Necromancer": 1.6,
-                "Gelatinous Slime": 1.3, "Demon Lord": 2.8, "Demon Prince": 2.4
+                # MINI-BOSSES - Specific names (then multiplied by 3x)
+                "Gelatinous Slime": 1.3, "Slime Blob": 1.0,
+                "Shadow Hydra": 2.1, "Crystal Golem": 1.8, "Crystal Shard": 1.0,
+                "Acid Hydra": 2.3, "Void Wraith": 1.4, "Shadow Head": 1.0,
+                "Imp": 0.7, "Incense Spirit": 1.5, "Lightning Warden": 1.7,
+                # REGULAR ENEMIES WITH STATUS EFFECTS - Specific names
+                "Rat Swarm": 1.375, "Angler Slime": 1.375, "Angry Swarm": 1.375,
+                "Agitated Bees": 1.375, "Ash Elemental": 1.375, "Ash Imp": 1.375,
+                "Ash Angel": 1.375, "Arrow Demon": 1.375, "Blade Angel": 1.375,
+                "Blade Demon": 1.375, "Blade Imp": 1.375, "Blood Sprite": 1.375,
+                "Bioluminescent Leech": 1.375, "Bone Worm": 1.375, "Butcher Shade": 1.375,
+                "Cave Salamander": 1.375, "Chain Beast": 1.375, "Chain Wraith": 1.375,
+                "Cinder Wraith": 1.375, "Corpse Flower": 1.375, "Dozing Slime": 1.375,
+                "Dust Wraith": 1.375, "Fire Beetle": 1.375, "Fire Elemental": 1.375,
+                "Firefly Swarm": 1.375, "Grease Ooze": 1.375, "Hellfire Imp": 1.375,
+                "Hungry Specter": 1.375, "Jailer Wraith": 1.375, "Lava Ooze": 1.375,
+                "Lava Serpent": 1.375, "Leech": 1.375, "Lurking Spider": 1.375,
+                "Pipe Rats": 1.375, "Poison Rat": 1.375, "Rope Worm": 1.375,
+                "Serpent": 1.375, "Spike Beast": 1.375, "Thorn Beast": 1.375,
+                "Thorn Creeper": 1.375, "Toxic Mushroom": 1.375, "Toxic Ooze": 1.375,
+                "Wailing Ghost Woman": 1.375, "Bitter Ghost": 1.375, "Basket Serpent": 1.375,
+                "Pack Rat": 1.375, "Crate Rat": 1.375, "Honey Ooze": 1.375,
+                "Name Leech": 1.375, "Multi Headed Serpent": 1.375, "Echo Phantom": 1.375
             }
             
             # Find multiplier for this enemy (check for partial name matches)
@@ -7870,31 +7881,23 @@ Final Score: {self.run_score}
             """Categorize enemies as Regular, Elite, Mini-Boss, or Floor Boss"""
             enemy_config = self.enemy_types.get(enemy_name, {})
             
-            # Check if enemy has boss abilities defined - this is the PRIMARY indicator
-            has_boss_abilities = bool(enemy_config.get("boss_abilities"))
+            # Define actual boss/mini-boss enemies (not based on boss_abilities flag)
+            floor_bosses = ["Demon Lord", "Demon Prince", "Bone Reaper"]
+            mini_bosses = ["Gelatinous Slime", "Slime Blob", "Necromancer", "Shadow Hydra", 
+                          "Crystal Golem", "Crystal Shard", "Acid Hydra", "Void Wraith", 
+                          "Shadow Head", "Imp", "Skeleton", "Incense Spirit", "Lightning Warden"]
             
-            # Use calculated HP and name patterns to determine category
+            # Check if this is an actual boss or mini-boss
+            if enemy_name in floor_bosses:
+                return "Floor Boss"
+            elif enemy_name in mini_bosses:
+                return "Mini-Boss"
+            
+            # For non-boss enemies, use HP to determine Regular vs Elite
             hp_min, hp_max, _ = calculate_enemy_stats(enemy_name)
             avg_hp = (hp_min + hp_max) / 2
-            enemy_lower = enemy_name.lower()
             
-            # Floor Boss indicators - typically named "Lord", "King", "Ancient", "Dragon", etc.
-            boss_keywords = ["lord", "king", "queen", "ancient", "primordial", "elder", "supreme", 
-                           "dragon", "titan", "colossus", "emperor", "empress", "leviathan", "behemoth"]
-            
-            # Check for boss keywords in name
-            is_boss_name = any(keyword in enemy_lower for keyword in boss_keywords)
-            
-            # Categorize based on boss abilities FIRST, then name/HP
-            if has_boss_abilities and (is_boss_name or avg_hp >= 200):
-                return "Floor Boss"
-            elif has_boss_abilities:
-                # Has boss abilities but not boss-level HP/name = Mini-Boss
-                return "Mini-Boss"
-            elif is_boss_name or avg_hp >= 200:
-                # Boss name/HP but no abilities = just a strong Elite
-                return "Elite"
-            elif avg_hp >= 50:
+            if avg_hp >= 50:
                 return "Elite"
             else:
                 return "Regular"
@@ -7948,21 +7951,30 @@ Final Score: {self.run_score}
                 enemy_config = self.enemy_types.get(enemy_name, {})
                 category = get_enemy_category(enemy_name)
                 
-                # Calculate accurate stats for regular enemy
+                # Determine if this enemy is a boss or mini-boss
+                floor_bosses = ["Demon Lord", "Demon Prince", "Bone Reaper"]
+                mini_bosses = ["Gelatinous Slime", "Slime Blob", "Necromancer", "Shadow Hydra", 
+                              "Crystal Golem", "Crystal Shard", "Acid Hydra", "Void Wraith", 
+                              "Shadow Head", "Imp", "Skeleton", "Incense Spirit", "Lightning Warden"]
+                
+                is_boss = enemy_name in floor_bosses
+                is_mini_boss = enemy_name in mini_bosses
+                
+                # Calculate accurate stats based on enemy type
                 hp_min, hp_max, dice_count = calculate_enemy_stats(enemy_name, 
-                                                                   as_boss=is_boss_var.get(), 
-                                                                   as_mini_boss=is_miniboss_var.get())
+                                                                   as_boss=is_boss, 
+                                                                   as_mini_boss=is_mini_boss)
                 
                 row_frame = tk.Frame(enemy_scroll_frame, bg=self.current_colors["bg_dark"])
                 row_frame.pack(fill=tk.X, padx=5, pady=1)
                 
-                def spawn_this_enemy(name=enemy_name):
-                    self.trigger_combat(name, is_mini_boss=is_miniboss_var.get(), is_boss=is_boss_var.get())
+                def spawn_this_enemy(name=enemy_name, is_b=is_boss, is_mb=is_mini_boss):
+                    self.trigger_combat(name, is_mini_boss=is_mb, is_boss=is_b)
                     self.log(f"🛠 DEV: Spawned {name}", 'system')
                     self.close_dialog()
                 
                 # Make row clickable
-                row_frame.bind("<Button-1>", lambda e, name=enemy_name: spawn_this_enemy(name))
+                row_frame.bind("<Button-1>", lambda e, name=enemy_name, is_b=is_boss, is_mb=is_mini_boss: spawn_this_enemy(name, is_b, is_mb))
                 row_frame.config(cursor="hand2")
                 
                 # Category badge with updated colors
@@ -7975,14 +7987,14 @@ Final Score: {self.run_score}
                 badge = tk.Label(row_frame, text=f"[{category}]", font=('Arial', 7, 'bold'),
                         bg=badge_colors.get(category, "#95a5a6"), fg='#ffffff')
                 badge.pack(side=tk.LEFT, padx=2)
-                badge.bind("<Button-1>", lambda e, name=enemy_name: spawn_this_enemy(name))
+                badge.bind("<Button-1>", lambda e, name=enemy_name, is_b=is_boss, is_mb=is_mini_boss: spawn_this_enemy(name, is_b, is_mb))
                 badge.config(cursor="hand2")
                 
                 # Enemy name
                 name_label = tk.Label(row_frame, text=f"☠ {enemy_name}", font=('Arial', 9),
                         bg=self.current_colors["bg_dark"], fg=self.current_colors["text_secondary"])
                 name_label.pack(side=tk.LEFT, pady=2, padx=5)
-                name_label.bind("<Button-1>", lambda e, name=enemy_name: spawn_this_enemy(name))
+                name_label.bind("<Button-1>", lambda e, name=enemy_name, is_b=is_boss, is_mb=is_mini_boss: spawn_this_enemy(name, is_b, is_mb))
                 name_label.config(cursor="hand2")
                 
                 # Stats - show range if different, single value if same
@@ -7994,7 +8006,7 @@ Final Score: {self.run_score}
                 stats_label = tk.Label(row_frame, text=f"{hp_text} | Dice:{dice_count}", font=('Arial', 8),
                         bg=self.current_colors["bg_dark"], fg=self.current_colors["text_gold"])
                 stats_label.pack(side=tk.RIGHT, padx=5)
-                stats_label.bind("<Button-1>", lambda e, name=enemy_name: spawn_this_enemy(name))
+                stats_label.bind("<Button-1>", lambda e, name=enemy_name, is_b=is_boss, is_mb=is_mini_boss: spawn_this_enemy(name, is_b, is_mb))
                 stats_label.config(cursor="hand2")
         
         enemy_search_var.trace('w', lambda *args: refresh_enemy_list())
@@ -8572,6 +8584,7 @@ if __name__ == "__main__":
                 "Starting adventure"
             ]
             self.message_index = 0
+            self.animation_callback_id = None  # Track animation callback
             
             # Start loading animation
             self.animate_loading()
@@ -8581,6 +8594,10 @@ if __name__ == "__main__":
         
         def animate_loading(self):
             """Animate the loading screen - change messages in fixed position, slower animation"""
+            # Check if splash still exists before updating
+            if not self.splash or not self.splash.winfo_exists():
+                return
+            
             if self.progress < self.max_progress:
                 # Update dots animation - slower cycling
                 dots = "." * ((self.progress % 3) + 1)  # Cycle through 1-3 dots
@@ -8593,7 +8610,9 @@ if __name__ == "__main__":
                     self.message_index += 1
                 
                 self.progress += 1
-                self.splash.after(200, self.animate_loading)  # 200ms intervals (slower)
+                # Store callback ID and check if splash exists before scheduling
+                if self.splash and self.splash.winfo_exists():
+                    self.animation_callback_id = self.splash.after(200, self.animate_loading)
             else:
                 # Loading complete
                 self.loading_label.config(text="Ready")
@@ -8601,7 +8620,16 @@ if __name__ == "__main__":
         
         def launch_game(self):
             """Close splash and launch main game"""
-            self.splash.destroy()
+            # Cancel any pending animation callbacks
+            if self.animation_callback_id:
+                try:
+                    self.splash.after_cancel(self.animation_callback_id)
+                except:
+                    pass  # Ignore if already cancelled or splash destroyed
+            
+            # Destroy splash screen
+            if self.splash and self.splash.winfo_exists():
+                self.splash.destroy()
             
             # Now launch the main game
             root = tk.Tk()
