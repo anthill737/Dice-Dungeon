@@ -1,5 +1,134 @@
 # Dice Dungeon Explorer - Changelog
 
+## [Unreleased] - 2025-12-21
+
+### Added
+- **Status Effect Combat System**: Implemented comprehensive status effect system with 51 enemies inflicting DoT effects
+  - WHY: Cleanse items existed but no enemies actually applied status effects, making them useless
+  - PROBLEM SOLVED: Added inflict_status abilities to ~20% of regular enemies (51 total) matching sprite folders
+  - TECHNICAL IMPLEMENTATION:
+    - **Status Types**: Poison, Burn, Bleed, Rot - all deal 5 damage per turn consistently
+    - **Enemy Abilities**: Added boss_abilities with inflict_status type to 51 enemies
+    - **Trigger Patterns**: Various triggers (combat_start, enemy_turn with intervals 2-5 turns)
+    - **Cleanse Integration**: Existing cleanse items now have purpose (Soap Bar, Antivenom Leaf, etc.)
+    - **Combat Processing**: Status effects process each turn via process_status_effects()
+    - **Auto-Clear**: Status effects clear automatically after combat (win/flee/death)
+    - **Status Enemies**: Rat Swarm, Angler Slime, Fire Beetle, Poison Rat, Lava Serpent, +46 more
+    - **Message Updates**: All status messages updated to show "5 damage per turn" consistently
+
+- **Incense Spirit & Lightning Warden Mini-Bosses**: Added two new mini-bosses with unique ability sets
+  - WHY: These enemies existed but had no special abilities despite being classified as mini-bosses
+  - PROBLEM SOLVED: Created thematic boss ability sets and proper HP scaling
+  - TECHNICAL IMPLEMENTATION:
+    - **Incense Spirit Abilities**:
+      - Heal over time: 10 HP per turn for entire combat
+      - Inflict Poison every 3 turns (5 damage/turn)
+      - Dice obscure at 50% HP for 3 turns
+    - **Lightning Warden Abilities**:
+      - Damage reduction: 8 damage reduction throughout combat
+      - Dice lock: Force-locks 2 random dice every 3 turns
+      - Curse damage: 4 shock damage per turn when below 50% HP
+    - **HP Multipliers**: Incense Spirit 1.5x, Lightning Warden 1.7x (then 3x mini-boss multiplier)
+    - **Category Integration**: Added to official mini-boss lists in both classification and combat systems
+
+### Enhanced
+- **Enemy HP Balancing**: Increased base enemy health across all floors for better combat pacing
+  - WHY: Regular enemies were too weak at 30-40 HP, dying too quickly even on floor 1
+  - PROBLEM SOLVED: Increased base HP formula from 30 + (floor × 10) to 50 + (floor × 10)
+  - TECHNICAL IMPLEMENTATION:
+    - **New Formula**: base_hp = 50 + (floor × 10) instead of 30 + (floor × 10)
+    - **Floor 1 Regular Enemies**: Now ~55-70 HP instead of ~35-50 HP
+    - **Floor 1 Status Enemies**: Now ~77-92 HP (1.375x multiplier) instead of ~55-70 HP
+    - **All Enemy Types**: Mini-bosses, elites, and floor bosses scale proportionally higher
+    - **Three Locations**: Updated in combat.py trigger_combat(), transform_on_death, and dev tools
+    - **Consistent Scaling**: Maintains same multiplier system, just higher base values
+
+- **Enemy Classification System Cleanup**: Reorganized enemy HP multipliers into clear, logical categories
+  - WHY: Multiple overlapping lists made it confusing to understand enemy tiers and scaling
+  - PROBLEM SOLVED: Created single organized system with clear category comments
+  - TECHNICAL IMPLEMENTATION:
+    - **Category Structure**:
+      - Regular Enemies: Partial name matches (Goblin 0.7x, Rat 0.6x, Spider 0.6x, etc.)
+      - Elite Enemies: Partial matches (Demon 2.0x, Dragon 2.5x, Lich 1.8x, etc.)
+      - Mini-Bosses: Specific names with 1.0x-2.3x base, then 3x mini-boss multiplier
+      - Floor Bosses: Specific names with 1.9x-2.8x base, then 8x floor boss multiplier
+      - Status Effect Enemies: 51 specific names with 1.375x multiplier
+    - **Removed Conflicts**: Eliminated confusing "Special/Boss enemies" section mixing categories
+    - **Consistent Application**: Updated both combat.py and dice_dungeon_explorer.py dev tools
+    - **Clear Comments**: Each section explicitly states purpose and multiplier application order
+
+- **Enemy Classification Logic**: Fixed mini-boss detection to use whitelist instead of boss_abilities flag
+  - WHY: Adding boss_abilities to regular enemies for status effects incorrectly classified them as mini-bosses
+  - PROBLEM SOLVED: Changed from automatic detection to explicit whitelist of actual bosses/mini-bosses
+  - TECHNICAL IMPLEMENTATION:
+    - **Whitelist Approach**: Defined explicit lists of floor_bosses and mini_bosses by name
+    - **Floor Bosses**: Demon Lord, Demon Prince, Bone Reaper (3 total)
+    - **Mini-Bosses**: Gelatinous Slime, Slime Blob, Necromancer, Shadow Hydra, Crystal Golem, Crystal Shard, Acid Hydra, Void Wraith, Shadow Head, Imp, Skeleton, Incense Spirit, Lightning Warden (13 total)
+    - **Regular Enemies**: All others classified by HP thresholds (Elite if avg_hp >= 50, else Regular)
+    - **Dev Tools**: Updated get_enemy_category() to use same whitelist logic
+    - **Status Effect Enemies**: Now correctly classified as Regular/Elite despite having boss_abilities
+
+- **Developer Tools Enemy Spawning**: Improved dev menu to auto-detect boss/mini-boss status
+  - WHY: Manual checkboxes for "Spawn as Boss/Mini-Boss" were confusing and error-prone
+  - PROBLEM SOLVED: Removed manual overrides, made dev menu automatically spawn enemies correctly
+  - TECHNICAL IMPLEMENTATION:
+    - **Removed Checkboxes**: Deleted "Spawn as Boss" and "Spawn as Mini-Boss" checkbox options
+    - **Auto-Detection**: Dev menu now checks enemy name against boss/mini-boss lists automatically
+    - **Correct Stats**: HP and dice counts displayed in dev menu now match actual spawn values
+    - **Proper Spawning**: Clicking enemy spawns with correct is_boss/is_mini_boss flags set
+    - **Consistent Logic**: Uses same boss/mini-boss lists as classification system
+    - **Simpler UX**: One-click spawn with correct stats, no manual configuration needed
+
+### Fixed
+- **Armor Health Adjustment**: Fixed armor equipping/unequipping to properly adjust current health
+  - WHY: Equipping armor increased max HP but not current HP, leaving player seemingly wounded
+  - PROBLEM SOLVED: Current health now increases/decreases when equipping/unequipping armor
+  - TECHNICAL IMPLEMENTATION:
+    - **Equip**: Added `self.game.health += scaled_hp` after increasing max_health
+    - **Unequip**: Subtracts scaled_hp from current health (but never below 1)
+    - **Formula**: scaled_hp = int(hp_bonus * armor_durability_percent)
+    - **Safe Floor**: Uses `max(1, self.game.health - scaled_hp)` to prevent death from unequipping
+    - **Files Updated**: explorer/inventory_equipment.py equip_item() and unequip_item()
+
+- **Container Loot Persistence**: Fixed bug where container items disappeared if not picked up immediately
+  - WHY: Container loot was regenerated each time opened, losing previous contents
+  - PROBLEM SOLVED: Store container contents on room object when first generated, reuse on reopen
+  - TECHNICAL IMPLEMENTATION:
+    - **Storage**: Added container_gold and container_item attributes to room object
+    - **First Opening**: Generate loot and store in room.container_gold and room.container_item
+    - **Reopening**: Check if room already has contents, use existing instead of regenerating
+    - **Persistence**: Contents survive across room exits and save/load cycles
+    - **Location**: explorer/inventory_pickup.py search_container() method
+
+- **Ground Items Button Update**: Fixed item count button not updating after picking up uncollected items
+  - WHY: Picking up uncollected_items removed from list but didn't refresh exploration button
+  - PROBLEM SOLVED: Added show_exploration_options() calls after successful uncollected item pickup
+  - TECHNICAL IMPLEMENTATION:
+    - **Refresh Logic**: Added comprehensive if/elif chain to check remaining ground items
+    - **Button Update**: Calls show_ground_items() and show_exploration_options() appropriately
+    - **Close Dialog**: Closes ground items dialog when nothing remains
+    - **Same Pattern**: Matches ground_item and ground_gold pickup refresh logic
+    - **Location**: explorer/inventory_pickup.py pickup_uncollected_item()
+
+- **Container Button Persistence**: Fixed ground button showing even after taking all container items
+  - WHY: Button checked if container exists and is unsearched, not if items remain
+  - PROBLEM SOLVED: Added check for remaining container contents before showing button
+  - TECHNICAL IMPLEMENTATION:
+    - **Container Check**: Added `container_has_items = (container_gold > 0 or container_item is not None)`
+    - **Updated Logic**: Button shows if container unsearched OR has remaining items
+    - **Both Locations**: Updated show_exploration_options() for button and show_ground_items() for dialog
+    - **Consistent Behavior**: Container only appears in both places when it has loot left
+    - **Location**: explorer/navigation.py show_exploration_options()
+
+- **Hand Axe Pricing**: Fixed Hand Axe to cost same as other +3 damage weapons
+  - WHY: Hand Axe had no explicit store price, likely using wrong default value
+  - PROBLEM SOLVED: Added Hand Axe to store pricing logic matching Short Sword, Mace, Spear
+  - TECHNICAL IMPLEMENTATION:
+    - **Store Price**: 120 + (floor × 30) gold to buy
+    - **Sell Price**: 60 + (floor × 15) gold (50% of buy price)
+    - **Consistency**: Matches all other +3 damage weapons exactly
+    - **Location**: explorer/store.py _calculate_sell_price()
+
 ## [Unreleased] - 2025-12-20
 
 ### Enhanced
