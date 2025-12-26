@@ -842,6 +842,15 @@ class NavigationManager:
                 font=('Arial', self.game.scale_font(11)), bg=self.game.current_colors["bg_secondary"], fg=self.game.current_colors["text_gold"],
                 wraplength=self.game.get_scaled_wraplength(600), justify=tk.CENTER).pack(pady=self.game.scale_padding(8))
         
+        # Tutorial button
+        tutorial_frame = tk.Frame(interact_frame, bg=self.game.current_colors["bg_secondary"])
+        tutorial_frame.pack(fill=tk.X, padx=self.game.scale_padding(20), pady=self.game.scale_padding(8))
+        
+        tk.Button(tutorial_frame, text="📜 Show Tutorial - How to Play",
+                 command=self.game.show_tutorial,
+                 font=('Arial', self.game.scale_font(11), 'bold'), bg=self.game.current_colors["button_primary"], fg='#000000',
+                 width=30, pady=self.game.scale_padding(8)).pack()
+        
         # Signs
         signs_frame = tk.Frame(interact_frame, bg=self.game.current_colors["bg_secondary"])
         signs_frame.pack(fill=tk.X, padx=self.game.scale_padding(20), pady=self.game.scale_padding(5))
@@ -902,6 +911,10 @@ class NavigationManager:
             self.game.root.update_idletasks()
             canvas.event_generate('<Configure>')
         self.game.root.after(100, check_scrollbar)
+        
+        # Show tutorial automatically for first-time players
+        if not self.game.tutorial_seen:
+            self.game.root.after(200, self.game.show_tutorial)
     
     def _render_chest_buttons(self, starter_data):
         """Render chest buttons without rebuilding entire UI"""

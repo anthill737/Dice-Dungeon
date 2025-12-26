@@ -1552,6 +1552,7 @@ class DiceDungeonExplorer:
         self.starter_chests_opened = []
         self.signs_read = []
         self.starter_rooms = set()  # Track first 3 room positions - no combat ever
+        self.tutorial_seen = False  # Track if tutorial has been shown
         
         self.game_active = True
         self.show_starter_area()
@@ -3069,6 +3070,120 @@ class DiceDungeonExplorer:
     def show_starter_area(self):
         """Display the tutorial/starter area - delegates to NavigationManager"""
         self.navigation_manager.show_starter_area()
+    
+    def show_tutorial(self):
+        """Display the tutorial dialog with game instructions"""
+        # Close existing dialog if any
+        if hasattr(self, 'dialog_frame') and self.dialog_frame and self.dialog_frame.winfo_exists():
+            self.dialog_frame.destroy()
+            self.dialog_frame = None
+        
+        # Create dialog
+        dialog_width, dialog_height = self.get_responsive_dialog_size(900, 700, 0.85, 0.9)
+        
+        # Determine parent: use game_frame if in-game, otherwise use root
+        parent = self.root
+        if hasattr(self, 'game_frame') and self.game_frame is not None and self.game_frame.winfo_exists():
+            parent = self.game_frame
+        
+        self.dialog_frame = tk.Frame(parent, bg=self.current_colors["bg_primary"], 
+                                      relief=tk.RIDGE, borderwidth=3)
+        self.dialog_frame.place(relx=0.5, rely=0.5, anchor='center', 
+                                width=dialog_width, height=dialog_height)
+        
+        # Red X close button (top right corner)
+        close_btn = tk.Label(self.dialog_frame, text="✕", font=('Arial', 16, 'bold'),
+                            bg=self.current_colors["bg_primary"], fg='#ff4444', cursor="hand2", padx=5)
+        close_btn.place(relx=0.98, rely=0.02, anchor='ne')
+        close_btn.bind('<Button-1>', lambda e: self.close_dialog())
+        close_btn.bind('<Enter>', lambda e: close_btn.config(fg='#ff0000'))
+        close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
+        
+        # Title
+        tk.Label(self.dialog_frame, text="📜 TUTORIAL - HOW TO PLAY 📜",
+                font=('Arial', 18, 'bold'),
+                bg=self.current_colors["bg_primary"],
+                fg=self.current_colors["text_gold"],
+                pady=10).pack()
+        
+        # Create scrollable content
+        canvas = tk.Canvas(self.dialog_frame, bg=self.current_colors["bg_secondary"], highlightthickness=0)
+        scrollbar = tk.Scrollbar(self.dialog_frame, orient="vertical", command=canvas.yview, width=10,
+                                bg=self.current_colors["bg_secondary"], troughcolor=self.current_colors["bg_dark"])
+        content_frame = tk.Frame(canvas, bg=self.current_colors["bg_secondary"])
+        
+        content_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=content_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True, padx=15, pady=10)
+        scrollbar.pack(side="right", fill="y", pady=10)
+        
+        # Tutorial content
+        tutorial_sections = [
+            {
+                "title": "🎯 OBJECTIVE",
+                "content": "Explore the dungeon, defeat enemies, collect loot, and survive as long as possible. Descend through floors, face increasingly difficult challenges, and see how far you can go!"
+            },
+            {
+                "title": "⚔️ COMBAT",
+                "content": "• Roll 3 dice up to 3 times per turn\n• Lock dice you want to keep\n• Higher total = more damage\n• Watch for enemy dice rolls\n• Use items and abilities strategically\n• Critical hits deal bonus damage\n• Different enemies have different patterns"
+            },
+            {
+                "title": "🗺️ EXPLORATION",
+                "content": "• Move North, South, East, or West\n• Each room may contain enemies, loot, or events\n• Look for chests and containers\n• Find stairs to descend deeper\n• Discover merchants to buy/sell items\n• Some paths may be blocked\n• Boss and mini-boss rooms require keys"
+            },
+            {
+                "title": "🎒 INVENTORY & EQUIPMENT",
+                "content": "• Carry up to 10 items (expandable)\n• Equip weapons, armor, and accessories\n• Use potions to heal or gain buffs\n• Equipment has durability - repair when needed\n• Sell unwanted items to merchants\n• Some items have special effects"
+            },
+            {
+                "title": "💰 RESOURCES",
+                "content": "• Gold: Buy items, upgrades, and repairs\n• Health: Keep it above 0 to survive\n• Keys: Unlock special rooms\n• Lore Items: Discover the dungeon's secrets"
+            },
+            {
+                "title": "🛡️ SURVIVAL TIPS",
+                "content": "• Rest between rooms to recover HP (cooldown: 3 rooms)\n• Manage your inventory carefully\n• Repair equipment before it breaks\n• Save your game often\n• Explore thoroughly for loot\n• Don't be afraid to flee from tough fights\n• Upgrade your stats at merchants"
+            },
+            {
+                "title": "🔑 KEYS & BOSSES",
+                "content": "• Old Keys: Unlock mini-boss rooms (Elite difficulty)\n• Key Fragments: Collect 3 to unlock boss rooms\n• Mini-bosses drop key fragments\n• Bosses are the toughest challenges\n• Prepare well before using keys"
+            },
+            {
+                "title": "⌨️ CONTROLS",
+                "content": "• Use buttons to navigate and interact\n• Press '?' button for keybindings\n• Press '☰' for pause menu\n• Scroll through adventure log for history\n• Hover over items for details"
+            }
+        ]
+        
+        for section in tutorial_sections:
+            section_frame = tk.Frame(content_frame, bg=self.current_colors["bg_panel"], 
+                                    relief=tk.RAISED, borderwidth=2)
+            section_frame.pack(fill=tk.X, padx=15, pady=8)
+            
+            # Section title
+            tk.Label(section_frame, text=section["title"], font=('Arial', 13, 'bold'),
+                    bg=self.current_colors["bg_panel"], fg=self.current_colors["text_gold"],
+                    anchor='w').pack(fill=tk.X, padx=12, pady=(8, 4))
+            
+            # Section content
+            tk.Label(section_frame, text=section["content"], font=('Arial', 11),
+                    bg=self.current_colors["bg_panel"], fg=self.current_colors["text_primary"],
+                    anchor='w', justify=tk.LEFT, wraplength=dialog_width-100).pack(fill=tk.X, padx=12, pady=(0, 8))
+        
+        # Got it button at bottom
+        button_frame = tk.Frame(self.dialog_frame, bg=self.current_colors["bg_primary"])
+        button_frame.pack(side=tk.BOTTOM, pady=10)
+        
+        tk.Button(button_frame, text="Got It!",
+                 command=self.close_dialog,
+                 font=('Arial', 12, 'bold'), bg=self.current_colors["button_primary"], 
+                 fg='#000000', width=15, pady=8).pack()
+        
+        # Setup mousewheel scrolling
+        self.setup_mousewheel_scrolling(canvas)
+        
+        # Mark tutorial as seen
+        self.tutorial_seen = True
     
     def _show_starter_area_old(self):
         """Display the tutorial/starter area"""
