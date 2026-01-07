@@ -597,8 +597,16 @@ class CombatManager:
             return
         
         # Check if we're in the pre-combat state (no dice UI shown yet)
-        # If dice_section is not packed or action_buttons_strip is empty, restore buttons
-        if hasattr(self.game, 'action_buttons_strip') and not self.game.action_buttons_strip.winfo_children():
+        # Better check: see if dice_section is not currently packed (means we haven't started combat turn)
+        dice_section_visible = False
+        try:
+            if hasattr(self.game, 'dice_section') and self.game.dice_section.winfo_exists():
+                dice_section_visible = self.game.dice_section.winfo_ismapped()
+        except:
+            # Widget doesn't exist or was destroyed
+            dice_section_visible = False
+        
+        if hasattr(self.game, 'action_buttons_strip') and not dice_section_visible:
             # Clear and recreate the attack/flee buttons
             for widget in self.game.action_buttons_strip.winfo_children():
                 widget.destroy()
@@ -1360,7 +1368,7 @@ class CombatManager:
         
         # Dice display - using canvas for proper style rendering
         dice_display = tk.Frame(self.game.dice_frame, bg=self.game.current_colors["bg_panel"])
-        dice_display.pack(pady=5)
+        dice_display.pack(pady=10)
         self.debug_logger.ui("Dice display frame created")
         
         self.game.dice_buttons = []
