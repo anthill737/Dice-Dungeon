@@ -570,7 +570,8 @@ class NavigationManager:
         self.game.update_scroll_region()
         
         # Return focus to root window to ensure keybindings work
-        self.game.root.focus_force()
+        # Use after_idle to ensure focus is applied after all UI updates complete
+        self.game.root.after_idle(lambda: self.game.root.focus_force())
     
     def generate_ground_loot(self, room):
         """Generate what spawns on the ground when first entering a room"""
