@@ -2,6 +2,22 @@
 
 ## [Unreleased] - 2026-01-18
 
+### Added
+- **Narrative Introduction Screen**: Added first-time narrative intro that displays before gameplay begins
+  - WHY: Provide atmospheric context and world-building before throwing players into dungeon
+  - PROBLEM SOLVED: Game started abruptly with no setup or narrative framing
+  - TECHNICAL IMPLEMENTATION:
+    - **One-Time Display**: Shows only on very first new game, never again
+    - **Persistent Flag**: Stored in settings file as "intro_shown" boolean
+    - **Narrative Text**: Atmospheric story about waking in ancient structure, finding dice
+    - **Centered Display**: Full-screen overlay with centered text, no UI elements
+    - **Continue Button**: Single button to proceed to normal gameplay
+    - **Enter Binding**: Can press Enter to continue instead of clicking
+    - **Backwards Compatibility**: Existing settings files get intro_shown=False added
+    - **Post-Intro Flow**: After Continue, proceeds directly to existing starter area
+    - **No Gameplay Changes**: Zero impact on combat, dice, inventory, or balance
+    - **File Updated**: dice_dungeon_explorer.py show_narrative_intro() method
+
 ### Changed
 - **Game Branding**: Renamed from "Dice Dungeon Explorer" to "Dice Dungeon" throughout entire codebase
   - WHY: Simplified branding and consistent naming across all game materials

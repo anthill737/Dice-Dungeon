@@ -31,6 +31,7 @@ python3 --version
 echo ""
 
 # Run the setup script
-python3 setup.py
+cd ..
+python3 scripts/setup.py
 
 read -p "Press Enter to exit..."
