@@ -1,5 +1,5 @@
 """
-Inventory Manager for Dice Dungeon Explorer
+Inventory Manager for Dice Dungeon
 Handles player inventory, ground items, using/dropping items
 """
 

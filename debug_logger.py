@@ -1,5 +1,5 @@
 """
-Debug Logger for Dice Dungeon Explorer
+Debug Logger for Dice Dungeon
 Automatically activates when running from VS Code or when DEBUG env var is set
 """
 

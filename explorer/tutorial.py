@@ -1,5 +1,5 @@
 """
-Tutorial Manager for Dice Dungeon Explorer
+Tutorial Manager for Dice Dungeon
 Handles the tutorial/how-to-play interface with tabbed navigation
 """
 

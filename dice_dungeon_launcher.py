@@ -237,7 +237,7 @@ Dynamic map • Mysterious lore"""
     def show_splash_explorer(self):
         """Show splash screen for Explorer Mode"""
         splash = tk.Tk()
-        splash.title("Dice Dungeon Explorer")
+        splash.title("Dice Dungeon")
         splash.resizable(False, False)
         splash.configure(bg='#0a0604')
         
@@ -266,7 +266,7 @@ Dynamic map • Mysterious lore"""
         except:
             pass
         
-        tk.Label(main_frame, text="DICE DUNGEON EXPLORER",
+        tk.Label(main_frame, text="DICE DUNGEON",
                 font=('Arial', 22, 'bold'), bg='#0a0604', fg='#d4af37').pack(pady=8)
         tk.Label(main_frame, text="Explore • Fight • Loot • Survive",
                 font=('Arial', 12, 'italic'), bg='#0a0604', fg='#8b7355').pack(pady=5)

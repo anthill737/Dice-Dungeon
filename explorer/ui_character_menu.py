@@ -1,5 +1,5 @@
 """
-Character Menu UI for Dice Dungeon Explorer
+Character Menu UI for Dice Dungeon
 Handles the character stats/status screen
 """
 

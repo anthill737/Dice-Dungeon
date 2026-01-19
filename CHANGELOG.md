@@ -1,4 +1,4 @@
-# Dice Dungeon Explorer - Changelog
+# Dice Dungeon - Changelog
 
 ## [Unreleased] - 2025-12-21
 
@@ -2347,7 +2347,7 @@ Refer to tool documentation for these advanced features.
 
 ## [Unreleased] - 2025-10-09
 
-**THE BEGINNING** - This marks the inception of Dice Dungeon Explorer. What started as a simple request became a full-fledged roguelike RPG in a single day.
+**THE BEGINNING** - This marks the inception of Dice Dungeon. What started as a simple request became a full-fledged roguelike RPG in a single day.
 
 ### Origin Story
 The project began with a request to "build a game with odds and multipliers and sequences and matches and levels with scores you have to beat." The initial prototype was a match-3 style number chain game called "Number Chain Multiplier" with:

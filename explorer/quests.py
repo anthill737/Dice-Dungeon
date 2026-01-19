@@ -1,5 +1,5 @@
 """
-Quest system for Dice Dungeon Explorer
+Quest system for Dice Dungeon
 """
 
 from enum import Enum

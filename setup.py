@@ -1,5 +1,5 @@
 """
-Dice Dungeon Explorer - Simple GUI Installer
+Dice Dungeon - Simple GUI Installer
 Copies pre-built EXE to chosen location and creates shortcuts
 """
 
@@ -15,7 +15,7 @@ from tkinter import filedialog, messagebox
 class SimpleInstallerGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Dice Dungeon Explorer - Installer")
+        self.root.title("Dice Dungeon - Installer")
         self.root.geometry("600x550")
         self.root.resizable(False, False)
         self.root.configure(bg='#2c1810')
@@ -50,7 +50,7 @@ class SimpleInstallerGUI:
     def create_welcome_screen(self):
         """Create the welcome screen"""
         # Title
-        title = tk.Label(self.root, text="🎲 DICE DUNGEON EXPLORER", 
+        title = tk.Label(self.root, text="🎲 DICE DUNGEON", 
                         font=('Arial', 24, 'bold'), bg='#2c1810', fg='#ffd700')
         title.pack(pady=30)
         
@@ -220,7 +220,7 @@ class SimpleInstallerGUI:
                 shortcut = shell.CreateShortCut(shortcut_path)
                 shortcut.Targetpath = exe_path
                 shortcut.WorkingDirectory = self.install_dir
-                shortcut.Description = "Dice Dungeon Explorer"
+                shortcut.Description = "Dice Dungeon"
                 shortcut.IconLocation = exe_path
                 shortcut.save()
                 print(f"Created desktop shortcut: {shortcut_path}")
@@ -237,7 +237,7 @@ class SimpleInstallerGUI:
                 shortcut = shell.CreateShortCut(start_shortcut_path)
                 shortcut.Targetpath = exe_path
                 shortcut.WorkingDirectory = self.install_dir
-                shortcut.Description = "Dice Dungeon Explorer"
+                shortcut.Description = "Dice Dungeon"
                 shortcut.IconLocation = exe_path
                 shortcut.save()
                 print(f"Created start menu shortcut: {start_shortcut_path}")
@@ -253,7 +253,7 @@ class SimpleInstallerGUI:
         if platform.system() == "Windows":
             uninstall_content = f'''@echo off
 echo.
-echo Dice Dungeon Explorer - Uninstaller
+echo Dice Dungeon - Uninstaller
 echo.
 echo This will remove Dice Dungeon from your computer.
 echo Your save files will be preserved unless you delete them manually.

@@ -1,5 +1,5 @@
 """
-Dice Dungeon Explorer
+Dice Dungeon
 A roguelike dice game with dungeon exploration, combat, and interactive rooms
 """
 
@@ -15,8 +15,18 @@ from collections import Counter
 from debug_logger import get_logger
 from explorer import ui_character_menu
 
+# Helper function to get base directory (works with PyInstaller)
+def get_base_dir():
+    """Get the base directory - works both in dev and when frozen as exe"""
+    if getattr(sys, 'frozen', False):
+        # Running as compiled exe - use directory containing the exe
+        return os.path.dirname(sys.executable)
+    else:
+        # Running as script - use script directory
+        return os.path.dirname(os.path.abspath(__file__))
+
 # Add content engine to path
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dice_dungeon_content', 'engine'))
+sys.path.insert(0, os.path.join(get_base_dir(), 'dice_dungeon_content', 'engine'))
 
 # Try to import content engine modules (optional)
 try:
@@ -74,12 +84,12 @@ from explorer.tutorial import TutorialManager
 class DiceDungeonExplorer:
     def __init__(self, root):
         self.root = root
-        self.root.title("Dice Dungeon Explorer")
+        self.root.title("Dice Dungeon")
         
         # Set window and taskbar icon
         try:
             import os
-            icon_path = os.path.join(os.path.dirname(__file__), "assets", "DD Logo.png")
+            icon_path = os.path.join(get_base_dir(), "assets", "DD Logo.png")
             if os.path.exists(icon_path):
                 # Create PhotoImage for the icon
                 icon = tk.PhotoImage(file=icon_path)
@@ -111,8 +121,8 @@ class DiceDungeonExplorer:
         # Bind window resize event for dynamic scaling
         self.root.bind('<Configure>', self.on_window_resize)
         
-        # Ensure saves directory exists
-        self.saves_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'saves')
+        # Ensure saves directory exists (use get_base_dir for exe compatibility)
+        self.saves_dir = os.path.join(get_base_dir(), 'saves')
         os.makedirs(self.saves_dir, exist_ok=True)
         
         # High scores file
@@ -123,7 +133,7 @@ class DiceDungeonExplorer:
         
         # Load content system
         try:
-            base_dir = os.path.dirname(os.path.abspath(__file__))
+            base_dir = get_base_dir()
             attach_content(self, base_dir)
             
             # Ensure _rooms was initialized by attach_content
@@ -904,11 +914,10 @@ class DiceDungeonExplorer:
     def handle_hotkey(self, action):
         """Handle hotkey presses during gameplay"""
         # Check if user is currently typing in a text entry field
+        # Block ALL hotkeys when typing to prevent interference (Entry widgets have their own Escape bindings)
         focused_widget = self.root.focus_get()
         if focused_widget and isinstance(focused_widget, tk.Entry):
-            # Only allow Escape to work in entry fields (to close dialogs/exit fields)
-            if action != 'menu':
-                return
+            return  # Block all hotkeys while typing in text fields
         
         # Special handling for menu key (ESC or custom) - toggle pause menu
         if action == 'menu':
@@ -1084,7 +1093,7 @@ class DiceDungeonExplorer:
                                       f'adventure_log_export{slot_suffix}_{timestamp}.txt')
             
             with open(export_file, 'w', encoding='utf-8') as f:
-                f.write(f"DICE DUNGEON EXPLORER - Adventure Log Export\n")
+                f.write(f"DICE DUNGEON - Adventure Log Export\n")
                 f.write(f"Save Slot: {self.current_save_slot if self.current_save_slot else 'New Game (Not Saved)'}\n")
                 f.write(f"Exported: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                 f.write(f"{'='*70}\n\n")
@@ -1618,7 +1627,7 @@ class DiceDungeonExplorer:
         header_inner = tk.Frame(header, bg=self.current_colors["bg_header"])
         header_inner.pack(fill=tk.X, padx=self.scale_padding(6), pady=self.scale_padding(3))
         
-        tk.Label(header_inner, text="⚔ DICE DUNGEON EXPLORER ⚔", 
+        tk.Label(header_inner, text="⚔ DICE DUNGEON ⚔", 
                 font=('Georgia', self.scale_font(12), 'bold'),
                 bg=self.current_colors["bg_header"], 
                 fg=self.current_colors["text_gold"]).pack(side=tk.LEFT, padx=self.scale_padding(8))
@@ -8512,7 +8521,7 @@ if __name__ == "__main__":
     class SplashScreen:
         def __init__(self):
             self.splash = tk.Tk()
-            self.splash.title("Dice Dungeon Explorer")
+            self.splash.title("Dice Dungeon")
             self.splash.resizable(False, False)
             self.splash.configure(bg='#0a0604')
             
@@ -8529,7 +8538,7 @@ if __name__ == "__main__":
             # Set window icon
             try:
                 import os
-                icon_path = os.path.join(os.path.dirname(__file__), "assets", "DD Logo.png")
+                icon_path = os.path.join(get_base_dir(), "assets", "DD Logo.png")
                 if os.path.exists(icon_path):
                     icon = tk.PhotoImage(file=icon_path)
                     self.splash.iconphoto(True, icon)
@@ -8542,7 +8551,7 @@ if __name__ == "__main__":
             
             # Logo - smaller to leave more room for text
             try:
-                logo_path = os.path.join(os.path.dirname(__file__), "assets", "DD Logo.png")
+                logo_path = os.path.join(get_base_dir(), "assets", "DD Logo.png")
                 if os.path.exists(logo_path):
                     # Load and resize logo - slightly smaller
                     from PIL import Image, ImageTk
@@ -8562,7 +8571,7 @@ if __name__ == "__main__":
                         bg='#0a0604', fg='#d4af37').pack(pady=(40, 15))
             
             # Game title
-            tk.Label(main_frame, text="DICE DUNGEON EXPLORER", 
+            tk.Label(main_frame, text="DICE DUNGEON", 
                     font=('Arial', 22, 'bold'), bg='#0a0604', fg='#d4af37').pack(pady=8)
             
             # Subtitle

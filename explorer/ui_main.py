@@ -1,5 +1,5 @@
 """
-Main UI setup for Dice Dungeon Explorer
+Main UI setup for Dice Dungeon
 Handles building the main game UI frames and panels
 """
 

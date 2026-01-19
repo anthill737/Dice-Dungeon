@@ -15,7 +15,7 @@ git add .
 
 ### 3. Create Initial Commit
 ```powershell
-git commit -m "Initial commit - Dice Dungeon Explorer v1.0"
+git commit -m "Initial commit - Dice Dungeon v1.0"
 ```
 
 ### 4. Create GitHub Repository

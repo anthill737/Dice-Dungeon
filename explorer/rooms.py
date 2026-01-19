@@ -1,5 +1,5 @@
 """
-Room class for Dice Dungeon Explorer
+Room class for Dice Dungeon
 """
 
 class Room:

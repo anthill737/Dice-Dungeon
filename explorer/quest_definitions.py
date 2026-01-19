@@ -1,5 +1,5 @@
 """
-Quest definitions for Dice Dungeon Explorer
+Quest definitions for Dice Dungeon
 """
 
 from typing import Dict
