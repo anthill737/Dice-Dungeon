@@ -1,4 +1,4 @@
-# Architecture Rules for Dice Dungeon Explorer
+# Architecture Rules for Dice Dungeon
 
 ## Manager Pattern - CRITICAL RULES
 

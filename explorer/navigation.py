@@ -17,7 +17,8 @@ from tkinter import messagebox
 try:
     import sys
     import os
-    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+    from explorer.path_utils import get_base_dir
+    sys.path.insert(0, get_base_dir())
     from dice_dungeon_content.engine.integration_hooks import (
         apply_on_enter, on_floor_transition, apply_effective_modifiers
     )

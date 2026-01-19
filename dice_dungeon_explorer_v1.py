@@ -1,5 +1,5 @@
 """
-Dice Dungeon Explorer
+Dice Dungeon
 A roguelike dice game with dungeon exploration integrated with content system
 """
 
@@ -31,7 +31,7 @@ class Room:
 class DiceDungeonExplorer:
     def __init__(self, root):
         self.root = root
-        self.root.title("Dice Dungeon Explorer")
+        self.root.title("Dice Dungeon")
         self.root.geometry("900x700")
         self.root.minsize(600, 500)
         self.root.configure(bg='#2c1810')
@@ -168,7 +168,7 @@ class DiceDungeonExplorer:
         self.main_frame.pack(fill=tk.BOTH, expand=True)
         
         # Title
-        tk.Label(self.main_frame, text="DICE DUNGEON EXPLORER", 
+        tk.Label(self.main_frame, text="DICE DUNGEON", 
                 font=('Arial', 24, 'bold'), bg='#2c1810', fg='#ffd700',
                 pady=30).pack()
         
@@ -301,7 +301,7 @@ class DiceDungeonExplorer:
         header = tk.Frame(self.scroll_frame, bg='#1a0f08', pady=10)
         header.pack(fill=tk.X)
         
-        tk.Label(header, text="DICE DUNGEON EXPLORER", font=('Arial', 18, 'bold'),
+        tk.Label(header, text="DICE DUNGEON", font=('Arial', 18, 'bold'),
                 bg='#1a0f08', fg='#ffd700').pack(side=tk.LEFT, padx=20)
         
         # Menu button

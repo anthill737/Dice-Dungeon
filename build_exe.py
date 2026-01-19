@@ -1,5 +1,5 @@
 """
-Build Script - Creates a standalone executable for Dice Dungeon Explorer
+Build Script - Creates a standalone executable for Dice Dungeon
 Requires PyInstaller: pip install pyinstaller
 """
 
@@ -125,7 +125,7 @@ def create_distribution():
     # Create README for the distribution
     with open(dist_folder / "HOW_TO_PLAY.txt", 'w') as f:
         f.write("""
-DICE DUNGEON EXPLORER - Portable Version
+DICE DUNGEON - Portable Version
 
 HOW TO PLAY:
 1. Double-click DiceDungeon.exe
@@ -168,7 +168,7 @@ def create_installer():
     # Create an Inno Setup script
     iss_content = '''
 [Setup]
-AppName=Dice Dungeon Explorer
+AppName=Dice Dungeon
 AppVersion=1.0
 DefaultDirName={autopf}\\Dice Dungeon
 DefaultGroupName=Dice Dungeon

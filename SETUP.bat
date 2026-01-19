@@ -1,5 +1,5 @@
 @echo off
-REM Dice Dungeon Explorer - GUI Installer
+REM Dice Dungeon - GUI Installer
 
 REM Run the GUI installer (no console window needed with pythonw)
 if exist "%LOCALAPPDATA%\Programs\Python\Python311\pythonw.exe" (

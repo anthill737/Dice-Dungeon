@@ -1,5 +1,5 @@
 """
-Dice Dungeon Explorer Package
+Dice Dungeon Package
 Modular components for the game
 """
 

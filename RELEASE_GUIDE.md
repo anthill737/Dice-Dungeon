@@ -95,7 +95,7 @@ Before creating a release:
 ## Release Notes Template
 
 ```markdown
-# Dice Dungeon Explorer v1.0.0
+# Dice Dungeon v1.0.0
 
 ## 🎮 Play Now!
 

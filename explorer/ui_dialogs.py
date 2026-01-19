@@ -1,5 +1,5 @@
 """
-UI Dialogs Manager for Dice Dungeon Explorer
+UI Dialogs Manager for Dice Dungeon
 Handles settings menu, high scores, and other UI dialogs
 """
 

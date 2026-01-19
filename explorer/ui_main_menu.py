@@ -8,6 +8,7 @@ responsive design, and user interactions.
 import tkinter as tk
 import os
 from PIL import Image, ImageTk
+from explorer.path_utils import get_asset_path
 
 
 class MainMenuManager:
@@ -63,7 +64,7 @@ class MainMenuManager:
         logo_frame.pack(pady=(0, int(vertical_padding * 0.5)))
         
         try:
-            logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "DD Logo.png")
+            logo_path = get_asset_path("assets", "DD Logo.png")
             if os.path.exists(logo_path):
                 img = Image.open(logo_path)
                 # Scale logo proportionally - 10-13% of window height
@@ -82,7 +83,7 @@ class MainMenuManager:
         
         # Title
         title_size = max(18, min(28, int(current_height * 0.037)))
-        tk.Label(header_frame, text="DICE DUNGEON EXPLORER", 
+        tk.Label(header_frame, text="DICE DUNGEON", 
                 font=('Arial', title_size, 'bold'), 
                 bg=bg_color, fg=self.game.current_colors["text_gold"]).pack(pady=(0, 5))
         
@@ -172,7 +173,7 @@ class MainMenuManager:
         
         # Load and display logo
         try:
-            logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "DD Logo.png")
+            logo_path = get_asset_path("assets", "DD Logo.png")
             if os.path.exists(logo_path):
                 # Calculate logo size - reasonable middle ground
                 img = Image.open(logo_path)
@@ -197,7 +198,7 @@ class MainMenuManager:
         
         # Title section with balanced font sizing
         title_size = max(18, min(26, int(available_height * 0.038)))
-        tk.Label(header_frame, text="DICE DUNGEON EXPLORER", 
+        tk.Label(header_frame, text="DICE DUNGEON", 
                 font=('Arial', self.game.scale_font(title_size), 'bold'), 
                 bg=bg_color, fg=self.game.current_colors["text_gold"]).pack(pady=(0, int(base_spacing * 0.4)))
         

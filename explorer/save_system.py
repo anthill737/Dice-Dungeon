@@ -1,5 +1,5 @@
 """
-Save System for Dice Dungeon Explorer
+Save System for Dice Dungeon
 Handles save/load game logic and save slot UI
 """
 

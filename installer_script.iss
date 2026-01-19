@@ -1,6 +1,6 @@
 
 [Setup]
-AppName=Dice Dungeon Explorer
+AppName=Dice Dungeon
 AppVersion=1.0
 DefaultDirName={autopf}\Dice Dungeon
 DefaultGroupName=Dice Dungeon

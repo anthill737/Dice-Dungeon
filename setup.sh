@@ -1,10 +1,10 @@
 #!/bin/bash
-# Dice Dungeon Explorer - Linux/Mac Setup Script
+# Dice Dungeon - Linux/Mac Setup Script
 # Run this file to install and setup the game
 
 echo ""
 echo "====================================================="
-echo "  DICE DUNGEON EXPLORER - SETUP"
+echo "  DICE DUNGEON - SETUP"
 echo "====================================================="
 echo ""
 echo "This will automatically:"
