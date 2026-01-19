@@ -799,7 +799,7 @@ class NavigationManager:
                  font=('Arial', self.game.scale_font(16), 'bold'), bg=self.game.current_colors["button_secondary"], fg='#000000',
                  width=3, height=1).pack(side=tk.RIGHT, padx=self.game.scale_padding(2))
         
-        tk.Button(menu_frame, text="?", command=self.game.show_keybindings,
+        tk.Button(menu_frame, text="?", command=self.game.show_tutorial,
                  font=('Arial', self.game.scale_font(16), 'bold'), bg=self.game.current_colors["button_secondary"], fg='#000000',
                  width=3, height=1).pack(side=tk.RIGHT, padx=self.game.scale_padding(2))
         

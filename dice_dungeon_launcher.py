@@ -69,7 +69,7 @@ class GameLauncher:
                 font=('Arial', 28, 'bold'), bg='#2c1810', fg='#ffd700',
                 pady=10).pack()
         
-        tk.Label(self.root, text="Choose Your Adventure", 
+        tk.Label(self.root, text="Choose Your Game Mode", 
                 font=('Arial', 16), bg='#2c1810', fg='#ffffff',
                 pady=10).pack()
         
@@ -97,22 +97,22 @@ Shop upgrades • Fast action"""
                  font=('Arial', 11, 'bold'), bg='#4ecdc4', fg='#000000',
                  width=16, pady=10).pack(pady=12)
         
-        # Explorer Mode Card
-        explorer_card = tk.Frame(cards_frame, bg='#3d2415', relief=tk.RAISED, borderwidth=3)
-        explorer_card.pack(side=tk.LEFT, padx=15)
+        # Adventure Mode Card
+        adventure_card = tk.Frame(cards_frame, bg='#3d2415', relief=tk.RAISED, borderwidth=3)
+        adventure_card.pack(side=tk.LEFT, padx=15)
         
-        tk.Label(explorer_card, text="🗺  EXPLORER  🗺", 
+        tk.Label(adventure_card, text="🗺  ADVENTURE  🗺", 
                 font=('Arial', 14, 'bold'), bg='#3d2415', fg='#ffd700',
                 pady=10).pack()
         
-        explorer_desc = """Procedural dungeons • 100+ rooms
+        adventure_desc = """Procedural dungeons • 100+ rooms
 Dynamic map • Mysterious lore"""
         
-        tk.Label(explorer_card, text=explorer_desc, 
+        tk.Label(adventure_card, text=adventure_desc, 
                 font=('Arial', 9), bg='#3d2415', fg='#ffffff',
                 justify=tk.CENTER, padx=15, pady=8).pack()
         
-        tk.Button(explorer_card, text="PLAY EXPLORER", 
+        tk.Button(adventure_card, text="PLAY ADVENTURE", 
                  command=self.launch_explorer,
                  font=('Arial', 11, 'bold'), bg='#ffd700', fg='#000000',
                  width=16, pady=10).pack(pady=12)

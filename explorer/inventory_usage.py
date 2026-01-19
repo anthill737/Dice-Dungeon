@@ -28,7 +28,10 @@ class InventoryUsageManager:
         
         item_name = self.game.inventory[idx]
         
-        item_def = self.game.item_definitions.get(item_name, {})
+        # Strip "#X" suffix from lore items to get base name for item_definitions lookup
+        base_item_name = item_name.split(' #')[0] if ' #' in item_name else item_name
+        
+        item_def = self.game.item_definitions.get(base_item_name, {})
         item_type = item_def.get('type', 'unknown')
         
         # Handle different item types
@@ -276,15 +279,19 @@ class InventoryUsageManager:
             
         elif item_type == 'readable_lore':
             # Readable lore items with full narrative content
-            # Check if there are multiple copies of this item
-            copies_indices = [i for i, inv_item in enumerate(self.game.inventory) if inv_item == item_name]
+            # Strip "#X" suffix to get base name for LoreManager
+            base_name = item_name.split(' #')[0] if ' #' in item_name else item_name
+            
+            # Check if there are multiple copies of this item (by base name)
+            copies_indices = [i for i, inv_item in enumerate(self.game.inventory) 
+                            if (inv_item.split(' #')[0] if ' #' in inv_item else inv_item) == base_name]
             
             if len(copies_indices) > 1:
                 # Multiple copies - show selection dialog
-                self.game.show_lore_selection_dialog(item_name, copies_indices)
+                self.game.show_lore_selection_dialog(base_name, copies_indices)
             else:
                 # Single copy - read directly
-                self.game.lore_manager.read_lore_item(item_name, idx)
+                self.game.lore_manager.read_lore_item(base_name, idx)
             
         elif item_type == 'consumable_blessing':
             # Prayer Candle - random blessing

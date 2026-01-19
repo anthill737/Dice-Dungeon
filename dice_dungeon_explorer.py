@@ -1465,11 +1465,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         # Continue button at bottom
         def continue_to_game():
-            # Mark intro as shown and save settings
-            self.settings["intro_shown"] = True
-            self.save_settings()
-            
-            # Destroy intro and start game
+            # Destroy intro and start game (no need to save intro_shown)
             intro_frame.destroy()
             self.show_starter_area()
         
@@ -1646,11 +1642,8 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         self.game_active = True
         
-        # Show narrative intro if this is the first time ever starting a new game
-        if not self.settings.get("intro_shown", False):
-            self.show_narrative_intro()
-        else:
-            self.show_starter_area()
+        # Always show narrative intro for new games (not tied to settings)
+        self.show_narrative_intro()
     
     def start_new_floor(self):
         """Initialize a new floor"""
@@ -1730,7 +1723,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
                  bg=self.current_colors["text_purple"], fg='#ffffff',
                  width=2, pady=self.scale_padding(2), relief=tk.RAISED, borderwidth=2).pack(side=tk.LEFT, padx=self.scale_padding(2))
         
-        tk.Button(btn_frame, text="?", command=self.show_keybindings,
+        tk.Button(btn_frame, text="?", command=self.show_tutorial,
                  font=('Arial', self.scale_font(10), 'bold'), 
                  bg=self.current_colors["button_secondary"], fg='#000000',
                  width=2, pady=self.scale_padding(2), relief=tk.RAISED, borderwidth=2).pack(side=tk.LEFT, padx=self.scale_padding(2))
@@ -3248,7 +3241,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
                  font=('Arial', self.scale_font(16), 'bold'), bg=self.current_colors["button_secondary"], fg='#000000',
                  width=3, height=1).pack(side=tk.RIGHT, padx=self.scale_padding(2))
         
-        tk.Button(menu_frame, text="?", command=self.show_keybindings,
+        tk.Button(menu_frame, text="?", command=self.show_tutorial,
                  font=('Arial', self.scale_font(16), 'bold'), bg=self.current_colors["button_secondary"], fg='#000000',
                  width=3, height=1).pack(side=tk.RIGHT, padx=self.scale_padding(2))
         
@@ -3732,9 +3725,9 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             entry_header = tk.Frame(entry_item, bg=self.current_colors["bg_dark"])
             entry_header.pack(fill=tk.X, pady=5)
             
-            # Copy number and position
+            # Copy number only
             copy_label = tk.Label(entry_header, 
-                                 text=f"{item_name} #{i+1} (Slot {inventory_idx+1} in inventory)",
+                                 text=f"{item_name} #{i+1}",
                                  font=('Arial', 10),
                                  bg=self.current_colors["bg_dark"],
                                  fg=self.current_colors["text_primary"])
@@ -7581,153 +7574,6 @@ Final Score: {self.run_score}
         self.save_settings()
         self.show_settings()  # Refresh with new colors
     
-    def show_keybindings(self):
-        """Show help menu with gameplay mechanics and controls"""
-        if self.dialog_frame:
-            self.dialog_frame.destroy()
-        
-        # Responsive sizing
-        dialog_width, dialog_height = self.get_responsive_dialog_size(700, 650)
-        
-        self.dialog_frame = tk.Frame(self.root, bg=self.current_colors["bg_primary"], 
-                                      relief=tk.RAISED, borderwidth=3)
-        self.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, 
-                                width=dialog_width, height=dialog_height)
-        
-        # Header with title and X button
-        header = tk.Frame(self.dialog_frame, bg=self.current_colors["bg_primary"])
-        header.pack(fill=tk.X, pady=(10, 5))
-        
-        tk.Label(header, text="? HELP & CONTROLS ?", font=('Arial', 18, 'bold'),
-                bg=self.current_colors["bg_primary"], fg=self.current_colors["text_gold"]).pack(pady=5)
-        
-        close_btn = tk.Label(header, text="✕", font=('Arial', 16, 'bold'),
-                            bg=self.current_colors["bg_primary"], fg='#ff4444', cursor="hand2", padx=5)
-        close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=0)
-        close_btn.bind('<Button-1>', lambda e: self.close_dialog())
-        close_btn.bind('<Enter>', lambda e: close_btn.config(fg='#ff0000'))
-        close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
-        
-        # Scrollable content
-        canvas = tk.Canvas(self.dialog_frame, bg=self.current_colors["bg_secondary"], highlightthickness=0)
-        scrollbar = tk.Scrollbar(self.dialog_frame, orient="vertical", command=canvas.yview, width=10,
-                                bg=self.current_colors["bg_secondary"], troughcolor=self.current_colors["bg_dark"])
-        content_frame = tk.Frame(canvas, bg=self.current_colors["bg_secondary"])
-        
-        content_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
-        
-        def update_width(event=None):
-            canvas.itemconfig(canvas_window, width=canvas.winfo_width()-10)
-        
-        canvas_window = canvas.create_window((0, 0), window=content_frame, anchor="nw")
-        canvas.bind("<Configure>", update_width)
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        canvas.pack(side="left", fill="both", expand=True, padx=10, pady=5)
-        scrollbar.pack(side="right", fill="y", pady=5)
-        
-        # Help sections - game mechanics and controls
-        sections = [
-            ("HOW TO PLAY", [
-                ("", "GOAL: Explore the dungeon, defeat enemies, find stairs, and descend deeper!"),
-            ]),
-            ("⬆⬇⬅➡ EXPLORATION", [
-                ("", "Use WASD or arrow keys to explore new rooms"),
-                ("", "Each room may contain enemies, chests, or stairs"),
-                ("", "You MUST find stairs to descend deeper into the dungeon"),
-                ("", "Deeper floors = tougher enemies + better loot"),
-            ]),
-            ("⚔ COMBAT", [
-                ("", "Enemies block your path until defeated"),
-                ("", "Click dice to roll, click again to lock/unlock"),
-                ("", "Create combos for massive damage"),
-                ("", "Flee if in danger (50% success, costs HP)"),
-            ]),
-            ("DICE COMBOS", [
-                ("", "Pair (2 of a kind): value × 2"),
-                ("", "Triple (3 of a kind): value × 5"),
-                ("", "Quad (4 of a kind): value × 10"),
-                ("", "Five of a Kind: value × 20"),
-                ("", "Full House: +50 bonus"),
-                ("", "Flush (5+ same): value × 15"),
-                ("", "Straights: +25 to +40 bonus"),
-            ]),
-            ("◉ LOOTING & ITEMS", [
-                ("", "Open chests for gold, items, or health"),
-                ("", "Manage inventory (20 item limit, upgradeable)"),
-                ("", "Visit shops to buy/sell items"),
-                ("", "Equip weapons, armor, and accessories"),
-            ]),
-            ("[RESTING]", [
-                ("", "Press R to rest and recover 20 HP"),
-                ("", "After resting, you must explore 3 rooms before resting again"),
-                ("", "Cannot rest during combat"),
-            ]),
-            ("CONTROLS", [
-                ("TAB / I", "Open Inventory"),
-                ("G", "Character Status"),
-                ("R", "Rest (heal 20 HP, 3-room cooldown)"),
-                ("ESC / M", "Menu / Close Dialog"),
-                ("WASD / Arrows", "Move (disabled in combat)"),
-            ]),
-            ("💡 TIPS", [
-                ("", "Save HP for boss fights"),
-                ("", "Lock dice strategically for big combos"),
-                ("", "Check character status (C) to see your stats"),
-                ("", "Hover over items for descriptions"),
-            ])
-        ]
-        
-        for section_title, items in sections:
-            # Section header
-            section_header = tk.Frame(content_frame, bg=self.current_colors["bg_panel"], 
-                                     relief=tk.RIDGE, borderwidth=2)
-            section_header.pack(fill=tk.X, padx=10, pady=(10, 5))
-            
-            tk.Label(section_header, text=section_title, font=('Arial', 13, 'bold'),
-                    bg=self.current_colors["bg_panel"], fg=self.current_colors["text_cyan"], 
-                    pady=5).pack()
-            
-            # Items list
-            for key, description in items:
-                item_frame = tk.Frame(content_frame, bg=self.current_colors["bg_secondary"])
-                item_frame.pack(fill=tk.X, padx=20, pady=2)
-                
-                if key:  # Control binding
-                    tk.Label(item_frame, text=key, font=('Consolas', 10, 'bold'),
-                            bg=self.current_colors["bg_dark"], fg=self.current_colors["text_gold"], 
-                            width=14, anchor='center',
-                            relief=tk.RAISED, borderwidth=1, pady=2).pack(side=tk.LEFT, padx=5)
-                    
-                    tk.Label(item_frame, text=description, font=('Arial', 10),
-                            bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_white"], 
-                            anchor='w').pack(side=tk.LEFT, padx=10)
-                else:  # Info/tip without key
-                    tk.Label(item_frame, text=f"• {description}", font=('Arial', 10),
-                            bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_white"], 
-                            anchor='w', wraplength=550).pack(side=tk.LEFT, padx=15, pady=2)
-        
-        # Update scroll region and setup mousewheel
-        content_frame.update_idletasks()
-        canvas.configure(scrollregion=canvas.bbox("all"))
-        self.setup_mousewheel_scrolling(canvas)
-        
-        # Bind mousewheel to all child widgets
-        def bind_mousewheel_to_tree(widget):
-            def on_mousewheel(event):
-                canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-            widget.bind("<MouseWheel>", on_mousewheel, add='+')
-            for child in widget.winfo_children():
-                bind_mousewheel_to_tree(child)
-        bind_mousewheel_to_tree(content_frame)
-        
-        # ESC to close
-        self.dialog_frame.bind('<Escape>', lambda e: self.close_dialog() or "break")
-        self.dialog_frame.focus_set()
-    
     def show_dev_tools(self):
         """Open comprehensive Dev Tools in dialog"""
         from tkinter import ttk
@@ -8138,36 +7984,85 @@ Final Score: {self.run_score}
         
         # Get complete item list from item_definitions (excluding _meta)
         item_list = sorted([item for item in self.item_definitions.keys() if item != '_meta'])
-        print(f"DEBUG: Found {len(item_list)} items: {item_list[:10]}...")  # Show first 10
         
-        # Search and filter controls
+        # Add all lore item types with their indices
+        lore_item_types = [
+            ("Guard Journal", len(self.lore_items.get("guards_journal_pages", []))),
+            ("Quest Notice", len(self.lore_items.get("quest_notices", []))),
+            ("Training Manual Page", len(self.lore_items.get("training_manual_pages", []))),
+            ("Scrawled Note", len(self.lore_items.get("scrawled_notes", []))),
+            ("Pressed Page", len(self.lore_items.get("pressed_pages", []))),
+            ("Surgeon's Note", len(self.lore_items.get("surgeons_notes", []))),
+            ("Puzzle Note", len(self.lore_items.get("puzzle_notes", []))),
+            ("Star Chart", len(self.lore_items.get("star_charts", []))),
+            ("Cracked Map Scrap", len(self.lore_items.get("cracked_map_scraps", []))),
+            ("Old Letter", len(self.lore_items.get("old_letters", []))),
+            ("Prayer Strip", len(self.lore_items.get("prayer_strips", [])))
+        ]
+        
+        # Add lore items without numbers - they stack naturally and get numbered when read
+        for lore_name, count in lore_item_types:
+            for i in range(count):
+                item_list.append(lore_name)
+        
+        print(f"DEBUG: Found {len(item_list)} items total (including lore)")
+        
+        # Search and filter controls - with scrollable filter buttons
         item_controls_frame = tk.Frame(item_tab, bg=self.current_colors["bg_secondary"])
         item_controls_frame.pack(fill=tk.X, padx=20, pady=10)
         
-        tk.Label(item_controls_frame, text="Search:", bg=self.current_colors["bg_secondary"],
+        # First row: Search
+        search_row = tk.Frame(item_controls_frame, bg=self.current_colors["bg_secondary"])
+        search_row.pack(fill=tk.X, pady=(0, 5))
+        
+        tk.Label(search_row, text="Search:", bg=self.current_colors["bg_secondary"],
                 fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
         item_search_var = tk.StringVar()
-        item_search_entry = tk.Entry(item_controls_frame, textvariable=item_search_var, width=20)
+        item_search_entry = tk.Entry(search_row, textvariable=item_search_var, width=30)
         item_search_entry.pack(side=tk.LEFT, padx=5)
         
-        tk.Label(item_controls_frame, text="Filter:", bg=self.current_colors["bg_secondary"],
-                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(20, 5))
+        # Second row: Filter label and scrollable filter buttons
+        filter_row = tk.Frame(item_controls_frame, bg=self.current_colors["bg_secondary"])
+        filter_row.pack(fill=tk.X, pady=2)
+        
+        tk.Label(filter_row, text="Filter:", bg=self.current_colors["bg_secondary"],
+                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+        
+        # Create scrollable canvas for filter buttons
+        filter_canvas = tk.Canvas(filter_row, bg=self.current_colors["bg_secondary"], 
+                                 height=30, highlightthickness=0)
+        filter_scrollbar = tk.Scrollbar(filter_row, orient="horizontal", command=filter_canvas.xview)
+        filter_buttons_frame = tk.Frame(filter_canvas, bg=self.current_colors["bg_secondary"])
+        
+        filter_canvas.create_window((0, 0), window=filter_buttons_frame, anchor="nw")
+        filter_canvas.configure(xscrollcommand=filter_scrollbar.set)
         
         item_filter_var = tk.StringVar(value="All")
-        item_categories = ["All", "Weapon", "Armor", "Accessory", "Consumable", "Combat Item", "Utility", "Upgrade", "Repair Kit", "Other"]
+        item_categories = ["All", "Weapon", "Armor", "Accessory", "Consumable", "Combat Item", "Utility", "Upgrade", "Repair Kit", "Lore", "Other"]
         
         # Filter buttons
         for category in item_categories:
             def set_item_filter(cat=category):
                 item_filter_var.set(cat)
                 refresh_item_list()
-            btn = tk.Button(item_controls_frame, text=category, command=set_item_filter,
+            btn = tk.Button(filter_buttons_frame, text=category, command=set_item_filter,
                     font=('Arial', 7), bg=self.current_colors["bg_dark"],
                     fg=self.current_colors["text_secondary"], padx=3, pady=2)
             btn.pack(side=tk.LEFT, padx=1)
         
-        tk.Label(item_controls_frame, text="Sort:", bg=self.current_colors["bg_secondary"],
-                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(20, 5))
+        # Update scroll region after buttons are created
+        filter_buttons_frame.update_idletasks()
+        filter_canvas.configure(scrollregion=filter_canvas.bbox("all"))
+        
+        filter_canvas.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        filter_scrollbar.pack(side=tk.BOTTOM, fill=tk.X, padx=5)
+        
+        # Third row: Sort
+        sort_row = tk.Frame(item_controls_frame, bg=self.current_colors["bg_secondary"])
+        sort_row.pack(fill=tk.X, pady=(5, 0))
+        
+        tk.Label(sort_row, text="Sort:", bg=self.current_colors["bg_secondary"],
+                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
         item_sort_var = tk.StringVar(value="name_asc")
         
         # Sort buttons
@@ -8176,7 +8071,7 @@ Final Score: {self.run_score}
             def set_item_sort(st=sort_type):
                 item_sort_var.set(st)
                 refresh_item_list()
-            btn = tk.Button(item_controls_frame, text=label, command=set_item_sort,
+            btn = tk.Button(sort_row, text=label, command=set_item_sort,
                     font=('Arial', 8), bg=self.current_colors["bg_dark"],
                     fg=self.current_colors["text_secondary"], width=5, pady=2)
             btn.pack(side=tk.LEFT, padx=2)
@@ -8201,6 +8096,13 @@ Final Score: {self.run_score}
         item_scrollbar.pack(side="left", fill="y", padx=(0, 20))
         
         def get_item_category(item_name):
+            # Check if it's a lore item
+            lore_prefixes = ["Guard's Journal", "Quest Notice", "Training Manual", "Scrawled Note", 
+                           "Pressed Page", "Surgeon's Notes", "Puzzle Note", "Star Chart", 
+                           "Cracked Map", "Old Letter", "Prayer Strip"]
+            if any(item_name.startswith(prefix) for prefix in lore_prefixes):
+                return "Lore"
+            
             item_def = self.item_definitions.get(item_name, {})
             item_type = item_def.get("type", "other")
             slot = item_def.get("slot", None)
@@ -8266,7 +8168,7 @@ Final Score: {self.run_score}
                 badge_colors = {
                     "Weapon": "#e74c3c", "Armor": "#3498db", "Accessory": "#9b59b6",
                     "Consumable": "#27ae60", "Combat Item": "#e67e22", "Utility": "#f39c12",
-                    "Upgrade": "#1abc9c", "Repair Kit": "#95a5a6", "Other": "#7f8c8d"
+                    "Upgrade": "#1abc9c", "Repair Kit": "#95a5a6", "Lore": "#d4a574", "Other": "#7f8c8d"
                 }
                 tk.Label(row_frame, text=f"[{category}]", font=('Arial', 7),
                         bg=badge_colors.get(category, "#95a5a6"), fg='#ffffff').pack(side=tk.LEFT, padx=2)
