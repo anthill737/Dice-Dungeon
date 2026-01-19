@@ -6,389 +6,389 @@
   
   "guards_journal_pages": [
     {
-      "date": "Day 47 of the Siege",
-      "text": "Eastern wall showing cracks. Captain Merris ordered double watch rotation. Men are tired. Rations down to two-thirds portion. Some talk of heading back to the surface, but desertion means a flogging if caught. Better hungry than bleeding."
+      "date": "Day 47 of Assignment",
+      "text": "Same eastern corridor again today. I swear we sealed that section last month. Captain says renovations. The layout doesn't match my notes though. Walls are smooth where I marked rough stone. Someone's maintaining this place better than we are."
     },
     {
-      "date": "Day 12 of Isolation",
-      "text": "Supply cart didn't arrive this week. Found tracks near the grain stores - rats got through the drainage grate. Thompson's fixing it tomorrow. Haven't heard from the lower garrison in three days. Their pigeon came back. No note attached."
+      "date": "Day 12, Second Month",
+      "text": "Found my old patrol route in the log. Exact same path I walked today. Down to the number of steps. Mentioned it to Thompson. He said that's the route that works. Didn't explain what 'works' means. Didn't ask."
     },
     {
-      "date": "Third Watch, Autumn Season",
-      "text": "New posting came through. Rotating me to the eastern passages next week. Jenkins says the air's bad down there. He was there last month and can't remember most of his shift. Says he just blanked out. Doctor says it's fatigue. Maybe."
+      "date": "Third Watch, Unknown Date",
+      "text": "Lost track of the calendar again. Days blend together. The work stays consistent though. Same rounds, same checks. It's calming actually. No surprises. You learn to appreciate that here."
     },
     {
-      "date": "Day 89 of Duty",
-      "text": "Training new guards. Farmers' sons mostly. Never held a sword. Give them the usual - check corners, watch your back in tight spaces. By week's end we'll know who has the sense for this. Half won't."
-    },
-    {
-      "date": "After the Breach",
-      "text": "Something came through the sealed passage in sector 7. Tracks in the dust. Looked human-shaped but Sergeant Hale says the spacing's off. We resealed it this morning. Extra mortar. Captain wants it watched for a month. Just to be safe."
-    },
-    {
-      "date": "Midsummer's Watch",
-      "text": "Heard sounds from the old chapel wing. Distant. Almost like singing. Sent three guards. They say the acoustics down there play tricks. Wind through broken windows probably. We're avoiding it anyway. No reason to go there."
-    },
-    {
-      "date": "Winter Solstice",
-      "text": "Cold's getting worse in the lower levels. Ice on the walls even though we're well below where it should freeze. Miller got frostbite during patrol. Quartermaster requisitioned warm gear from the surface. Two weeks out."
-    },
-    {
-      "date": "Day Unknown - Torn Page",
-      "text": "Found this in my pack. Don't remember writing it. Handwriting looks like mine though. Says avoid the bell tower on the 15th. Don't know what month. Drunk me being paranoid probably. Bell tower's condemned anyway."
-    },
-    {
-      "date": "First Watch, Autumn",
-      "text": "Someone got into the armory last night. Nothing stolen. All the weapons were rearranged though. Swords face outward now instead of in. Captain thinks it's a prank. Night shift denies it. New lock going in tomorrow."
-    },
-    {
-      "date": "Day 156 of Service",
-      "text": "Hayes swears the courtyard statue moved. Used to face east, now it's west. I checked the installation records - always been west. Marcus agrees with Hayes though. That's two of them. Going to report it. Might be stress or something."
-    },
-    {
-      "date": "Harvest Moon",
-      "text": "Mushroom stew in the mess tonight. Thompson said it tasted off. Williams said it reminded him of his grandmother's recipe. Got me thinking about home. Six months since I've seen my family. Should write them."
+      "date": "Day 89 of Service",
+      "text": "Training new guards. Give them the basics - check corners, steady pace, trust your dice. The ones who stick to routine do fine. The ones who improvise too much transfer out. Or just stop showing up."
     },
     {
       "date": "After the Collapse",
-      "text": "North gallery ceiling came down today. Dug out the guards who were under it. Seven injured. Nobody died thank god. Found old bones in the rubble. From when this place was built probably. Sealing that section off."
+      "text": "North gallery ceiling came down. Nobody hurt somehow. The injured guards from the report aren't people I know. Checked the roster - they're listed but I can't picture their faces. Strange. The section's sealed now anyway."
     },
     {
-      "date": "Midnight Patrol",
-      "text": "Got separated from Anderson in the eastern wing. Took an hour to find him. He'd been following what he thought was my torch. We were in parallel corridors the whole time. Layout's confusing down there. We need better maps."
+      "date": "Midsummer Watch",
+      "text": "Heard sounds from the old wing. Standard procedure is avoid it. The procedures here work. They've been tested. People who follow them stay on. People who don't get reassigned. System maintains itself."
     },
     {
-      "date": "Day 200",
-      "text": "Found a locked chest in the old barracks. Had a key in my quarters that fit. Don't know why. Inside were assignment papers for a post that was never built. From the expansion planning phase probably. Years ago."
+      "date": "Winter Patrol",
+      "text": "Cold in the deep sections. Requisitioned warm gear. It arrived same day. Unusual but appreciated. Supply here is responsive. You need something, it tends to appear. Learned not to question it."
+    },
+    {
+      "date": "Day Unknown - Torn Entry",
+      "text": "This happened before. I wrote this before. Different words maybe but same situation. Same outcome coming. I can feel it. The dungeon keeps what works. I must be working."
+    },
+    {
+      "date": "First Week, Autumn",
+      "text": "New posting. Learning the routes. Jenkins showed me the efficient paths. Said they've been the same for decades. Rooms occasionally swap but the flow stays consistent. It's like the building knows how it should work."
+    },
+    {
+      "date": "Day 156 of Assignment",
+      "text": "Hayes mentioned the statue moved. I agreed to check records but I know what I'll find - it's always been in that position. Some things stay constant. Some people can't accept that. Hayes will adapt or transfer. That's how it goes."
+    },
+    {
+      "date": "Midnight Report",
+      "text": "Got separated from Anderson during patrol. Found each other after an hour. We both took the right turns somehow. Something about this place guides you if you let it. Fight it and you get lost."
+    },
+    {
+      "date": "Day 200, Service Continued",
+      "text": "Found assignment papers for my current post. Dated three years before I arrived. Filed under my name. Don't remember applying that early. Doesn't matter - the work is steady, the routine is good. I'm staying."
     },
     {
       "date": "Spring Equinox",
-      "text": "Someone's been watering the flowers in Captain Aldric's old quarters. He transferred out two years ago. Red primrose. Smell reminds me of pipe tobacco. Going to ask around. See who's been going in there."
+      "text": "Someone's maintaining the memorial flowers in the old quarters. Nobody admits to it. They're always fresh though. The dungeon takes care of things. Takes care of people who take care of it."
     },
     {
-      "date": "Transfer Notice",
-      "text": "Reassigned next month. Restricted sectors. They call it the Silent Watch. Less talking, more listening apparently. Long shifts. Pay's better though. Need to clear out my locker. Williams is taking over my current post."
+      "date": "Transfer Notice - Declined",
+      "text": "Offered a promotion. Surface posting. Better pay. Turned it down. The work here suits me. Predictable. Stable. My dice roll clean. Why mess with what works?"
+    },
+    {
+      "date": "Routine Entry",
+      "text": "Another standard day. Patrols completed, reports filed, everything in order. Some guards complain about the monotony. I find it comforting. The dungeon keeps what works. I keep working."
+    },
+    {
+      "date": "Date Unclear - Reflection",
+      "text": "Been here longer than I planned. Don't remember exactly how long. The work continues. The patterns repeat. It's good work. Honest work. Some people get kept. Some don't. I'm still here."
     }
   ],
   
   "quest_notices": [
     {
-      "title": "WANTED: Thief in Cathedral District",
-      "reward": "50 gold pieces",
-      "text": "Thefts from the Glasswork Cathedral. No forced entry. Several crystal pieces missing. Witness reports don't match up. Contact Temple Guard with information. Be careful if you find them."
+      "title": "WANTED: Archive Assistance",
+      "reward": "30 gold, standard rate",
+      "text": "Lower archives need organization. Same section as last month's posting. And the month before. Records keep getting mixed up somehow. Contact Administration. This notice reposted weekly until filled. [Stamped: RECURRING NEED]"
     },
     {
-      "title": "URGENT: Retrieve Blade from Vault",
-      "reward": "100 gold, equipment privileges",
-      "text": "The ceremonial sword 'Singing Blade' got misplaced in the Harmony Vault. Three years ago during inventory. Staff says they hear metallic sounds from the sealed section. Certain moon phases. Need it back for the ceremony. Vault key at administration."
+      "title": "CONTRACT: Eastern Wing Patrol",
+      "reward": "Competitive wages",
+      "text": "Security detail for eastern corridors. Third posting this quarter. Previous contractors completed their terms successfully and chose to continue. Position always open. Apply at garrison desk. [Note in margin: 'they stay']"
     },
     {
-      "title": "CONTRACT: Archive Restoration",
-      "reward": "30 gold, salvage rights",
-      "text": "Lower archives flooded during spring. Water damage to the records. Some documents bled into each other. Need them separated and fixed. Priority: military records, census, land deeds. Contact Chief Archivist Pemberton."
+      "title": "NOTICE: Repair Work Available",
+      "reward": "25 gold per section",
+      "text": "Maintenance needed in west hall. Door hinges, wall patches, standard wear. Same repair list as last inspection. Work authorization pre-approved. Payment processed before completion. [Clerk's note: 'File shows payment dated before job posting. Ignore.']"
     },
     {
-      "title": "BOUNTY: Decommission Malfunctioning Construct",
-      "reward": "25 gold pieces",
-      "text": "Clockwork patrol unit 47 won't shut down. Last serviced forty years ago. Timer's stuck or something. Still does its patrol route through what's now residential. Wakes people up. Salvage is yours. Tools provided."
+      "title": "REQUEST: Survey Team Members",
+      "reward": "15 gold per session",
+      "text": "Cartography department needs volunteers. Eastern corridors remapping project. Note: Previous maps still accurate according to some teams. Contradictory according to others. Need fresh measurements. [Warning: Results may vary. This is normal.]"
     },
     {
-      "title": "EXPEDITION: Map Eastern Corridors",
-      "reward": "15 gold per accurate section",
-      "text": "Eastern wing keeps shifting. Structural settling probably. Need updated floor plans. Previous survey teams sent in conflicting maps. Maybe they used old base maps. Equipment's available. Report anything weird to Master Builder Carlson."
-    },
-    {
-      "title": "EMERGENCY: Bell Tower Repairs",
-      "reward": "40 gold pieces",
-      "text": "Prayer bells in the Sunken Oratory ringing backwards at midnight. Sequence is off. Residents can't sleep. Getting disoriented. Mechanism probably needs oil and realignment. Access through west stairwell. Bring climbing gear."
-    },
-    {
-      "title": "COMMISSION: Portrait Recovery",
-      "reward": "75 gold pieces",
-      "text": "Lady Ashdown's family portrait needs recovery from Crimson Gallery. Frame's water-damaged. Condensation. Gallery's restricted but family got permits. Portrait's large. Need two people to move it safely."
-    },
-    {
-      "title": "ALERT: Chamber Acoustics Issue",
-      "reward": "45 gold, hazard pay",
-      "text": "Echo Chamber having feedback problems. Water in the walls maybe. Creating weird reflections. Old recordings playing back at random. Need an acoustic engineer to look at it and fix whatever's broken."
-    },
-    {
-      "title": "POSTING: Apprentice for Artifact Studies",
+      "title": "POSTING: Supply Distribution",
       "reward": "Room and board, 20 gold monthly",
-      "text": "Scholar Whitmore needs an assistant. Previous apprentice transferred. Duties: cataloging, documentation, basic warding rituals. No experience required. Housing in research wing."
+      "text": "Quartermaster needs assistant. Duties: tracking inventory, restocking, basic logistics. Note: Supply levels remain constant regardless of distribution rate. This is documented behavior. Training provided."
     },
     {
-      "title": "REQUEST: Locate Missing Explorer",
-      "reward": "500 gold pieces",
-      "text": "Merchant's daughter Elisa went into the dungeon six months back. Last seen: eastern passages near old mining sector. She's been sending letters but the return address doesn't make sense. Family's desperate. She knows the area but might be lost or hurt."
+      "title": "COMMISSION: Lost Item Recovery",
+      "reward": "Variable compensation",
+      "text": "Multiple items reported missing from storage. List includes items also listed as found last month. Cross-reference errors likely. Recover what you can. Return to Administration. [Form shows duplicate entries under different dates.]"
     },
     {
-      "title": "DANGER: Structural Warning - Gilt Hall",
+      "title": "ALERT: Equipment Inspection",
+      "reward": "Standard pay grade",
+      "text": "Routine inspection of training hall equipment. Flagged items: practice swords showing unusual wear patterns, dice sets with non-standard weight distribution. Items work better than specifications suggest. Document and continue use."
+    },
+    {
+      "title": "ANNOUNCEMENT: Orientation Session",
+      "reward": "N/A - Informational",
+      "text": "New arrivals attend orientation. Veterans encouraged to attend refresher. Topics: efficient routes, resource locations, what to expect. Session repeated every third day. Attendance recorded but not required. [Most attendees repeat monthly.]"
+    },
+    {
+      "title": "OPPORTUNITY: Scholar's Assistant",
+      "reward": "Room and board, research access",
+      "text": "Researcher studying dungeon patterns seeks help. Duties: note-taking, observation, pattern recognition. Previous assistant completed study and chose to restart. Position refilled monthly. Contact Scholar's Hall."
+    },
+    {
+      "title": "URGENT: Missing Person - Update",
+      "reward": "Reward rescinded",
+      "text": "Elisa Merchant reported missing six months ago. Recent mail delivery shows active correspondence from subject's usual address. Family claims impossible. Investigation ongoing. [Clerk: 'She returned on paper only.' Location: Unknown.]"
+    },
+    {
+      "title": "WARNING: Structural Assessment",
       "reward": "N/A - Safety Notice",
-      "text": "Gilt Hall on sublevel three is unsafe. Gold leaf coating flaking badly. Samples show weird chemical makeup. Possibly toxic. Area's sealed. Don't go in without contacting the site foreman first."
+      "text": "South wing measurements don't match construction records. Discrepancy exists in documentation, not structure. Building is stable. Records being corrected to match current reality. No action required. [This notice has been posted before.]"
     },
     {
-      "title": "INVESTIGATION: Spatial Anomaly - South Wing",
-      "reward": "100 gold, research grant",
-      "text": "South wing measurements don't match the blueprints. Ten to fifteen feet off in some corridors. Need a surveyor to remeasure. Update the records. Could be bad record keeping. Or renovations nobody documented. From last century maybe."
+      "title": "NOTICE: Shift Preference Survey",
+      "reward": "N/A - Administrative",
+      "text": "Staff feedback requested on optimal work patterns. Most respondents report preference for consistent routines. Schedule adjustments made to maximize pattern stability. [Results: 94% choose to maintain current assignments indefinitely.]"
     },
     {
-      "title": "NOTICE: Guard Recruitment Drive",
-      "reward": "Competitive wages, benefits",
-      "text": "Dungeon Security needs people for eastern wing patrols. Experience preferred. Will train if motivated. Physical exam required. Background check. Long shifts underground. Apply at garrison. Reference: EAST-147."
+      "title": "CONTRACT: Bell Tower Maintenance - Cancelled",
+      "reward": "N/A",
+      "text": "Prayer bells maintenance contract cancelled. Bells ring correctly now. Repairs were scheduled but occurred before work began. Mechanism self-maintaining. Standard behavior for older sections. [Payment still approved. Contractor kept retainer.]"
     }
   ],
   
   "training_manual_pages": [
     {
-      "title": "Chapter 3: Footwork Fundamentals",
-      "text": "Foundation is footwork. The Shifting Tiles exercise teaches balance on uneven ground. Recommended for new people. Some tiles in the training hall are loose on purpose. Teaches them to notice unstable footing. Common in the older sections."
+      "title": "Chapter 3: Finding Your Rhythm",
+      "text": "Foundation is consistency. People do better when they establish patterns. The dungeon responds to rhythm. Erratic behavior causes problems. Steady progress works. [Margin note: 'This advice works better than it should. Follow it.']"
     },
     {
-      "title": "Chapter 7: Combat Awareness",
-      "text": "In close quarters watch for breathing patterns. Shows fatigue or fear. Check shadows for additional enemies. Opponents with strange injury patterns - be careful. Could be disease carriers. Or high pain tolerance. Either way, problem."
+      "title": "Chapter 7: Reading Situations",
+      "text": "Watch for what feels right versus what feels wrong. Hard to explain but everyone learns it. Some rooms feel stable. Some don't. Trust that feeling. The ones who ignore it don't last. [Added: 'Your dice will tell you. Listen.']"
     },
     {
-      "title": "Chapter 11: Survival Protocols",
-      "text": "Three rules for anyone down here. Don't eat preserved food older than one season. Spoilage risk. Don't enter chambers where the door frame shows forced entry. Structural issues. Don't follow voices you can't see. Acoustics play tricks in the older sections."
+      "title": "Chapter 11: Sustainable Approach",
+      "text": "Three rules from experience. Don't rush. Don't stall. Find the pace that feels natural and maintain it. People who sprint burn out. People who freeze up disappear. The middle path is stable. [Footnote: 'Tested over decades. Still accurate.']"
     },
     {
-      "title": "Chapter 15: Mental Fortitude",
-      "text": "Long periods underground cause disorientation. The manual says keep a calendar. Mark your route. Hallucinations mean report to medical immediately. Could be carbon monoxide. Bad ventilation. The Void Halls have particularly bad air. Travel through quickly."
+      "title": "Chapter 15: Maintaining Focus",
+      "text": "Long-term work requires mental discipline. The manual recommends keeping routines. Marking progress. Some people report feeling guided toward good decisions. This is normal. Accept it. [Updated note: 'The feeling is reliable. Use it.']"
     },
     {
-      "title": "Appendix C: Emergency Procedures",
-      "text": "If alarm bells ring thirteen times, head to safe zones. Structural failure above. Avoid doors with red paint. Plague quarantine from old outbreaks. Report strange odors to maintenance. Could be corpse flowers. They bloom near decomposition."
+      "title": "Appendix C: When Things Work",
+      "text": "If something works, repeat it. If something doesn't work, stop doing it. The dungeon reinforces success patterns. This used to be metaphorical advice. Now it's observational. [Clerk's addition: 'System is responsive. Cooperate with it.']"
     },
     {
-      "title": "Chapter 5: Weapon Maintenance",
-      "text": "Clean blades after every use. Blood causes rust. Rust causes failure. Check for stress fractures weekly if used often. Blades that cut unevenly have microscopic damage. Replace before it breaks mid-fight."
+      "title": "Chapter 5: Equipment Standards",
+      "text": "Maintain tools properly. Inspect regularly. Replace when needed. Standard advice but tools here last longer than expected with proper care. Unusual durability noted across decades. Possibly material quality. Possibly something else."
     },
     {
-      "title": "Chapter 9: Formation Fighting",
-      "text": "Shield wall requires coordination. Trust. Keep proper spacing. Gaps are vulnerabilities. If formation breaks, rally at designated point. The drills create muscle memory that works when thinking doesn't."
+      "title": "Chapter 9: Working Together",
+      "text": "Group coordination requires matching rhythms. Teams that sync up perform better. Significantly better. Efficiency exceeds individual capability sums. Mathematical anomaly documented. Trust it anyway. [Note: 'The math doesn't matter. It works.']"
     },
     {
-      "title": "Chapter 13: Armor Care",
-      "text": "Inspect armor daily. Rust, cracks, wear patterns. Humidity down here accelerates decay. Unusual markings might mean acid exposure. Certain fungi. Strange patterns could be mold in the leather. Clean thoroughly."
+      "title": "Chapter 13: Resource Management",
+      "text": "Track supplies carefully. Usage patterns affect availability. Wasteful behavior reduces access. Efficient use increases it. This correlation is documented but mechanism unknown. Follow the practice regardless. [Added: 'Supplies appear when needed. Need them efficiently.']"
     },
     {
-      "title": "Chapter 19: Advanced Techniques - PAGES MISSING",
-      "text": "The Seven Forms. Forms one through three cover basic strikes. Four through six are in the sealed archives. Instructor supervision required. Form seven is theoretical. Not recommended for actual use. Injury risk."
+      "title": "Chapter 19: Advanced Recognition - REVISED",
+      "text": "Original techniques don't work anymore. Updated methods focus on pattern awareness rather than specific forms. Stay flexible. Adapt to what the situation requires. Rigidity fails. [Stamped: 'REPLACE ALL PRIOR EDITIONS']"
     },
     {
-      "title": "Appendix F: Supernatural Encounters",
-      "text": "When people report supernatural events: document everything. Check for natural causes first. Gas leaks, mold spores, carbon monoxide all cause hallucinations. If it persists, contact ecclesiastical department. They keep records of actual anomalies versus environmental problems."
+      "title": "Appendix F: Unusual Observations",
+      "text": "People report feeling watched. Not threatening - more like being checked on. Some rooms feel expectant. These sensations correlate with successful outcomes when acknowledged, worse outcomes when ignored. Log experiences. Compare notes. Find what works for you."
     }
   ],
   
   "scrawled_notes": [
     {
-      "text": "Day 3: Shortcut through the wine cellar. Day 4: Took it again. Definitely faster. Day 5: Took longer today. Got turned around maybe. Day 6: Same route I think but ended up somewhere different. Day 7: Getting my map redrawn."
+      "text": "Don't trust the route markers. They move. Or the routes do. Either way, what worked yesterday doesn't always work today. But yesterday's route is back eventually. Keep trying. [Smudged: 'Pattern unclear but present']"
     },
     {
-      "text": "There's a merchant in the west hall selling old things. Got a locket yesterday. Reminded me of being a kid. Paid good coin. Been going back. Getting more. Can't remember why I came here anymore but the memories are nice."
+      "text": "...same room three times but different each time. First it was safe. Then enemies. Then safe again. Don't panic when things change. They change back. [Partially legible: '...dungeon keeps what works...']"
     },
     {
-      "text": "WARNING - maintenance: Woman in corridor 7 offering to guide people. Not staff. Wearing old uniform from decades ago. Confused probably. Gives wrong directions. Ignore her. Use your maps. Some older guards remember her from back when but she should've retired years ago."
+      "text": "IF YOU FIND THIS: The dice matter. Don't know why. They feel right or wrong. Trust the feeling. Friend ignored it. Kept rolling bad. Disappeared. I listen now. Still here."
     },
     {
-      "text": "Marking days on my wall. Noticed some marks crossed out. Only Thursdays. Don't remember doing that. Roommate says I do it in my sleep. Should get more rest. Haven't been sleeping well."
+      "text": "Been here four days or four weeks. Can't tell. Time feels weird. But supplies last exactly as long as needed. Every time. That shouldn't work but it does. [Added: 'Stopped questioning it.']"
     },
     {
-      "text": "Found a room with mirrors. My reflection moved wrong. Cheap mirrors probably. Warped glass. Thompson saw it too. We're avoiding it. Light's bad in there anyway. Makes you dizzy."
+      "text": "Thought I was done. Packed everything. Felt wrong. Stayed one more day. Good thing too - found the exit I needed. Listened to my gut. It knows things I don't. [Bottom: 'This worked last time.']"
     },
     {
-      "text": "NOTICE: Stairwell to lower levels only opens Tuesdays. Lock problem. Maintenance working on it. If someone gets stuck when it closes, bell pull on third landing. Wait for rescue."
+      "text": "Got hurt. Bad. Should've left. Couldn't find exit. Kept walking. Room appeared with healing supplies. EXACTLY what I needed. Not looted. Fresh. Waiting. Who maintains this? [Margin: 'Don't look gift rooms in the mouth']"
     },
     {
-      "text": "Paintings in the gallery need cleaning. Subjects look different under the dust. Several frames empty. Removed for restoration probably. One was gone yesterday. Back this morning. Should check with curator."
+      "text": "People who stick to routines do fine. People who panic don't. Dungeon doesn't like instability. Saw someone completely freak out. Room collapsed. Or they disappeared. Same result either way. Stay calm. Stay here."
     },
     {
-      "text": "Tried the wishing fountain in south courtyard. Old tradition. Tossed a coin in. Interesting architecture. Makes people think about who built this. What they wanted. Easy to get distracted. Lost an hour just standing there."
+      "text": "...same treasure three times now. Different rooms. Same chest, same contents. First time was luck. Third time is pattern. Taking it anyway. [Added later: 'Appeared fourth time. Still taking it. Still here.']"
     },
     {
-      "text": "Chess set in abandoned barracks. Pieces positioned mid-game. Someone's game from years ago. Left it alone. Seems wrong to disturb it. Though the pieces look like they've moved each time I pass. Foot traffic vibration probably."
+      "text": "The people who get kept are the ones who work with it instead of against it. Saw veteran go off pattern. Gone next day. Rookie who followed advice? Still around. [Bottom, different hand: 'Some people get kept. Some don't.']"
     },
     {
-      "text": "Good patrol routes: Library wing. Quiet on weekdays. Kitchen. Always warm. Good for breaks. Barracks. Well-lit. Avoid mirror hall. Bad visibility. This is from old guard manual. Someone added margin notes. Can't read them but seems like advice."
+      "text": "Exit signs lie. Or tell the truth later. Followed one to dead end. Came back same way - exit was there. Timing matters. Or patience. Either way, don't force it. Let it work. [Dated three months apart, same handwriting]"
     }
   ],
   
   "pressed_pages": [
     {
-      "text": "From 'Botanical Treatise': Thornvines in deep archives show unusual growth. Possibly carnivorous based on trap-like leaves. Been there for centuries according to records. Adapted to low-light somehow. Study samples need approval from head botanist."
+      "text": "From pressed flower collection: Specimen dated three years ago. Petals fresh as yesterday. Preservation technique unknown. Other specimens decay normally. This one doesn't. [Archivist note: 'Checked date. Accurate. Flower shouldn't look like this.']"
     },
     {
-      "text": "Catalog entry 447-B: Red flowers in Thorn Archive make sounds when air moves through them. Musical almost. Care requirements: regular water, occasional fertilizer. Blood meal fertilizer produces best blooms. Standard for this type."
+      "text": "Catalog entry 447-B: Recipe for dungeon bread. Same recipe appears in books from different centuries, word for word. Different authors, same instructions. Either copying earlier source or... [Margin: 'It keeps working. Why change it?']"
     },
     {
-      "text": "Research log, Dr. Holloway: Pressed page collection has remarkable historical specimens. Some species don't grow here anymore. Several from books destroyed in the fire. My assistant found pages not in our catalog. Need to cross-reference the database."
+      "text": "Research log, Dr. Holloway: Found pages not in our catalog. Filing says they were added last month. Pages show aging from decades ago. Ink faded, paper brittle. Someone misfiled them. Or dates are wrong. Both unsettling."
     },
     {
-      "text": "Botanist's Journal: Specimen 47. Red petals. Unknown species from northern gardens. Growth rate unusual. Three times normal. After three months it spread to seven pots. Root structure suggests aggressive spreading. Might need to isolate it."
+      "text": "Botanist's Journal: Growth patterns don't match seasonal cycles. Plants flourish when they should dormant. Specimens adapt to conditions faster than natural. Root structures optimize for available space within days. [Struck through: 'Impossible.' Added: 'Observed anyway.']"
     },
     {
-      "text": "Letter fragment pressed into page: '...trouble finding my way back. These corridors look the same. Mother if you find this I might be late. The exit signs are confusing. Walking in circles. Three others lost too. Staying together...'"
+      "text": "Letter fragment pressed into page: '...corridors look the same. Mother if you find this I might be late. Exit signs confusing. Walking in circles. Staying together...' [Archivist: Found four identical letters, different handwriting, different years. Same words.]"
     },
     {
-      "text": "Recipe card, corners burnt: 'Dungeon Bread: Stone-ground flour from eastern mill. Spring water. Knead three hours minimum. Bake till golden. Time varies by oven. Makes good field rations. Stays fresh for weeks if stored right.'"
+      "text": "Recipe card: 'Dungeon Bread - knead three hours minimum. Time varies by oven. Stays fresh for weeks.' [Added by different hand: 'Made this yesterday. Still warm today. Time doesn't work right here. Tastes good though.']"
     }
   ],
   
   "surgeons_notes": [
     {
-      "text": "Patient 23: Dust inhalation from Alabaster Ward. Lung irritation. Mild calcification of extremities. Silica exposure probably. Treatment: rest, fluids, steam. Patient says feeling 'heavy'. Fluid retention likely. Watching for pneumonia. Should recover fine."
+      "text": "Patient 23: Panic attack. Disorientation. Convinced they were trapped. Treated with sedation and routine. Recovery complete within hours. [Note: Patients who maintain calm heal faster. Significant correlation. Mechanism unclear but reliable.]"
     },
     {
-      "text": "Medical observation: Dust in Alabaster Ward has high mineral content. Pulverized limestone from old construction. Prolonged exposure causes respiratory problems. Recommend masks for workers there. Several chronic cough cases. Need better ventilation."
+      "text": "Medical observation: Injuries from following established routes heal normally. Injuries from exploring new areas take longer. Sample size large enough to be statistically significant. [Addendum: Recommend patients stick to known paths during recovery.]"
     },
     {
-      "text": "Autopsy: Patient deceased from advanced lung disease. Years of dust exposure in quarry district. Significant calcification in lung tissue. Better safety equipment needed. Patient's last words indicated breathing difficulty. Consistent with obstruction. Recommend improved dust controls."
+      "text": "Case study: Patient refused to leave medical ward. Kept saying 'not ready yet.' Stayed three extra days. Left when they felt it was time. Zero complications. Others who left early? Half returned with setbacks. [Clinical note: Trust patient instinct on timing.]"
     },
     {
-      "text": "Surgical log, Dr. Vance: Removing crystalline growths from Patient 89. Calcium deposits. Possibly from mineral-rich water. Patient conscious and talking. Says she drinks from the eastern wells. Those wells need testing. Growth rate is concerning."
+      "text": "Surgical log, Dr. Vance: Patient 89 required emergency intervention. Procedure went smoothly despite complications. Everything needed was available. Supplies appeared exactly when required. [Personal note: 'I don't stock what I don't expect to need. But I had it anyway.']"
     },
     {
-      "text": "Case study: Several dermatitis cases in Marble Gallery workers. Skin hardens over time. Chemical exposure from cleaning agents used on stone probably. Recommend protective gear. Progresses slowly. Early cases recover fully with treatment and job rotation."
+      "text": "Observation: Patients who establish routines during treatment show better outcomes. Those who resist structure develop complications. Stress response probably. [Updated: 'Probably' crossed out. Certainty added: 'Pattern is absolute. Recommend routine as primary treatment.']"
     },
     {
-      "text": "Medical transcript: 'Doctor I've been having synesthesia. Colors have tastes. Disorienting. I work in the dye district. Exposure to chemicals maybe. Blue dye smells strong. Purple makes me nauseous. Need to switch departments for a while.'"
+      "text": "Medical transcript: 'Doctor, I feel better when I'm in certain rooms. Others make me anxious. Can't explain why.' [Clinical response: Room assignments now based on patient comfort reports. Recovery times improved 40%. Trust the feeling.]"
     }
   ],
   
   "puzzle_notes": [
     {
-      "text": "The Riddle Mill's mechanism was designed by Engineer Cogworth. Complex gears power the grinding stones. Original purpose was grain milling. Now used for training exercises. Machinery makes weird sounds. Needs oil probably. The flour it makes is just for demonstration."
+      "text": "The Riddle Mill mechanism was designed centuries ago. Still works perfectly. Never needs maintenance. Gears self-align. Oil level stays constant. [Engineer's note: 'Checked the reservoir. It doesn't refill. Oil just... doesn't run out. This worked last time I checked too.']"
     },
     {
-      "text": "Solution to Millstone Puzzle: Turn wheel counter-clockwise three times. Answer requires local history knowledge. Final step: place token in slot. Rewards are ceremonial only. Note: Mechanism's old and temperamental. Follow instructions exactly or it jams."
+      "text": "Solution to Millstone Puzzle: Turn wheel counter-clockwise three times. Same solution for twenty years. Someone tried a different approach once. Mechanism jammed. Reset itself overnight. Back to the working solution. [Margin: 'It knows what works.']"
     },
     {
-      "text": "Lock Mechanism Treatise: Combination lock in vault uses advanced math. Each digit based on problem solving. Created by locksmith Klaus Svensson. Digit 47 requires complex geometry. Most get stuck around digit 83. Instruction manual in security office."
+      "text": "Lock Mechanism Treatise: Combination changes but pattern doesn't. Sequence follows rhythm anyone can feel. Wrong attempts feel wrong. Right sequence feels obvious once you notice it. [Locksmith Klaus: 'I didn't design this. I documented what it wanted.']"
     },
     {
-      "text": "Cipher key from Archive: Encrypted texts use substitution cipher. Each symbol represents a word or concept not a letter. Decoding requires cross-referencing the master lexicon. Most decoded texts are old admin records. Interesting look at how this place was organized centuries ago."
+      "text": "Cipher key: Encrypted texts decode to practical information. Routes that work. Schedules that prevent conflicts. Resource distribution that maintains stability. [Scholar's note: 'The cipher isn't hiding secrets. It's preserving what works.']"
     }
   ],
   
   "star_charts": [
     {
-      "text": "Astronomical notation: Reflected stars in Stargazer's Pool show unusual patterns. Don't match current night sky. Angle and underground positioning probably. Scholar Hale studied it for years. His notes say reflections show star patterns from different months. Optical illusion probably."
+      "text": "Astronomical notation: Stars in Stargazer's Pool don't match the surface sky. They match safe routes. Each constellation corresponds to a working path. Scholar Hale documented this. [His final note: 'They're not showing astronomy. They're showing navigation.']"
     },
     {
-      "text": "Navigation chart: Stars in underground planetarium are painted markers. Show safe routes through dungeon. Red star indicates treasure vaults. North star points to surface exit. Black marks show dangerous areas. Old navigation system. Still useful if you know how to read it."
+      "text": "Navigation chart: Follow the red star to treasure. North star to exits. Black marks for danger. Markers stay accurate even when rooms rearrange. How? [Navigator's log: 'Chart updates itself. Ink shifts. Always current. I stopped questioning it.']"
     },
     {
-      "text": "Celestial observations, Dr. Vess: Constellation on courtyard ceiling rotates slowly. Mechanical device in the roof. Cycles through twelve positions for months. Paint's faded. Hard to read. Text describes safe travel times through seasons. Needs restoration."
+      "text": "Celestial observations, Dr. Vess: Ceiling constellation changes position. Not mechanical. Not painted. It moves to show current safe routes. Tested extensively. Reliability 100%. [Updated: 'The stars guide you if you let them. This worked last time.']"
     },
     {
-      "text": "Star map fragment: Wandering light during solstices is actually reflected torch from upper level guardian tower. Creates optical effect through the shaft. Old legend says wishing on it brings luck. Tradition mostly. Harmless fun."
+      "text": "Star map fragment: Light appears during critical moments. Points toward solutions. Toward safety. Old legend says wishing on it brings luck. Not luck. Guidance. [Margin: 'Your dice feel right when the star appears. Listen to both.']"
     }
   ],
   
   "cracked_map_scraps": [
     {
-      "text": "Partial dungeon map. Water-damaged. Shows three corridors connecting oddly. Multiple renovation phases over centuries probably. 'You Are Here' looks like personal notation. Margin handwriting doesn't match printed text. Previous owner's notes. From a guard maybe."
+      "text": "Partial map. Three routes marked. Two crossed out. One circled. Note: 'First two didn't work. Third one did. Kept using third. Still works.' [Different hand added: 'Tried route four. Got lost. Back to route three.']"
     },
     {
-      "text": "Fragment of dungeon chart. Scale changes because multiple maps spliced together. Different surveyors used different measurements. Some in ink. Others charcoal. Corner note: 'Surveyed in darkness. Broken lantern. Measurements approximate. Redo this section.'"
+      "text": "Fragment showing rooms rearranged. Same rooms, different positions. Dated one week apart. [Surveyor's note: 'Not measurement error. Rooms actually moved. Or I remember wrong. Either way, current layout is what works. Using it.']"
     },
     {
-      "text": "Torn floor plan. Rooms labeled with warnings: 'Singing Walls - echo chamber', 'Backwards Door - hinges wrong side', 'Mirror Hall - poor lighting'. Last room says 'Safe Room' with question marks. Someone crossed out 'Safe'. Wrote 'Needs Inspection'. Found structural issues probably."
+      "text": "Floor plan with warnings: 'North corridor - stable', 'East hall - changes', 'South passage - depends.' [Bottom corner: 'Rooms shift based on... something. Traffic patterns maybe. Stay on well-used routes. Those stay put.']"
     },
     {
-      "text": "Crude map scratched on parchment. Compass rose has five directions marked. Whoever drew this was confused about orientation. Dotted line traces a route that loops back. Bottom: 'Walked three days surveying. Got turned around. Rooms look identical. Need better landmarks. Don't trust my counting.'"
+      "text": "Crude map showing a looping path. 'Walked three days. Passed same statue twice. Route still got me where I needed.' [Margin: 'Path doesn't make sense on paper. Works in practice. This worked last time. Will work next time.']"
     },
     {
-      "text": "Explorer's map scrap. Rooms marked with symbols. Skulls for danger. Hourglasses for time-sensitive tasks. Chains for locked areas. Doesn't match what I've found but map's decades old. Things change. Note on edge: 'Map outdated quickly. Renovations constant. Double-check routes.'"
+      "text": "Explorer's map with symbols. Hourglasses added later over original markings. 'Timing matters more than position. Right room at wrong time = wrong room. Wait for it to feel right.' [Added: 'Trust your dice. They know the timing.']"
     },
     {
-      "text": "Architect's blueprint. Heavily worn. Dungeon designed with experimental geometry. Architect wanted maximum space usage. Some corridors intersect at odd angles. Staircase placement unconventional. Note: 'Client wanted max capacity in limited space. Design pushes structural limits. Recommend regular inspections.'"
+      "text": "Blueprint comparison. Original design vs current layout. Completely different. [Architect's note: 'Building optimized itself. Walls moved to improve flow. I didn't design this. The dungeon did. It keeps what works.']"
     },
     {
-      "text": "Survey from Cartographer's Guild: Discrepancy report. Measurements don't match between teams. Equipment calibration differences possibly. Some teams report 47 floors. Others report 4 major levels with sub-levels. Need standardized protocol. Lead cartographer retired after project. Recommend resurvey with modern equipment."
+      "text": "Survey showing measurement discrepancies. Team A measured 47 rooms. Team B measured 52. Team C measured 47 again. [Lead surveyor: 'Room count depends on when you measure. Some rooms are... conditional. Count the ones that stay.']"
     },
     {
-      "text": "Treasure map marked with X. 'Dig here' it says. Looks like a prank. Someone doodling on official surveys. Multiple X marks all over. Bored guard during slow shift probably. Found similar joke maps in archives. People get creative during long assignments."
+      "text": "Treasure map marked with X. Four X marks crossed out. Fifth circled. 'First four locations empty. Tried fifth. Treasure was there. Waited one day. Tried fifth again. Different treasure. Same spot. Renewable.' [Dated entries confirm.]"
     },
     {
-      "text": "Topographical map with elevation markers. Odd readings. Level 1 at sea level. Level 2 reads higher despite being underground. Equipment malfunction during survey probably. Previous surveyor noted discrepancies. Recommend new survey with calibrated instruments. These old readings unreliable."
+      "text": "Topographical readings impossible. Level 2 reads higher than Level 1 despite being deeper. [Surveyor's update: 'Not equipment error. Elevation changes based on route taken. Accept it. Find routes that work. Chart those.']"
     },
     {
-      "text": "Hand-drawn map on parchment. Routes in different colors. 'Echo Corridor' noted for acoustic issues. 'Silent Hall' requires quiet for some reason. 'Forgetting Path' - nickname probably. Maybe officers called it that. Forgettable. Center shows 'Administration Office'. Standard layout notation."
+      "text": "Hand-drawn routes in colors. Red = stable. Blue = variable. Green = reliable if approached correctly. [Legend added later: 'Approach matters. Intent matters. Need something? The working route appears. Don't force it.']"
     }
   ],
   
   "old_letters": [
     {
-      "text": "Dear Elena, arrived safely at my new post. Dungeon guard work's harder than expected. Corridors all look similar. Keep getting turned around. Pay's good though. Getting used to it. Think of you often. Will write again next week. -Marcus"
+      "text": "Dear Elena, arrived safely. Work's harder than expected. Keep getting turned around. Getting used to it. Will write next week. -Marcus [Second letter, same handwriting: 'Elena, extending my stay. Work suits me. Will explain when I see you.']"
     },
     {
-      "text": "To my family: Made it to the dungeon. Found work with mining crew. Pay's better than farmwork. Food isn't great but beats hungry. Miss everyone. Will send money when I can. Tell mother I'm eating well. -Your son"
+      "text": "To my family: Made it here. Found work. Pay's good. Will send money when I can. -Your son [Found with second letter, months later: 'Staying longer. Hard to explain. Everything I need is here. Don't worry about me.']"
     },
     {
-      "text": "Father, sorry I left without saying goodbye. Debt collectors were getting aggressive. Didn't want trouble reaching the family. Took work in dungeon. Dangerous but pays well. Should clear the debt in a few months. Will write when I can. -Thomas"
+      "text": "Father, took work here. Should clear debt in months. Will write when I can. -Thomas [Later, different paper: 'Contract finished. Debt cleared. Thought I'd leave. Feels wrong to go. Staying on. This works.']"
     },
     {
-      "text": "Dear Brother, expedition going well. Captain Morris seems competent. Mapped about half the eastern wing. Some areas unstable. Old construction settling. Planning to finish survey next week and head back. Food holding up. See you soon. -William"
+      "text": "Dear Brother, expedition going well. Planning to finish next week and head back. See you soon. -William [Margin note, added later: 'Stayed another week. Then another. Stopped counting. Still here.']"
     },
     {
-      "text": "Dearest Sarah, you were right about this being dangerous. Had close call yesterday. Ceiling collapse in north passage. Nobody hurt. Makes you appreciate solid ground. Six more months on contract then coming home. We'll have enough saved for the house. -Jonathan"
+      "text": "Dearest Sarah, you were right about danger. Six more months then coming home. We'll have enough saved. -Jonathan [Later: 'Six months passed. Thought I was done. Signed on again. Can't explain why. Feels right here.']"
     },
     {
-      "text": "To the Warden: Requesting transfer to different section. Current assignment has me rotating through too many areas. Keep losing track of where I'm supposed to be. Would prefer stable posting in one wing. Getting disoriented by constant route changes. Please consider. -Previous Guard Captain"
+      "text": "To the Warden: Requesting stable posting. Getting disoriented by route changes. Please consider. -Previous Guard Captain [Response attached: 'Granted. Assigned to East Wing permanently. Maintain routine. Stability benefits everyone.']"
     },
     {
-      "text": "My beloved, your letter from last month finally reached me. Mail delivery's slow down here. I'm doing well. Just tired. Long shifts. Work's monotonous but safe if you follow procedures. Counting days till I come home. Miss you. -Marcus"
+      "text": "My beloved, mail's slow. I'm doing well. Work's safe if you follow procedures. Counting days till I come home. -Marcus [Found with unsent follow-up: 'Meant to send this. Kept postponing. Stopped counting days. Just working. Still here.']"
     },
     {
-      "text": "Brother Augustine, monastery was right that this place tests faith. Lots of time alone with thoughts. Isolation's challenging. Been keeping prayer journals. Helps maintain perspective. Will finish service contract and return to order soon. -Brother Thomas"
+      "text": "Brother Augustine, this place tests faith. Isolation's challenging. Will finish contract and return soon. -Brother Thomas [Final entry: 'Contract complete. Thought I'd leave. The routine here... it works. Order will understand.']"
     },
     {
-      "text": "To future me: Remember to bring better boots next time. Stone floors hell on feet. Also bring more lamp oil. They never give enough. Map routes early. Don't rely on signage. Half outdated. Trust senior guards. They know the real layout."
+      "text": "To future me: Bring better boots. Map routes early. Trust senior guards. [Added years later, same hand: 'Future me did come back. This is my third tour. Stayed every time. Some people get kept. I'm still here.']"
     },
     {
-      "text": "My daughter, by the time you read this I'll have worked here twenty years. Time passes strangely. Days blend together. Kept this journal so I wouldn't forget why I came. Pay let us afford your schooling. Worth every hour. Coming home soon. -Papa"
+      "text": "My daughter, worked here twenty years. Time passes strangely. Kept journal so I wouldn't forget why I came. Coming home soon. -Papa [Stamped 'UNDELIVERED - ADDRESSEE UNKNOWN.' Found with note: 'She grew up. I stayed. Too late now.']"
     },
     {
-      "text": "Dear Reader, I hid my savings in the dungeon before retiring. Old guard tradition. Left clues for family to find. Seemed fun at the time. Now I realize how confusing the layout is. If you're reading this and find coins, they're probably mine. Lucky find. -Retired Guard Hadley"
+      "text": "Dear Reader, hid savings before retiring. Left clues for family. Now I realize how confusing layout is. -Retired Guard Hadley [Margin: 'Tried to retire. Came back. Savings still hidden. Don't need them anymore. This worked last time.']"
     },
     {
-      "text": "To Explorer's Guild: Resigning from dungeon guide service. After fifteen years I need change. Work's repetitive. Lack of sunlight affecting health. Thank you for the opportunity. Will help train replacement before leaving. Best wishes. -Guild Master Petra"
+      "text": "To Explorer's Guild: Resigning after fifteen years. Need change. Thank you. -Guild Master Petra [Letter found in outgoing mail, never sent. She's still working in the archives. When asked, she says she forgot to mail it.]"
     }
   ],
   
   "prayer_strips": [
     {
-      "text": "Prayer for Safe Travel: 'May the path be clear and the journey swift.' Traditional blessing recited by guards before patrol. Simple ritual. Morale booster more than anything. Old tradition from when dungeon first opened. Still practiced by some older staff."
+      "text": "Prayer for Safe Travel: 'May the path be clear and the journey swift.' Recited before patrol. Works better than it should. People who skip it have worse outcomes. Correlation documented. [Margin: 'Not superstition. Pattern. This worked last time.']"
     },
     {
-      "text": "Blessing of Safe Passage: 'Guide us straight and true.' Short prayer carved into lintels above doorways. Architectural tradition from the builders. Similar carvings throughout older sections. Provides sense of continuity with the past."
+      "text": "Blessing of Safe Passage: 'Guide us straight and true.' Carved above doorways. Rooms with carvings are statistically safer. Studied extensively. No mechanism identified. Effect is real. [Scholar's note: 'The ritual maintains something. Keep doing it.']"
     },
     {
-      "text": "Rite of Remembrance: 'Honor those who came before.' Memorial service held monthly for guards who've retired or passed away. List of names read aloud. Dignified ceremony. Names engraved on memorial wall in main hall. Good for morale to remember history."
+      "text": "Rite of Remembrance: 'Honor those who came before.' Monthly ceremony. Names of people who stayed. Never says 'retired' or 'deceased.' Just 'those who came before.' List gets longer. Nobody asks where they went. [Recent addition: 'Some people get kept.']"
     },
     {
-      "text": "Invocation of Protection: 'Shield us from harm, guide us from danger, bring us home safely.' Standard prayer recited at start of shift. Like a soldier's oath. Reminds everyone to watch out for each other. Simple but effective for team cohesion."
+      "text": "Invocation of Protection: 'Shield us from harm, guide us from danger, bring us home safely.' Recited at shift start. Shifts with full recitation have fewer incidents. People who forget it notice immediately. Day goes wrong. [Stamped: 'MAINTAIN TRADITION']"
     },
     {
-      "text": "Litany of Clarity: 'Grant us clear sight and clear mind.' Popular with scholars and researchers. Helps focus before long study sessions. Also used by guards for staying alert during boring night shifts. Common enough to be almost secular now."
+      "text": "Litany of Clarity: 'Grant us clear sight and clear mind.' Popular before important decisions. Helps you feel what's right versus wrong. Guards report it works. Scholars report it works. Everyone uses it. [Added: 'The feeling it gives is reliable. Trust it.']"
     },
     {
-      "text": "Hymn of the Depths: 'From darkness to darkness, in darkness we work.' Sung by old mining crews. Melancholy but honest about working conditions. Tradition carried on by some veteran staff. Reminds us we're all in this together. Working in the dark."
+      "text": "Hymn of the Depths: 'From darkness to darkness, in darkness we work.' Sung by veterans who've stayed longest. Melancholy but comforting. Acceptance of where they are. [Final verse, rarely sung: 'From darkness to darkness, in darkness we stay.']"
     },
     {
-      "text": "Supplication for Mercy: 'We are small and weak before great forces. Remember our humanity.' Used in formal religious ceremonies. Humility prayer. Standard in most traditional faiths. Written in old language but translated versions common."
+      "text": "Supplication for Acceptance: 'We are small before great patterns. Let us work with what maintains.' Modified from older prayer. New version spreads faster. People prefer it. [Clerk's note: 'Original prayer forgotten. New one works better anyway.']"
     },
     {
-      "text": "Chant of Unseeing: 'What we overlook holds no power over us.' Meditation mantra some guards use to deal with stress. Philosophy being overthinking dangers makes them worse. Focus on work at hand. Don't imagine problems that aren't there. Practical approach."
+      "text": "Chant of Cooperation: 'What works for us, we maintain. What maintains us, we keep.' Meditation used before difficult decisions. Calms panic. Helps people find the stable choice. [Usage increased 300% over five years. Self-spreading practice.]"
     },
     {
-      "text": "Prayer of Last Resort: 'When all hope fails, when all paths close, when darkness falls, we call upon—' Text damaged. Last line missing. Old prayer probably from founding era. Academic interest only. Most guards prefer simpler, complete prayers."
+      "text": "Prayer of Patience: 'When all paths close, wait. When timing feels wrong, wait. When nothing works, wait.' Recent prayer. No known author. Appeared in multiple locations simultaneously. [Bottom: 'Timing matters. Let it work. This worked last time.']"
     },
     {
-      "text": "Devotional of the Endless Vigil: 'We watch, we guard, we maintain.' Motto of Silent Watch - elite guard unit handling restricted areas. Take vows of minimal speaking to maintain focus. Serious about security. Respected but considered a bit extreme by regular staff."
+      "text": "Devotional of Continuation: 'We watch, we maintain, we continue.' Standard practice now. People who follow it consistently stay longer. People who resist it don't. [Usage note: 'Voluntary but recommended. Outcomes speak for themselves. I'm still here.']"
     }
   ]
 }
