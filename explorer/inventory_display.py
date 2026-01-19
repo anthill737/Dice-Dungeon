@@ -85,17 +85,22 @@ class InventoryDisplayManager:
             tk.Label(inv_frame, text="Empty", font=('Arial', 12),
                     bg='#2c1810', fg='#666666').pack(pady=20)
         else:
-            # Count duplicate items
-            item_counts = Counter(self.game.inventory)
+            # Count duplicate items - normalize lore items by removing "#X" suffix for counting
+            normalized_inventory = [item.split(' #')[0] if ' #' in item else item 
+                                   for item in self.game.inventory]
+            item_counts = Counter(normalized_inventory)
             
-            # Track which items we've already processed
+            # Track which items we've already processed (by normalized name)
             processed_items = set()
             
             for i, item in enumerate(self.game.inventory):
-                # Skip if we've already displayed this item
-                if item in processed_items:
+                # Normalize item name for deduplication
+                normalized_item = item.split(' #')[0] if ' #' in item else item
+                
+                # Skip if we've already displayed this item type
+                if normalized_item in processed_items:
                     continue
-                processed_items.add(item)
+                processed_items.add(normalized_item)
                 
                 item_frame = tk.Frame(inv_frame, bg='#3d2415', relief=tk.RAISED, borderwidth=1)
                 item_frame.pack(fill=tk.BOTH, expand=True, pady=2, padx=5)
@@ -106,7 +111,8 @@ class InventoryDisplayManager:
                 
                 # Check for durability (equipment only)
                 durability_text = ""
-                item_def = self.game.item_definitions.get(item, {})
+                # Use normalized name for item definition lookup
+                item_def = self.game.item_definitions.get(normalized_item, {})
                 if item_def.get('type') == 'equipment' and item_def.get('max_durability'):
                     # Show durability for all equipment, even if not yet tracked
                     if item in self.game.equipment_durability:
@@ -119,20 +125,27 @@ class InventoryDisplayManager:
                     
                     durability_text = f" [{durability_percent}%]"
                 
-                # Add count if more than one
-                count_text = f" x{item_counts[item]}" if item_counts[item] > 1 else ""
+                # Add count if more than one (use normalized item for count lookup)
+                count_text = f" x{item_counts[normalized_item]}" if item_counts[normalized_item] > 1 else ""
                 
-                item_label = tk.Label(item_frame, text=f"• {item}{count_text}{equipped_text}{durability_text}", font=('Arial', 10),
+                # Display with normalized name (cleaner without #X suffixes in old saves)
+                item_label = tk.Label(item_frame, text=f"• {normalized_item}{count_text}{equipped_text}{durability_text}", font=('Arial', 10),
                         bg='#3d2415', fg='#ffffff', anchor='w', wraplength=280, justify='left')
                 item_label.pack(side=tk.LEFT, padx=10, pady=5, fill=tk.BOTH, expand=True)
                 
                 # Add hover tooltip
-                self.create_item_tooltip(item_label, item)
+                self.create_item_tooltip(item_label, normalized_item)
                 
-                # Get item type to determine if usable/equippable
-                item_def = self.game.item_definitions.get(item, {})
+                # Get item type to determine if usable/equippable (use normalized name)
+                item_def = self.game.item_definitions.get(normalized_item, {})
                 item_type = item_def.get('type', 'unknown')
                 item_slot = item_def.get('slot', None)
+                
+                # Check if this is a lore item (matches LoreManager's lore_type_map keys)
+                lore_prefixes = ["Guard Journal", "Quest Notice", "Training Manual", "Scrawled Note", 
+                               "Ledger Entry", "Pressed Page", "Surgeon Note", "Surgeon's Note", 
+                               "Puzzle Note", "Star Chart", "Cracked Map Scrap", "Old Letter", "Prayer Strip"]
+                is_lore_item = any(normalized_item.startswith(prefix) for prefix in lore_prefixes)
                 
                 # Find the actual index of this item in the inventory
                 item_idx = self.game.inventory.index(item)
@@ -157,10 +170,10 @@ class InventoryDisplayManager:
                              font=('Arial', 8), bg='#9b59b6', fg='#ffffff',
                              width=6).pack(side=tk.RIGHT, padx=2)
                 
-                # Add Read button for readable lore items (middle-right)
-                if item_type == 'readable_lore':
+                # Add Read button for lore items
+                if is_lore_item or item_type == 'readable_lore':
                     tk.Button(button_container, text="Read", command=lambda idx=item_idx: self.game.use_item(idx),
-                             font=('Arial', 8), bg='#e67e22', fg='#ffffff',
+                             font=('Arial', 8), bg='#d4a574', fg='#000000',
                              width=6).pack(side=tk.RIGHT, padx=2)
                 
                 # Add Equip/Unequip button for equipment (leftmost of button group)

@@ -240,7 +240,7 @@
   "Soap Bar": { "type": "cleanse", "cleanse": true, "desc": "A bar of harsh lye soap. Cleanses filth and minor curses." },
   "Spear": { "type": "equipment", "slot": "weapon", "damage_bonus": 3, "max_durability": 85, "desc": "A long spear with good reach. +3 damage." },
   "Spinning Top": { "type": "sellable", "sell_value": 4, "desc": "A child's wooden spinning top. Brings back memories." },
-  "Star Chart": { "type": "lore", "desc": "A complete astronomical chart showing celestial navigation points." },
+  "Star Chart": { "type": "readable_lore", "desc": "A complete astronomical chart showing celestial navigation points." },
   "Strength Elixir": { "type": "buff", "damage_bonus": 4, "duration": "combat", "sell_value": 60, "desc": "A powerful elixir that enhances strength. +4 damage this combat." },
   "Stuffed Bear": { "type": "sellable", "sell_value": 5, "desc": "A worn stuffed bear toy. Someone's childhood companion." },
   "Tattered Cloth": { "type": "sellable", "sell_value": 1, "desc": "A torn piece of cloth. Barely worth keeping." },
