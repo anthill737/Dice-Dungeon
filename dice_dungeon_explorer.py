@@ -950,9 +950,14 @@ class DiceDungeonExplorer:
                 self.show_character_status()
             return
         
-        # Don't process other hotkeys if we're not in active gameplay or if dialog is open
-        if not self.game_active or self.dialog_frame:
+        # Don't process other hotkeys if we're not in active gameplay
+        if not self.game_active:
             return
+        
+        # Don't process movement/rest if any dialog is open (pause menu, inventory, save/load, etc.)
+        if self.dialog_frame and self.dialog_frame.winfo_exists():
+            if action in ['north', 'south', 'east', 'west', 'rest']:
+                return
         
         # Don't process movement hotkeys if in combat or interaction
         if action in ['north', 'south', 'east', 'west'] and (self.in_combat or self.in_interaction):
