@@ -14,7 +14,7 @@ A roguelike dungeon crawler where you roll dice to fight enemies, explore proced
 
 1. [Download this repository](https://github.com/anthill737/dice-dungeon/archive/refs/heads/main.zip)
 2. Extract the ZIP file
-3. Double-click **`SETUP.bat`**
+3. Double-click **`scripts/SETUP.bat`**
 4. A graphical installer opens - choose where to install
 5. Click "Install"
 6. Launch 
@@ -26,8 +26,8 @@ A roguelike dungeon crawler where you roll dice to fight enemies, explore proced
 ```bash
 git clone https://github.com/anthill737/dice-dungeon.git
 cd dice-dungeon
-chmod +x setup.sh
-./setup.sh
+chmod +x scripts/setup.sh
+./scripts/setup.sh
 ```
 
 **That's it** The installer:
@@ -95,24 +95,12 @@ dice-dungeon/
 └── saves/                       # Save files
 ```
 
-## 🛠️ Modding & Development
-
-### Creating Custom Content
-See [MODDING_GUIDE.md](MODDING_GUIDE.md) for information on:
-- Adding new enemies
-- Creating custom rooms
-- Modifying game balance
-- Adding new items
-
-### Settings System
-Configuration and settings management is documented in [SETTINGS_SYSTEM_GUIDE.md](SETTINGS_SYSTEM_GUIDE.md).
-
 ## 🆘 Troubleshooting
 Installer won't run / "Python is not recognized"**
 - The installer should handle Python installation automatically
 - If it fails, you can manually install Python from https://www.python.org/downloads/
 - Make sure to check "Add Python to PATH" during installation
-- Then run SETUP.bat againg/downloads/
+- Then run scripts/SETUP.bat again
 - During installation, check "Add Python to PATH"
 
 **"No module named 'PIL'"**

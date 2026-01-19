@@ -6,7 +6,7 @@ This guide shows how to create downloadable releases on GitHub with pre-built ex
 
 1. **Build the executable locally:**
    ```bash
-   python build_exe.py
+   python scripts/build_exe.py
    ```
 
 2. **Zip the portable folder:**
@@ -56,7 +56,7 @@ jobs:
         pip install pyinstaller pillow
     
     - name: Build executable
-      run: python build_exe.py
+      run: python scripts/build_exe.py
     
     - name: Create ZIP
       run: |
@@ -163,7 +163,7 @@ For cross-platform support:
 
 **Windows:**
 ```bash
-python build_exe.py
+python scripts/build_exe.py
 # Creates Windows .exe
 ```
 

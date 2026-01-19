@@ -119,9 +119,15 @@ Dynamic map • Mysterious lore"""
         
         # Quit button
         tk.Button(self.root, text="QUIT", 
-                 command=self.root.quit,
+                 command=self.quit_launcher,
                  font=('Arial', 11, 'bold'), bg='#ff6b6b', fg='#000000',
                  width=15, pady=8).pack(pady=15)
+    
+    def quit_launcher(self):
+        """Properly quit the launcher application"""
+        self.root.quit()
+        self.root.destroy()
+        sys.exit(0)
     
     def launch_classic(self):
         """Launch the classic mode game"""

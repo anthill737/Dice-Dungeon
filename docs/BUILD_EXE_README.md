@@ -7,7 +7,7 @@ Run this once to create the DiceDungeon.exe that will be included in the repo.
 1. Make sure all your game code is working
 2. Run this script:
    ```bash
-   python build_exe.py
+   python scripts/build_exe.py
    ```
 
 3. The EXE will be created in `dist/DiceDungeon.exe`
@@ -29,4 +29,4 @@ Rebuild the EXE whenever you:
 - Add new features
 - Change assets
 
-Just run `python build_exe.py` again and commit the new EXE.
+Just run `python scripts/build_exe.py` again and commit the new EXE.

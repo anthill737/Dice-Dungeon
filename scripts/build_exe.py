@@ -116,7 +116,7 @@ def create_distribution():
             print(f"✓ Copied {folder}/")
     
     # Copy documentation
-    docs_to_copy = ["README.md", "CHANGELOG.md", "MODDING_GUIDE.md", "LICENSE"]
+    docs_to_copy = ["README.md", "CHANGELOG.md", "LICENSE"]
     for doc in docs_to_copy:
         if os.path.exists(doc):
             shutil.copy(doc, dist_folder / doc)
@@ -188,10 +188,10 @@ Name: "{commondesktop}\\Dice Dungeon"; Filename: "{app}\\DiceDungeon.exe"
 Filename: "{app}\\DiceDungeon.exe"; Description: "Launch Dice Dungeon"; Flags: nowait postinstall skipifsilent
 '''
     
-    with open("installer_script.iss", 'w') as f:
+    with open("scripts/installer_script.iss", 'w') as f:
         f.write(iss_content)
     
-    print("\n✓ Created installer_script.iss for Inno Setup")
+    print("\n✓ Created scripts/installer_script.iss for Inno Setup")
 
 def main():
     print("\n")

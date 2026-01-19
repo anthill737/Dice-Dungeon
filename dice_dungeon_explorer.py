@@ -703,6 +703,7 @@ class DiceDungeonExplorer:
             "difficulty": "Normal",  # Easy, Normal, Hard, Brutal
             "color_scheme": "Classic",  # Classic, Dark, Light, Neon, Forest
             "audio_enabled": False,  # Coming soon
+            "intro_shown": False,  # First-time narrative intro
             "keybindings": {
                 "inventory": "Tab",
                 "menu": "m",
@@ -725,6 +726,10 @@ class DiceDungeonExplorer:
                 # Ensure text_speed exists (for backwards compatibility)
                 if "text_speed" not in self.settings:
                     self.settings["text_speed"] = "Medium"
+                
+                # Ensure intro_shown exists (for backwards compatibility)
+                if "intro_shown" not in self.settings:
+                    self.settings["intro_shown"] = False
         except:
             self.settings = default_settings
             self.save_settings()
@@ -1419,6 +1424,68 @@ class DiceDungeonExplorer:
                         pady=8)
         return label
     
+    def show_narrative_intro(self):
+        """Show first-time narrative introduction before gameplay begins"""
+        # Clear any existing UI
+        if hasattr(self, 'game_frame') and self.game_frame:
+            self.game_frame.destroy()
+        if hasattr(self, 'dialog_frame') and self.dialog_frame:
+            self.dialog_frame.destroy()
+        
+        # Create fullscreen intro frame
+        intro_frame = tk.Frame(self.root, bg='#0a0604')
+        intro_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+        
+        # Narrative text
+        narrative = """Your eyes snap open.
+
+Cold stone presses against your back as you sit up, heart racing, breath shallow. For a moment, you don't know where you are. The air smells damp and old, like rain-soaked earth and rusted iron.
+
+You push yourself to your feet and look around.
+
+A structure rises from the forest floor around you—stone walls half-swallowed by roots and moss, as if the ground tried and failed to reclaim it. You remember finding it just before nightfall. Remember brushing away vines. Remember thinking you'd only step inside for a moment.
+
+There's a strange pressure behind your eyes, like the tail end of a dream you can't quite shake. A fleeting sense that something is… off. Familiar. You frown and force the thought away. You're tired. That's all.
+
+At your feet lies a small set of dice. Clean. Unmarked. Dry, despite the damp air. You're not sure where they came from, only that seeing them there feels… correct.
+
+You pocket them.
+
+Somewhere deeper within the structure, stone grinds against stone. A passage opens."""
+        
+        # Create centered text area
+        text_container = tk.Frame(intro_frame, bg='#0a0604')
+        text_container.place(relx=0.5, rely=0.45, anchor='center')
+        
+        # Display narrative text with proper formatting
+        text_label = tk.Label(text_container, text=narrative,
+                            font=('Georgia', 11), bg='#0a0604', fg='#d4a574',
+                            justify='center', wraplength=700, padx=40, pady=20)
+        text_label.pack()
+        
+        # Continue button at bottom
+        def continue_to_game():
+            # Mark intro as shown and save settings
+            self.settings["intro_shown"] = True
+            self.save_settings()
+            
+            # Destroy intro and start game
+            intro_frame.destroy()
+            self.show_starter_area()
+        
+        button_frame = tk.Frame(intro_frame, bg='#0a0604')
+        button_frame.place(relx=0.5, rely=0.85, anchor='center')
+        
+        continue_btn = tk.Button(button_frame, text="Continue",
+                                command=continue_to_game,
+                                font=('Arial', 14, 'bold'), bg='#d4af37', fg='#000000',
+                                width=20, pady=12, cursor='hand2')
+        continue_btn.pack()
+        
+        # Bind Enter key to continue
+        intro_frame.bind('<Return>', lambda e: continue_to_game())
+        intro_frame.focus_set()
+    
     def start_new_game(self):
         """Initialize a new game"""
         # Reset save slot tracking (will be set when user saves)
@@ -1578,7 +1645,12 @@ class DiceDungeonExplorer:
         self.tutorial_seen = False  # Track if tutorial has been shown
         
         self.game_active = True
-        self.show_starter_area()
+        
+        # Show narrative intro if this is the first time ever starting a new game
+        if not self.settings.get("intro_shown", False):
+            self.show_narrative_intro()
+        else:
+            self.show_starter_area()
     
     def start_new_floor(self):
         """Initialize a new floor"""

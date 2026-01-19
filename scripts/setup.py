@@ -27,7 +27,7 @@ class SimpleInstallerGUI:
         self.root.geometry(f'600x550+{x}+{y}')
         
         self.install_dir = None
-        self.source_dir = os.path.dirname(os.path.abspath(__file__))
+        self.source_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Go up one level from scripts/
         
         # Check if EXE exists
         self.exe_source = os.path.join(self.source_dir, "dist", "DiceDungeon.exe")
