@@ -1,5 +1,44 @@
 # Dice Dungeon - Changelog
 
+## [Unreleased] - 2026-01-18
+
+### Changed
+- **Game Branding**: Renamed from "Dice Dungeon Explorer" to "Dice Dungeon" throughout entire codebase
+  - WHY: Simplified branding and consistent naming across all game materials
+  - PROBLEM SOLVED: Updated all UI elements, documentation, and file references
+  - TECHNICAL IMPLEMENTATION:
+    - **Window Titles**: Updated all tk.Tk() titles to "Dice Dungeon"
+    - **UI Headers**: Changed all "DICE DUNGEON EXPLORER" labels to "DICE DUNGEON"
+    - **Documentation**: Updated README, CHANGELOG, ARCHITECTURE_RULES, all guides
+    - **Build Scripts**: Updated setup.py, build_exe.py, installer scripts
+    - **Module Docstrings**: Updated all Python file header comments
+    - **Export Files**: Adventure log exports now show "DICE DUNGEON"
+    - **Files Updated**: 24+ files across main game, explorer modules, docs, and build tools
+
+### Fixed
+- **Save System for Installed EXE**: Fixed critical bug preventing saves when running as installed executable
+  - WHY: PyInstaller's `__file__` doesn't work correctly when frozen as exe, saves wrote to wrong location
+  - PROBLEM SOLVED: Implemented proper frozen exe detection to find correct base directory
+  - TECHNICAL IMPLEMENTATION:
+    - **Helper Function**: Added `get_base_dir()` that checks `getattr(sys, 'frozen', False)`
+    - **EXE Path**: When frozen, uses `os.path.dirname(sys.executable)` for base directory
+    - **Dev Path**: When running as script, uses `os.path.dirname(os.path.abspath(__file__))`
+    - **Path Utils Module**: Created `explorer/path_utils.py` with `get_base_dir()`, `get_asset_path()`, `get_saves_dir()`
+    - **Updated Paths**: Fixed saves_dir, assets paths, content engine paths, icon paths
+    - **Files Updated**: dice_dungeon_explorer.py, explorer/ui_main_menu.py, explorer/navigation.py
+    - **Result**: Saves now correctly write to `/saves` folder next to installed exe
+
+- **Hotkey Interference During Text Entry**: Fixed all hotkeys (including M for menu) triggering while typing
+  - WHY: Typing save file names like "My Game" would trigger menu close on 'M' key, interrupting input
+  - PROBLEM SOLVED: All hotkeys now completely blocked when typing in any text entry field
+  - TECHNICAL IMPLEMENTATION:
+    - **Focus Detection**: `handle_hotkey()` checks if `focused_widget` is instance of `tk.Entry`
+    - **Complete Block**: Returns immediately for ALL hotkeys when typing (inventory, menu, movement, etc.)
+    - **Entry Bindings**: Entry widgets use their own built-in Escape key bindings
+    - **No Exceptions**: Even 'menu' action blocked - text entry fields handle their own escape
+    - **File Updated**: dice_dungeon_explorer.py handle_hotkey() function
+    - **Result**: Can now type any letter (M, I, R, W, A, S, D, Tab, etc.) in save names without issues
+
 ## [Unreleased] - 2025-12-21
 
 ### Added
