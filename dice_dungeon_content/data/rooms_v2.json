@@ -198,7 +198,7 @@
     ],
     "mechanics": {
       "on_clear": {
-        "item": "Weighted Die"
+        "item": "Old Key"
       }
     }
   },
@@ -222,7 +222,7 @@
     ],
     "mechanics": {
       "on_clear": {
-        "item": "Honey Jar"
+        "item": "Old Key"
       }
     }
   },
@@ -319,7 +319,7 @@
     ],
     "mechanics": {
       "on_clear": {
-        "item": "Blue Quartz"
+        "item": "Old Key"
       }
     }
   },
@@ -342,7 +342,7 @@
     ],
     "mechanics": {
       "on_clear": {
-        "gold_flat": 4
+        "item": "Old Key"
       }
     }
   },
