@@ -134,7 +134,7 @@ anthill737
 
 ## 📄 License
 
-[Add your chosen license here - MIT, GPL, etc.]
+All rights reserved.
 
 ## 📜 Changelog
 
