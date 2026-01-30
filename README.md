@@ -62,10 +62,9 @@ chmod +x scripts/setup.sh
 ### Gameplay Loop
 1. Roll dice to generate attack damage
 2. Lock dice you want to keep
-3. Re-roll remaining dice (costs 1 stamina)
-4. Attack enemies with your final roll
-5. Explore rooms to find treasure, shops, and stairs
-6. Descend deeper into the dungeon for better rewards
+3. Re-roll remaining dice 
+4. Attack enemies after your final roll or once you're happy with your dice roll.
+5. Explore rooms to find treasure, shops, and stairs to descend deeper into the dungeon for better rewards
 
 ### Combat Tips
 - Higher dice rolls = more damage
