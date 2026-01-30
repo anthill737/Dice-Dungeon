@@ -116,7 +116,7 @@ anthill737
 
 ## 📝 Credits
 
-- Game Design & Programming: [Your Name]
+- Game Design & Programming: Anthony & AI
 - Enemy Sprites: Generated with AI assistance
 - Built with Python & Tkinter
 
