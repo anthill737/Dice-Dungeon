@@ -829,7 +829,7 @@ class NavigationManager:
         
         # Ambient details
         ambient = tk.Label(main_area, text="• " + "\n• ".join(starter_data['ambient_details']),
-                          font=('Arial', self.game.scale_font(9), 'italic'), bg=self.game.current_colors["bg_primary"], fg=self.game.current_colors["text_secondary"],
+                          font=('Arial', self.game.scale_font(11), 'italic'), bg=self.game.current_colors["bg_primary"], fg=self.game.current_colors["text_secondary"],
                           wraplength=self.game.get_scaled_wraplength(700), justify=tk.LEFT)
         ambient.pack(pady=self.game.scale_padding(5), padx=self.game.scale_padding(40))
         
@@ -840,7 +840,7 @@ class NavigationManager:
         interact_frame = tk.Frame(interact_container, bg=self.game.current_colors["bg_secondary"], relief=tk.RAISED, borderwidth=2)
         interact_frame.pack(fill=tk.BOTH, expand=True, padx=self.game.scale_padding(50))
         
-        tk.Label(interact_frame, text="Welcome, Adventurer. Study these teachings before your journey begins.",
+        tk.Label(interact_frame, text="Welcome, Adventurer. Study these teachings before your journey begins.\n\nIn the dungeon, you'll encounter interactive elements like chests, signs, floor buttons, and containers.\nClick on them to search for items and discover secrets. Open the chests below to get a few starter items",
                 font=('Arial', self.game.scale_font(11)), bg=self.game.current_colors["bg_secondary"], fg=self.game.current_colors["text_gold"],
                 wraplength=self.game.get_scaled_wraplength(600), justify=tk.CENTER).pack(pady=self.game.scale_padding(8))
         
@@ -881,9 +881,6 @@ class NavigationManager:
         # Enter dungeon button
         enter_frame = tk.Frame(interact_frame, bg=self.game.current_colors["bg_secondary"])
         enter_frame.pack(pady=self.game.scale_padding(10))
-        
-        tk.Label(enter_frame, text="Beyond lies the First Calculation...",
-                font=('Arial', self.game.scale_font(9), 'italic'), bg=self.game.current_colors["bg_secondary"], fg=self.game.current_colors["text_secondary"]).pack(pady=self.game.scale_padding(3))
         
         tk.Button(enter_frame, text="ENTER THE DUNGEON - FLOOR 1",
                  command=self.enter_dungeon_from_starter,

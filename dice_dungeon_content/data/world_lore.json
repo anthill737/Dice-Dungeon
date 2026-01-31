@@ -24,20 +24,20 @@
     
     "signs": [
       {
-        "title": "Stone Tablet - Worn Smooth",
-        "text": "THIS PART STAYS THE SAME\n\nOld message. Carved over many times. Current version readable:\n\n'...whatever you're here for, pace yourself... people who rush don't come back up... people who wait too long don't either... find the middle and stick to it...'"
+        "title": "Ancient Advice - Pace Yourself",
+        "text": "An old message, carved deep into stone:\n\n'...whatever you're here for, pace yourself... people who rush don't come back up... people who wait too long don't either... find the middle and stick to it...'"
       },
       {
-        "title": "Carved Notice - Multiple Hands",
-        "text": "Messages from different people, same spot:\n\n'Day 14 - mapped first 3 floors'\n'Day 47 - same 3 floors, different rooms?'\n'Day unknown - it keeps what works'\n'If reading this: bring dice. Feels right to have them.'\n\n[The rest is scratched over]"
+        "title": "Explorer's Graffiti - The Pattern",
+        "text": "Messages scratched into the wall's surface, difficult to read:\n\n'Day 14 - mapped first 3 floors'\n'Day 47 - same 3 floors, different rooms?'\n'Day unknown - it keeps what works'\n'If reading this: bring dice. Feels right to have them.'\n\n[The rest is scratched over]"
       },
       {
-        "title": "Warning Board - Maintained",
+        "title": "Warning Notice - Adaptation",
         "text": "NOTICE TO THOSE WHO ENTER\n\nThe layout changes. Not random - it changes based on something. People who adapt do fine. People who fight it don't.\n\nSome folks been down here years. They're doing okay. They found a rhythm.\n\nYou'll know you're in trouble when things feel wrong. Trust that feeling.\n\n- Posted by whoever updates this board"
       },
       {
-        "title": "Brass Plaque - Standard",
-        "text": "OBSERVATIONS COMPILED:\n\n• Same rooms appear in different orders\n• Danger level stays consistent within runs\n• Items appear when needed, usually\n• Exits appear when you're ready for them\n• People report feeling 'guided' toward stable patterns\n\nNot dangerous if you don't fight it.\nDangerous if you try to break it.\n\n[Below in different handwriting:]\n'I thought I was done. I'm not done.'"
+        "title": "Compiled Observations - The Dungeon",
+        "text": "A disheveled notebook, pages worn and dog-eared:\n\nOBSERVATIONS COMPILED:\n\n• Same rooms appear in different orders\n• Danger level stays consistent within runs\n• Items appear when needed, usually\n• Exits appear when you're ready for them\n• People report feeling 'guided' toward stable patterns\n\nNot dangerous if you don't fight it.\nDangerous if you try to break it.\n\n[Below in different handwriting:]\n'I thought I was done. I'm not done.'"
       }
     ],
     
