@@ -13,13 +13,14 @@ A roguelike dungeon crawler where you roll dice to fight enemies, explore proced
 ### Windows
 
 1. [Download this repository](https://github.com/anthill737/dice-dungeon/archive/refs/heads/main.zip)
-2. Extract the ZIP file
-3. Double-click **`scripts/SETUP.bat`**
-4. A graphical installer opens - choose where to install
-5. Click "Install"
-6. Launch 
+2. Extract the ZIP file to any location
+3. Open the extracted folder, then open the **`scripts`** folder inside it
+4. Double-click **`SETUP.bat`** to launch the installer
+5. A graphical installer opens - choose where to install
+6. Click "Install"
+7. Launch from the desktop shortcut or Start Menu
 
-**That's it** The installer copies the pre-built DiceDungeon.exe to your chosen location and creates shortcuts.
+**That's it!** The installer copies the pre-built DiceDungeon.exe to your chosen location and creates shortcuts.
 
 ### Mac / Linux
 
