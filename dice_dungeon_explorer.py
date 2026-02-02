@@ -14,6 +14,7 @@ import copy
 from collections import Counter
 from debug_logger import get_logger
 from explorer import ui_character_menu
+from explorer.color_schemes import COLOR_SCHEMES, DEFAULT_SCHEME, ColorManager
 
 # Helper function to get base directory (works with PyInstaller)
 def get_base_dir():
@@ -179,53 +180,8 @@ class DiceDungeonExplorer:
             with open(enemy_types_file, 'r', encoding='utf-8') as f:
                 self.enemy_types = json.load(f)
             
-            # Define hardcoded color scheme with enhanced visual hierarchy
-            self.color_schemes = {
-                "Classic": {
-                    # Background hierarchy (darkest to lightest)
-                    "bg_primary": "#2c1810",      # Main dark brown background
-                    "bg_secondary": "#1a0f08",    # Darker sections
-                    "bg_dark": "#0f0805",         # Darkest areas
-                    "bg_panel": "#3d2415",        # Raised panels (lighter)
-                    "bg_header": "#231408",       # Header bar
-                    "bg_room": "#2a1810",         # Room description area
-                    "bg_log": "#1a1008",          # Adventure log
-                    "bg_minimap": "#1f1408",      # Minimap panel
-                    
-                    # Border colors
-                    "border_gold": "#b8932e",     # Muted gold borders
-                    "border_dark": "#0a0604",     # Dark borders
-                    "border_accent": "#8b7355",   # Brown accent borders
-                    
-                    # Text colors (bone/parchment theme)
-                    "text_primary": "#e8dcc4",    # Bone white for main text
-                    "text_secondary": "#a89884",  # Muted secondary text
-                    "text_light": "#f5e6d3",      # Lightest text
-                    "text_gold": "#d4af37",       # Muted gold
-                    "text_green": "#7fae7f",      # Muted green (healing)
-                    "text_red": "#c85450",        # Muted red (damage)
-                    "text_cyan": "#5fa5a5",       # Muted cyan (info)
-                    "text_purple": "#8b6f9b",     # Muted purple (rare)
-                    "text_orange": "#d4823b",     # Muted orange (loot)
-                    "text_white": "#ffffff",      # Pure white (accents)
-                    "text_magenta": "#b565b5",    # Muted magenta (crit)
-                    "text_warning": "#d4a537",    # Warning yellow
-                    
-                    # Button colors
-                    "button_primary": "#d4af37",  # Muted gold (main actions)
-                    "button_secondary": "#5fa5a5",# Muted cyan (secondary)
-                    "button_success": "#7fae7f",  # Muted green (success)
-                    "button_danger": "#c85450",   # Muted red (danger)
-                    "button_disabled": "#4a3a2a", # Disabled state
-                    "button_hover": "#f0cf5a",    # Lighter gold hover
-                    
-                    # HP bar colors
-                    "hp_full": "#7fae7f",         # Full HP (green)
-                    "hp_mid": "#d4a537",          # Mid HP (yellow)
-                    "hp_low": "#c85450",          # Low HP (red)
-                    "hp_bg": "#1a1008",           # HP bar background
-                }
-            }
+            # Load color schemes from manager
+            self.color_schemes = COLOR_SCHEMES
             
             # Unicode icons for UI elements
             self.icons = {
@@ -606,14 +562,12 @@ class DiceDungeonExplorer:
         # Enemy type definitions will be loaded from JSON file
         # (Loaded in content system initialization above)
         
-        # Define color schemes
-        # Note: This is a duplicate definition that should be removed
-        # The actual color schemes are defined later in the constructor
-        
         self.load_settings()
-        # Force Classic color scheme only
-        self.settings["color_scheme"] = "Classic"
-        self.current_colors = self.color_schemes["Classic"]
+        # Apply saved color scheme (with Classic as fallback)
+        saved_scheme = self.settings.get("color_scheme", "Classic")
+        if saved_scheme not in self.color_schemes:
+            saved_scheme = "Classic"
+        self.current_colors = self.color_schemes[saved_scheme]
         
         # Settings tracking
         self.settings_return_to = None  # Track where to return after settings
@@ -734,9 +688,12 @@ class DiceDungeonExplorer:
             self.settings = default_settings
             self.save_settings()
         
-        # Force Classic color scheme only
-        self.settings["color_scheme"] = "Classic"
-        self.current_colors = self.color_schemes["Classic"]
+        # Apply saved color scheme (with Classic as fallback)
+        saved_scheme = self.settings.get("color_scheme", "Classic")
+        if saved_scheme not in self.color_schemes:
+            saved_scheme = "Classic"
+            self.settings["color_scheme"] = saved_scheme
+        self.current_colors = self.color_schemes[saved_scheme]
     
     def save_settings(self):
         """Save settings to file"""
@@ -5437,9 +5394,11 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             # independently of game saves. This ensures color scheme, difficulty, and
             # keybindings remain consistent across all game sessions and saves.
             
-            # Apply current settings (forced to Classic only)
-            self.settings["color_scheme"] = "Classic"
-            self.current_colors = self.color_schemes["Classic"]
+            # Apply current color scheme from settings
+            saved_scheme = self.settings.get("color_scheme", "Classic")
+            if saved_scheme not in self.color_schemes:
+                saved_scheme = "Classic"
+            self.current_colors = self.color_schemes[saved_scheme]
             
             # Restore comprehensive stats (with defaults for old saves)
             if 'stats' in save_data:
@@ -6322,8 +6281,11 @@ Final Score: {self.run_score}
         # Restore original settings if modified
         if self.settings_modified:
             self.settings = json.loads(self.original_settings)
-            self.settings["color_scheme"] = "Classic"
-            self.current_colors = self.color_schemes["Classic"]
+            # Restore the original color scheme
+            restored_scheme = self.settings.get("color_scheme", "Classic")
+            if restored_scheme not in self.color_schemes:
+                restored_scheme = "Classic"
+            self.current_colors = self.color_schemes[restored_scheme]
         
         self.settings_modified = False
         
@@ -6386,43 +6348,90 @@ Final Score: {self.run_score}
         try:
             widget_class = widget.winfo_class()
             
+            # Collect all possible background colors from all schemes for matching
+            all_bg_primary = [s["bg_primary"] for s in self.color_schemes.values()]
+            all_bg_secondary = [s["bg_secondary"] for s in self.color_schemes.values()]
+            all_bg_dark = [s["bg_dark"] for s in self.color_schemes.values()]
+            all_bg_panel = [s["bg_panel"] for s in self.color_schemes.values()]
+            all_bg_log = [s["bg_log"] for s in self.color_schemes.values()]
+            all_bg_minimap = [s["bg_minimap"] for s in self.color_schemes.values()]
+            all_bg_room = [s["bg_room"] for s in self.color_schemes.values()]
+            all_bg_header = [s["bg_header"] for s in self.color_schemes.values()]
+            
             # Update based on widget type
             if widget_class == 'Frame':
                 current_bg = widget.cget('bg')
                 # Map old colors to new color scheme
-                if current_bg in ['#1a0f08', '#0a0a0a', '#e0e0e0', '#0d0221', '#0d1f0d']:
+                if current_bg in all_bg_primary:
                     widget.configure(bg=self.current_colors["bg_primary"])
-                elif current_bg in ['#3d2415', '#2c1810', '#1a1a1a', '#f5f5f5', '#1a0b3d', '#2d4a2d']:
+                elif current_bg in all_bg_secondary:
                     widget.configure(bg=self.current_colors["bg_secondary"])
-                elif current_bg in ['#4a2c1a', '#333333', '#cccccc', '#2d1b4e', '#3d5c3d']:
+                elif current_bg in all_bg_dark:
                     widget.configure(bg=self.current_colors["bg_dark"])
+                elif current_bg in all_bg_panel:
+                    widget.configure(bg=self.current_colors["bg_panel"])
+                elif current_bg in all_bg_log:
+                    widget.configure(bg=self.current_colors["bg_log"])
+                elif current_bg in all_bg_minimap:
+                    widget.configure(bg=self.current_colors["bg_minimap"])
+                elif current_bg in all_bg_room:
+                    widget.configure(bg=self.current_colors["bg_room"])
+                elif current_bg in all_bg_header:
+                    widget.configure(bg=self.current_colors["bg_header"])
                     
             elif widget_class == 'Label':
                 current_bg = widget.cget('bg')
                 current_fg = widget.cget('fg')
                 
-                # Update background
-                if current_bg in ['#1a0f08', '#0a0a0a', '#e0e0e0', '#0d0221', '#0d1f0d']:
+                # Update background using all scheme colors
+                if current_bg in all_bg_primary:
                     widget.configure(bg=self.current_colors["bg_primary"])
-                elif current_bg in ['#3d2415', '#2c1810', '#1a1a1a', '#f5f5f5', '#1a0b3d', '#2d4a2d']:
+                elif current_bg in all_bg_secondary:
                     widget.configure(bg=self.current_colors["bg_secondary"])
-                elif current_bg in ['#4a2c1a', '#333333', '#cccccc', '#2d1b4e', '#3d5c3d']:
+                elif current_bg in all_bg_dark:
                     widget.configure(bg=self.current_colors["bg_dark"])
+                elif current_bg in all_bg_panel:
+                    widget.configure(bg=self.current_colors["bg_panel"])
+                elif current_bg in all_bg_log:
+                    widget.configure(bg=self.current_colors["bg_log"])
+                elif current_bg in all_bg_minimap:
+                    widget.configure(bg=self.current_colors["bg_minimap"])
+                elif current_bg in all_bg_room:
+                    widget.configure(bg=self.current_colors["bg_room"])
+                elif current_bg in all_bg_header:
+                    widget.configure(bg=self.current_colors["bg_header"])
                 
-                # Update foreground
-                if current_fg in ['#ffd700', '#ffcc00', '#333333', '#ff00ff', '#90ee90']:
+                # Update foreground - collect text colors from all schemes
+                all_text_gold = [s["text_gold"] for s in self.color_schemes.values()]
+                all_text_primary = [s["text_primary"] for s in self.color_schemes.values()]
+                all_text_red = [s["text_red"] for s in self.color_schemes.values()]
+                all_text_cyan = [s["text_cyan"] for s in self.color_schemes.values()]
+                
+                if current_fg in all_text_gold:
                     widget.configure(fg=self.current_colors["text_gold"])
-                elif current_fg in ['#ffffff', '#000000', '#0d0221', '#90ee90']:
+                elif current_fg in all_text_primary:
                     widget.configure(fg=self.current_colors["text_primary"])
-                elif current_fg in ['#ff6b6b', '#ff4444', '#d32f2f']:
+                elif current_fg in all_text_red:
                     widget.configure(fg=self.current_colors["text_red"])
-                elif current_fg in ['#4ecdc4', '#00ffff']:
-                    widget.configure(fg=self.current_colors["button_primary"])
+                elif current_fg in all_text_cyan:
+                    widget.configure(fg=self.current_colors["text_cyan"])
                     
             elif widget_class == 'Button':
                 # Don't update button colors - they have specific meanings
                 # Just update background frame colors
                 pass
+            
+            elif widget_class == 'Text':
+                # Update Text widget colors (adventure log, room description, etc.)
+                widget.configure(bg=self.current_colors["bg_log"], fg=self.current_colors["text_primary"])
+                
+                # Update text tags for the adventure log
+                if widget == getattr(self, 'log_text', None):
+                    self._update_log_text_tags()
+            
+            elif widget_class == 'Canvas':
+                # Update canvas backgrounds (minimap, etc.)
+                widget.configure(bg=self.current_colors["bg_minimap"])
             
             # Recursively update children
             if hasattr(widget, 'winfo_children'):
@@ -6433,6 +6442,25 @@ Final Score: {self.run_score}
             # Widget might be destroyed, skip it
             pass
     
+    def _update_log_text_tags(self):
+        """Update adventure log text tag colors for the current color scheme"""
+        if not hasattr(self, 'log_text') or not self.log_text:
+            return
+        try:
+            self.log_text.tag_config('player', foreground=self.current_colors["text_cyan"])
+            self.log_text.tag_config('enemy', foreground=self.current_colors["text_red"])
+            self.log_text.tag_config('system', foreground=self.current_colors["text_gold"])
+            self.log_text.tag_config('crit', foreground=self.current_colors["text_magenta"])
+            self.log_text.tag_config('loot', foreground=self.current_colors["text_purple"])
+            self.log_text.tag_config('success', foreground=self.current_colors["text_green"])
+            self.log_text.tag_config('damage_dealt', foreground=self.current_colors["text_orange"])
+            self.log_text.tag_config('damage_taken', foreground=self.current_colors["text_red"])
+            self.log_text.tag_config('healing', foreground=self.current_colors["text_green"])
+            self.log_text.tag_config('gold_gained', foreground=self.current_colors["text_gold"])
+            self.log_text.tag_config('warning', foreground=self.current_colors["text_warning"])
+        except Exception:
+            pass
+
     def save_settings_only(self):
         """Save settings without closing the dialog"""
         if self.settings_modified:
@@ -6458,12 +6486,18 @@ Final Score: {self.run_score}
         if hasattr(self, 'save_button'):
             self.save_button.config(state=tk.NORMAL, bg='#4ecdc4')
         
-        # Apply color scheme immediately for preview (force Classic only)
+        # Apply color scheme immediately for preview
         if key == 'color_scheme':
-            self.settings["color_scheme"] = "Classic"
-            self.current_colors = self.color_schemes["Classic"]
+            if value in self.color_schemes:
+                self.current_colors = self.color_schemes[value]
+            else:
+                self.settings["color_scheme"] = "Classic"
+                self.current_colors = self.color_schemes["Classic"]
             # Refresh just the settings dialog colors without recursion
             self.refresh_settings_colors()
+            # Also update the game UI behind the dialog if we're in-game
+            if hasattr(self, 'settings_return_to') and self.settings_return_to == 'game':
+                self.update_existing_widget_colors()
         # For difficulty changes, just update the button appearance without full refresh
         elif key == 'difficulty':
             # Find and update difficulty buttons without full refresh
@@ -6670,10 +6704,13 @@ Final Score: {self.run_score}
         self.return_from_settings()
     
     def exit_without_saving(self):
-        """Exit without saving, restoring original settings (force Classic)"""
+        """Exit without saving, restoring original settings"""
         self.settings = json.loads(self.original_settings)
-        self.settings["color_scheme"] = "Classic"
-        self.current_colors = self.color_schemes["Classic"]
+        # Restore the original color scheme
+        restored_scheme = self.settings.get("color_scheme", "Classic")
+        if restored_scheme not in self.color_schemes:
+            restored_scheme = "Classic"
+        self.current_colors = self.color_schemes[restored_scheme]
         self.settings_modified = False
         if self.dialog_frame:
             self.dialog_frame.destroy()
@@ -7568,9 +7605,13 @@ Final Score: {self.run_score}
 
     
     def change_color_scheme(self, scheme):
-        """Change color scheme (forced to Classic only)"""
-        self.settings["color_scheme"] = "Classic"
-        self.current_colors = self.color_schemes["Classic"]
+        """Change color scheme to the specified scheme"""
+        if scheme in self.color_schemes:
+            self.settings["color_scheme"] = scheme
+            self.current_colors = self.color_schemes[scheme]
+        else:
+            self.settings["color_scheme"] = "Classic"
+            self.current_colors = self.color_schemes["Classic"]
         self.save_settings()
         self.show_settings()  # Refresh with new colors
     
