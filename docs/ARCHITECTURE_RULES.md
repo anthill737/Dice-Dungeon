@@ -23,6 +23,7 @@
 - **SaveSystem** (`explorer/save_system.py`) - Save/load game state
 - **QuestManager** (`explorer/quests.py`) - Quest tracking, completion
 - **UIDialogsManager** (`explorer/ui_dialogs.py`) - Settings menu, high scores, other UI dialogs
+- **ColorManager** (`explorer/color_schemes.py`) - Color scheme definitions and theme management
 
 ### 3. When Making Changes
 1. **FIRST**: Identify which manager owns the system you're modifying
