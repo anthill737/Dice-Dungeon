@@ -1,6 +1,26 @@
 # Dice Dungeon - Changelog
 
-## [Unreleased] - 2026-01-18
+## [Unreleased] - 2026-02-02
+
+### Added
+- **Multiple Color Schemes**: Added 5 complete color themes for personalized visual experience
+  - WHY: Allow players to customize the game's appearance to their preference
+  - PROBLEM SOLVED: Game was locked to single "Classic" brown theme with no visual customization
+  - TECHNICAL IMPLEMENTATION:
+    - **Classic**: Original warm brown dungeon theme (default)
+    - **Dark**: Gruvbox-inspired warm dark mode with amber/orange accents
+    - **Light**: Parchment/cream theme for bright environments
+    - **Neon**: Cyberpunk-style with hot pink, cyan, and neon accents
+    - **Forest**: Deep forest green theme with natural earth tones
+    - **ColorManager**: Created `explorer/color_schemes.py` module following manager pattern
+    - **Live Preview**: Color changes apply immediately when selecting in settings
+    - **Full UI Coverage**: All game elements update including adventure log, minimap, dialogs
+    - **Tag Updates**: Adventure log text tags update colors dynamically
+    - **Persistence**: Selected scheme saves to settings file and persists across sessions
+    - **Reset Button**: "Reset to Classic" button in settings for easy default restore
+    - **Files Updated**: dice_dungeon_explorer.py, explorer/color_schemes.py, docs/ARCHITECTURE_RULES.md
+
+## [Previous Unreleased] - 2026-01-18
 
 ### Added
 - **Narrative Introduction Screen**: Added first-time narrative intro that displays before gameplay begins
