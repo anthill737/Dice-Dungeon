@@ -57,6 +57,7 @@ def build_executable():
         icon_ico = None
     
     # PyInstaller command
+    # NOTE: Do NOT include saves folder - we don't want to bundle save data in the exe
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--name=DiceDungeon",
@@ -65,7 +66,6 @@ def build_executable():
         "--add-data=assets;assets",
         "--add-data=dice_dungeon_content;dice_dungeon_content",
         "--add-data=explorer;explorer",
-        "--add-data=saves;saves",
         "--hidden-import=dice_dungeon_rpg",  # Include classic mode
         "--hidden-import=dice_dungeon_explorer",  # Include explorer mode
         "--noconsole",
@@ -108,12 +108,17 @@ def create_distribution():
         print("❌ Executable not found in dist/")
         return False
     
-    # Copy essential folders
-    folders_to_copy = ["assets", "saves"]
-    for folder in folders_to_copy:
-        if os.path.exists(folder):
-            shutil.copytree(folder, dist_folder / folder)
-            print(f"✓ Copied {folder}/")
+    # Copy assets folder
+    if os.path.exists("assets"):
+        shutil.copytree("assets", dist_folder / "assets")
+        print(f"✓ Copied assets/")
+    
+    # Create empty saves folder (don't copy existing save data!)
+    saves_folder = dist_folder / "saves"
+    saves_folder.mkdir()
+    with open(saves_folder / "README.md", 'w') as f:
+        f.write("# Saves Folder\n\nYour game saves will be stored here.\n")
+    print(f"✓ Created empty saves/ folder")
     
     # Copy documentation
     docs_to_copy = ["README.md", "CHANGELOG.md", "LICENSE"]
