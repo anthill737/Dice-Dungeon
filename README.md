@@ -12,15 +12,18 @@ A roguelike dungeon crawler where you roll dice to fight enemies, explore proced
 
 ### Windows
 
-1. [Download this repository](https://github.com/anthill737/dice-dungeon/archive/refs/heads/main.zip)
-2. Extract the ZIP file to any location
-3. Open the extracted **`dice-dungeon-main`** folder
-4. Double-click **`SETUP.bat`** to launch the installer
-5. A graphical installer opens — choose where to install
-6. Click "Install"
-7. Launch from the desktop shortcut or Start Menu
+1. [Click here to download the game](https://github.com/anthill737/dice-dungeon/archive/refs/heads/main.zip) — this downloads a file called **`dice-dungeon-main.zip`**
+2. Find the downloaded ZIP file (usually in your **Downloads** folder)
+3. **Right-click** the ZIP file → select **"Extract All..."**
+4. Choose where to extract it (e.g. your Desktop) and click **"Extract"**
+5. Open the extracted **`dice-dungeon-main`** folder
+6. If you see **another** `dice-dungeon-main` folder inside, open that one too *(this is normal — Windows sometimes double-nests folders when extracting)*
+7. Double-click **`SETUP.bat`**
+8. A graphical installer window opens — click **"Continue"**
+9. Choose where to install the game (the default location is fine), then click **"Install"**
+10. Once installation finishes, click **"Launch Game"** — or close the installer and use the **Desktop shortcut** or **Start Menu** entry
 
-**That's it!** The installer copies the pre-built DiceDungeon.exe to your chosen location and creates shortcuts.
+**Done!** The downloaded ZIP and extracted folder can be safely deleted after installation — the game is now installed separately.
 
 ### Mac / Linux
 
