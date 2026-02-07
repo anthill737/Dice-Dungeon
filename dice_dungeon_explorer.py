@@ -18,7 +18,7 @@ from explorer.color_schemes import COLOR_SCHEMES, DEFAULT_SCHEME, ColorManager
 
 # Helper function to get base directory (works with PyInstaller)
 def get_base_dir():
-    """Get the base directory - works both in dev and when frozen as exe"""
+    """Get the base directory for user data (saves, settings) - persists across runs"""
     if getattr(sys, 'frozen', False):
         # Running as compiled exe - use directory containing the exe
         return os.path.dirname(sys.executable)
@@ -26,8 +26,17 @@ def get_base_dir():
         # Running as script - use script directory
         return os.path.dirname(os.path.abspath(__file__))
 
+def get_data_dir():
+    """Get directory for bundled data files (assets, content, engine).
+    When frozen as exe, PyInstaller extracts bundled data to sys._MEIPASS.
+    In dev mode, data lives alongside the script."""
+    if getattr(sys, 'frozen', False):
+        return sys._MEIPASS
+    else:
+        return os.path.dirname(os.path.abspath(__file__))
+
 # Add content engine to path
-sys.path.insert(0, os.path.join(get_base_dir(), 'dice_dungeon_content', 'engine'))
+sys.path.insert(0, os.path.join(get_data_dir(), 'dice_dungeon_content', 'engine'))
 
 # Try to import content engine modules (optional)
 try:
@@ -90,7 +99,7 @@ class DiceDungeonExplorer:
         # Set window and taskbar icon
         try:
             import os
-            icon_path = os.path.join(get_base_dir(), "assets", "DD Logo.png")
+            icon_path = os.path.join(get_data_dir(), "assets", "DD Logo.png")
             if os.path.exists(icon_path):
                 # Create PhotoImage for the icon
                 icon = tk.PhotoImage(file=icon_path)
@@ -134,7 +143,7 @@ class DiceDungeonExplorer:
         
         # Load content system
         try:
-            base_dir = get_base_dir()
+            base_dir = get_data_dir()
             attach_content(self, base_dir)
             
             # Ensure _rooms was initialized by attach_content
@@ -8558,7 +8567,7 @@ if __name__ == "__main__":
             # Set window icon
             try:
                 import os
-                icon_path = os.path.join(get_base_dir(), "assets", "DD Logo.png")
+                icon_path = os.path.join(get_data_dir(), "assets", "DD Logo.png")
                 if os.path.exists(icon_path):
                     icon = tk.PhotoImage(file=icon_path)
                     self.splash.iconphoto(True, icon)
@@ -8571,7 +8580,7 @@ if __name__ == "__main__":
             
             # Logo - smaller to leave more room for text
             try:
-                logo_path = os.path.join(get_base_dir(), "assets", "DD Logo.png")
+                logo_path = os.path.join(get_data_dir(), "assets", "DD Logo.png")
                 if os.path.exists(logo_path):
                     # Load and resize logo - slightly smaller
                     from PIL import Image, ImageTk

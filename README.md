@@ -14,9 +14,9 @@ A roguelike dungeon crawler where you roll dice to fight enemies, explore proced
 
 1. [Download this repository](https://github.com/anthill737/dice-dungeon/archive/refs/heads/main.zip)
 2. Extract the ZIP file to any location
-3. Open the extracted folder, then open the **`scripts`** folder inside it
+3. Open the extracted **`dice-dungeon-main`** folder
 4. Double-click **`SETUP.bat`** to launch the installer
-5. A graphical installer opens - choose where to install
+5. A graphical installer opens — choose where to install
 6. Click "Install"
 7. Launch from the desktop shortcut or Start Menu
 
