@@ -4445,7 +4445,16 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         dialog_width, dialog_height = self.get_responsive_dialog_size(950, 700, 0.85, 0.9)
         
-        self.dialog_frame = tk.Frame(self.game_frame, bg=self.current_colors["bg_panel"], 
+        # Determine parent frame - use game_frame if in-game, main_frame if on menu, root as fallback
+        parent_frame = None
+        if self.game_frame and self.game_frame.winfo_exists():
+            parent_frame = self.game_frame
+        elif self.main_frame and self.main_frame.winfo_exists():
+            parent_frame = self.main_frame
+        else:
+            parent_frame = self.root
+        
+        self.dialog_frame = tk.Frame(parent_frame, bg=self.current_colors["bg_panel"], 
                                      relief=tk.RIDGE, borderwidth=3)
         self.dialog_frame.place(relx=0.5, rely=0.5, anchor='center', 
                                width=dialog_width, height=dialog_height)
