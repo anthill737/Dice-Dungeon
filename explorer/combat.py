@@ -961,7 +961,7 @@ class CombatManager:
             # Only add if not already afflicted
             if status_name not in self.game.flags.get("statuses", []):
                 self.game.flags["statuses"].append(status_name)
-                self.game.log(f"⚠️ You are now afflicted with {status_name}!", 'enemy')
+                # Note: the ability's own "message" field (logged above) already announces the status
         
         # Heal over time - enemy regenerates HP
         elif ability_type == "heal_over_time":
@@ -1355,8 +1355,8 @@ class CombatManager:
             if self.game.health <= 0:
                 return  # Player died from curse damage
         
-        # Process status effects at start of turn
-        self.process_status_effects()
+        # Status effects (poison, burn, bleed) are processed during the enemy turn
+        # in _start_enemy_turn_sequence, so they are NOT processed here to avoid double-ticking.
         
         # Clear old combat UI widgets (including the initial attack/flee buttons)
         for widget in self.game.dice_frame.winfo_children():
@@ -2145,6 +2145,15 @@ class CombatManager:
         
         # Trigger enemy_turn boss abilities
         self._check_boss_ability_triggers("enemy_turn")
+        
+        # Apply status effect damage (poison, burn, bleed, etc.) during enemy turn
+        # This ensures newly inflicted statuses deal damage the same turn
+        statuses = self.game.flags.get('statuses', [])
+        if statuses:
+            self.process_status_effects()
+            if self.game.health <= 0 and not self.game.dev_invincible:
+                self.game.game_over()
+                return
         
         # Apply burn damage to enemies
         enemies_died_from_burn = self._apply_burn_damage()
