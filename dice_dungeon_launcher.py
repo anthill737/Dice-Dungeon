@@ -232,10 +232,20 @@ Dynamic map • Mysterious lore"""
         
         def launch_game():
             splash.destroy()
-            import dice_dungeon_rpg
-            root = tk.Tk()
-            app = dice_dungeon_rpg.DiceDungeonRPG(root)
-            root.mainloop()
+            try:
+                import dice_dungeon_rpg
+                root = tk.Tk()
+                app = dice_dungeon_rpg.DiceDungeonRPG(root)
+                root.mainloop()
+            except Exception as e:
+                import traceback
+                err_root = tk.Tk()
+                err_root.withdraw()
+                import tkinter.messagebox as mb
+                mb.showerror("Launch Error", 
+                    f"Could not launch Classic Mode:\n\n{e}\n\n{traceback.format_exc()}",
+                    parent=err_root)
+                err_root.destroy()
         
         animate()
         splash.mainloop()
@@ -326,10 +336,20 @@ Dynamic map • Mysterious lore"""
         
         def launch_game():
             splash.destroy()
-            import dice_dungeon_explorer
-            root = tk.Tk()
-            app = dice_dungeon_explorer.DiceDungeonExplorer(root)
-            root.mainloop()
+            try:
+                import dice_dungeon_explorer
+                root = tk.Tk()
+                app = dice_dungeon_explorer.DiceDungeonExplorer(root)
+                root.mainloop()
+            except Exception as e:
+                import traceback
+                err_root = tk.Tk()
+                err_root.withdraw()
+                import tkinter.messagebox as mb
+                mb.showerror("Launch Error", 
+                    f"Could not launch Adventure Mode:\n\n{e}\n\n{traceback.format_exc()}",
+                    parent=err_root)
+                err_root.destroy()
         
         animate()
         splash.mainloop()
