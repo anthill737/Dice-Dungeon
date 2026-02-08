@@ -1632,6 +1632,10 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         for widget in self.root.winfo_children():
             widget.destroy()
         
+        # Null out frame references that were just destroyed
+        self.main_frame = None
+        self.dialog_frame = None
+        
         self.game_frame = tk.Frame(self.root, bg=self.current_colors["bg_secondary"])
         self.game_frame.pack(fill=tk.BOTH, expand=True)
         
@@ -3150,6 +3154,10 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         for widget in self.root.winfo_children():
             widget.destroy()
         
+        # Null out frame references that were just destroyed
+        self.main_frame = None
+        self.dialog_frame = None
+        
         self.game_frame = tk.Frame(self.root, bg=self.current_colors["bg_primary"])
         self.game_frame.pack(fill=tk.BOTH, expand=True)
         
@@ -4357,11 +4365,22 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         """Show comprehensive character status with tabbed interface - delegated to ui_character_menu"""
         ui_character_menu.show_character_status(self)
     
+    def _safe_destroy_dialog(self):
+        """Safely destroy dialog_frame, handling already-destroyed widgets.
+        Always sets self.dialog_frame to None afterwards."""
+        if self.dialog_frame is not None:
+            try:
+                if self.dialog_frame.winfo_exists():
+                    self.dialog_frame.destroy()
+            except Exception:
+                pass
+            self.dialog_frame = None
+
     def close_dialog(self):
         """Close dialog"""
-        if self.dialog_frame and self.dialog_frame.winfo_exists():
-            self.dialog_frame.destroy()
-            self.dialog_frame = None
+        was_open = self.dialog_frame is not None
+        self._safe_destroy_dialog()
+        if was_open:
             # Re-apply keybindings to ensure they work after dialog closes
             self.apply_keybindings()
             
@@ -4440,18 +4459,24 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         Args:
             mode: "save" or "load" - determines default action for Enter key
         """
-        if self.dialog_frame:
-            self.dialog_frame.destroy()
+        # Safely close any existing dialog
+        try:
+            if self.dialog_frame and self.dialog_frame.winfo_exists():
+                self.dialog_frame.destroy()
+        except Exception:
+            pass
+        self.dialog_frame = None
         
         dialog_width, dialog_height = self.get_responsive_dialog_size(950, 700, 0.85, 0.9)
         
         # Determine parent frame - use game_frame if in-game, main_frame if on menu, root as fallback
-        parent_frame = None
-        if self.game_frame and self.game_frame.winfo_exists():
-            parent_frame = self.game_frame
-        elif self.main_frame and self.main_frame.winfo_exists():
-            parent_frame = self.main_frame
-        else:
+        parent_frame = self.root  # Safe fallback
+        try:
+            if self.game_frame is not None and self.game_frame.winfo_exists():
+                parent_frame = self.game_frame
+            elif self.main_frame is not None and self.main_frame.winfo_exists():
+                parent_frame = self.main_frame
+        except Exception:
             parent_frame = self.root
         
         self.dialog_frame = tk.Frame(parent_frame, bg=self.current_colors["bg_panel"], 
@@ -6756,8 +6781,7 @@ Final Score: {self.run_score}
     
     def show_pause_menu(self):
         """Show pause menu with options"""
-        if self.dialog_frame:
-            self.dialog_frame.destroy()
+        self._safe_destroy_dialog()
         
         self.dialog_frame = tk.Frame(self.root, bg=self.current_colors["bg_primary"], 
                                      relief=tk.RAISED, borderwidth=3)

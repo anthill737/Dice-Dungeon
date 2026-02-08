@@ -60,7 +60,7 @@
     "loot_table": ["small_item", "gold", "nothing"],
     "weights": [0.3, 0.6, 0.1],
     "loot_pools": {
-      "small_item": ["Lucky Chip", "Shiny Pebble", "Herb Bundle", "Flint and Steel"],
+      "small_item": ["Lucky Chip", "Shiny Pebble", "Herb Bundle", "Fire Potion"],
       "gold": {"min": 2, "max": 6}
     }
   },
