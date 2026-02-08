@@ -38,6 +38,10 @@ class MainMenuManager:
         for widget in self.game.root.winfo_children():
             widget.destroy()
         
+        # Null out frame references that were just destroyed so they don't cause TclErrors later
+        self.game.game_frame = None
+        self.game.dialog_frame = None
+        
         # Apply color scheme
         bg_color = self.game.current_colors["bg_primary"]
         

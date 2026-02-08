@@ -1233,8 +1233,11 @@ class CombatManager:
                 # Reduces healing by 50%
                 self.game.log(f"◆ [{status}] You feel weakened from hunger...", 'system')
         
+        # Update the HP bar so the player can see the damage immediately
+        self.game.update_display()
+        
         # Check if player died from status effects
-        if self.game.health <= 0:
+        if self.game.health <= 0 and not self.game.dev_invincible:
             self.game.game_over()
     
 
@@ -2152,8 +2155,7 @@ class CombatManager:
         if statuses:
             self.process_status_effects()
             if self.game.health <= 0 and not self.game.dev_invincible:
-                self.game.game_over()
-                return
+                return  # Player died from status effects (game_over already called)
         
         # Apply burn damage to enemies
         enemies_died_from_burn = self._apply_burn_damage()
