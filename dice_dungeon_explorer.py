@@ -1350,8 +1350,8 @@ class DiceDungeonExplorer:
         if hasattr(self, 'enemy_sprite_pil') and self.enemy_sprite_pil:
             self._rebuild_sprite_photos()
         
-        # Refresh fonts on existing HUD elements so they match new scale
-        self._refresh_hud_fonts()
+        # Comprehensive UI refresh for the new resolution
+        self._refresh_ui_for_resolution()
     
     def _refresh_hud_fonts(self):
         """Update font sizes on existing HUD labels after a resolution change"""
@@ -1378,6 +1378,127 @@ class DiceDungeonExplorer:
                         wraplength=self.get_scaled_wraplength(600))
             except Exception:
                 pass
+    
+    def _refresh_ui_for_resolution(self):
+        """Comprehensive UI refresh after resolution change — updates all live widgets"""
+        # 1. Refresh HUD label fonts (gold, floor, progress, room title/desc)
+        self._refresh_hud_fonts()
+        
+        # 2. Update currently displayed enemy sprite with newly rebuilt PhotoImage
+        self._refresh_enemy_sprite()
+        
+        # 3. Refresh adventure log font and all tag fonts
+        self._refresh_adventure_log_fonts()
+        
+        # 4. Rebuild HP bar at new scale
+        self._refresh_hp_bar()
+        
+        # 5. Resize minimap canvas
+        self._refresh_minimap_size()
+    
+    def _refresh_enemy_sprite(self):
+        """Update the currently displayed enemy sprite label after sprite rebuild"""
+        try:
+            # Resize the enemy_sprite_area frame
+            if hasattr(self, 'enemy_sprite_area') and self.enemy_sprite_area.winfo_exists():
+                sprite_size = max(48, int(90 * self.scale_factor))
+                self.enemy_sprite_area.config(width=sprite_size, height=sprite_size)
+            
+            # Update the sprite label image to the newly rebuilt PhotoImage
+            if (hasattr(self, 'enemy_sprite_label') and self.enemy_sprite_label
+                    and self.enemy_sprite_label.winfo_exists()
+                    and hasattr(self, 'enemies') and self.enemies
+                    and hasattr(self, 'current_enemy_index')):
+                enemy = self.enemies[self.current_enemy_index]
+                enemy_name = enemy.get('name', '')
+                if enemy_name in self.enemy_sprites:
+                    self.enemy_sprite_label.configure(image=self.enemy_sprites[enemy_name])
+                    self.enemy_sprite_label.image = self.enemy_sprites[enemy_name]
+        except Exception:
+            pass
+    
+    def _refresh_adventure_log_fonts(self):
+        """Update adventure log text widget font and all tag fonts"""
+        if not hasattr(self, 'log_text'):
+            return
+        try:
+            if not self.log_text.winfo_exists():
+                return
+            
+            # Update base font
+            base_font = ('Consolas', self.scale_font(10))
+            self.log_text.config(font=base_font)
+            
+            # Update all tag fonts — must match the tags defined in _build_adventure_log
+            bold_font = ('Consolas', self.scale_font(10), 'bold')
+            tag_fonts = {
+                'player': bold_font,
+                'enemy': bold_font,
+                'crit': bold_font,
+                'success': bold_font,
+                'damage_dealt': bold_font,
+                'gold_gained': bold_font,
+                'warning': bold_font,
+                'fire': bold_font,
+                'burn': bold_font,
+            }
+            for tag, font in tag_fonts.items():
+                try:
+                    self.log_text.tag_config(tag, font=font)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    
+    def _refresh_hp_bar(self):
+        """Rebuild HP bar at new scale factor"""
+        if not hasattr(self, 'hp_bar'):
+            return
+        try:
+            parent = self.hp_bar.master
+            if parent.winfo_exists():
+                self.hp_bar.destroy()
+                self.hp_bar = self.create_hp_bar(
+                    parent, self.health, self.max_health,
+                    width=int(180 * self.scale_factor),
+                    height=int(18 * self.scale_factor))
+                self.hp_bar.pack(side=tk.LEFT)
+        except Exception:
+            pass
+        
+        # Also refresh action panel HP bars if they exist
+        if hasattr(self, 'action_panel_player_hp') and self.action_panel_player_hp:
+            try:
+                parent = self.action_panel_player_hp.master
+                if parent.winfo_exists():
+                    self.action_panel_player_hp.destroy()
+                    self.action_panel_player_hp = self.create_hp_bar(
+                        parent, self.health, self.max_health,
+                        width=int(130 * self.scale_factor),
+                        height=int(12 * self.scale_factor))
+                    self.action_panel_player_hp.pack(anchor='w', pady=(2, 4))
+            except Exception:
+                pass
+    
+    def _refresh_minimap_size(self):
+        """Resize minimap canvas after resolution change"""
+        if not hasattr(self, 'minimap_canvas'):
+            return
+        try:
+            if self.minimap_canvas.winfo_exists():
+                new_size = max(120, int(180 * self.scale_factor))
+                self.minimap_canvas.config(width=new_size, height=new_size)
+        except Exception:
+            pass
+    
+    def _rebuild_main_menu_and_reshow_settings(self):
+        """Rebuild the main menu at the new resolution, then overlay settings again"""
+        try:
+            self.show_main_menu()
+            self.root.after(50, lambda: self.show_settings('main_menu'))
+        except Exception:
+            # Fallback — just reshow settings
+            self.show_settings('main_menu')
     
     def show_main_menu(self):
         """Show the main menu - delegates to MainMenuManager"""
@@ -6095,8 +6216,13 @@ Final Score: {self.run_score}
                     btn.config(bg=self.current_colors["button_primary"], fg='#000000')
                 else:
                     btn.config(bg=self.current_colors["bg_dark"], fg=self.current_colors["text_primary"])
-            # Refresh the settings dialog after resize
-            self.root.after(150, lambda: self.show_settings(self.settings_return_to))
+            # Rebuild underlying UI so it matches new resolution
+            if self.settings_return_to == 'main_menu':
+                # Rebuild main menu behind settings so it isn't oversized/cut off
+                self.root.after(100, lambda: self._rebuild_main_menu_and_reshow_settings())
+            else:
+                # Refresh the settings dialog after resize
+                self.root.after(150, lambda: self.show_settings(self.settings_return_to))
         
         # Lay out in rows of 3
         row_frame = None
