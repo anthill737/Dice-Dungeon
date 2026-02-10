@@ -9,7 +9,7 @@ import os
 
 def get_base_dir():
     """
-    Get the base directory - works both in dev and when frozen as exe.
+    Get the base directory for user data (saves, settings) - persists across runs.
     
     Returns the directory containing the main executable or script.
     """
@@ -21,17 +21,30 @@ def get_base_dir():
         return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def get_data_dir():
+    """
+    Get directory for bundled data files (assets, content, engine).
+    When frozen as exe, PyInstaller extracts bundled data to sys._MEIPASS.
+    In dev mode, data lives alongside the script.
+    """
+    if getattr(sys, 'frozen', False):
+        return sys._MEIPASS
+    else:
+        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 def get_asset_path(*path_parts):
     """
-    Get path to an asset file.
+    Get path to an asset file (sprites, logos, etc).
+    Uses get_data_dir() so assets are found inside PyInstaller bundles.
     
     Args:
-        *path_parts: Parts of the path relative to base directory
+        *path_parts: Parts of the path relative to data directory
         
     Returns:
         Absolute path to the asset
     """
-    return os.path.join(get_base_dir(), *path_parts)
+    return os.path.join(get_data_dir(), *path_parts)
 
 
 def get_saves_dir():

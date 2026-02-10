@@ -12,6 +12,7 @@ import os
 class DiceDungeonRPG:
     def __init__(self, root):
         self.root = root
+        self.scale_factor = 1.0  # Font scaling factor for display size consistency
         self.root.title("Dice Dungeon Classic")
         self.root.geometry("650x700")  # Increased height for 10-line combat log
         self.root.minsize(650, 700)  # Allow resizing
@@ -134,6 +135,10 @@ class DiceDungeonRPG:
         
         self.show_main_menu()
     
+    def scale_font(self, base_size):
+        """Scale font size for display size consistency"""
+        return max(8, int(base_size * self.scale_factor * 1.15))
+    
     def show_main_menu(self):
         # Clear any existing frames
         for widget in self.root.winfo_children():
@@ -157,22 +162,22 @@ class DiceDungeonRPG:
             else:
                 # Fallback to text title if no logo
                 tk.Label(self.main_frame, text="DICE DUNGEON CLASSIC", 
-                        font=('Arial', 32, 'bold'), bg='#2c1810', fg='#ffd700',
+                        font=('Arial', self.scale_font(32), 'bold'), bg='#2c1810', fg='#ffd700',
                         pady=30).pack()
         except Exception as e:
             # Fallback to text title if PIL not available
             tk.Label(self.main_frame, text="DICE DUNGEON CLASSIC", 
-                    font=('Arial', 32, 'bold'), bg='#2c1810', fg='#ffd700',
+                    font=('Arial', self.scale_font(32), 'bold'), bg='#2c1810', fg='#ffd700',
                     pady=30).pack()
         
         # Title
         tk.Label(self.main_frame, text="DICE DUNGEON CLASSIC", 
-                font=('Arial', 26, 'bold'), bg='#2c1810', fg='#ffd700',
+                font=('Arial', self.scale_font(26), 'bold'), bg='#2c1810', fg='#ffd700',
                 pady=10).pack()
         
         # Subtitle
         tk.Label(self.main_frame, text="Roll, Fight, Survive", 
-                font=('Arial', 16), bg='#2c1810', fg='#ffffff',
+                font=('Arial', self.scale_font(16)), bg='#2c1810', fg='#ffffff',
                 pady=10).pack()
         
         # Buttons
@@ -181,22 +186,22 @@ class DiceDungeonRPG:
         
         tk.Button(button_frame, text="START NEW RUN", 
                  command=self.start_game_from_menu,
-                 font=('Arial', 12, 'bold'), bg='#4ecdc4', fg='#000000',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#4ecdc4', fg='#000000',
                  padx=20, pady=10, width=20).pack(pady=5)
         
         tk.Button(button_frame, text="HIGH SCORES", 
                  command=self.show_high_scores,
-                 font=('Arial', 12, 'bold'), bg='#ffd700', fg='#000000',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#ffd700', fg='#000000',
                  padx=20, pady=10, width=20).pack(pady=5)
         
         tk.Button(button_frame, text="RETURN TO LAUNCHER", 
                  command=self.return_to_launcher_from_menu,
-                 font=('Arial', 12, 'bold'), bg='#ff9f43', fg='#000000',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#ff9f43', fg='#000000',
                  padx=20, pady=10, width=20).pack(pady=5)
         
         tk.Button(button_frame, text="QUIT", 
                  command=self.root.quit,
-                 font=('Arial', 12, 'bold'), bg='#e94560', fg='#ffffff',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#e94560', fg='#ffffff',
                  padx=20, pady=10, width=20).pack(pady=5)
         
         # Instructions
@@ -210,7 +215,7 @@ class DiceDungeonRPG:
         """
         
         tk.Label(self.main_frame, text=instructions, 
-                font=('Arial', 11), bg='#2c1810', fg='#95e1d3',
+                font=('Arial', self.scale_font(11)), bg='#2c1810', fg='#95e1d3',
                 justify=tk.LEFT, pady=20).pack()
     
     def show_high_scores(self):
@@ -223,7 +228,7 @@ class DiceDungeonRPG:
         hs_window.configure(bg='#2c1810')
         
         tk.Label(hs_window, text="*** HIGH SCORES ***", 
-                font=('Arial', 22, 'bold'), bg='#2c1810', fg='#ffd700',
+                font=('Arial', self.scale_font(22), 'bold'), bg='#2c1810', fg='#ffd700',
                 pady=20).pack()
         
         if scores:
@@ -231,13 +236,13 @@ class DiceDungeonRPG:
             header_frame = tk.Frame(hs_window, bg='#3d2415')
             header_frame.pack(fill=tk.X, padx=20, pady=10)
             
-            tk.Label(header_frame, text="RANK", font=('Arial', 11, 'bold'),
+            tk.Label(header_frame, text="RANK", font=('Arial', self.scale_font(11), 'bold'),
                     bg='#3d2415', fg='#ffffff', width=8).pack(side=tk.LEFT)
-            tk.Label(header_frame, text="SCORE", font=('Arial', 11, 'bold'),
+            tk.Label(header_frame, text="SCORE", font=('Arial', self.scale_font(11), 'bold'),
                     bg='#3d2415', fg='#ffffff', width=12).pack(side=tk.LEFT)
-            tk.Label(header_frame, text="FLOOR", font=('Arial', 11, 'bold'),
+            tk.Label(header_frame, text="FLOOR", font=('Arial', self.scale_font(11), 'bold'),
                     bg='#3d2415', fg='#ffffff', width=10).pack(side=tk.LEFT)
-            tk.Label(header_frame, text="GOLD", font=('Arial', 11, 'bold'),
+            tk.Label(header_frame, text="GOLD", font=('Arial', self.scale_font(11), 'bold'),
                     bg='#3d2415', fg='#ffffff', width=12).pack(side=tk.LEFT)
             
             # Scores
@@ -247,21 +252,21 @@ class DiceDungeonRPG:
                 
                 rank_color = '#ffd700' if i == 1 else '#c0c0c0' if i == 2 else '#cd7f32' if i == 3 else '#ffffff'
                 
-                tk.Label(score_frame, text=f"#{i}", font=('Arial', 11, 'bold'),
+                tk.Label(score_frame, text=f"#{i}", font=('Arial', self.scale_font(11), 'bold'),
                         bg=score_frame['bg'], fg=rank_color, width=8).pack(side=tk.LEFT)
-                tk.Label(score_frame, text=str(score['score']), font=('Arial', 11),
+                tk.Label(score_frame, text=str(score['score']), font=('Arial', self.scale_font(11)),
                         bg=score_frame['bg'], fg='#ffffff', width=12).pack(side=tk.LEFT)
-                tk.Label(score_frame, text=f"Floor {score['floor']}", font=('Arial', 11),
+                tk.Label(score_frame, text=f"Floor {score['floor']}", font=('Arial', self.scale_font(11)),
                         bg=score_frame['bg'], fg='#ffffff', width=10).pack(side=tk.LEFT)
-                tk.Label(score_frame, text=str(score['gold']), font=('Arial', 11),
+                tk.Label(score_frame, text=str(score['gold']), font=('Arial', self.scale_font(11)),
                         bg=score_frame['bg'], fg='#ffffff', width=12).pack(side=tk.LEFT)
         else:
             tk.Label(hs_window, text="No high scores yet!\n\nPlay a game to set a record.", 
-                    font=('Arial', 14), bg='#2c1810', fg='#ffffff',
+                    font=('Arial', self.scale_font(14)), bg='#2c1810', fg='#ffffff',
                     pady=50).pack()
         
         tk.Button(hs_window, text="CLOSE", command=hs_window.destroy,
-                 font=('Arial', 12, 'bold'), bg='#e94560', fg='#ffffff',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#e94560', fg='#ffffff',
                  padx=30, pady=10).pack(pady=30)
     
     def load_high_scores(self):
@@ -360,7 +365,7 @@ class DiceDungeonRPG:
     def show_hamburger_menu(self):
         """Show in-window menu with game options"""
         def build_menu(dialog):
-            tk.Label(dialog, text="MENU", font=('Arial', 16, 'bold'),
+            tk.Label(dialog, text="MENU", font=('Arial', self.scale_font(16), 'bold'),
                     bg='#2c1810', fg='#ffd700', pady=15).pack()
             
             btn_frame = tk.Frame(dialog, bg='#2c1810')
@@ -368,22 +373,22 @@ class DiceDungeonRPG:
             
             tk.Button(btn_frame, text="View High Scores", 
                      command=lambda: (self.close_dialog(), self.show_high_scores()),
-                     font=('Arial', 11, 'bold'), bg='#ffd700', fg='#000000',
+                     font=('Arial', self.scale_font(11), 'bold'), bg='#ffd700', fg='#000000',
                      width=20, pady=10).pack(pady=8)
             
             tk.Button(btn_frame, text="Return to Main Menu", 
                      command=lambda: (self.close_dialog(), self.return_to_menu()),
-                     font=('Arial', 11, 'bold'), bg='#ff6b6b', fg='#ffffff',
+                     font=('Arial', self.scale_font(11), 'bold'), bg='#ff6b6b', fg='#ffffff',
                      width=20, pady=10).pack(pady=8)
             
             tk.Button(btn_frame, text="Return to Launcher", 
                      command=lambda: (self.close_dialog(), self.return_to_launcher()),
-                     font=('Arial', 11, 'bold'), bg='#ff9f43', fg='#000000',
+                     font=('Arial', self.scale_font(11), 'bold'), bg='#ff9f43', fg='#000000',
                      width=20, pady=10).pack(pady=8)
             
             tk.Button(btn_frame, text="Resume Game", 
                      command=self.close_dialog,
-                     font=('Arial', 11, 'bold'), bg='#4ecdc4', fg='#000000',
+                     font=('Arial', self.scale_font(11), 'bold'), bg='#4ecdc4', fg='#000000',
                      width=20, pady=10).pack(pady=8)
         
         self.show_dialog(build_menu, width=350, height=340)
@@ -392,7 +397,7 @@ class DiceDungeonRPG:
         """Show game rules and combo explanations"""
         def build_help(dialog):
             # Title
-            tk.Label(dialog, text="HOW TO PLAY", font=('Arial', 14, 'bold'),
+            tk.Label(dialog, text="HOW TO PLAY", font=('Arial', self.scale_font(14), 'bold'),
                     bg='#2c1810', fg='#ffd700', pady=8).pack()
             
             # Container for scrollable content - limit its height
@@ -477,7 +482,7 @@ POWER-UPS:
             btn_container.pack(pady=8, fill=tk.X, side=tk.BOTTOM)
             
             tk.Button(btn_container, text="Got It!", command=self.close_dialog,
-                     font=('Arial', 11, 'bold'), bg='#4ecdc4', fg='#000000',
+                     font=('Arial', self.scale_font(11), 'bold'), bg='#4ecdc4', fg='#000000',
                      width=15, pady=8).pack()
         
         self.show_dialog(build_help, width=450, height=500)
@@ -492,19 +497,19 @@ POWER-UPS:
         right_buttons.pack(side=tk.RIGHT)
         
         # Help button
-        help_btn = tk.Button(right_buttons, text="?", font=('Arial', 14, 'bold'),
+        help_btn = tk.Button(right_buttons, text="?", font=('Arial', self.scale_font(14), 'bold'),
                             bg='#4a2c1a', fg='#4ecdc4', relief=tk.FLAT,
                             padx=5, pady=0, command=self.show_help)
         help_btn.pack(side=tk.LEFT, padx=2)
         
         # Hamburger menu button
-        menu_btn = tk.Button(right_buttons, text="☰", font=('Arial', 16, 'bold'),
+        menu_btn = tk.Button(right_buttons, text="☰", font=('Arial', self.scale_font(16), 'bold'),
                             bg='#4a2c1a', fg='#ffd700', relief=tk.FLAT,
                             padx=5, pady=0, command=self.show_hamburger_menu)
         menu_btn.pack(side=tk.LEFT, padx=2)
         
         title = tk.Label(header, text="DICE DUNGEON CLASSIC", 
-                        font=('Arial', 14, 'bold'), bg='#4a2c1a', fg='#ffd700')
+                        font=('Arial', self.scale_font(14), 'bold'), bg='#4a2c1a', fg='#ffd700')
         title.pack()
         
         # Stats frame - more compact
@@ -515,15 +520,15 @@ POWER-UPS:
         player_frame = tk.Frame(stats_frame, bg='#3d2415')
         player_frame.pack(side=tk.LEFT, padx=10)
         
-        tk.Label(player_frame, text="PLAYER", font=('Arial', 9, 'bold'), 
+        tk.Label(player_frame, text="PLAYER", font=('Arial', self.scale_font(9), 'bold'), 
                 bg='#3d2415', fg='#4ecdc4').pack()
         
         self.health_label = tk.Label(player_frame, text="HP: 100/100", 
-                                     font=('Arial', 9), bg='#3d2415', fg='#ff6b6b')
+                                     font=('Arial', self.scale_font(9)), bg='#3d2415', fg='#ff6b6b')
         self.health_label.pack()
         
         self.gold_label = tk.Label(player_frame, text="Gold: 0", 
-                                   font=('Arial', 9), bg='#3d2415', fg='#ffd700')
+                                   font=('Arial', self.scale_font(9)), bg='#3d2415', fg='#ffd700')
         self.gold_label.pack()
         
         # Floor info
@@ -531,11 +536,11 @@ POWER-UPS:
         center_frame.pack(side=tk.LEFT, padx=10)
         
         self.floor_label = tk.Label(center_frame, text="FLOOR 1", 
-                                    font=('Arial', 12, 'bold'), bg='#3d2415', fg='#ffe66d')
+                                    font=('Arial', self.scale_font(12), 'bold'), bg='#3d2415', fg='#ffe66d')
         self.floor_label.pack()
         
         self.score_label = tk.Label(center_frame, text="Score: 0", 
-                                    font=('Arial', 9), bg='#3d2415', fg='#95e1d3')
+                                    font=('Arial', self.scale_font(9)), bg='#3d2415', fg='#95e1d3')
         self.score_label.pack()
         
         # Enemy stats
@@ -543,11 +548,11 @@ POWER-UPS:
         enemy_frame.pack(side=tk.LEFT, padx=10)
         
         self.enemy_name_label = tk.Label(enemy_frame, text="GOBLIN", 
-                                         font=('Arial', 12, 'bold'), bg='#3d2415', fg='#e94560')
+                                         font=('Arial', self.scale_font(12), 'bold'), bg='#3d2415', fg='#e94560')
         self.enemy_name_label.pack()
         
         self.enemy_health_label = tk.Label(enemy_frame, text="HP: 50/50", 
-                                           font=('Arial', 11), bg='#3d2415', fg='#ff8787')
+                                           font=('Arial', self.scale_font(11)), bg='#3d2415', fg='#ff8787')
         self.enemy_health_label.pack()
         
         # Power-ups display
@@ -555,14 +560,14 @@ POWER-UPS:
         powers_frame.pack(fill=tk.X, padx=10)
         
         self.powers_label = tk.Label(powers_frame, text="", 
-                                     font=('Arial', 9), bg='#3d2415', fg='#b8e6d5')
+                                     font=('Arial', self.scale_font(9)), bg='#3d2415', fg='#b8e6d5')
         self.powers_label.pack()
         
         # Dice area
         dice_frame = tk.Frame(self.game_frame, bg='#2c1810', pady=20)
         dice_frame.pack()
         
-        tk.Label(dice_frame, text="YOUR DICE", font=('Arial', 14, 'bold'), 
+        tk.Label(dice_frame, text="YOUR DICE", font=('Arial', self.scale_font(14), 'bold'), 
                 bg='#2c1810', fg='#ffffff').pack()
         
         self.dice_buttons_frame = tk.Frame(dice_frame, bg='#2c1810')
@@ -572,7 +577,7 @@ POWER-UPS:
         
         # Rolls left
         self.rolls_label = tk.Label(dice_frame, text="Rolls Left: 3", 
-                                    font=('Arial', 12, 'bold'), bg='#2c1810', fg='#ffe66d')
+                                    font=('Arial', self.scale_font(12), 'bold'), bg='#2c1810', fg='#ffe66d')
         self.rolls_label.pack(pady=5)
         
         # Action buttons
@@ -581,13 +586,13 @@ POWER-UPS:
         
         self.roll_btn = tk.Button(action_frame, text="ROLL DICE", 
                                   command=self.roll_dice,
-                                  font=('Arial', 14, 'bold'), bg='#4ecdc4', fg='#000000',
+                                  font=('Arial', self.scale_font(14), 'bold'), bg='#4ecdc4', fg='#000000',
                                   padx=30, pady=15, width=12)
         self.roll_btn.pack(side=tk.LEFT, padx=5)
         
         self.attack_btn = tk.Button(action_frame, text="ATTACK!", 
                                     command=self.attack_enemy,
-                                    font=('Arial', 14, 'bold'), bg='#e94560', fg='#ffffff',
+                                    font=('Arial', self.scale_font(14), 'bold'), bg='#e94560', fg='#ffffff',
                                     padx=30, pady=15, width=12)
         self.attack_btn.pack(side=tk.LEFT, padx=5)
         
@@ -595,7 +600,7 @@ POWER-UPS:
         info_frame = tk.Frame(self.game_frame, bg='#3d2415', pady=10)
         info_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         
-        tk.Label(info_frame, text="COMBAT LOG", font=('Arial', 11, 'bold'), 
+        tk.Label(info_frame, text="COMBAT LOG", font=('Arial', self.scale_font(11), 'bold'), 
                 bg='#3d2415', fg='#ffd700').pack()
         
         self.log_text = tk.Text(info_frame, height=10, width=80, 
@@ -624,7 +629,7 @@ POWER-UPS:
             locked = self.dice_locked[i] if i < len(self.dice_locked) else False
             
             die_btn = tk.Button(frame, text=str(value) if value > 0 else "?",
-                               font=('Arial', 24, 'bold'),
+                               font=('Arial', self.scale_font(24), 'bold'),
                                width=3, height=1,
                                bg='#ffd700' if locked else '#ffffff',
                                fg='#000000',
@@ -632,7 +637,7 @@ POWER-UPS:
             die_btn.pack()
             
             lock_label = tk.Label(frame, text="LOCKED" if locked else "Click to Lock",
-                                 font=('Arial', 8), bg='#2c1810', 
+                                 font=('Arial', self.scale_font(8)), bg='#2c1810', 
                                  fg='#ffd700' if locked else '#888888')
             lock_label.pack()
             
@@ -913,7 +918,7 @@ POWER-UPS:
         """Show floor complete options in an in-window dialog"""
         def build_menu(dialog):
             tk.Label(dialog, text=f"*** FLOOR {self.floor} COMPLETE! ***", 
-                    font=('Arial', 14, 'bold'), bg='#2c1810', fg='#ffd700',
+                    font=('Arial', self.scale_font(14), 'bold'), bg='#2c1810', fg='#ffd700',
                     pady=10).pack()
             
             # Stats
@@ -921,16 +926,16 @@ POWER-UPS:
             stats_frame.pack(fill=tk.X, padx=20, pady=8)
             
             tk.Label(stats_frame, text=f"Gold Earned: {int(gold_earned * self.multiplier)}", 
-                    font=('Arial', 10), bg='#3d2415', fg='#ffffff').pack()
+                    font=('Arial', self.scale_font(10)), bg='#3d2415', fg='#ffffff').pack()
             tk.Label(stats_frame, text=f"Total Gold: {self.gold}", 
-                    font=('Arial', 10), bg='#3d2415', fg='#ffd700').pack()
+                    font=('Arial', self.scale_font(10)), bg='#3d2415', fg='#ffd700').pack()
             tk.Label(stats_frame, text=f"Run Score: {self.run_score}", 
-                    font=('Arial', 10), bg='#3d2415', fg='#4ecdc4').pack()
+                    font=('Arial', self.scale_font(10)), bg='#3d2415', fg='#4ecdc4').pack()
             tk.Label(stats_frame, text=f"Your HP: {self.health}/{self.max_health}", 
-                    font=('Arial', 10), bg='#3d2415', fg='#ff6b6b').pack()
+                    font=('Arial', self.scale_font(10)), bg='#3d2415', fg='#ff6b6b').pack()
             
             tk.Label(dialog, text="Choose your next action:", 
-                    font=('Arial', 10), bg='#2c1810', fg='#ffffff',
+                    font=('Arial', self.scale_font(10)), bg='#2c1810', fg='#ffffff',
                     pady=8).pack()
             
             # Options
@@ -939,17 +944,17 @@ POWER-UPS:
             
             tk.Button(btn_frame, text="SHOP", 
                      command=lambda: (self.close_dialog(), self.open_shop_dialog(from_floor_complete=True)),
-                     font=('Arial', 10, 'bold'), bg='#ffd700', fg='#000000',
+                     font=('Arial', self.scale_font(10), 'bold'), bg='#ffd700', fg='#000000',
                      width=12, pady=8).pack(side=tk.LEFT, padx=5)
             
             tk.Button(btn_frame, text="REST (+30 HP)", 
                      command=lambda: self.rest_and_continue(),
-                     font=('Arial', 10, 'bold'), bg='#95e1d3', fg='#000000',
+                     font=('Arial', self.scale_font(10), 'bold'), bg='#95e1d3', fg='#000000',
                      width=12, pady=8).pack(side=tk.LEFT, padx=5)
             
             tk.Button(btn_frame, text="NEXT FLOOR", 
                      command=lambda: (self.close_dialog(), self.floor_up()),
-                     font=('Arial', 10, 'bold'), bg='#4ecdc4', fg='#000000',
+                     font=('Arial', self.scale_font(10), 'bold'), bg='#4ecdc4', fg='#000000',
                      width=12, pady=8).pack(side=tk.LEFT, padx=5)
         
         self.show_dialog(build_menu, width=400, height=380)
@@ -978,14 +983,14 @@ POWER-UPS:
         menu.geometry(f'400x300+{x}+{y}')
         
         tk.Label(menu, text="What now?", 
-                font=('Arial', 16, 'bold'), bg='#2c1810', fg='#ffffff',
+                font=('Arial', self.scale_font(16), 'bold'), bg='#2c1810', fg='#ffffff',
                 pady=20).pack()
         
         tk.Label(menu, text=f"Your HP: {self.health}/{self.max_health}", 
-                font=('Arial', 12), bg='#2c1810', fg='#ff6b6b',
+                font=('Arial', self.scale_font(12)), bg='#2c1810', fg='#ff6b6b',
                 pady=5).pack()
         tk.Label(menu, text=f"Your Gold: {self.gold}", 
-                font=('Arial', 12), bg='#2c1810', fg='#ffd700',
+                font=('Arial', self.scale_font(12)), bg='#2c1810', fg='#ffd700',
                 pady=5).pack()
         
         btn_frame = tk.Frame(menu, bg='#2c1810', pady=20)
@@ -993,12 +998,12 @@ POWER-UPS:
         
         tk.Button(btn_frame, text="SHOP", 
                  command=lambda: (menu.destroy(), self.open_shop_dialog(from_floor_complete=True)),
-                 font=('Arial', 11, 'bold'), bg='#ffd700', fg='#000000',
+                 font=('Arial', self.scale_font(11), 'bold'), bg='#ffd700', fg='#000000',
                  padx=15, pady=10, width=12).pack(side=tk.LEFT, padx=5)
         
         tk.Button(btn_frame, text="NEXT FLOOR", 
                  command=lambda: (menu.destroy(), self.floor_up()),
-                 font=('Arial', 11, 'bold'), bg='#4ecdc4', fg='#000000',
+                 font=('Arial', self.scale_font(11), 'bold'), bg='#4ecdc4', fg='#000000',
                  padx=15, pady=10, width=12).pack(side=tk.LEFT, padx=5)
     
     def floor_up(self):
@@ -1067,11 +1072,11 @@ POWER-UPS:
         self.dialog_frame.bind('<Escape>', lambda e: self.close_shop_and_continue() or "break")
         
         # Title
-        tk.Label(self.dialog_frame, text="*** SHOP ***", font=('Arial', 16, 'bold'),
+        tk.Label(self.dialog_frame, text="*** SHOP ***", font=('Arial', self.scale_font(16), 'bold'),
                 bg='#2c1810', fg='#ffd700', pady=10).pack()
         
         # Red X close button (top right corner)
-        close_btn = tk.Label(self.dialog_frame, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(self.dialog_frame, text="✕", font=('Arial', self.scale_font(16), 'bold'),
                             bg='#2c1810', fg='#ff4444',
                             cursor="hand2", padx=5)
         close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=5)
@@ -1081,7 +1086,7 @@ POWER-UPS:
         
         # Gold label that we can update
         self.shop_gold_label = tk.Label(self.dialog_frame, text=f"Your Gold: {self.gold}", 
-                font=('Arial', 12, 'bold'), bg='#2c1810', fg='#ffd700', pady=5)
+                font=('Arial', self.scale_font(12), 'bold'), bg='#2c1810', fg='#ffd700', pady=5)
         self.shop_gold_label.pack()
         
         # Scrollable items
@@ -1119,10 +1124,10 @@ POWER-UPS:
             info_frame = tk.Frame(container, bg='#4a2c1a')
             info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
             
-            tk.Label(info_frame, text=item['name'], font=('Arial', 11, 'bold'),
+            tk.Label(info_frame, text=item['name'], font=('Arial', self.scale_font(11), 'bold'),
                     bg='#4a2c1a', fg='#ffffff', anchor='w').pack(fill=tk.X, pady=2)
             
-            tk.Label(info_frame, text=item['desc'], font=('Arial', 9),
+            tk.Label(info_frame, text=item['desc'], font=('Arial', self.scale_font(9)),
                     bg='#4a2c1a', fg='#b8e6d5', wraplength=350,
                     justify=tk.LEFT, anchor='w').pack(fill=tk.X, pady=2)
             
@@ -1130,7 +1135,7 @@ POWER-UPS:
             action_frame = tk.Frame(container, bg='#4a2c1a')
             action_frame.pack(side=tk.RIGHT, padx=5)
             
-            tk.Label(action_frame, text=f"{item['cost']}g", font=('Arial', 11, 'bold'),
+            tk.Label(action_frame, text=f"{item['cost']}g", font=('Arial', self.scale_font(11), 'bold'),
                     bg='#4a2c1a', fg='#ffd700').pack(pady=3)
             
             # Check if can afford
@@ -1145,7 +1150,7 @@ POWER-UPS:
             
             tk.Button(action_frame, text=btn_text, 
                      command=lambda i=item: self.buy_item_dialog_update(i),
-                     font=('Arial', 9, 'bold'), bg='#4ecdc4', fg='#000000',
+                     font=('Arial', self.scale_font(9), 'bold'), bg='#4ecdc4', fg='#000000',
                      width=10, pady=5, state=btn_state).pack(pady=3)
         
         canvas.pack(side="left", fill="both", expand=True, padx=10, pady=10)
@@ -1156,7 +1161,7 @@ POWER-UPS:
         button_frame.pack(pady=10)
         
         tk.Button(button_frame, text="Next Floor", command=self.close_shop_and_continue,
-                 font=('Arial', 11, 'bold'), bg='#4ecdc4', fg='#000000',
+                 font=('Arial', self.scale_font(11), 'bold'), bg='#4ecdc4', fg='#000000',
                  width=12, pady=8).pack(side=tk.LEFT, padx=5)
     
     def buy_item_dialog_update(self, item):
@@ -1240,10 +1245,10 @@ POWER-UPS:
         if floor_complete:
             shop.grab_set()  # Make modal during floor complete
         
-        tk.Label(shop, text="*** SHOP ***", font=('Arial', 18, 'bold'),
+        tk.Label(shop, text="*** SHOP ***", font=('Arial', self.scale_font(18), 'bold'),
                 bg='#3d2415', fg='#ffd700').pack(pady=10)
         
-        gold_label = tk.Label(shop, text=f"Your Gold: {self.gold}", font=('Arial', 12),
+        gold_label = tk.Label(shop, text=f"Your Gold: {self.gold}", font=('Arial', self.scale_font(12)),
                              bg='#3d2415', fg='#ffffff')
         gold_label.pack(pady=5)
         
@@ -1268,18 +1273,18 @@ POWER-UPS:
             top_frame = tk.Frame(frame, bg='#4a2c1a')
             top_frame.pack(fill=tk.X)
             
-            tk.Label(top_frame, text=item['name'], font=('Arial', 12, 'bold'),
+            tk.Label(top_frame, text=item['name'], font=('Arial', self.scale_font(12), 'bold'),
                     bg='#4a2c1a', fg='#ffffff').pack(side=tk.LEFT, padx=5)
             
-            tk.Label(top_frame, text=f"{item['cost']} gold", font=('Arial', 11),
+            tk.Label(top_frame, text=f"{item['cost']} gold", font=('Arial', self.scale_font(11)),
                     bg='#4a2c1a', fg='#ffd700').pack(side=tk.LEFT, padx=10)
             
             tk.Button(top_frame, text="BUY", command=lambda i=item, gl=gold_label: self.buy_item(i, gl),
-                     font=('Arial', 10, 'bold'), bg='#4ecdc4', fg='#000000',
+                     font=('Arial', self.scale_font(10), 'bold'), bg='#4ecdc4', fg='#000000',
                      padx=15, pady=5).pack(side=tk.RIGHT, padx=5)
             
             # Description
-            tk.Label(frame, text=item['desc'], font=('Arial', 9),
+            tk.Label(frame, text=item['desc'], font=('Arial', self.scale_font(9)),
                     bg='#4a2c1a', fg='#b8e6d5', wraplength=550,
                     justify=tk.LEFT).pack(fill=tk.X, padx=5, pady=(5,0))
         
@@ -1289,7 +1294,7 @@ POWER-UPS:
         # Close button - more compact
         close_btn = tk.Button(shop, text="Close Shop" if not floor_complete else "Next Floor", 
                              command=lambda: self.close_shop(shop, floor_complete),
-                             font=('Arial', 10, 'bold'), bg='#e94560', fg='#ffffff',
+                             font=('Arial', self.scale_font(10), 'bold'), bg='#e94560', fg='#ffffff',
                              padx=15, pady=8, width=15)
         close_btn.pack(pady=10)
     
@@ -1430,11 +1435,11 @@ POWER-UPS:
         
         if self.game_active:
             def build_confirm(dialog):
-                tk.Label(dialog, text="RETURN TO LAUNCHER?", font=('Arial', 16, 'bold'),
+                tk.Label(dialog, text="RETURN TO LAUNCHER?", font=('Arial', self.scale_font(16), 'bold'),
                         bg='#2c1810', fg='#ff6b6b', pady=15).pack()
                 
                 tk.Label(dialog, text="Your current run will be lost.\nAre you sure?",
-                        font=('Arial', 11), bg='#2c1810', fg='#ffffff',
+                        font=('Arial', self.scale_font(11)), bg='#2c1810', fg='#ffffff',
                         pady=10).pack()
                 
                 btn_frame = tk.Frame(dialog, bg='#2c1810')
@@ -1442,12 +1447,12 @@ POWER-UPS:
                 
                 tk.Button(btn_frame, text="Yes, Quit to Launcher", 
                          command=lambda: (self.close_dialog(), confirm_quit()),
-                         font=('Arial', 11, 'bold'), bg='#ff6b6b', fg='#ffffff',
+                         font=('Arial', self.scale_font(11), 'bold'), bg='#ff6b6b', fg='#ffffff',
                          width=20, pady=10).pack(pady=5)
                 
                 tk.Button(btn_frame, text="Cancel", 
                          command=self.close_dialog,
-                         font=('Arial', 11, 'bold'), bg='#4ecdc4', fg='#000000',
+                         font=('Arial', self.scale_font(11), 'bold'), bg='#4ecdc4', fg='#000000',
                          width=20, pady=10).pack(pady=5)
             
             self.show_dialog(build_confirm, width=400, height=250)

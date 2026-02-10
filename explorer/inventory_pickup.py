@@ -144,7 +144,7 @@ class InventoryPickupManager:
         
         # Title
         title_label = tk.Label(self.game.dialog_frame, text=f"▢ {container_name.upper()} ▢", 
-                              font=('Arial', 14, 'bold'),
+                              font=('Arial', self.game.scale_font(14), 'bold'),
                               bg=self.game.current_colors["bg_primary"], 
                               fg=self.game.current_colors["text_gold"])
         title_label.pack(pady=15)
@@ -153,10 +153,10 @@ class InventoryPickupManager:
         container_def = self.game.container_definitions.get(container_name, {})
         description = container_def.get('description', 'You open the container...')
         tk.Label(self.game.dialog_frame, text=description,
-                font=('Arial', 10),
+                font=('Arial', self.game.scale_font(10)),
                 bg=self.game.current_colors["bg_primary"],
                 fg=self.game.current_colors["text_secondary"],
-                wraplength=350).pack(pady=10)
+                wraplength=self.game.get_scaled_wraplength(350)).pack(pady=10)
         
         # Contents frame
         contents_frame = tk.Frame(self.game.dialog_frame, bg=self.game.current_colors["bg_secondary"], relief=tk.SUNKEN, borderwidth=2)
@@ -165,12 +165,12 @@ class InventoryPickupManager:
         # Check if empty
         if gold_amount == 0 and item_found is None:
             tk.Label(contents_frame, text="The container is empty.",
-                    font=('Arial', 12, 'italic'),
+                    font=('Arial', self.game.scale_font(12), 'italic'),
                     bg=self.game.current_colors["bg_secondary"],
                     fg=self.game.current_colors["text_secondary"]).pack(expand=True)
         else:
             tk.Label(contents_frame, text="You found:",
-                    font=('Arial', 11, 'bold'),
+                    font=('Arial', self.game.scale_font(11), 'bold'),
                     bg=self.game.current_colors["bg_secondary"],
                     fg=self.game.current_colors["text_cyan"]).pack(pady=10)
             
@@ -180,13 +180,13 @@ class InventoryPickupManager:
                 gold_frame.pack(fill=tk.X, padx=15, pady=5)
                 
                 tk.Label(gold_frame, text=f"◉ {gold_amount} Gold",
-                        font=('Arial', 11, 'bold'),
+                        font=('Arial', self.game.scale_font(11), 'bold'),
                         bg=self.game.current_colors["bg_dark"],
                         fg=self.game.current_colors["text_gold"]).pack(side=tk.LEFT, padx=10, pady=8)
                 
                 tk.Button(gold_frame, text="Take",
                          command=self.take_container_gold,
-                         font=('Arial', 9), bg=self.game.current_colors["text_gold"],
+                         font=('Arial', self.game.scale_font(9)), bg=self.game.current_colors["text_gold"],
                          fg='#000000', width=8).pack(side=tk.RIGHT, padx=10, pady=5)
             
             # Show item
@@ -195,7 +195,7 @@ class InventoryPickupManager:
                 item_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=5)
                 
                 item_label = tk.Label(item_frame, text=f"⚡ {item_found}",
-                        font=('Arial', 11),
+                        font=('Arial', self.game.scale_font(11)),
                         bg=self.game.current_colors["bg_dark"],
                         fg=self.game.current_colors["text_light"])
                 item_label.pack(side=tk.LEFT, padx=10, pady=8)
@@ -206,7 +206,7 @@ class InventoryPickupManager:
                 
                 tk.Button(item_frame, text="Take",
                          command=self.take_container_item,
-                         font=('Arial', 9), bg=self.game.current_colors["text_cyan"],
+                         font=('Arial', self.game.scale_font(9)), bg=self.game.current_colors["text_cyan"],
                          fg='#000000', width=8).pack(side=tk.RIGHT, padx=10, pady=5)
         
         # Buttons
@@ -223,12 +223,12 @@ class InventoryPickupManager:
         if total_container_items >= 2:
             tk.Button(button_frame, text="Take All",
                      command=lambda: self.take_all_from_container(gold_amount, item_found),
-                     font=('Arial', 10, 'bold'), bg='#4CAF50',
+                     font=('Arial', self.game.scale_font(10), 'bold'), bg='#4CAF50',
                      fg='#ffffff', width=12, pady=5).pack(side=tk.LEFT, padx=5)
         
         tk.Button(button_frame, text="Close",
                  command=self.close_container_and_refresh,
-                 font=('Arial', 10), bg=self.game.current_colors["button_secondary"],
+                 font=('Arial', self.game.scale_font(10)), bg=self.game.current_colors["button_secondary"],
                  fg='#ffffff', width=12, pady=5).pack(side=tk.LEFT, padx=5)
     
     def take_container_gold(self):

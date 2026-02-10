@@ -1303,7 +1303,7 @@ class CombatManager:
                 # Fallback to placeholder text
                 self.game.enemy_sprite_label = tk.Label(self.game.enemy_sprite_area, 
                                                    text="Enemy\nSprite", 
-                                                   font=('Arial', 7), 
+                                                   font=('Arial', self.game.scale_font(7)), 
                                                    bg='#1a1410', 
                                                    fg='#555555')
                 self.game.enemy_sprite_label.place(relx=0.5, rely=0.5, anchor='center')
@@ -1382,7 +1382,8 @@ class CombatManager:
             die_container.grid(row=0, column=i, padx=5)
             
             # Create canvas for die rendering (larger for visibility)
-            canvas = tk.Canvas(die_container, width=72, height=72,
+            dice_size = int(72 * self.game.scale_factor)
+            canvas = tk.Canvas(die_container, width=dice_size, height=dice_size,
                              bg=self.game.current_colors["bg_panel"], highlightthickness=0, cursor="hand2")
             canvas.pack()
             
@@ -1424,7 +1425,7 @@ class CombatManager:
                 
                 btn = tk.Button(target_frame, text=target_text,
                                command=lambda idx=i: self.select_target(idx),
-                               font=('Arial', 10, 'bold'), bg=bg_color, fg=fg_color,
+                               font=('Arial', self.game.scale_font(10), 'bold'), bg=bg_color, fg=fg_color,
                                width=18, pady=8, relief=relief)
                 btn.grid(row=0, column=i, padx=5)
                 self.game.target_buttons.append(btn)
@@ -2381,7 +2382,8 @@ class CombatManager:
         for i in range(len(final_values)):
             # Alternate between row1 and row2 (2 dice per row)
             parent = row1 if i < 2 else row2
-            canvas = tk.Canvas(parent, width=28, height=28, 
+            enemy_dice_size = int(28 * self.game.scale_factor)
+            canvas = tk.Canvas(parent, width=enemy_dice_size, height=enemy_dice_size, 
                              bg=self.game.current_colors["bg_panel"], highlightthickness=0)
             canvas.pack(side=tk.LEFT, padx=1, pady=1)
             self.game.enemy_dice_canvases.append(canvas)

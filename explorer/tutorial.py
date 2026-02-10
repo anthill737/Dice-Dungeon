@@ -48,13 +48,13 @@ class TutorialManager:
         
         # Title
         tk.Label(header_frame, text="📜 HOW TO PLAY",
-                font=('Arial', 20, 'bold'),
+                font=('Arial', self.game.scale_font(20), 'bold'),
                 bg=self.game.current_colors["bg_panel"],
                 fg=self.game.current_colors["text_gold"],
                 pady=5).pack(side=tk.LEFT, padx=10)
         
         # Red X close button
-        close_btn = tk.Label(header_frame, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(header_frame, text="✕", font=('Arial', self.game.scale_font(16), 'bold'),
                             bg=self.game.current_colors["bg_panel"], fg='#ff4444', cursor="hand2", padx=10)
         close_btn.pack(side=tk.RIGHT, padx=10)
         close_btn.bind('<Button-1>', lambda e: self.game.close_dialog())
@@ -87,7 +87,7 @@ class TutorialManager:
         
         # Close button in footer
         tk.Button(footer_frame, text="Got It!", command=self.game.close_dialog,
-                 font=('Arial', 12, 'bold'), bg=self.game.current_colors["button_primary"], 
+                 font=('Arial', self.game.scale_font(12), 'bold'), bg=self.game.current_colors["button_primary"], 
                  fg='#000000', width=15, pady=8).pack()
         
         # State to track current tab
@@ -122,7 +122,7 @@ class TutorialManager:
         # Create tab buttons
         for topic_id, topic_label in topics:
             btn = tk.Button(tab_frame, text=topic_label, command=lambda tid=topic_id: switch_tab(tid),
-                           font=('Arial', 9, 'bold'), 
+                           font=('Arial', self.game.scale_font(9), 'bold'), 
                            bg=self.game.current_colors["text_gold"] if topic_id == active_topic else self.game.current_colors["bg_dark"],
                            fg='#000000' if topic_id == active_topic else '#ffffff',
                            padx=5, pady=4)
@@ -169,19 +169,19 @@ class TutorialManager:
         for section in content:
             if section['type'] == 'title':
                 tk.Label(scroll_frame, text=section['text'], 
-                        font=('Arial', 16, 'bold'),
+                        font=('Arial', self.game.scale_font(16), 'bold'),
                         bg=self.game.current_colors["bg_primary"], 
                         fg=self.game.current_colors["text_gold"],
                         pady=15, wraplength=dialog_width-80, justify=tk.CENTER).pack(fill=tk.X, padx=20)
             elif section['type'] == 'subtitle':
                 tk.Label(scroll_frame, text=section['text'], 
-                        font=('Arial', 13, 'bold'),
+                        font=('Arial', self.game.scale_font(13), 'bold'),
                         bg=self.game.current_colors["bg_primary"], 
                         fg=self.game.current_colors["text_cyan"],
                         pady=8, wraplength=dialog_width-80, justify=tk.CENTER).pack(fill=tk.X, padx=25)
             elif section['type'] == 'text':
                 tk.Label(scroll_frame, text=section['text'], 
-                        font=('Arial', 11),
+                        font=('Arial', self.game.scale_font(11)),
                         bg=self.game.current_colors["bg_primary"], 
                         fg=self.game.current_colors["text_primary"],
                         pady=4, wraplength=dialog_width-80, justify=tk.LEFT, anchor='w').pack(fill=tk.X, padx=30)
@@ -190,7 +190,7 @@ class TutorialManager:
                                    relief=tk.RAISED, borderwidth=2)
                 box_frame.pack(fill=tk.X, padx=25, pady=8)
                 tk.Label(box_frame, text=section['text'], 
-                        font=('Arial', 11),
+                        font=('Arial', self.game.scale_font(11)),
                         bg=self.game.current_colors["bg_panel"], 
                         fg=self.game.current_colors["text_primary"],
                         pady=10, padx=15, wraplength=dialog_width-120, justify=tk.LEFT, anchor='w').pack(fill=tk.X)
@@ -199,7 +199,7 @@ class TutorialManager:
                                      relief=tk.RAISED, borderwidth=2)
                 list_frame.pack(fill=tk.X, padx=25, pady=8)
                 tk.Label(list_frame, text=section['text'], 
-                        font=('Arial', 11),
+                        font=('Arial', self.game.scale_font(11)),
                         bg=self.game.current_colors["bg_panel"], 
                         fg=self.game.current_colors["text_primary"],
                         pady=10, padx=15, wraplength=dialog_width-120, justify=tk.LEFT, anchor='w').pack(fill=tk.X)

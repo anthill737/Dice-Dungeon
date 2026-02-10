@@ -36,10 +36,10 @@ class InventoryDisplayManager:
         slots_frame = tk.Frame(self.game.dialog_frame, bg='#1a0f08')
         slots_frame.place(relx=0.05, rely=0.02, anchor='nw')
         tk.Label(slots_frame, text=f"Slots: {len(self.game.inventory)}/{self.game.max_inventory}",
-                font=('Arial', 10, 'bold'), bg='#1a0f08', fg='#ffffff').pack()
+                font=('Arial', self.game.scale_font(10), 'bold'), bg='#1a0f08', fg='#ffffff').pack()
         
         # Red X close button (top right corner)
-        close_btn = tk.Label(self.game.dialog_frame, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(self.game.dialog_frame, text="✕", font=('Arial', self.game.scale_font(16), 'bold'),
                             bg='#1a0f08', fg='#ff4444', cursor="hand2", padx=5)
         close_btn.place(relx=0.98, rely=0.02, anchor='ne')
         close_btn.bind('<Button-1>', lambda e: self.game.close_dialog())
@@ -47,7 +47,7 @@ class InventoryDisplayManager:
         close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
         
         # Title centered
-        tk.Label(self.game.dialog_frame, text="INVENTORY", font=('Arial', 18, 'bold'),
+        tk.Label(self.game.dialog_frame, text="INVENTORY", font=('Arial', self.game.scale_font(18), 'bold'),
                 bg='#1a0f08', fg='#ffd700', pady=10).pack()
         
         # Boss Key Fragment counter (below title, centered)
@@ -55,10 +55,10 @@ class InventoryDisplayManager:
             # Color the text based on completion
             fragment_color = '#ffd700' if self.game.key_fragments_collected >= 3 else '#ffffff'
             tk.Label(self.game.dialog_frame, text=f"Boss Key Fragments: ⬟ {self.game.key_fragments_collected}/3",
-                    font=('Arial', 10, 'bold'), bg='#1a0f08', fg=fragment_color).pack()
+                    font=('Arial', self.game.scale_font(10), 'bold'), bg='#1a0f08', fg=fragment_color).pack()
         
         tk.Label(self.game.dialog_frame, text="(Hover over items for details)",
-                font=('Arial', 8, 'italic'), bg='#1a0f08', fg='#888888').pack(pady=(5, 0))
+                font=('Arial', self.game.scale_font(8), 'italic'), bg='#1a0f08', fg='#888888').pack(pady=(5, 0))
         
         # Inventory list with scrollbar
         list_container = tk.Frame(self.game.dialog_frame, bg='#2c1810')
@@ -82,7 +82,7 @@ class InventoryDisplayManager:
         scrollbar.pack(side="right", fill="y")
         
         if not self.game.inventory:
-            tk.Label(inv_frame, text="Empty", font=('Arial', 12),
+            tk.Label(inv_frame, text="Empty", font=('Arial', self.game.scale_font(12)),
                     bg='#2c1810', fg='#666666').pack(pady=20)
         else:
             # Count duplicate items - normalize lore items by removing "#X" suffix for counting
@@ -129,8 +129,8 @@ class InventoryDisplayManager:
                 count_text = f" x{item_counts[normalized_item]}" if item_counts[normalized_item] > 1 else ""
                 
                 # Display with normalized name (cleaner without #X suffixes in old saves)
-                item_label = tk.Label(item_frame, text=f"• {normalized_item}{count_text}{equipped_text}{durability_text}", font=('Arial', 10),
-                        bg='#3d2415', fg='#ffffff', anchor='w', wraplength=280, justify='left')
+                item_label = tk.Label(item_frame, text=f"• {normalized_item}{count_text}{equipped_text}{durability_text}", font=('Arial', self.game.scale_font(10)),
+                        bg='#3d2415', fg='#ffffff', anchor='w', wraplength=self.game.get_scaled_wraplength(280), justify='left')
                 item_label.pack(side=tk.LEFT, padx=10, pady=5, fill=tk.BOTH, expand=True)
                 
                 # Add hover tooltip
@@ -156,7 +156,7 @@ class InventoryDisplayManager:
                 
                 # Drop button (rightmost - always present)
                 drop_btn = tk.Button(button_container, text="Drop", command=lambda idx=item_idx: self.game.drop_item(idx),
-                         font=('Arial', 8), bg='#ff6b6b', fg='#ffffff',
+                         font=('Arial', self.game.scale_font(8)), bg='#ff6b6b', fg='#ffffff',
                          width=6)
                 drop_btn.pack(side=tk.RIGHT, padx=2)
                 
@@ -167,24 +167,24 @@ class InventoryDisplayManager:
                 usable_types = ['heal', 'buff', 'shield', 'cleanse', 'token', 'tool', 'repair', 'consumable', 'consumable_blessing', 'throwable', 'combat_consumable']
                 if item_type in usable_types:
                     tk.Button(button_container, text="Use", command=lambda idx=item_idx: self.game.use_item(idx),
-                             font=('Arial', 8), bg='#9b59b6', fg='#ffffff',
+                             font=('Arial', self.game.scale_font(8)), bg='#9b59b6', fg='#ffffff',
                              width=6).pack(side=tk.RIGHT, padx=2)
                 
                 # Add Read button for lore items
                 if is_lore_item or item_type == 'readable_lore':
                     tk.Button(button_container, text="Read", command=lambda idx=item_idx: self.game.use_item(idx),
-                             font=('Arial', 8), bg='#d4a574', fg='#000000',
+                             font=('Arial', self.game.scale_font(8)), bg='#d4a574', fg='#000000',
                              width=6).pack(side=tk.RIGHT, padx=2)
                 
                 # Add Equip/Unequip button for equipment (leftmost of button group)
                 if item_type == 'equipment' and item_slot:
                     if is_equipped:
                         tk.Button(button_container, text="Unequip", command=lambda slot=item_slot: self.game.unequip_item(slot),
-                                 font=('Arial', 8), bg='#f39c12', fg='#000000',
+                                 font=('Arial', self.game.scale_font(8)), bg='#f39c12', fg='#000000',
                                  width=8).pack(side=tk.RIGHT, padx=2)
                     else:
                         tk.Button(button_container, text="Equip", command=lambda itm=item, slot=item_slot: self.game.equip_item(itm, slot),
-                                 font=('Arial', 8), bg='#4ecdc4', fg='#000000',
+                                 font=('Arial', self.game.scale_font(8)), bg='#4ecdc4', fg='#000000',
                                  width=8).pack(side=tk.RIGHT, padx=2)
         
         # Update scroll region after all items are added
@@ -250,8 +250,8 @@ class InventoryDisplayManager:
             tooltip_frame.pack()
             
             label = tk.Label(tooltip_frame, text=tooltip_text,
-                           font=('Arial', 9), bg='#1a0f08', fg='#ffd700',
-                           justify=tk.LEFT, padx=10, pady=8, wraplength=300)
+                           font=('Arial', self.game.scale_font(9)), bg='#1a0f08', fg='#ffd700',
+                           justify=tk.LEFT, padx=10, pady=8, wraplength=self.game.get_scaled_wraplength(300))
             label.pack()
         
         def hide_tooltip(event):
@@ -291,13 +291,13 @@ class InventoryDisplayManager:
         
         # Title
         title_label = tk.Label(self.game.dialog_frame, text="▢ ITEMS ON GROUND ▢", 
-                              font=('Arial', 14, 'bold'),
+                              font=('Arial', self.game.scale_font(14), 'bold'),
                               bg=self.game.current_colors["bg_primary"], 
                               fg=self.game.current_colors["text_gold"])
         title_label.pack(pady=10)
         
         # Red X close button (top right corner)
-        close_btn = tk.Label(self.game.dialog_frame, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(self.game.dialog_frame, text="✕", font=('Arial', self.game.scale_font(16), 'bold'),
                             bg=self.game.current_colors["bg_primary"], fg='#ff4444', cursor="hand2", padx=5)
         close_btn.place(relx=0.98, rely=0.02, anchor='ne')
         close_btn.bind('<Button-1>', lambda e: self.game.close_dialog())
@@ -329,7 +329,7 @@ class InventoryDisplayManager:
         
         if show_container:
             tk.Label(scrollable_frame, text="Container:", 
-                    font=('Arial', 10, 'bold'),
+                    font=('Arial', self.game.scale_font(10), 'bold'),
                     bg=self.game.current_colors["bg_secondary"], 
                     fg=self.game.current_colors["text_cyan"]).pack(anchor='w', padx=10, pady=(10, 5))
             
@@ -345,12 +345,12 @@ class InventoryDisplayManager:
             text_frame = tk.Frame(item_frame, bg=self.game.current_colors["bg_dark"])
             text_frame.pack(side=tk.LEFT, padx=10, pady=5, fill=tk.X, expand=True)
             
-            tk.Label(text_frame, text=container, font=('Arial', 10, 'bold'),
+            tk.Label(text_frame, text=container, font=('Arial', self.game.scale_font(10), 'bold'),
                     bg=self.game.current_colors["bg_dark"], 
                     fg=self.game.current_colors["text_light"],
                     anchor='w').pack(anchor='w')
             
-            tk.Label(text_frame, text=description, font=('Arial', 8),
+            tk.Label(text_frame, text=description, font=('Arial', self.game.scale_font(8)),
                     bg=self.game.current_colors["bg_dark"], 
                     fg=self.game.current_colors["text_secondary"],
                     anchor='w').pack(anchor='w')
@@ -358,7 +358,7 @@ class InventoryDisplayManager:
             # Check if container is locked
             if self.game.current_room.container_locked:
                 # Show lock indicator and lockpick button
-                tk.Label(text_frame, text="🔒 LOCKED", font=('Arial', 8, 'bold'),
+                tk.Label(text_frame, text="🔒 LOCKED", font=('Arial', self.game.scale_font(8), 'bold'),
                         bg=self.game.current_colors["bg_dark"], 
                         fg=self.game.current_colors["text_gold"],
                         anchor='w').pack(anchor='w')
@@ -368,10 +368,10 @@ class InventoryDisplayManager:
                 if has_lockpick:
                     tk.Button(item_frame, text="Use Lockpick", 
                              command=lambda c=container: self.game.use_lockpick_on_container(c),
-                             font=('Arial', 9), bg=self.game.current_colors["button_success"], fg='#000000',
+                             font=('Arial', self.game.scale_font(9)), bg=self.game.current_colors["button_success"], fg='#000000',
                              width=12).pack(side=tk.RIGHT, padx=5, pady=2)
                 else:
-                    tk.Label(item_frame, text="Need Lockpick Kit", font=('Arial', 8, 'italic'),
+                    tk.Label(item_frame, text="Need Lockpick Kit", font=('Arial', self.game.scale_font(8), 'italic'),
                             bg=self.game.current_colors["bg_dark"], 
                             fg=self.game.current_colors["text_secondary"],
                             anchor='w').pack(side=tk.RIGHT, padx=5)
@@ -380,13 +380,13 @@ class InventoryDisplayManager:
                 button_text = "Open" if self.game.current_room.container_searched else "Search"
                 tk.Button(item_frame, text=button_text, 
                          command=lambda c=container: self.game.search_container(c),
-                         font=('Arial', 9), bg=self.game.current_colors["text_cyan"], fg='#000000',
+                         font=('Arial', self.game.scale_font(9)), bg=self.game.current_colors["text_cyan"], fg='#000000',
                          width=10).pack(side=tk.RIGHT, padx=5, pady=2)
         
         # Loose gold section
         if self.game.current_room.ground_gold > 0:
             tk.Label(scrollable_frame, text="Gold Coins:", 
-                    font=('Arial', 10, 'bold'),
+                    font=('Arial', self.game.scale_font(10), 'bold'),
                     bg=self.game.current_colors["bg_secondary"], 
                     fg=self.game.current_colors["text_gold"]).pack(anchor='w', padx=10, pady=(10, 5))
             
@@ -394,20 +394,20 @@ class InventoryDisplayManager:
             gold_frame.pack(fill=tk.X, padx=10, pady=2)
             
             tk.Label(gold_frame, text=f"◉ {self.game.current_room.ground_gold} Gold",
-                    font=('Arial', 10, 'bold'),
+                    font=('Arial', self.game.scale_font(10), 'bold'),
                     bg=self.game.current_colors["bg_dark"], 
                     fg=self.game.current_colors["text_gold"],
                     anchor='w').pack(side=tk.LEFT, padx=10, pady=5, fill=tk.X, expand=True)
             
             tk.Button(gold_frame, text="Pick Up", 
                      command=self.game.pickup_ground_gold,
-                     font=('Arial', 9), bg=self.game.current_colors["text_gold"], fg='#000000',
+                     font=('Arial', self.game.scale_font(9)), bg=self.game.current_colors["text_gold"], fg='#000000',
                      width=10).pack(side=tk.RIGHT, padx=5, pady=2)
         
         # Loose items section
         if self.game.current_room.ground_items:
             tk.Label(scrollable_frame, text="Items:", 
-                    font=('Arial', 10, 'bold'),
+                    font=('Arial', self.game.scale_font(10), 'bold'),
                     bg=self.game.current_colors["bg_secondary"], 
                     fg='#90EE90').pack(anchor='w', padx=10, pady=(10, 5))
             
@@ -415,7 +415,7 @@ class InventoryDisplayManager:
                 item_frame = tk.Frame(scrollable_frame, bg=self.game.current_colors["bg_dark"])
                 item_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=2)
                 
-                item_label = tk.Label(item_frame, text=item, font=('Arial', 10),
+                item_label = tk.Label(item_frame, text=item, font=('Arial', self.game.scale_font(10)),
                         bg=self.game.current_colors["bg_dark"], 
                         fg=self.game.current_colors["text_light"],
                         anchor='w')
@@ -426,7 +426,7 @@ class InventoryDisplayManager:
                 
                 tk.Button(item_frame, text="Pick Up", 
                          command=lambda i=item: self.game.pickup_ground_item(i),
-                         font=('Arial', 9), bg='#90EE90', fg='#000000',
+                         font=('Arial', self.game.scale_font(9)), bg='#90EE90', fg='#000000',
                          width=10).pack(side=tk.RIGHT, padx=5, pady=2)
         
         # Containers section - OLD SYSTEM COMPATIBILITY
@@ -436,7 +436,7 @@ class InventoryDisplayManager:
         if unsearched_containers and not hasattr(self.game.current_room, 'ground_container'):
             # Old save files compatibility
             tk.Label(scrollable_frame, text="Containers (Legacy):", 
-                    font=('Arial', 10, 'bold'),
+                    font=('Arial', self.game.scale_font(10), 'bold'),
                     bg=self.game.current_colors["bg_secondary"], 
                     fg=self.game.current_colors["text_cyan"]).pack(anchor='w', padx=10, pady=(10, 5))
             
@@ -452,25 +452,25 @@ class InventoryDisplayManager:
                 text_frame = tk.Frame(item_frame, bg=self.game.current_colors["bg_dark"])
                 text_frame.pack(side=tk.LEFT, padx=10, pady=5, fill=tk.X, expand=True)
                 
-                tk.Label(text_frame, text=container, font=('Arial', 10, 'bold'),
+                tk.Label(text_frame, text=container, font=('Arial', self.game.scale_font(10), 'bold'),
                         bg=self.game.current_colors["bg_dark"], 
                         fg=self.game.current_colors["text_light"],
                         anchor='w').pack(anchor='w')
                 
-                tk.Label(text_frame, text=description, font=('Arial', 8),
+                tk.Label(text_frame, text=description, font=('Arial', self.game.scale_font(8)),
                         bg=self.game.current_colors["bg_dark"], 
                         fg=self.game.current_colors["text_secondary"],
                         anchor='w').pack(anchor='w')
                 
                 tk.Button(item_frame, text="Search", 
                          command=lambda c=container: self.game.pickup_from_ground(c, 'container'),
-                         font=('Arial', 9), bg=self.game.current_colors["text_cyan"], fg='#000000',
+                         font=('Arial', self.game.scale_font(9)), bg=self.game.current_colors["text_cyan"], fg='#000000',
                          width=10).pack(side=tk.RIGHT, padx=5, pady=2)
         
         # Uncollected items section
         if hasattr(self.game.current_room, 'uncollected_items') and self.game.current_room.uncollected_items:
             tk.Label(scrollable_frame, text="Left Behind (Inventory Full):", 
-                    font=('Arial', 10, 'bold'),
+                    font=('Arial', self.game.scale_font(10), 'bold'),
                     bg=self.game.current_colors["bg_secondary"], 
                     fg='#ff8c00').pack(anchor='w', padx=10, pady=(10, 5))
             
@@ -482,7 +482,7 @@ class InventoryDisplayManager:
                 item_info = self.game.item_definitions.get(item, {})
                 item_desc = item_info.get('desc', 'No description available')
                 
-                item_label = tk.Label(item_frame, text=item, font=('Arial', 10),
+                item_label = tk.Label(item_frame, text=item, font=('Arial', self.game.scale_font(10)),
                         bg=self.game.current_colors["bg_dark"], 
                         fg=self.game.current_colors["text_light"],
                         anchor='w')
@@ -491,13 +491,13 @@ class InventoryDisplayManager:
                 
                 tk.Button(item_frame, text="Pick Up", 
                          command=lambda i=item: self.game.pickup_from_ground(i, 'uncollected'),
-                         font=('Arial', 9), bg='#ff8c00', fg='#ffffff',
+                         font=('Arial', self.game.scale_font(9)), bg='#ff8c00', fg='#ffffff',
                          width=10).pack(side=tk.RIGHT, padx=5, pady=2)
         
         # Dropped items section
         if hasattr(self.game.current_room, 'dropped_items') and self.game.current_room.dropped_items:
             tk.Label(scrollable_frame, text="Dropped Items:", 
-                    font=('Arial', 10, 'bold'),
+                    font=('Arial', self.game.scale_font(10), 'bold'),
                     bg=self.game.current_colors["bg_secondary"], 
                     fg='#4CAF50').pack(anchor='w', padx=10, pady=(15, 5))
             
@@ -509,7 +509,7 @@ class InventoryDisplayManager:
                 item_info = self.game.item_definitions.get(item, {})
                 item_desc = item_info.get('desc', 'No description available')
                 
-                item_label = tk.Label(item_frame, text=item, font=('Arial', 10),
+                item_label = tk.Label(item_frame, text=item, font=('Arial', self.game.scale_font(10)),
                         bg=self.game.current_colors["bg_dark"], 
                         fg=self.game.current_colors["text_light"],
                         anchor='w')
@@ -518,7 +518,7 @@ class InventoryDisplayManager:
                 
                 tk.Button(item_frame, text="Pick Up", 
                          command=lambda i=item: self.game.pickup_from_ground(i, 'dropped'),
-                         font=('Arial', 9), bg='#4CAF50', fg='#ffffff',
+                         font=('Arial', self.game.scale_font(9)), bg='#4CAF50', fg='#ffffff',
                          width=10).pack(side=tk.RIGHT, padx=5, pady=2)
         
         canvas.pack(side="left", fill="both", expand=True)
@@ -542,12 +542,12 @@ class InventoryDisplayManager:
         # Only show "Take All" if there are 2+ pickupable items
         if total_items >= 2:
             tk.Button(button_frame, text="Take All", command=self.game.pickup_all_ground_items,
-                     font=('Arial', 10, 'bold'), bg='#4CAF50', 
+                     font=('Arial', self.game.scale_font(10), 'bold'), bg='#4CAF50', 
                      fg='#ffffff', width=15, pady=5).pack(side=tk.LEFT, padx=5)
         
         # Close button
         tk.Button(button_frame, text="Close", command=self.game.close_dialog,
-                 font=('Arial', 10), bg=self.game.current_colors["button_secondary"], 
+                 font=('Arial', self.game.scale_font(10)), bg=self.game.current_colors["button_secondary"], 
                  fg='#ffffff', width=15, pady=5).pack(side=tk.LEFT, padx=5)
     
     def pickup_from_ground(self, item_name, source_type):

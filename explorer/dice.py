@@ -163,6 +163,7 @@ class DiceManager:
         
         style = self.get_current_dice_style()
         dice_obscured = getattr(self.game, 'dice_obscured', False)
+        ds = int(72 * self.game.scale_factor)  # scaled dice size
         
         for i, canvas in enumerate(self.game.dice_canvases):
             if i >= len(self.game.dice_values):
@@ -173,31 +174,31 @@ class DiceManager:
             
             if self.game.dice_values[i] == 0:
                 # Not yet rolled - show "?"
-                canvas.create_rectangle(0, 0, 72, 72, fill='#cccccc', outline='#666666', width=3)
-                canvas.create_text(36, 36, text="?", font=('Arial', 32, 'bold'), fill='#666666')
+                canvas.create_rectangle(0, 0, ds, ds, fill='#cccccc', outline='#666666', width=3)
+                canvas.create_text(ds//2, ds//2, text="?", font=('Arial', self.game.scale_font(32), 'bold'), fill='#666666')
             elif dice_obscured and self.game.dice_values[i] > 0:
                 # Dice values are obscured by boss ability - show "?" with dark tint
-                canvas.create_rectangle(0, 0, 72, 72, fill='#4a4a4a', outline='#8b008b', width=3)
-                canvas.create_text(36, 36, text="?", font=('Arial', 32, 'bold'), fill='#8b008b')
+                canvas.create_rectangle(0, 0, ds, ds, fill='#4a4a4a', outline='#8b008b', width=3)
+                canvas.create_text(ds//2, ds//2, text="?", font=('Arial', self.game.scale_font(32), 'bold'), fill='#8b008b')
                 # Add curse indicator
-                canvas.create_text(36, 60, text="CURSED", font=('Arial', 7, 'bold'), fill='#8b008b')
+                canvas.create_text(ds//2, int(ds*0.83), text="CURSED", font=('Arial', self.game.scale_font(7), 'bold'), fill='#8b008b')
             elif self.game.dice_locked[i] or i in getattr(self.game, 'forced_dice_locks', []):
                 # Locked die (manually or force-locked) - render normal die first
-                self.render_die_on_canvas(canvas, self.game.dice_values[i], style, size=72, locked=False)
+                self.render_die_on_canvas(canvas, self.game.dice_values[i], style, size=ds, locked=False)
                 
                 # Add 80% transparent dark overlay using multiple stipple rectangles for darker effect
-                canvas.create_rectangle(0, 0, 72, 72, fill='#000000', stipple='gray75', outline='')
-                canvas.create_rectangle(0, 0, 72, 72, fill='#000000', stipple='gray50', outline='')
+                canvas.create_rectangle(0, 0, ds, ds, fill='#000000', stipple='gray75', outline='')
+                canvas.create_rectangle(0, 0, ds, ds, fill='#000000', stipple='gray50', outline='')
                 
                 # Add "LOCKED" text below the die value area
                 lock_text = "CURSED" if i in getattr(self.game, 'forced_dice_locks', []) else "LOCKED"
                 lock_color = '#ff4444' if i in getattr(self.game, 'forced_dice_locks', []) else '#ffd700'
-                canvas.create_text(36, 62, text=lock_text, 
-                                 font=('Arial', 8, 'bold'), 
+                canvas.create_text(ds//2, int(ds*0.86), text=lock_text, 
+                                 font=('Arial', self.game.scale_font(8), 'bold'), 
                                  fill=lock_color, anchor='center')
             else:
                 # Rolled but not locked - use normal style
-                self.render_die_on_canvas(canvas, self.game.dice_values[i], style, size=72, locked=False)
+                self.render_die_on_canvas(canvas, self.game.dice_values[i], style, size=ds, locked=False)
     
     def get_current_dice_style(self):
         """Get the current dice style with any overrides applied"""

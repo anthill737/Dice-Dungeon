@@ -52,11 +52,11 @@ class StoreManager:
         
         # Title
         tk.Label(self.game.dialog_frame, text="◘ MERCHANT'S SHOP", 
-                font=('Arial', 20, 'bold'), bg=self.game.current_colors["bg_panel"], 
+                font=('Arial', self.game.scale_font(20), 'bold'), bg=self.game.current_colors["bg_panel"], 
                 fg=self.game.current_colors["text_gold"], pady=10).pack()
         
         # Red X close button (top right corner)
-        close_btn = tk.Label(self.game.dialog_frame, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(self.game.dialog_frame, text="✕", font=('Arial', self.game.scale_font(16), 'bold'),
                             bg=self.game.current_colors["bg_panel"], fg='#ff4444',
                             cursor="hand2", padx=5)
         close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=5)
@@ -66,7 +66,7 @@ class StoreManager:
         
         # Gold label that we can update without refreshing
         self.gold_label = tk.Label(self.game.dialog_frame, text=f"Your Gold: {self.game.gold}", 
-                font=('Arial', 12, 'bold'), bg=self.game.current_colors["bg_panel"], 
+                font=('Arial', self.game.scale_font(12), 'bold'), bg=self.game.current_colors["bg_panel"], 
                 fg=self.game.current_colors["text_gold"], pady=5)
         self.gold_label.pack()
         
@@ -102,18 +102,18 @@ class StoreManager:
             self._show_store_sell_content(content_frame)
         
         buy_btn = tk.Button(tab_frame, text="BUY", command=show_buy_tab,
-                           font=('Arial', 12, 'bold'), bg=self.game.current_colors["text_gold"], 
+                           font=('Arial', self.game.scale_font(12), 'bold'), bg=self.game.current_colors["text_gold"], 
                            fg='#000000', width=15, pady=5)
         buy_btn.pack(side=tk.LEFT, padx=5)
         
         sell_btn = tk.Button(tab_frame, text="SELL", command=show_sell_tab,
-                            font=('Arial', 12, 'bold'), bg=self.game.current_colors["bg_dark"], 
+                            font=('Arial', self.game.scale_font(12), 'bold'), bg=self.game.current_colors["bg_dark"], 
                             fg='#ffffff', width=15, pady=5)
         sell_btn.pack(side=tk.LEFT, padx=5)
         
         # Close button
         tk.Button(self.game.dialog_frame, text="Leave Store", command=self.game.close_dialog,
-                 font=('Arial', 11, 'bold'), bg=self.game.current_colors["button_secondary"], 
+                 font=('Arial', self.game.scale_font(11), 'bold'), bg=self.game.current_colors["button_secondary"], 
                  fg='#000000', width=15, pady=8).pack(pady=10)
         
         # Show the requested tab
@@ -157,13 +157,13 @@ class StoreManager:
         if store_items:
             print(f"[DEBUG] First 5 items: {store_items[:5]}")
         
-        tk.Label(scroll_frame, text="Available Items:", font=('Arial', 12, 'bold'),
+        tk.Label(scroll_frame, text="Available Items:", font=('Arial', self.game.scale_font(12), 'bold'),
                 bg=self.game.current_colors["bg_primary"], fg=self.game.current_colors["text_cyan"],
                 pady=10).pack()
         
         # Display items
         if not store_items:
-            tk.Label(scroll_frame, text="No items available in store", font=('Arial', 11),
+            tk.Label(scroll_frame, text="No items available in store", font=('Arial', self.game.scale_font(11)),
                     bg=self.game.current_colors["bg_primary"], fg=self.game.current_colors["text_secondary"],
                     pady=20).pack()
         else:
@@ -213,12 +213,12 @@ class StoreManager:
         # Store canvas reference for scroll position restoration
         self.sell_canvas = canvas
         
-        tk.Label(scroll_frame, text="Your Inventory:", font=('Arial', 12, 'bold'),
+        tk.Label(scroll_frame, text="Your Inventory:", font=('Arial', self.game.scale_font(12), 'bold'),
                 bg=self.game.current_colors["bg_primary"], fg=self.game.current_colors["text_cyan"],
                 pady=10).pack()
         
         if not self.game.inventory:
-            tk.Label(scroll_frame, text="(Empty)", font=('Arial', 11),
+            tk.Label(scroll_frame, text="(Empty)", font=('Arial', self.game.scale_font(11)),
                     bg=self.game.current_colors["bg_primary"], fg=self.game.current_colors["text_secondary"],
                     pady=20).pack()
         else:
@@ -526,7 +526,7 @@ class StoreManager:
         
         # Item name with count if selling multiple
         count_text = f" x{item_count}" if item_count > 1 and not is_buying else ""
-        name_label = tk.Label(info_frame, text=f"{item_name}{count_text}", font=('Arial', 11, 'bold'),
+        name_label = tk.Label(info_frame, text=f"{item_name}{count_text}", font=('Arial', self.game.scale_font(11), 'bold'),
                              bg=self.game.current_colors["bg_panel"], fg=self.game.current_colors["text_primary"],
                              anchor='w')
         name_label.pack(anchor='w', fill=tk.X)
@@ -543,16 +543,16 @@ class StoreManager:
         
         if desc:
             desc_label = tk.Label(info_frame, text=desc, 
-                    font=('Arial', 9), bg=self.game.current_colors["bg_panel"], 
+                    font=('Arial', self.game.scale_font(9)), bg=self.game.current_colors["bg_panel"], 
                     fg=self.game.current_colors["text_secondary"], anchor='w',
-                    wraplength=350, justify=tk.LEFT)
+                    wraplength=self.game.get_scaled_wraplength(350), justify=tk.LEFT)
             desc_label.pack(anchor='w', fill=tk.X, pady=(2, 0))
         
         # Right side - Price and button
         action_frame = tk.Frame(container, bg=self.game.current_colors["bg_panel"])
         action_frame.pack(side=tk.RIGHT, padx=5)
         
-        tk.Label(action_frame, text=f"{price}g", font=('Arial', 11, 'bold'),
+        tk.Label(action_frame, text=f"{price}g", font=('Arial', self.game.scale_font(11), 'bold'),
                 bg=self.game.current_colors["bg_panel"], fg=self.game.current_colors["text_gold"]).pack()
         
         if is_buying:
@@ -588,13 +588,13 @@ class StoreManager:
             
             tk.Button(action_frame, text=btn_text, 
                      command=buy_click,
-                     font=('Arial', 9, 'bold'), bg=self.game.current_colors["button_primary"], 
+                     font=('Arial', self.game.scale_font(9), 'bold'), bg=self.game.current_colors["button_primary"], 
                      fg='#000000', width=10, pady=5, state=btn_state).pack(pady=3)
         else:
             # Sell button - pass item_name instead of index to avoid stale reference bugs
             tk.Button(action_frame, text="Sell", 
                      command=lambda f=item_frame: self._show_sell_confirmation(item_name, price, f),
-                     font=('Arial', 9, 'bold'), bg=self.game.current_colors["text_purple"], 
+                     font=('Arial', self.game.scale_font(9), 'bold'), bg=self.game.current_colors["text_purple"], 
                      fg='#ffffff', width=10, pady=5).pack(pady=3)
     
     def _show_buy_confirmation(self, item_name, price):
@@ -633,12 +633,12 @@ class StoreManager:
         popup.place(relx=0.5, rely=0.5, anchor='center', width=400, height=panel_height)
         
         # Title
-        tk.Label(popup, text="Confirm Purchase", font=('Arial', 14, 'bold'),
+        tk.Label(popup, text="Confirm Purchase", font=('Arial', self.game.scale_font(14), 'bold'),
                 bg=self.game.current_colors["bg_primary"], 
                 fg=self.game.current_colors["text_gold"], pady=10).pack()
         
         # Red X close button (top right)
-        close_btn = tk.Label(popup, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(popup, text="✕", font=('Arial', self.game.scale_font(16), 'bold'),
                             bg=self.game.current_colors["bg_primary"], fg='#ff4444',
                             cursor="hand2", padx=5)
         close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=5)
@@ -651,7 +651,7 @@ class StoreManager:
         total_price_var = tk.IntVar(value=price)
         
         if is_consumable and max_quantity > 1:
-            tk.Label(popup, text=f"Max affordable: {max_quantity}", font=('Arial', 10),
+            tk.Label(popup, text=f"Max affordable: {max_quantity}", font=('Arial', self.game.scale_font(10)),
                     bg=self.game.current_colors["bg_primary"], 
                     fg=self.game.current_colors["text_secondary"]).pack(pady=5)
             
@@ -659,7 +659,7 @@ class StoreManager:
             qty_frame = tk.Frame(popup, bg=self.game.current_colors["bg_primary"])
             qty_frame.pack(pady=10)
             
-            tk.Label(qty_frame, text="Quantity to buy:", font=('Arial', 10),
+            tk.Label(qty_frame, text="Quantity to buy:", font=('Arial', self.game.scale_font(10)),
                     bg=self.game.current_colors["bg_primary"], 
                     fg=self.game.current_colors["text_primary"]).pack()
             
@@ -667,7 +667,7 @@ class StoreManager:
             slider_frame = tk.Frame(qty_frame, bg=self.game.current_colors["bg_primary"])
             slider_frame.pack(pady=5)
             
-            quantity_label = tk.Label(slider_frame, text="1", font=('Arial', 12, 'bold'),
+            quantity_label = tk.Label(slider_frame, text="1", font=('Arial', self.game.scale_font(12), 'bold'),
                     bg=self.game.current_colors["bg_primary"], 
                     fg=self.game.current_colors["text_gold"], width=3)
             quantity_label.pack(side=tk.LEFT, padx=5)
@@ -688,13 +688,13 @@ class StoreManager:
                             highlightthickness=0)
             slider.pack(side=tk.LEFT)
             
-            price_label = tk.Label(popup, text=f"Total: {price} gold", font=('Arial', 11, 'bold'),
+            price_label = tk.Label(popup, text=f"Total: {price} gold", font=('Arial', self.game.scale_font(11), 'bold'),
                     bg=self.game.current_colors["bg_primary"], 
                     fg=self.game.current_colors["text_primary"])
             price_label.pack(pady=5)
         else:
             # Simple message for non-consumables or single items
-            tk.Label(popup, text=f"Buy {item_name} for {price} gold?", font=('Arial', 11),
+            tk.Label(popup, text=f"Buy {item_name} for {price} gold?", font=('Arial', self.game.scale_font(11)),
                     bg=self.game.current_colors["bg_primary"], 
                     fg=self.game.current_colors["text_primary"]).pack(pady=10)
         
@@ -714,11 +714,11 @@ class StoreManager:
             popup.destroy()
         
         tk.Button(btn_frame, text="Buy", command=confirm_buy,
-                 font=('Arial', 11, 'bold'), bg=self.game.current_colors["button_primary"], 
+                 font=('Arial', self.game.scale_font(11), 'bold'), bg=self.game.current_colors["button_primary"], 
                  fg='#000000', width=12, pady=5).pack(side=tk.LEFT, padx=10)
         
         tk.Button(btn_frame, text="Cancel", command=cancel_buy,
-                 font=('Arial', 11, 'bold'), bg=self.game.current_colors["bg_dark"], 
+                 font=('Arial', self.game.scale_font(11), 'bold'), bg=self.game.current_colors["bg_dark"], 
                  fg='#ffffff', width=12, pady=5).pack(side=tk.LEFT, padx=10)
         
         # Make popup accept focus and bind escape
@@ -742,12 +742,12 @@ class StoreManager:
         popup.place(relx=0.5, rely=0.5, anchor='center', width=400, height=panel_height)
         
         # Title
-        tk.Label(popup, text="Confirm Sale", font=('Arial', 14, 'bold'),
+        tk.Label(popup, text="Confirm Sale", font=('Arial', self.game.scale_font(14), 'bold'),
                 bg=self.game.current_colors["bg_primary"], 
                 fg=self.game.current_colors["text_gold"], pady=10).pack()
         
         # Red X close button (top right)
-        close_btn = tk.Label(popup, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(popup, text="✕", font=('Arial', self.game.scale_font(16), 'bold'),
                             bg=self.game.current_colors["bg_primary"], fg='#ff4444',
                             cursor="hand2", padx=5)
         close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=5)
@@ -760,7 +760,7 @@ class StoreManager:
         total_price_var = tk.IntVar(value=price)
         
         if item_count > 1:
-            tk.Label(popup, text=f"You have {item_count} {item_name}", font=('Arial', 10),
+            tk.Label(popup, text=f"You have {item_count} {item_name}", font=('Arial', self.game.scale_font(10)),
                     bg=self.game.current_colors["bg_primary"], 
                     fg=self.game.current_colors["text_secondary"]).pack(pady=5)
             
@@ -768,7 +768,7 @@ class StoreManager:
             qty_frame = tk.Frame(popup, bg=self.game.current_colors["bg_primary"])
             qty_frame.pack(pady=10)
             
-            tk.Label(qty_frame, text="Quantity to sell:", font=('Arial', 10),
+            tk.Label(qty_frame, text="Quantity to sell:", font=('Arial', self.game.scale_font(10)),
                     bg=self.game.current_colors["bg_primary"], 
                     fg=self.game.current_colors["text_primary"]).pack()
             
@@ -776,7 +776,7 @@ class StoreManager:
             slider_frame = tk.Frame(qty_frame, bg=self.game.current_colors["bg_primary"])
             slider_frame.pack(pady=5)
             
-            quantity_label = tk.Label(slider_frame, text="1", font=('Arial', 12, 'bold'),
+            quantity_label = tk.Label(slider_frame, text="1", font=('Arial', self.game.scale_font(12), 'bold'),
                     bg=self.game.current_colors["bg_primary"], 
                     fg=self.game.current_colors["text_gold"], width=3)
             quantity_label.pack(side=tk.LEFT, padx=5)
@@ -797,12 +797,12 @@ class StoreManager:
                             highlightthickness=0)
             slider.pack(side=tk.LEFT)
             
-            price_label = tk.Label(popup, text=f"Total: {price} gold", font=('Arial', 11, 'bold'),
+            price_label = tk.Label(popup, text=f"Total: {price} gold", font=('Arial', self.game.scale_font(11), 'bold'),
                     bg=self.game.current_colors["bg_primary"], 
                     fg=self.game.current_colors["text_primary"])
             price_label.pack(pady=5)
         else:
-            tk.Label(popup, text=f"Sell {item_name} for {price} gold?", font=('Arial', 11),
+            tk.Label(popup, text=f"Sell {item_name} for {price} gold?", font=('Arial', self.game.scale_font(11)),
                     bg=self.game.current_colors["bg_primary"], 
                     fg=self.game.current_colors["text_primary"]).pack(pady=10)
         
@@ -822,11 +822,11 @@ class StoreManager:
             popup.destroy()
         
         tk.Button(btn_frame, text="Sell", command=confirm_sale,
-                 font=('Arial', 11, 'bold'), bg=self.game.current_colors["text_purple"], 
+                 font=('Arial', self.game.scale_font(11), 'bold'), bg=self.game.current_colors["text_purple"], 
                  fg='#ffffff', width=12, pady=5).pack(side=tk.LEFT, padx=10)
         
         tk.Button(btn_frame, text="Cancel", command=cancel_sale,
-                 font=('Arial', 11, 'bold'), bg=self.game.current_colors["bg_dark"], 
+                 font=('Arial', self.game.scale_font(11), 'bold'), bg=self.game.current_colors["bg_dark"], 
                  fg='#ffffff', width=12, pady=5).pack(side=tk.LEFT, padx=10)
         
         # Make popup accept focus and bind escape

@@ -30,7 +30,7 @@ def create_tooltip_follower(game: 'DiceDungeonExplorer', widget, get_tooltip_tex
         
         label = tk.Label(tooltip, text=tooltip_text, justify='left',
                        bg="#ffffe0", fg="#000000", relief=tk.SOLID, borderwidth=1,
-                       font=('Arial', 9), padx=8, pady=5)
+                       font=('Arial', game.scale_font(9)), padx=8, pady=5)
         label.pack()
     
     def update_tooltip(event):
@@ -68,12 +68,12 @@ def show_character_status(game: 'DiceDungeonExplorer'):
     
     # Title (centered)
     tk.Label(title_bar, text="CHARACTER STATUS", 
-            font=('Arial', 16, 'bold'),
+            font=('Arial', game.scale_font(16), 'bold'),
             bg=game.current_colors["bg_panel"],
             fg=game.current_colors["text_gold"]).pack(pady=5)
     
     # Red X close button (absolute position in top right)
-    close_btn = tk.Label(game.dialog_frame, text="✕", font=('Arial', 18, 'bold'),
+    close_btn = tk.Label(game.dialog_frame, text="✕", font=('Arial', game.scale_font(18), 'bold'),
                         bg=game.current_colors["bg_panel"], fg='#ff4444',
                         cursor="hand2", padx=8, pady=2)
     close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-5, y=5)
@@ -92,7 +92,7 @@ def show_character_status(game: 'DiceDungeonExplorer'):
                    background=game.current_colors["bg_dark"],
                    foreground=game.current_colors["text_cyan"],
                    padding=[20, 10],
-                   font=('Arial', 11, 'bold'))
+                   font=('Arial', game.scale_font(11), 'bold'))
     style.map('Custom.TNotebook.Tab',
              background=[('selected', game.current_colors["bg_panel"])],
              foreground=[('selected', game.current_colors["text_gold"])])
@@ -153,7 +153,7 @@ def _populate_character_tab(game: 'DiceDungeonExplorer', parent):
     gear_section = tk.Frame(scroll_frame, bg=game.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=2)
     gear_section.pack(fill=tk.X, padx=10, pady=10)
     
-    tk.Label(gear_section, text="◊ EQUIPPED GEAR", font=('Arial', 14, 'bold'),
+    tk.Label(gear_section, text="◊ EQUIPPED GEAR", font=('Arial', game.scale_font(14), 'bold'),
             bg=game.current_colors["bg_panel"], fg=game.current_colors["text_cyan"],
             pady=5).pack()
     
@@ -200,21 +200,21 @@ def _populate_character_tab(game: 'DiceDungeonExplorer', parent):
             effect_str = " | ".join(effect_parts) if effect_parts else "No bonuses"
             
             tk.Label(slot_frame, text=f"{slot_name}: {equipped_item}{durability_str}",
-                    font=('Arial', 11, 'bold'), bg=game.current_colors["bg_dark"],
+                    font=('Arial', game.scale_font(11), 'bold'), bg=game.current_colors["bg_dark"],
                     fg=game.current_colors["text_gold"], anchor='w', padx=10, pady=3).pack(anchor='w')
             tk.Label(slot_frame, text=f"  {effect_str}",
-                    font=('Arial', 9), bg=game.current_colors["bg_dark"],
+                    font=('Arial', game.scale_font(9)), bg=game.current_colors["bg_dark"],
                     fg=game.current_colors["text_green"], anchor='w', padx=10, pady=2).pack(anchor='w')
         else:
             tk.Label(slot_frame, text=f"{slot_name}: (Empty)",
-                    font=('Arial', 11), bg=game.current_colors["bg_dark"],
+                    font=('Arial', game.scale_font(11)), bg=game.current_colors["bg_dark"],
                     fg=game.current_colors["text_secondary"], anchor='w', padx=10, pady=5).pack(anchor='w')
     
     # === CHARACTER STATS SECTION ===
     stats_section = tk.Frame(scroll_frame, bg=game.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=2)
     stats_section.pack(fill=tk.X, padx=10, pady=10)
     
-    tk.Label(stats_section, text="⚔ CHARACTER STATS", font=('Arial', 14, 'bold'),
+    tk.Label(stats_section, text="⚔ CHARACTER STATS", font=('Arial', game.scale_font(14), 'bold'),
             bg=game.current_colors["bg_panel"], fg=game.current_colors["text_red"],
             pady=5).pack()
     
@@ -372,12 +372,12 @@ def _populate_character_tab(game: 'DiceDungeonExplorer', parent):
         row_frame = tk.Frame(stats_grid, bg=game.current_colors["bg_dark"])
         row_frame.pack(fill=tk.X, pady=2)
         
-        label_widget = tk.Label(row_frame, text=label+":", font=('Arial', 10),
+        label_widget = tk.Label(row_frame, text=label+":", font=('Arial', game.scale_font(10)),
                 bg=game.current_colors["bg_dark"], fg=game.current_colors["text_white"],
                 anchor='w', width=22)
         label_widget.pack(side=tk.LEFT, padx=10)
         
-        value_widget = tk.Label(row_frame, text=value, font=('Arial', 10, 'bold'),
+        value_widget = tk.Label(row_frame, text=value, font=('Arial', game.scale_font(10), 'bold'),
                 bg=game.current_colors["bg_dark"], fg=game.current_colors["text_cyan"],
                 anchor='e')
         value_widget.pack(side=tk.RIGHT, padx=10)
@@ -391,7 +391,7 @@ def _populate_character_tab(game: 'DiceDungeonExplorer', parent):
     effects_section = tk.Frame(scroll_frame, bg=game.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=2)
     effects_section.pack(fill=tk.X, padx=10, pady=10)
     
-    tk.Label(effects_section, text="✨ ACTIVE EFFECTS", font=('Arial', 14, 'bold'),
+    tk.Label(effects_section, text="✨ ACTIVE EFFECTS", font=('Arial', game.scale_font(14), 'bold'),
             bg=game.current_colors["bg_panel"], fg=game.current_colors["text_purple"],
             pady=5).pack()
     
@@ -401,32 +401,32 @@ def _populate_character_tab(game: 'DiceDungeonExplorer', parent):
     if game.temp_shield > 0:
         effects_found = True
         tk.Label(effects_section, text=f"◊ Shield: {game.temp_shield} HP",
-                font=('Arial', 10), bg=game.current_colors["bg_panel"],
+                font=('Arial', game.scale_font(10)), bg=game.current_colors["bg_panel"],
                 fg=game.current_colors["text_cyan"], pady=2).pack()
     
     if game.shop_discount > 0:
         effects_found = True
         tk.Label(effects_section, text=f"◉ Shop Discount: {int(game.shop_discount*100)}%",
-                font=('Arial', 10), bg=game.current_colors["bg_panel"],
+                font=('Arial', game.scale_font(10)), bg=game.current_colors["bg_panel"],
                 fg=game.current_colors["text_gold"], pady=2).pack()
     
     if getattr(game, 'combat_accuracy_penalty', 0) > 0:
         effects_found = True
         tk.Label(effects_section, text=f"≈ Accuracy Penalty: {int(game.combat_accuracy_penalty*100)}%",
-                font=('Arial', 10), bg=game.current_colors["bg_panel"],
+                font=('Arial', game.scale_font(10)), bg=game.current_colors["bg_panel"],
                 fg=game.current_colors["text_red"], pady=2).pack()
     
     # Show flags and statuses from content system
     if game.flags.get('disarm_token', 0) > 0:
         effects_found = True
         tk.Label(effects_section, text=f"⚙ Disarm Tokens: {game.flags['disarm_token']}",
-                font=('Arial', 10), bg=game.current_colors["bg_panel"],
+                font=('Arial', game.scale_font(10)), bg=game.current_colors["bg_panel"],
                 fg=game.current_colors["text_green"], pady=2).pack()
     
     if game.flags.get('escape_token', 0) > 0:
         effects_found = True
         tk.Label(effects_section, text=f"» Escape Tokens: {game.flags['escape_token']}",
-                font=('Arial', 10), bg=game.current_colors["bg_panel"],
+                font=('Arial', game.scale_font(10)), bg=game.current_colors["bg_panel"],
                 fg=game.current_colors["text_green"], pady=2).pack()
     
     # Show any temp effects from content system
@@ -449,26 +449,26 @@ def _populate_character_tab(game: 'DiceDungeonExplorer', parent):
             display_name = f"Crit Bonus: +{int(crit_value * 100)}%"
         
         tk.Label(effects_section, text=f"⚡ {display_name}: {duration}",
-                font=('Arial', 10), bg=game.current_colors["bg_panel"],
+                font=('Arial', game.scale_font(10)), bg=game.current_colors["bg_panel"],
                 fg=game.current_colors["text_magenta"], pady=2).pack()
     
     # Show statuses
     for status in game.flags.get('statuses', []):
         effects_found = True
         tk.Label(effects_section, text=f"✦ {status}",
-                font=('Arial', 10), bg=game.current_colors["bg_panel"],
+                font=('Arial', game.scale_font(10)), bg=game.current_colors["bg_panel"],
                 fg=game.current_colors["text_purple"], pady=2).pack()
     
     if not effects_found:
         tk.Label(effects_section, text="(No active effects)",
-                font=('Arial', 10, 'italic'), bg=game.current_colors["bg_panel"],
+                font=('Arial', game.scale_font(10), 'italic'), bg=game.current_colors["bg_panel"],
                 fg=game.current_colors["text_secondary"], pady=10).pack()
     
     # === RESOURCES SECTION ===
     resources_section = tk.Frame(scroll_frame, bg=game.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=2)
     resources_section.pack(fill=tk.X, padx=10, pady=10)
     
-    tk.Label(resources_section, text="◇ RESOURCES", font=('Arial', 14, 'bold'),
+    tk.Label(resources_section, text="◇ RESOURCES", font=('Arial', game.scale_font(14), 'bold'),
             bg=game.current_colors["bg_panel"], fg=game.current_colors["text_gold"],
             pady=5).pack()
     
@@ -486,10 +486,10 @@ def _populate_character_tab(game: 'DiceDungeonExplorer', parent):
         row_frame = tk.Frame(resources_grid, bg=game.current_colors["bg_dark"])
         row_frame.pack(fill=tk.X, pady=2)
         
-        tk.Label(row_frame, text=label+":", font=('Arial', 10),
+        tk.Label(row_frame, text=label+":", font=('Arial', game.scale_font(10)),
                 bg=game.current_colors["bg_dark"], fg=game.current_colors["text_white"],
                 anchor='w', width=22).pack(side=tk.LEFT, padx=10)
-        tk.Label(row_frame, text=value, font=('Arial', 10, 'bold'),
+        tk.Label(row_frame, text=value, font=('Arial', game.scale_font(10), 'bold'),
                 bg=game.current_colors["bg_dark"], fg=color,
                 anchor='e').pack(side=tk.RIGHT, padx=10)
     
@@ -604,7 +604,7 @@ def _add_stats_section(game: 'DiceDungeonExplorer', parent, title, items):
     
     # Section title
     tk.Label(section_frame, text=title,
-            font=('Arial', 12, 'bold'),
+            font=('Arial', game.scale_font(12), 'bold'),
             bg=game.current_colors["bg_dark"],
             fg=game.current_colors["text_cyan"]).pack(anchor=tk.W, padx=10, pady=5)
     
@@ -614,12 +614,12 @@ def _add_stats_section(game: 'DiceDungeonExplorer', parent, title, items):
         item_frame.pack(fill=tk.X, padx=15, pady=2)
         
         tk.Label(item_frame, text=label,
-                font=('Arial', 10),
+                font=('Arial', game.scale_font(10)),
                 bg=game.current_colors["bg_dark"],
                 fg=game.current_colors["text_secondary"]).pack(side=tk.LEFT)
         
         tk.Label(item_frame, text=str(value),
-                font=('Arial', 10, 'bold'),
+                font=('Arial', game.scale_font(10), 'bold'),
                 bg=game.current_colors["bg_dark"],
                 fg=game.current_colors["text_gold"]).pack(side=tk.RIGHT)
 
@@ -699,11 +699,11 @@ def _add_sortable_codex_section(game: 'DiceDungeonExplorer', parent, title, code
     if not data_dict:
         # Show empty message
         tk.Label(section_frame, text=title,
-                font=('Arial', 12, 'bold'),
+                font=('Arial', game.scale_font(12), 'bold'),
                 bg=game.current_colors["bg_dark"],
                 fg=game.current_colors["text_cyan"]).pack(anchor=tk.W, padx=10, pady=5)
         tk.Label(section_frame, text="None yet",
-                font=('Arial', 10, 'italic'),
+                font=('Arial', game.scale_font(10), 'italic'),
                 bg=game.current_colors["bg_dark"],
                 fg=game.current_colors["text_secondary"]).pack(padx=15, pady=5)
         return
@@ -725,18 +725,18 @@ def _add_sortable_codex_section(game: 'DiceDungeonExplorer', parent, title, code
     
     expanded = getattr(game, codex_key)
     arrow = "▼" if expanded else "►"
-    arrow_label = tk.Label(header_frame, text=arrow, font=('Arial', 10),
+    arrow_label = tk.Label(header_frame, text=arrow, font=('Arial', game.scale_font(10)),
             bg=game.current_colors["bg_dark"], fg=game.current_colors["text_cyan"], width=2)
     arrow_label.pack(side=tk.LEFT, padx=(5, 0))
     
     title_label = tk.Label(header_frame, text=title,
-            font=('Arial', 12, 'bold'),
+            font=('Arial', game.scale_font(12), 'bold'),
             bg=game.current_colors["bg_dark"],
             fg=game.current_colors["text_cyan"])
     title_label.pack(side=tk.LEFT, padx=5, pady=5)
     
     count_label = tk.Label(header_frame, text=f"{len(data_dict)} unique",
-            font=('Arial', 10),
+            font=('Arial', game.scale_font(10)),
             bg=game.current_colors["bg_dark"],
             fg=game.current_colors["text_gold"])
     count_label.pack(side=tk.RIGHT, padx=10)
@@ -754,7 +754,7 @@ def _add_sortable_codex_section(game: 'DiceDungeonExplorer', parent, title, code
         filter_frame.pack(fill=tk.X, padx=10, pady=5)
         
         tk.Label(filter_frame, text="Filter:",
-                font=('Arial', 9, 'bold'),
+                font=('Arial', game.scale_font(9), 'bold'),
                 bg=game.current_colors["bg_secondary"],
                 fg=game.current_colors["text_cyan"]).pack(side=tk.LEFT, padx=5)
         
@@ -777,7 +777,7 @@ def _add_sortable_codex_section(game: 'DiceDungeonExplorer', parent, title, code
             fg_color = "#ffffff" if current_filter == category else game.current_colors["text_secondary"]
             btn = tk.Button(filter_frame, text=category,
                     command=lambda c=category: set_filter(c),
-                    font=('Arial', 8),
+                    font=('Arial', game.scale_font(8)),
                     bg=bg_color, fg=fg_color,
                     padx=8, pady=2)
             btn.pack(side=tk.LEFT, padx=2)
@@ -787,7 +787,7 @@ def _add_sortable_codex_section(game: 'DiceDungeonExplorer', parent, title, code
         controls_frame.pack(fill=tk.X, padx=10, pady=5)
         
         tk.Label(controls_frame, text="Sort:",
-                font=('Arial', 9, 'bold'),
+                font=('Arial', game.scale_font(9), 'bold'),
                 bg=game.current_colors["bg_secondary"],
                 fg=game.current_colors["text_cyan"]).pack(side=tk.LEFT, padx=5)
         
@@ -812,7 +812,7 @@ def _add_sortable_codex_section(game: 'DiceDungeonExplorer', parent, title, code
             fg_color = "#000000" if current_sort == sort_type else game.current_colors["text_secondary"]
             btn = tk.Button(controls_frame, text=label,
                     command=lambda st=sort_type: set_sort(st),
-                    font=('Arial', 8),
+                    font=('Arial', game.scale_font(8)),
                     bg=bg_color, fg=fg_color,
                     width=10, pady=2)
             btn.pack(side=tk.LEFT, padx=2)
@@ -841,7 +841,7 @@ def _add_sortable_codex_section(game: 'DiceDungeonExplorer', parent, title, code
         # Show count of filtered results
         if current_filter != "All":
             tk.Label(content_frame, text=f"Showing {len(sorted_data)} {current_filter.lower()} entries",
-                    font=('Arial', 9, 'italic'),
+                    font=('Arial', game.scale_font(9), 'italic'),
                     bg=game.current_colors["bg_secondary"],
                     fg=game.current_colors["text_secondary"]).pack(pady=5)
         
@@ -869,7 +869,7 @@ def _add_sortable_codex_section(game: 'DiceDungeonExplorer', parent, title, code
         # Display items
         if not sorted_data:
             tk.Label(scroll_frame, text=f"No {current_filter.lower()} entries",
-                    font=('Arial', 9, 'italic'),
+                    font=('Arial', game.scale_font(9), 'italic'),
                     bg=game.current_colors["bg_primary"],
                     fg=game.current_colors["text_secondary"]).pack(pady=10)
         else:
@@ -881,18 +881,18 @@ def _add_sortable_codex_section(game: 'DiceDungeonExplorer', parent, title, code
                 if codex_type == "items":
                     category = get_item_category(name)
                     category_badge = tk.Label(item_row, text=f"[{category}]",
-                            font=('Arial', 7),
+                            font=('Arial', game.scale_font(7)),
                             bg=game.current_colors["bg_dark"],
                             fg=game.current_colors["text_purple"])
                     category_badge.pack(side=tk.LEFT, padx=2)
                 
                 tk.Label(item_row, text=f"{icon} {name}",
-                        font=('Arial', 9),
+                        font=('Arial', game.scale_font(9)),
                         bg=game.current_colors["bg_dark"],
                         fg=game.current_colors["text_secondary"]).pack(side=tk.LEFT, pady=2)
                 
                 tk.Label(item_row, text=str(count),
-                        font=('Arial', 9, 'bold'),
+                        font=('Arial', game.scale_font(9), 'bold'),
                         bg=game.current_colors["bg_dark"],
                         fg=game.current_colors["text_gold"]).pack(side=tk.RIGHT, padx=5)
         
@@ -963,7 +963,7 @@ def _populate_lore_tab(game: 'DiceDungeonExplorer', parent):
     header = tk.Frame(parent, bg=game.current_colors["bg_primary"])
     header.pack(fill=tk.X, padx=10, pady=10)
     tk.Label(header, text=f"Total Lore Discovered: {total_found}/{total_max}",
-            font=('Arial', 12, 'bold'), bg=game.current_colors["bg_primary"],
+            font=('Arial', game.scale_font(12), 'bold'), bg=game.current_colors["bg_primary"],
             fg=game.current_colors["text_gold"]).pack()
     
     canvas = tk.Canvas(parent, bg=game.current_colors["bg_secondary"], highlightthickness=0)
@@ -998,16 +998,16 @@ def _populate_lore_tab(game: 'DiceDungeonExplorer', parent):
         
         expanded = game._lore_expanded.get(lore_type, False)
         arrow = "▼" if expanded else "►"
-        arrow_label = tk.Label(header_frame, text=arrow, font=('Arial', 10),
+        arrow_label = tk.Label(header_frame, text=arrow, font=('Arial', game.scale_font(10)),
                 bg=game.current_colors["bg_dark"], fg=game.current_colors["text_cyan"], width=2)
         arrow_label.pack(side=tk.LEFT, padx=(5, 0))
         
-        name_label = tk.Label(header_frame, text=display_name, font=('Arial', 11, 'bold'),
+        name_label = tk.Label(header_frame, text=display_name, font=('Arial', game.scale_font(11), 'bold'),
                 bg=game.current_colors["bg_dark"], fg=game.current_colors["text_cyan"])
         name_label.pack(side=tk.LEFT, padx=5)
         
         count_color = game.current_colors["text_gold"] if count == max_count and count > 0 else game.current_colors["text_secondary"]
-        count_label = tk.Label(header_frame, text=f"{count}/{max_count}", font=('Arial', 10, 'bold'),
+        count_label = tk.Label(header_frame, text=f"{count}/{max_count}", font=('Arial', game.scale_font(10), 'bold'),
                 bg=game.current_colors["bg_dark"], fg=count_color)
         count_label.pack(side=tk.RIGHT, padx=10, pady=5)
         
@@ -1028,18 +1028,18 @@ def _populate_lore_tab(game: 'DiceDungeonExplorer', parent):
                 id_text = f" #{unique_id}" if unique_id else ""
                 
                 title_text = f"{entry['title']}{id_text} (Floor {entry['floor_found']})"
-                entry_title = tk.Label(entry_header, text=title_text, font=('Arial', 9),
+                entry_title = tk.Label(entry_header, text=title_text, font=('Arial', game.scale_font(9)),
                         bg=game.current_colors["bg_dark"], fg=game.current_colors["text_primary"])
                 entry_title.pack(side=tk.LEFT, padx=8, pady=3)
                 
                 read_btn = tk.Button(entry_header, text="Read",
                         command=lambda e=entry: game.show_lore_entry_popup(e),
-                        font=('Arial', 8, 'bold'), bg=game.current_colors["button_primary"],
+                        font=('Arial', game.scale_font(8), 'bold'), bg=game.current_colors["button_primary"],
                         fg='#000000', width=8, pady=1)
                 read_btn.pack(side=tk.RIGHT, padx=5, pady=2)
         else:
             if expanded:
-                tk.Label(content_frame, text="None discovered yet", font=('Arial', 9, 'italic'),
+                tk.Label(content_frame, text="None discovered yet", font=('Arial', game.scale_font(9), 'italic'),
                         bg=game.current_colors["bg_secondary"],
                         fg=game.current_colors["text_secondary"]).pack(pady=5)
         

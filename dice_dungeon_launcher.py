@@ -19,6 +19,7 @@ def get_resource_path(relative_path):
 class GameLauncher:
     def __init__(self, root):
         self.root = root
+        self.scale_factor = 1.0  # Launcher uses fixed size, but fonts go through scale_font for consistency
         self.root.title("Dice Dungeon - Launcher")
         self.root.configure(bg='#2c1810')  # Set background immediately to prevent white flash
         self.root.geometry("600x600")  # Increased height to fit logo
@@ -49,6 +50,10 @@ class GameLauncher:
         # Show window now that it's ready
         self.root.deiconify()
     
+    def scale_font(self, base_size):
+        """Scale font size consistently with the main game's approach"""
+        return max(8, int(base_size * self.scale_factor * 1.15))
+    
     def setup_ui(self):
         # Logo
         try:
@@ -66,11 +71,11 @@ class GameLauncher:
         
         # Title
         tk.Label(self.root, text="DICE DUNGEON", 
-                font=('Arial', 28, 'bold'), bg='#2c1810', fg='#ffd700',
+                font=('Arial', self.scale_font(28), 'bold'), bg='#2c1810', fg='#ffd700',
                 pady=10).pack()
         
         tk.Label(self.root, text="Choose Your Game Mode", 
-                font=('Arial', 16), bg='#2c1810', fg='#ffffff',
+                font=('Arial', self.scale_font(16)), bg='#2c1810', fg='#ffffff',
                 pady=10).pack()
         
         # Game mode cards
@@ -82,19 +87,19 @@ class GameLauncher:
         classic_card.pack(side=tk.LEFT, padx=15)
         
         tk.Label(classic_card, text="⚔️ CLASSIC ⚔️", 
-                font=('Arial', 14, 'bold'), bg='#3d2415', fg='#4ecdc4',
+                font=('Arial', self.scale_font(14), 'bold'), bg='#3d2415', fg='#4ecdc4',
                 pady=10).pack()
         
         classic_desc = """Floor-by-floor • Boss battles
 Shop upgrades • Fast action"""
         
         tk.Label(classic_card, text=classic_desc, 
-                font=('Arial', 9), bg='#3d2415', fg='#ffffff',
+                font=('Arial', self.scale_font(9)), bg='#3d2415', fg='#ffffff',
                 justify=tk.CENTER, padx=15, pady=8).pack()
         
         tk.Button(classic_card, text="PLAY CLASSIC", 
                  command=self.launch_classic,
-                 font=('Arial', 11, 'bold'), bg='#4ecdc4', fg='#000000',
+                 font=('Arial', self.scale_font(11), 'bold'), bg='#4ecdc4', fg='#000000',
                  width=16, pady=10).pack(pady=12)
         
         # Adventure Mode Card
@@ -102,25 +107,25 @@ Shop upgrades • Fast action"""
         adventure_card.pack(side=tk.LEFT, padx=15)
         
         tk.Label(adventure_card, text="🗺  ADVENTURE  🗺", 
-                font=('Arial', 14, 'bold'), bg='#3d2415', fg='#ffd700',
+                font=('Arial', self.scale_font(14), 'bold'), bg='#3d2415', fg='#ffd700',
                 pady=10).pack()
         
         adventure_desc = """Procedural dungeons • 100+ rooms
 Dynamic map • Mysterious lore"""
         
         tk.Label(adventure_card, text=adventure_desc, 
-                font=('Arial', 9), bg='#3d2415', fg='#ffffff',
+                font=('Arial', self.scale_font(9)), bg='#3d2415', fg='#ffffff',
                 justify=tk.CENTER, padx=15, pady=8).pack()
         
         tk.Button(adventure_card, text="PLAY ADVENTURE", 
                  command=self.launch_explorer,
-                 font=('Arial', 11, 'bold'), bg='#ffd700', fg='#000000',
+                 font=('Arial', self.scale_font(11), 'bold'), bg='#ffd700', fg='#000000',
                  width=16, pady=10).pack(pady=12)
         
         # Quit button
         tk.Button(self.root, text="QUIT", 
                  command=self.quit_launcher,
-                 font=('Arial', 11, 'bold'), bg='#ff6b6b', fg='#000000',
+                 font=('Arial', self.scale_font(11), 'bold'), bg='#ff6b6b', fg='#000000',
                  width=15, pady=8).pack(pady=15)
     
     def quit_launcher(self):
@@ -180,9 +185,9 @@ Dynamic map • Mysterious lore"""
             pass
         
         tk.Label(main_frame, text="DICE DUNGEON CLASSIC",
-                font=('Arial', 22, 'bold'), bg='#2c1810', fg='#ffd700').pack(pady=8)
+                font=('Arial', self.scale_font(22), 'bold'), bg='#2c1810', fg='#ffd700').pack(pady=8)
         tk.Label(main_frame, text="Roll • Fight • Survive",
-                font=('Arial', 12, 'italic'), bg='#2c1810', fg='#ffffff').pack(pady=5)
+                font=('Arial', self.scale_font(12), 'italic'), bg='#2c1810', fg='#ffffff').pack(pady=5)
         
         # Loading area
         loading_frame = tk.Frame(main_frame, bg='#2c1810')
@@ -192,11 +197,11 @@ Dynamic map • Mysterious lore"""
         text_frame.pack()
         
         loading_label = tk.Label(text_frame, text="Loading game engine",
-                               font=('Arial', 14), bg='#2c1810', fg='#ffffff')
+                               font=('Arial', self.scale_font(14)), bg='#2c1810', fg='#ffffff')
         loading_label.pack(side=tk.LEFT)
         
         dots_label = tk.Label(text_frame, text="",
-                            font=('Arial', 14), bg='#2c1810', fg='#ffd700')
+                            font=('Arial', self.scale_font(14)), bg='#2c1810', fg='#ffd700')
         dots_label.pack(side=tk.LEFT)
         
         # Progress tracking
@@ -283,9 +288,9 @@ Dynamic map • Mysterious lore"""
             pass
         
         tk.Label(main_frame, text="DICE DUNGEON",
-                font=('Arial', 22, 'bold'), bg='#0a0604', fg='#d4af37').pack(pady=8)
+                font=('Arial', self.scale_font(22), 'bold'), bg='#0a0604', fg='#d4af37').pack(pady=8)
         tk.Label(main_frame, text="Explore • Fight • Loot • Survive",
-                font=('Arial', 12, 'italic'), bg='#0a0604', fg='#8b7355').pack(pady=5)
+                font=('Arial', self.scale_font(12), 'italic'), bg='#0a0604', fg='#8b7355').pack(pady=5)
         
         # Loading area
         loading_frame = tk.Frame(main_frame, bg='#0a0604')
@@ -295,11 +300,11 @@ Dynamic map • Mysterious lore"""
         text_frame.pack()
         
         loading_label = tk.Label(text_frame, text="Loading game engine",
-                               font=('Arial', 14), bg='#0a0604', fg='#e8dcc4')
+                               font=('Arial', self.scale_font(14)), bg='#0a0604', fg='#e8dcc4')
         loading_label.pack(side=tk.LEFT)
         
         dots_label = tk.Label(text_frame, text="",
-                            font=('Arial', 14), bg='#0a0604', fg='#d4af37')
+                            font=('Arial', self.scale_font(14)), bg='#0a0604', fg='#d4af37')
         dots_label.pack(side=tk.LEFT)
         
         # Progress tracking
