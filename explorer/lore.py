@@ -277,7 +277,7 @@ class LoreManager:
         header_frame.pack(fill=tk.X, pady=(10, 0))
         
         tk.Label(header_frame, text=lore_entry["title"],
-                font=('Arial', 16, 'bold'),
+                font=('Arial', self.game.scale_font(16), 'bold'),
                 bg=self.game.current_colors["bg_primary"],
                 fg=self.game.current_colors["text_gold"]).pack()
         
@@ -291,7 +291,7 @@ class LoreManager:
                 return_callback()
         
         # Close button
-        close_btn = tk.Label(header_frame, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(header_frame, text="✕", font=('Arial', self.game.scale_font(16), 'bold'),
                             bg=self.game.current_colors["bg_primary"], fg='#ff4444',
                             cursor="hand2", padx=5)
         close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=0)
@@ -302,12 +302,12 @@ class LoreManager:
         # Subtitle and floor
         if lore_entry.get("subtitle"):
             tk.Label(self.lore_overlay_frame, text=lore_entry["subtitle"],
-                    font=('Arial', 11, 'italic'),
+                    font=('Arial', self.game.scale_font(11), 'italic'),
                     bg=self.game.current_colors["bg_primary"],
                     fg=self.game.current_colors["text_secondary"]).pack()
         
         tk.Label(self.lore_overlay_frame, text=f"Discovered on Floor {lore_entry['floor_found']}",
-                font=('Arial', 10, 'italic'),
+                font=('Arial', self.game.scale_font(10), 'italic'),
                 bg=self.game.current_colors["bg_primary"],
                 fg=self.game.current_colors["text_secondary"]).pack(pady=5)
         
@@ -318,7 +318,7 @@ class LoreManager:
         
         text_widget = tk.Text(text_frame,
                              wrap=tk.WORD,
-                             font=('Arial', 11),
+                             font=('Arial', self.game.scale_font(11)),
                              bg=self.game.current_colors["bg_dark"],
                              fg=self.game.current_colors["text_primary"],
                              relief=tk.FLAT,

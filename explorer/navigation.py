@@ -968,16 +968,17 @@ class NavigationManager:
             self.game.dialog_frame.destroy()
         
         self.game.dialog_frame = tk.Frame(self.game.root, bg='#1a0f08', relief=tk.RAISED, borderwidth=3)
-        self.game.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, width=500, height=450)
+        self.game.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, 
+                                     width=int(500 * self.game.scale_factor), height=int(450 * self.game.scale_factor))
         
         # Header with title and X button
         header = tk.Frame(self.game.dialog_frame, bg='#1a0f08')
         header.pack(fill=tk.X, pady=(5, 0))
         
-        tk.Label(header, text="CHEST OPENED", font=('Arial', 16, 'bold'),
+        tk.Label(header, text="CHEST OPENED", font=('Arial', self.game.scale_font(16), 'bold'),
                 bg='#1a0f08', fg='#ffd700').pack(side=tk.LEFT, padx=10, pady=10)
         
-        close_btn = tk.Label(header, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(header, text="✕", font=('Arial', self.game.scale_font(16), 'bold'),
                             bg='#1a0f08', fg='#ff4444', cursor="hand2", padx=5)
         close_btn.pack(side=tk.RIGHT, padx=5)
         close_btn.bind('<Button-1>', lambda e: self._close_chest_dialog())
@@ -986,29 +987,29 @@ class NavigationManager:
         
         # Chest description
         tk.Label(self.game.dialog_frame, text=chest['description'],
-                font=('Arial', 11, 'bold'), bg='#1a0f08', fg='#4ecdc4',
+                font=('Arial', self.game.scale_font(11), 'bold'), bg='#1a0f08', fg='#4ecdc4',
                 wraplength=450, pady=10).pack()
         
         loot_frame = tk.Frame(self.game.dialog_frame, bg='#2c1810')
         loot_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
         
-        tk.Label(loot_frame, text="You found:", font=('Arial', 12, 'bold'),
+        tk.Label(loot_frame, text="You found:", font=('Arial', self.game.scale_font(12), 'bold'),
                 bg='#2c1810', fg='#ffd700').pack(pady=5)
         
         for item in chest['items']:
-            tk.Label(loot_frame, text=f"• {item}", font=('Arial', 11),
+            tk.Label(loot_frame, text=f"• {item}", font=('Arial', self.game.scale_font(11)),
                     bg='#2c1810', fg='#4ecdc4').pack()
         
         if chest['gold'] > 0:
-            tk.Label(loot_frame, text=f"• {chest['gold']} Gold", font=('Arial', 11),
+            tk.Label(loot_frame, text=f"• {chest['gold']} Gold", font=('Arial', self.game.scale_font(11)),
                     bg='#2c1810', fg='#ffd700').pack()
         
         tk.Label(self.game.dialog_frame, text=chest['lore'],
-                font=('Arial', 9, 'italic'), bg='#1a0f08', fg='#888888',
+                font=('Arial', self.game.scale_font(9), 'italic'), bg='#1a0f08', fg='#888888',
                 wraplength=450, pady=10).pack()
         
         tk.Button(self.game.dialog_frame, text="Continue", command=self._close_chest_dialog,
-                 font=('Arial', 12, 'bold'), bg='#4ecdc4', fg='#000000',
+                 font=('Arial', self.game.scale_font(12), 'bold'), bg='#4ecdc4', fg='#000000',
                  width=15, pady=10).pack(pady=10)
     
     def _close_chest_dialog(self):

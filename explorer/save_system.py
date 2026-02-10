@@ -42,22 +42,22 @@ class SaveSystem:
         
         # Title
         tk.Label(name_overlay, text=f"💾 Save to Slot {slot_num} 💾",
-                font=('Arial', 18, 'bold'), bg='#1a0f0a', fg='#ffd700',
+                font=('Arial', self.game.scale_font(18), 'bold'), bg='#1a0f0a', fg='#ffd700',
                 pady=15).pack()
         
         tk.Label(name_overlay, 
                 text="Give your adventure a name:",
-                font=('Arial', 12), bg='#1a0f0a', fg='#d4a574',
+                font=('Arial', self.game.scale_font(12)), bg='#1a0f0a', fg='#d4a574',
                 pady=5).pack()
         
         # Name entry frame
         entry_frame = tk.Frame(name_overlay, bg='#1a0f0a')
         entry_frame.pack(pady=15)
         
-        tk.Label(entry_frame, text="Save Name:", font=('Arial', 11, 'bold'),
+        tk.Label(entry_frame, text="Save Name:", font=('Arial', self.game.scale_font(11), 'bold'),
                 bg='#1a0f0a', fg='#ffd700').pack(anchor='w', padx=20)
         
-        name_entry = tk.Entry(entry_frame, font=('Arial', 12), width=35, bg='#2c1810', fg='#ffffff',
+        name_entry = tk.Entry(entry_frame, font=('Arial', self.game.scale_font(12)), width=35, bg='#2c1810', fg='#ffffff',
                              insertbackground='#ffffff', relief=tk.SUNKEN, borderwidth=2)
         name_entry.pack(padx=20, pady=5)
         name_entry.focus_set()
@@ -65,7 +65,7 @@ class SaveSystem:
         # Suggestion text
         tk.Label(name_overlay, 
                 text="(Leave blank for default name)",
-                font=('Arial', 9, 'italic'), bg='#1a0f0a', fg='#888888',
+                font=('Arial', self.game.scale_font(9), 'italic'), bg='#1a0f0a', fg='#888888',
                 pady=5).pack()
         
         # Button frame
@@ -83,12 +83,12 @@ class SaveSystem:
         
         tk.Button(btn_frame, text="Save", 
                  command=do_save,
-                 font=('Arial', 12, 'bold'), bg='#4ecdc4', fg='#000000',
+                 font=('Arial', self.game.scale_font(12), 'bold'), bg='#4ecdc4', fg='#000000',
                  width=12, pady=8).pack(side=tk.LEFT, padx=5)
         
         tk.Button(btn_frame, text="Cancel", 
                  command=cancel_save,
-                 font=('Arial', 12), bg='#ff6b6b', fg='#000000',
+                 font=('Arial', self.game.scale_font(12)), bg='#ff6b6b', fg='#000000',
                  width=12, pady=8).pack(side=tk.LEFT, padx=5)
         
         # Bind Enter key to save

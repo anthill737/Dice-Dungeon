@@ -99,7 +99,7 @@ class DiceDungeonExplorer:
         # Set window and taskbar icon
         try:
             import os
-            icon_path = os.path.join(get_data_dir(), "assets", "DD Logo.png")
+            icon_path = os.path.join(get_data_dir(), "assets", "DD Icon.png")
             if os.path.exists(icon_path):
                 # Create PhotoImage for the icon
                 icon = tk.PhotoImage(file=icon_path)
@@ -115,18 +115,33 @@ class DiceDungeonExplorer:
             except:
                 pass  # If fallback also fails, just continue without icon
         
-        self.root.geometry("950x700")  # Smaller default size
-        self.root.minsize(900, 650)  # Reduced minimum size
         self.root.configure(bg='#2c1810')
         
         # Initialize debug logger
         self.debug_logger = get_logger()
         self.debug_logger.info("INIT", "DiceDungeonExplorer starting")
         
-        # Track window scaling for responsive UI
-        self.base_window_width = 1000
-        self.base_window_height = 750
+        # Resolution presets: label -> (width, height)
+        # Scale factor is derived from resolution relative to base (950x700)
+        self.resolution_presets = {
+            "950x700":   (950,  700),
+            "1100x800":  (1100, 800),
+            "1280x720":  (1280, 720),
+            "1280x960":  (1280, 960),
+            "1366x768":  (1366, 768),
+            "1600x900":  (1600, 900),
+            "1920x1080": (1920, 1080),
+            "Fullscreen": (None, None),  # Determined at runtime
+        }
+        
+        # Base resolution used to derive scale factor
+        self.base_window_width = 950
+        self.base_window_height = 700
         self.scale_factor = 1.0
+        
+        # Apply initial window size (will be overridden by saved settings later)
+        self.root.geometry("950x700")
+        self.root.minsize(900, 650)
         
         # Bind window resize event for dynamic scaling
         self.root.bind('<Configure>', self.on_window_resize)
@@ -578,6 +593,10 @@ class DiceDungeonExplorer:
             saved_scheme = "Classic"
         self.current_colors = self.color_schemes[saved_scheme]
         
+        # Apply saved resolution
+        saved_resolution = self.settings.get("resolution", "950x700")
+        self.apply_resolution(saved_resolution, save=False)
+        
         # Settings tracking
         self.settings_return_to = None  # Track where to return after settings
         self.original_settings = None  # Track original settings for change detection
@@ -665,6 +684,7 @@ class DiceDungeonExplorer:
         default_settings = {
             "difficulty": "Normal",  # Easy, Normal, Hard, Brutal
             "color_scheme": "Classic",  # Classic, Dark, Light, Neon, Forest
+            "resolution": "950x700",  # Resolution preset
             "audio_enabled": False,  # Coming soon
             "intro_shown": False,  # First-time narrative intro
             "keybindings": {
@@ -693,6 +713,18 @@ class DiceDungeonExplorer:
                 # Ensure intro_shown exists (for backwards compatibility)
                 if "intro_shown" not in self.settings:
                     self.settings["intro_shown"] = False
+                
+                # Migrate old display_size to new resolution setting
+                if "resolution" not in self.settings:
+                    old_display = self.settings.pop("display_size", "Small")
+                    migration_map = {
+                        "Small": "950x700",
+                        "Medium": "1100x800",
+                        "Large": "1280x960",
+                        "Extra Large": "1600x900",
+                        "Fullscreen": "Fullscreen",
+                    }
+                    self.settings["resolution"] = migration_map.get(old_display, "950x700")
         except:
             self.settings = default_settings
             self.save_settings()
@@ -1166,27 +1198,17 @@ class DiceDungeonExplorer:
         return dialog_width, dialog_height
     
     def on_window_resize(self, event):
-        """Handle window resize events to update scale factor and refresh main menu if visible"""
-        # Only update if the event is for the root window
-        if event.widget == self.root:
+        """Handle window resize events to update scale factor for Fullscreen mode"""
+        # Only recalculate if using Fullscreen (other resolutions have fixed scale)
+        if event.widget == self.root and self.settings.get("resolution") == "Fullscreen":
             current_width = self.root.winfo_width()
             current_height = self.root.winfo_height()
-            
-            # Calculate scale factor based on both dimensions (use the smaller ratio to prevent overflow)
             width_scale = current_width / self.base_window_width
             height_scale = current_height / self.base_window_height
-            self.scale_factor = min(width_scale, height_scale)
-            
-            # Clamp scale factor to reasonable bounds
-            self.scale_factor = max(0.8, min(self.scale_factor, 2.5))
-            
-            # If we're on the main menu (no game_frame exists), refresh it for responsive layout
-            if hasattr(self, 'main_frame') and self.main_frame.winfo_exists() and not hasattr(self, 'game_frame'):
-                # Delay the refresh slightly to avoid excessive calls during window dragging
-                self.root.after(100, self.main_menu_manager._delayed_main_menu_refresh)
+            self.scale_factor = max(0.8, min(min(width_scale, height_scale), 3.0))
     
     def load_enemy_sprites(self, base_dir):
-        """Load enemy sprite images from disk - automatically loads all sprites"""
+        """Load enemy sprite raw PIL images from disk - automatically loads all sprites"""
         import re
         sprites_dir = os.path.join(base_dir, 'assets', 'sprites', 'enemies')
         
@@ -1204,6 +1226,9 @@ class DiceDungeonExplorer:
         
         loaded_count = 0
         failed_count = 0
+        
+        # Store raw PIL images so we can re-render at any scale
+        self.enemy_sprite_pil = {}
         
         for folder_name in enemy_folders:
             # Convert folder name back to enemy name with special handling for apostrophes
@@ -1223,16 +1248,9 @@ class DiceDungeonExplorer:
             
             if os.path.exists(sprite_path):
                 try:
-                    # Load and resize image to 90x90 for display
-                    img = Image.open(sprite_path)
-                    img = img.resize((90, 90), Image.LANCZOS)
-                    photo = ImageTk.PhotoImage(img)
-                    
-                    # Store both the PhotoImage and original for reference
-                    self.enemy_sprites[enemy_name] = photo
-                    self.sprite_images[enemy_name] = photo  # Prevent garbage collection
+                    img = Image.open(sprite_path).copy()
+                    self.enemy_sprite_pil[enemy_name] = img
                     loaded_count += 1
-                    
                 except Exception as e:
                     print(f"Failed to load sprite for {enemy_name}: {e}")
                     failed_count += 1
@@ -1242,11 +1260,8 @@ class DiceDungeonExplorer:
                     alt_path = os.path.join(sprites_dir, folder_name, 'rotations', f'{direction}.png')
                     if os.path.exists(alt_path):
                         try:
-                            img = Image.open(alt_path)
-                            img = img.resize((90, 90), Image.LANCZOS)
-                            photo = ImageTk.PhotoImage(img)
-                            self.enemy_sprites[enemy_name] = photo
-                            self.sprite_images[enemy_name] = photo
+                            img = Image.open(alt_path).copy()
+                            self.enemy_sprite_pil[enemy_name] = img
                             loaded_count += 1
                             break
                         except Exception as e:
@@ -1254,7 +1269,24 @@ class DiceDungeonExplorer:
                 else:
                     failed_count += 1
         
+        # Build initial PhotoImages at default size
+        self._rebuild_sprite_photos()
         print(f"Loaded {loaded_count} enemy sprites ({failed_count} failed)")
+    
+    def _rebuild_sprite_photos(self):
+        """Rebuild all enemy sprite PhotoImages at the current scale factor"""
+        sprite_size = int(90 * self.scale_factor)
+        sprite_size = max(48, sprite_size)  # No upper clamp - let sprites grow with resolution
+        self.enemy_sprites = {}
+        self.sprite_images = {}
+        for name, pil_img in self.enemy_sprite_pil.items():
+            try:
+                resized = pil_img.resize((sprite_size, sprite_size), Image.LANCZOS)
+                photo = ImageTk.PhotoImage(resized)
+                self.enemy_sprites[name] = photo
+                self.sprite_images[name] = photo
+            except Exception:
+                pass
     
     def scale_font(self, base_size):
         """Calculate scaled font size based on current window size (15% larger)"""
@@ -1276,6 +1308,76 @@ class DiceDungeonExplorer:
             return max(calculated_width, 500)  # Minimum 500px
         # Fallback to scaled base length
         return int(base_length * self.scale_factor)
+    
+    def apply_resolution(self, res_name, save=True):
+        """Apply a resolution setting - resizes window and derives scale factor"""
+        if res_name not in self.resolution_presets:
+            res_name = "950x700"
+        
+        if res_name == "Fullscreen":
+            self.root.attributes('-fullscreen', False)  # Clear first
+            self.root.state('zoomed')  # Maximize window
+            self.root.update_idletasks()
+            w = self.root.winfo_width()
+            h = self.root.winfo_height()
+            # Derive scale factor from actual maximized size vs base
+            width_scale = w / self.base_window_width
+            height_scale = h / self.base_window_height
+            self.scale_factor = max(0.8, min(min(width_scale, height_scale), 3.0))
+        else:
+            # Restore from maximized/fullscreen if needed
+            if self.root.state() == 'zoomed':
+                self.root.state('normal')
+            self.root.attributes('-fullscreen', False)
+            
+            w, h = self.resolution_presets[res_name]
+            # Derive scale factor from chosen resolution vs base resolution
+            width_scale = w / self.base_window_width
+            height_scale = h / self.base_window_height
+            self.scale_factor = min(width_scale, height_scale)
+            
+            # Center the window on screen
+            screen_w = self.root.winfo_screenwidth()
+            screen_h = self.root.winfo_screenheight()
+            x = max(0, (screen_w - w) // 2)
+            y = max(0, (screen_h - h) // 2)
+            self.root.geometry(f"{w}x{h}+{x}+{y}")
+        
+        if save:
+            self.settings["resolution"] = res_name
+        
+        # Rebuild sprite images at new scale
+        if hasattr(self, 'enemy_sprite_pil') and self.enemy_sprite_pil:
+            self._rebuild_sprite_photos()
+        
+        # Refresh fonts on existing HUD elements so they match new scale
+        self._refresh_hud_fonts()
+    
+    def _refresh_hud_fonts(self):
+        """Update font sizes on existing HUD labels after a resolution change"""
+        font_updates = [
+            ('gold_label',    ('Arial', self.scale_font(11), 'bold')),
+            ('floor_label',   ('Arial', self.scale_font(12), 'bold')),
+            ('progress_label',('Arial', self.scale_font(10))),
+            ('dev_indicator',  ('Arial', self.scale_font(9), 'bold')),
+            ('room_title',    ('Georgia', self.scale_font(12), 'bold')),
+        ]
+        for attr, font in font_updates:
+            widget = getattr(self, attr, None)
+            if widget:
+                try:
+                    widget.winfo_exists() and widget.config(font=font)
+                except Exception:
+                    pass
+        # Room description needs wraplength update too
+        if hasattr(self, 'room_desc'):
+            try:
+                if self.room_desc.winfo_exists():
+                    self.room_desc.config(
+                        font=('Georgia', self.scale_font(9), 'italic'),
+                        wraplength=self.get_scaled_wraplength(600))
+            except Exception:
+                pass
     
     def show_main_menu(self):
         """Show the main menu - delegates to MainMenuManager"""
@@ -1425,8 +1527,8 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         # Display narrative text with proper formatting
         text_label = tk.Label(text_container, text=narrative,
-                            font=('Georgia', 11), bg='#0a0604', fg='#d4a574',
-                            justify='center', wraplength=700, padx=40, pady=20)
+                            font=('Georgia', self.scale_font(11)), bg='#0a0604', fg='#d4a574',
+                            justify='center', wraplength=self.get_scaled_wraplength(700), padx=40, pady=20)
         text_label.pack()
         
         # Continue button at bottom
@@ -1440,7 +1542,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         continue_btn = tk.Button(button_frame, text="Continue",
                                 command=continue_to_game,
-                                font=('Arial', 14, 'bold'), bg='#d4af37', fg='#000000',
+                                font=('Arial', self.scale_font(14), 'bold'), bg='#d4af37', fg='#000000',
                                 width=20, pady=12, cursor='hand2')
         continue_btn.pack()
         
@@ -1824,7 +1926,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         self.player_sprite_box = tk.Frame(player_frame, bg='#1a1410', relief=tk.SUNKEN, borderwidth=1, height=90, width=90)
         self.player_sprite_box.pack(anchor='w', pady=(4, 0))
         self.player_sprite_box.pack_propagate(False)
-        self.player_sprite_label = tk.Label(self.player_sprite_box, text="Player\nSprite", font=('Arial', 7), 
+        self.player_sprite_label = tk.Label(self.player_sprite_box, text="Player\nSprite", font=('Arial', self.scale_font(7)), 
                 bg='#1a1410', fg='#555555')
         self.player_sprite_label.place(relx=0.5, rely=0.5, anchor='center')
         
@@ -1889,7 +1991,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         self.enemy_dice_frame.pack(side=tk.RIGHT, padx=(0, 4))
         self.enemy_dice_frame.pack_forget()  # Hidden initially
         self.enemy_sprite_area.pack_propagate(False)
-        self.enemy_sprite_label = tk.Label(self.enemy_sprite_area, text="Enemy\nSprite", font=('Arial', 7), 
+        self.enemy_sprite_label = tk.Label(self.enemy_sprite_area, text="Enemy\nSprite", font=('Arial', self.scale_font(7)), 
                                            bg='#1a1410', fg='#555555')
         self.enemy_sprite_label.place(relx=0.5, rely=0.5, anchor='center')
         # Hide enemy area initially
@@ -2049,15 +2151,15 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         legend_inner = tk.Frame(legend_frame, bg=self.current_colors["bg_panel"])
         legend_inner.pack(padx=6, pady=4)
         
-        tk.Label(legend_inner, text="MAP LEGEND", font=('Arial', 9, 'bold'),
+        tk.Label(legend_inner, text="MAP LEGEND", font=('Arial', self.scale_font(9), 'bold'),
                 bg=self.current_colors["bg_panel"], 
                 fg=self.current_colors["text_gold"]).pack(pady=(0, 2))
         
         # Color legend with muted colors
-        tk.Label(legend_inner, text="● You", font=('Arial', 8),
+        tk.Label(legend_inner, text="● You", font=('Arial', self.scale_font(8)),
                 bg=self.current_colors["bg_panel"], 
                 fg='#d4af37').pack(anchor='w', pady=0)
-        tk.Label(legend_inner, text="● Visited", font=('Arial', 8),
+        tk.Label(legend_inner, text="● Visited", font=('Arial', self.scale_font(8)),
                 bg=self.current_colors["bg_panel"], 
                 fg='#555555').pack(anchor='w', pady=0)
         
@@ -2066,13 +2168,13 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         sep.pack(fill=tk.X, pady=2)
         
         # Symbol legend
-        tk.Label(legend_inner, text="∩ = Stairs", font=('Arial', 8),
+        tk.Label(legend_inner, text="∩ = Stairs", font=('Arial', self.scale_font(8)),
                 bg=self.current_colors["bg_panel"], 
                 fg=self.current_colors["text_secondary"]).pack(anchor='w', pady=0)
-        tk.Label(legend_inner, text="$ = Store", font=('Arial', 8),
+        tk.Label(legend_inner, text="$ = Store", font=('Arial', self.scale_font(8)),
                 bg=self.current_colors["bg_panel"], 
                 fg=self.current_colors["text_secondary"]).pack(anchor='w', pady=0)
-        tk.Label(legend_inner, text="💀 = Boss", font=('Arial', 8),
+        tk.Label(legend_inner, text="💀 = Boss", font=('Arial', self.scale_font(8)),
                 bg=self.current_colors["bg_panel"], 
                 fg=self.current_colors["text_secondary"]).pack(anchor='w', pady=0)
         
@@ -2080,7 +2182,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         movement_inner = tk.Frame(parent, bg=self.current_colors["bg_primary"])
         movement_inner.pack(pady=3, padx=8)
         
-        tk.Label(movement_inner, text="MOVE", font=('Arial', 9, 'bold'),
+        tk.Label(movement_inner, text="MOVE", font=('Arial', self.scale_font(9), 'bold'),
                 bg=self.current_colors["bg_primary"], 
                 fg=self.current_colors["text_gold"]).pack(pady=(0, 2))
         
@@ -2466,13 +2568,13 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         # Title
         title_label = tk.Label(self.dialog_frame, text="🔥 SELECT TARGET 🔥", 
-                              font=('Arial', 14, 'bold'),
+                              font=('Arial', self.scale_font(14), 'bold'),
                               bg=self.current_colors["bg_primary"], 
                               fg=self.current_colors["text_gold"])
         title_label.pack(pady=10)
         
         tk.Label(self.dialog_frame, text="Choose which enemy to throw the Fire Potion at:",
-                font=('Arial', 10),
+                font=('Arial', self.scale_font(10)),
                 bg=self.current_colors["bg_primary"],
                 fg=self.current_colors["text_light"]).pack(pady=5)
         
@@ -2488,9 +2590,9 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             info_frame = tk.Frame(enemy_frame, bg=self.current_colors["bg_dark"])
             info_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10, pady=5)
             
-            tk.Label(info_frame, text=enemy['name'], font=('Arial', 11, 'bold'),
+            tk.Label(info_frame, text=enemy['name'], font=('Arial', self.scale_font(11), 'bold'),
                     bg=self.current_colors["bg_dark"], fg=self.current_colors["text_light"]).pack(anchor='w')
-            tk.Label(info_frame, text=f"HP: {enemy['health']}/{enemy['max_health']}", font=('Arial', 9),
+            tk.Label(info_frame, text=f"HP: {enemy['health']}/{enemy['max_health']}", font=('Arial', self.scale_font(9)),
                     bg=self.current_colors["bg_dark"], fg=self.current_colors["text_secondary"]).pack(anchor='w')
             
             # Target button
@@ -2505,13 +2607,13 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
                 return target_enemy
             
             tk.Button(enemy_frame, text="Target", command=make_target_func(i, item_idx),
-                     bg='#e74c3c', fg='#ffffff', font=('Arial', 10, 'bold'),
+                     bg='#e74c3c', fg='#ffffff', font=('Arial', self.scale_font(10), 'bold'),
                      width=10).pack(side=tk.RIGHT, padx=10)
         
         # Cancel button
         tk.Button(self.dialog_frame, text="Cancel", command=self.close_dialog,
                  bg=self.current_colors["button_secondary"], fg='#ffffff',
-                 font=('Arial', 10, 'bold'), width=15).pack(pady=10)
+                 font=('Arial', self.scale_font(10), 'bold'), width=15).pack(pady=10)
     
     def _disable_combat_controls(self):
         """Delegate to CombatManager"""
@@ -3337,16 +3439,17 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             self.dialog_frame.destroy()
         
         self.dialog_frame = tk.Frame(self.root, bg=self.current_colors["bg_dark"], relief=tk.RAISED, borderwidth=3)
-        self.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, width=600, height=500)
+        self.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, 
+                               width=int(600 * self.scale_factor), height=int(500 * self.scale_factor))
         
         # Header with title and X button
         header = tk.Frame(self.dialog_frame, bg=self.current_colors["bg_dark"])
         header.pack(fill=tk.X, pady=(5, 0))
         
-        tk.Label(header, text=sign['title'], font=('Arial', 14, 'bold'),
-                bg=self.current_colors["bg_dark"], fg=self.current_colors["text_gold"], wraplength=520).pack(side=tk.LEFT, padx=10, pady=10)
+        tk.Label(header, text=sign['title'], font=('Arial', self.scale_font(14), 'bold'),
+                bg=self.current_colors["bg_dark"], fg=self.current_colors["text_gold"], wraplength=self.get_scaled_wraplength(520)).pack(side=tk.LEFT, padx=10, pady=10)
         
-        close_btn = tk.Label(header, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(header, text="✕", font=('Arial', self.scale_font(16), 'bold'),
                             bg=self.current_colors["bg_dark"], fg='#ff4444', cursor="hand2", padx=5)
         close_btn.pack(side=tk.RIGHT, padx=5)
         close_btn.bind('<Button-1>', lambda e: self.close_dialog())
@@ -3392,16 +3495,17 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             self.dialog_frame.destroy()
         
         self.dialog_frame = tk.Frame(self.root, bg='#1a0f08', relief=tk.RAISED, borderwidth=3)
-        self.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, width=500, height=400)
+        self.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, 
+                               width=int(500 * self.scale_factor), height=int(400 * self.scale_factor))
         
         # Header with title and X button
         header = tk.Frame(self.dialog_frame, bg='#1a0f08')
         header.pack(fill=tk.X, pady=(5, 0))
         
-        tk.Label(header, text="[CHEST OPENED]", font=('Arial', 16, 'bold'),
+        tk.Label(header, text="[CHEST OPENED]", font=('Arial', self.scale_font(16), 'bold'),
                 bg='#1a0f08', fg='#ffd700').pack(side=tk.LEFT, padx=10, pady=10)
         
-        close_btn = tk.Label(header, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(header, text="✕", font=('Arial', self.scale_font(16), 'bold'),
                             bg='#1a0f08', fg='#ff4444', cursor="hand2", padx=5)
         close_btn.pack(side=tk.RIGHT, padx=5)
         close_btn.bind('<Button-1>', lambda e: [self.close_dialog(), self.update_display()])
@@ -3409,29 +3513,29 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
         
         tk.Label(self.dialog_frame, text=chest['description'],
-                font=('Arial', 10), bg='#1a0f08', fg='#ffffff',
-                wraplength=450, pady=10).pack()
+                font=('Arial', self.scale_font(10)), bg='#1a0f08', fg='#ffffff',
+                wraplength=self.get_scaled_wraplength(450), pady=10).pack()
         
         loot_frame = tk.Frame(self.dialog_frame, bg='#2c1810')
         loot_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
         
-        tk.Label(loot_frame, text="You found:", font=('Arial', 12, 'bold'),
+        tk.Label(loot_frame, text="You found:", font=('Arial', self.scale_font(12), 'bold'),
                 bg='#2c1810', fg='#ffd700').pack(pady=5)
         
         for item in chest['items']:
-            tk.Label(loot_frame, text=f"• {item}", font=('Arial', 11),
+            tk.Label(loot_frame, text=f"• {item}", font=('Arial', self.scale_font(11)),
                     bg='#2c1810', fg='#4ecdc4').pack()
         
         if chest['gold'] > 0:
-            tk.Label(loot_frame, text=f"• {chest['gold']} Gold", font=('Arial', 11),
+            tk.Label(loot_frame, text=f"• {chest['gold']} Gold", font=('Arial', self.scale_font(11)),
                     bg='#2c1810', fg='#ffd700').pack()
         
         tk.Label(self.dialog_frame, text=chest['lore'],
-                font=('Arial', 9, 'italic'), bg='#1a0f08', fg='#888888',
-                wraplength=450, pady=10).pack()
+                font=('Arial', self.scale_font(9), 'italic'), bg='#1a0f08', fg='#888888',
+                wraplength=self.get_scaled_wraplength(450), pady=10).pack()
         
         tk.Button(self.dialog_frame, text="Continue", command=lambda: [self.close_dialog(), self.update_display()],
-                 font=('Arial', 12, 'bold'), bg='#4ecdc4', fg='#000000',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#4ecdc4', fg='#000000',
                  width=15, pady=10).pack(pady=10)
         
         self.update_display()
@@ -3488,12 +3592,12 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         # Title
         tk.Label(self.dialog_frame, text="◈ GUARD JOURNAL ◈",
-                font=('Arial', 16, 'bold'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(16), 'bold'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_title", "#ffd700")).pack(pady=10)
         
         # Date
         tk.Label(self.dialog_frame, text=entry["date"],
-                font=('Arial', 11, 'italic'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(11), 'italic'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_secondary", "#cccccc")).pack(pady=5)
         
         # Separator
@@ -3504,14 +3608,14 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         text_frame.pack(pady=10, padx=30, fill=tk.BOTH, expand=True)
         
         tk.Label(text_frame, text=entry["text"],
-                font=('Arial', 12), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(12)), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_primary", "#ffffff"),
                 wraplength=dialog_width-80, justify=tk.LEFT).pack()
         
         # Close button
         tk.Button(self.dialog_frame, text="Close",
                  command=self.close_dialog,
-                 font=('Arial', 12, 'bold'), bg=self.current_colors["button_primary"],
+                 font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["button_primary"],
                  fg='#ffffff', width=15, pady=8).pack(pady=15)
         
         # ESC to close
@@ -3534,11 +3638,11 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         # Title
         tk.Label(self.dialog_frame, text=f"⚒ {repair_kit_name} ⚒",
-                font=('Arial', 14, 'bold'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(14), 'bold'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_title", "#ffd700")).pack(pady=15)
         
         tk.Label(self.dialog_frame, text=f"Select an item to repair ({int(repair_percent*100)}% restoration):",
-                font=('Arial', 11), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(11)), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_primary", "#ffffff")).pack(pady=5)
         
         # Scrollable list of repairable items
@@ -3569,7 +3673,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             
             # Item description
             tk.Label(item_frame, text=item_data['display'],
-                    font=('Arial', 10), bg=self.current_colors["bg_secondary"],
+                    font=('Arial', self.scale_font(10)), bg=self.current_colors["bg_secondary"],
                     fg=self.current_colors.get("text_primary", "#ffffff"),
                     anchor='w').pack(side=tk.LEFT, padx=10, pady=8, fill=tk.X, expand=True)
             
@@ -3581,13 +3685,13 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             
             tk.Button(item_frame, text="Repair",
                      command=create_repair_callback(item_data),
-                     font=('Arial', 9, 'bold'), bg=self.current_colors["button_primary"],
+                     font=('Arial', self.scale_font(9), 'bold'), bg=self.current_colors["button_primary"],
                      fg='#ffffff', width=10).pack(side=tk.RIGHT, padx=10, pady=5)
         
         # Close button
         tk.Button(self.dialog_frame, text="Cancel",
                  command=self.close_dialog,
-                 font=('Arial', 11), bg=self.current_colors["button_secondary"],
+                 font=('Arial', self.scale_font(11)), bg=self.current_colors["button_secondary"],
                  fg='#ffffff', width=15, pady=8).pack(pady=15)
         
         # ESC to close
@@ -3664,11 +3768,11 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         header = tk.Frame(self.dialog_frame, bg=self.current_colors["bg_primary"])
         header.pack(fill=tk.X, padx=10, pady=15)
         tk.Label(header, text=f"◈ {item_name} Collection ◈",
-                font=('Arial', 16, 'bold'), bg=self.current_colors["bg_primary"],
+                font=('Arial', self.scale_font(16), 'bold'), bg=self.current_colors["bg_primary"],
                 fg=self.current_colors["text_gold"]).pack()
         
         # Red X close button (top right corner) - placed on header frame
-        close_btn = tk.Label(header, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(header, text="✕", font=('Arial', self.scale_font(16), 'bold'),
                             bg=self.current_colors["bg_primary"], fg='#ff4444',
                             cursor="hand2", padx=5)
         close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=0)
@@ -3677,7 +3781,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         close_btn.bind('<Leave>', lambda e: close_btn.config(fg='#ff4444'))
         
         tk.Label(self.dialog_frame, text=f"Total Found: {len(copies_indices)}",
-                font=('Arial', 12), bg=self.current_colors["bg_primary"],
+                font=('Arial', self.scale_font(12)), bg=self.current_colors["bg_primary"],
                 fg=self.current_colors["text_secondary"]).pack(pady=5)
         
         # Scrollable list of copies (lore codex style)
@@ -3702,7 +3806,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             # Copy number only
             copy_label = tk.Label(entry_header, 
                                  text=f"{item_name} #{i+1}",
-                                 font=('Arial', 10),
+                                 font=('Arial', self.scale_font(10)),
                                  bg=self.current_colors["bg_dark"],
                                  fg=self.current_colors["text_primary"])
             copy_label.pack(side=tk.LEFT, padx=10)
@@ -3710,7 +3814,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             # Read button (matching lore codex style)
             read_btn = tk.Button(entry_header, text="Read",
                                 command=lambda idx=inventory_idx: self._read_and_close(item_name, idx),
-                                font=('Arial', 9, 'bold'),
+                                font=('Arial', self.scale_font(9), 'bold'),
                                 bg=self.current_colors["button_primary"],
                                 fg='#000000',
                                 width=10,
@@ -3779,17 +3883,17 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         # Title
         tk.Label(self.dialog_frame, text="▤ QUEST NOTICE ▤",
-                font=('Arial', 16, 'bold'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(16), 'bold'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_title", "#ffd700")).pack(pady=10)
         
         # Quest title
         tk.Label(self.dialog_frame, text=notice["title"],
-                font=('Arial', 13, 'bold'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(13), 'bold'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_gold", "#ffd700")).pack(pady=5)
         
         # Reward
         tk.Label(self.dialog_frame, text=f"Reward: {notice['reward']}",
-                font=('Arial', 11, 'italic'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(11), 'italic'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_secondary", "#cccccc")).pack(pady=3)
         
         # Separator
@@ -3800,7 +3904,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         text_frame.pack(pady=10, padx=30, fill=tk.BOTH, expand=True)
         
         tk.Label(text_frame, text=notice["text"],
-                font=('Arial', 12), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(12)), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_primary", "#ffffff"),
                 wraplength=dialog_width-80, justify=tk.LEFT).pack()
         
@@ -3858,17 +3962,17 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         # Title
         tk.Label(self.dialog_frame, text="� SCRAWLED NOTE �",
-                font=('Arial', 16, 'bold'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(16), 'bold'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_title", "#ffd700")).pack(pady=10)
         
         # Date
         tk.Label(self.dialog_frame, text=entry["date"],
-                font=('Arial', 11, 'italic'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(11), 'italic'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_secondary", "#cccccc")).pack(pady=3)
         
         # Account name
         tk.Label(self.dialog_frame, text=entry["account"],
-                font=('Arial', 12, 'bold'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_gold", "#ffd700")).pack(pady=3)
         
         # Separator
@@ -3879,14 +3983,14 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         text_frame.pack(pady=10, padx=30, fill=tk.BOTH, expand=True)
         
         tk.Label(text_frame, text=entry["text"],
-                font=('Arial', 12), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(12)), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_primary", "#ffffff"),
                 wraplength=dialog_width-80, justify=tk.LEFT).pack()
         
         # Close button
         tk.Button(self.dialog_frame, text="Close",
                  command=self.close_dialog,
-                 font=('Arial', 12, 'bold'), bg=self.current_colors["button_primary"],
+                 font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["button_primary"],
                  fg='#ffffff', width=15, pady=8).pack(pady=15)
         
         # ESC to close
@@ -3931,12 +4035,12 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         # Title
         title_text = "◈ TRAINING MANUAL SCRAP ◈" if "Scrap" in item_name else "◈ TRAINING MANUAL PAGE ◈"
         tk.Label(self.dialog_frame, text=title_text,
-                font=('Arial', 16, 'bold'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(16), 'bold'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_title", "#ffd700")).pack(pady=10)
         
         # Chapter title
         tk.Label(self.dialog_frame, text=entry["title"],
-                font=('Arial', 11, 'italic'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(11), 'italic'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_secondary", "#cccccc")).pack(pady=5)
         
         # Separator
@@ -3947,14 +4051,14 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         text_frame.pack(pady=10, padx=30, fill=tk.BOTH, expand=True)
         
         tk.Label(text_frame, text=entry["text"],
-                font=('Arial', 12), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(12)), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_primary", "#ffffff"),
                 wraplength=dialog_width-80, justify=tk.LEFT).pack()
         
         # Close button
         tk.Button(self.dialog_frame, text="Close",
                  command=self.close_dialog,
-                 font=('Arial', 12, 'bold'), bg=self.current_colors["button_primary"],
+                 font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["button_primary"],
                  fg='#ffffff', width=15, pady=8).pack(pady=15)
         
         # ESC to close
@@ -3995,7 +4099,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
                                 width=dialog_width, height=dialog_height)
         
         tk.Label(self.dialog_frame, text="▣ SCRAWLED NOTE ▣",
-                font=('Arial', 16, 'bold'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(16), 'bold'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_title", "#ffd700")).pack(pady=10)
         
         tk.Frame(self.dialog_frame, height=2, bg=self.current_colors.get("text_accent", "#4ecdc4")).pack(fill=tk.X, padx=30, pady=10)
@@ -4004,13 +4108,13 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         text_frame.pack(pady=10, padx=30, fill=tk.BOTH, expand=True)
         
         tk.Label(text_frame, text=entry["text"],
-                font=('Arial', 12), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(12)), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_primary", "#ffffff"),
                 wraplength=dialog_width-80, justify=tk.LEFT).pack()
         
         tk.Button(self.dialog_frame, text="Close",
                  command=self.close_dialog,
-                 font=('Arial', 12, 'bold'), bg=self.current_colors["button_primary"],
+                 font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["button_primary"],
                  fg='#ffffff', width=15, pady=8).pack(pady=15)
         
         self.dialog_frame.bind('<Escape>', lambda e: self.close_dialog() or "break")
@@ -4052,7 +4156,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
                                 width=dialog_width, height=dialog_height)
         
         tk.Label(self.dialog_frame, text="※ PRESSED PAGE ※",
-                font=('Arial', 16, 'bold'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(16), 'bold'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_title", "#90ee90")).pack(pady=10)
         
         tk.Frame(self.dialog_frame, height=2, bg=self.current_colors.get("text_accent", "#4ecdc4")).pack(fill=tk.X, padx=30, pady=10)
@@ -4061,13 +4165,13 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         text_frame.pack(pady=10, padx=30, fill=tk.BOTH, expand=True)
         
         tk.Label(text_frame, text=entry["text"],
-                font=('Arial', 12), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(12)), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_primary", "#ffffff"),
                 wraplength=dialog_width-80, justify=tk.LEFT).pack()
         
         tk.Button(self.dialog_frame, text="Close",
                  command=self.close_dialog,
-                 font=('Arial', 12, 'bold'), bg=self.current_colors["button_primary"],
+                 font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["button_primary"],
                  fg='#ffffff', width=15, pady=8).pack(pady=15)
         
         self.dialog_frame.bind('<Escape>', lambda e: self.close_dialog() or "break")
@@ -4109,7 +4213,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
                                 width=dialog_width, height=dialog_height)
         
         tk.Label(self.dialog_frame, text="⚕️ SURGEON'S NOTE ⚕️",
-                font=('Arial', 16, 'bold'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(16), 'bold'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_title", "#dc143c")).pack(pady=10)
         
         tk.Frame(self.dialog_frame, height=2, bg=self.current_colors.get("text_accent", "#4ecdc4")).pack(fill=tk.X, padx=30, pady=10)
@@ -4118,13 +4222,13 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         text_frame.pack(pady=10, padx=30, fill=tk.BOTH, expand=True)
         
         tk.Label(text_frame, text=entry["text"],
-                font=('Arial', 12), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(12)), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_primary", "#ffffff"),
                 wraplength=dialog_width-80, justify=tk.LEFT).pack()
         
         tk.Button(self.dialog_frame, text="Close",
                  command=self.close_dialog,
-                 font=('Arial', 12, 'bold'), bg=self.current_colors["button_primary"],
+                 font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["button_primary"],
                  fg='#ffffff', width=15, pady=8).pack(pady=15)
         
         self.dialog_frame.bind('<Escape>', lambda e: self.close_dialog() or "break")
@@ -4166,7 +4270,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
                                 width=dialog_width, height=dialog_height)
         
         tk.Label(self.dialog_frame, text="◘ PUZZLE NOTE ◘",
-                font=('Arial', 16, 'bold'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(16), 'bold'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_title", "#9370db")).pack(pady=10)
         
         tk.Frame(self.dialog_frame, height=2, bg=self.current_colors.get("text_accent", "#4ecdc4")).pack(fill=tk.X, padx=30, pady=10)
@@ -4175,13 +4279,13 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         text_frame.pack(pady=10, padx=30, fill=tk.BOTH, expand=True)
         
         tk.Label(text_frame, text=entry["text"],
-                font=('Arial', 12), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(12)), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_primary", "#ffffff"),
                 wraplength=dialog_width-80, justify=tk.LEFT).pack()
         
         tk.Button(self.dialog_frame, text="Close",
                  command=self.close_dialog,
-                 font=('Arial', 12, 'bold'), bg=self.current_colors["button_primary"],
+                 font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["button_primary"],
                  fg='#ffffff', width=15, pady=8).pack(pady=15)
         
         self.dialog_frame.bind('<Escape>', lambda e: self.close_dialog() or "break")
@@ -4223,7 +4327,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
                                 width=dialog_width, height=dialog_height)
         
         tk.Label(self.dialog_frame, text="⭐ STAR CHART SCRAP ⭐",
-                font=('Arial', 16, 'bold'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(16), 'bold'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_title", "#ffd700")).pack(pady=10)
         
         tk.Frame(self.dialog_frame, height=2, bg=self.current_colors.get("text_accent", "#4ecdc4")).pack(fill=tk.X, padx=30, pady=10)
@@ -4232,13 +4336,13 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         text_frame.pack(pady=10, padx=30, fill=tk.BOTH, expand=True)
         
         tk.Label(text_frame, text=entry["text"],
-                font=('Arial', 12), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(12)), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_primary", "#ffffff"),
                 wraplength=dialog_width-80, justify=tk.LEFT).pack()
         
         tk.Button(self.dialog_frame, text="Close",
                  command=self.close_dialog,
-                 font=('Arial', 12, 'bold'), bg=self.current_colors["button_primary"],
+                 font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["button_primary"],
                  fg='#ffffff', width=15, pady=8).pack(pady=15)
         
         self.dialog_frame.bind('<Escape>', lambda e: self.close_dialog() or "break")
@@ -4280,7 +4384,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
                                 width=dialog_width, height=dialog_height)
         
         tk.Label(self.dialog_frame, text="◎️ CRACKED MAP SCRAP ◎️",
-                font=('Arial', 16, 'bold'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(16), 'bold'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_title", "#d2b48c")).pack(pady=10)
         
         tk.Frame(self.dialog_frame, height=2, bg=self.current_colors.get("text_accent", "#4ecdc4")).pack(fill=tk.X, padx=30, pady=10)
@@ -4289,13 +4393,13 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         text_frame.pack(pady=10, padx=30, fill=tk.BOTH, expand=True)
         
         tk.Label(text_frame, text=entry["text"],
-                font=('Arial', 12), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(12)), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_primary", "#ffffff"),
                 wraplength=dialog_width-80, justify=tk.LEFT).pack()
         
         tk.Button(self.dialog_frame, text="Close",
                  command=self.close_dialog,
-                 font=('Arial', 12, 'bold'), bg=self.current_colors["button_primary"],
+                 font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["button_primary"],
                  fg='#ffffff', width=15, pady=8).pack(pady=15)
         
         self.dialog_frame.bind('<Escape>', lambda e: self.close_dialog() or "break")
@@ -4338,7 +4442,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
                                 width=dialog_width, height=dialog_height)
         
         tk.Label(self.dialog_frame, text="▼ PRAYER STRIP ▼",
-                font=('Arial', 16, 'bold'), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(16), 'bold'), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_title", "#daa520")).pack(pady=10)
         
         tk.Frame(self.dialog_frame, height=2, bg=self.current_colors.get("text_accent", "#4ecdc4")).pack(fill=tk.X, padx=30, pady=10)
@@ -4347,13 +4451,13 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         text_frame.pack(pady=10, padx=30, fill=tk.BOTH, expand=True)
         
         tk.Label(text_frame, text=entry["text"],
-                font=('Arial', 12), bg=self.current_colors["bg_panel"],
+                font=('Arial', self.scale_font(12)), bg=self.current_colors["bg_panel"],
                 fg=self.current_colors.get("text_primary", "#ffffff"),
                 wraplength=dialog_width-80, justify=tk.LEFT).pack()
         
         tk.Button(self.dialog_frame, text="Close",
                  command=self.close_dialog,
-                 font=('Arial', 12, 'bold'), bg=self.current_colors["button_primary"],
+                 font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["button_primary"],
                  fg='#ffffff', width=15, pady=8).pack(pady=15)
         
         self.dialog_frame.bind('<Escape>', lambda e: self.close_dialog() or "break")
@@ -4403,7 +4507,8 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             self.dialog_frame.destroy()
         
         self.dialog_frame = tk.Frame(self.root, bg='#1a0f08', relief=tk.RAISED, borderwidth=3)
-        self.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, width=500, height=300)
+        self.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, 
+                               width=int(500 * self.scale_factor), height=int(300 * self.scale_factor))
         
         if key_type == "Old Key":
             title = "⚿ LOCKED ELITE ROOM"
@@ -4412,10 +4517,10 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             title = "☠ LOCKED BOSS ROOM"
             message = "The boss chamber door is sealed shut.\n\nYou have all 3 Boss Key Fragments!\n\nForge them to unlock the door and\nface the floor boss, or turn back?"
         
-        tk.Label(self.dialog_frame, text=title, font=('Arial', 18, 'bold'),
+        tk.Label(self.dialog_frame, text=title, font=('Arial', self.scale_font(18), 'bold'),
                 bg='#1a0f08', fg='#ffd700', pady=20).pack()
         
-        tk.Label(self.dialog_frame, text=message, font=('Arial', 12),
+        tk.Label(self.dialog_frame, text=message, font=('Arial', self.scale_font(12)),
                 bg='#1a0f08', fg='#ffffff', pady=10, justify=tk.CENTER).pack()
         
         # Button frame
@@ -4431,11 +4536,11 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             callback(False)
         
         tk.Button(btn_frame, text="Unlock & Enter", command=use_key,
-                 font=('Arial', 14, 'bold'), bg='#4ecdc4', fg='#000000',
+                 font=('Arial', self.scale_font(14), 'bold'), bg='#4ecdc4', fg='#000000',
                  width=14, pady=10).pack(side=tk.LEFT, padx=10)
         
         tk.Button(btn_frame, text="Turn Back", command=keep_key,
-                 font=('Arial', 14, 'bold'), bg='#ff6b6b', fg='#000000',
+                 font=('Arial', self.scale_font(14), 'bold'), bg='#ff6b6b', fg='#000000',
                  width=14, pady=10).pack(side=tk.LEFT, padx=10)
     
     def confirm_quit(self):
@@ -4491,11 +4596,11 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         # Title
         title_text = "💾 SAVE GAME 💾" if mode == "save" else "📂 LOAD GAME 📂"
-        tk.Label(self.dialog_frame, text=title_text, font=('Arial', 18, 'bold'),
+        tk.Label(self.dialog_frame, text=title_text, font=('Arial', self.scale_font(18), 'bold'),
                 bg=self.current_colors["bg_panel"], fg=self.current_colors["text_gold"], pady=10).pack()
         
         # Red X close button (top right corner)
-        close_btn = tk.Label(self.dialog_frame, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(self.dialog_frame, text="✕", font=('Arial', self.scale_font(16), 'bold'),
                             bg=self.current_colors["bg_panel"], fg='#ff4444',
                             cursor="hand2", padx=5)
         close_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=5)
@@ -4512,7 +4617,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         left_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=False, padx=(0, 5))
         left_panel.config(width=380)
         
-        tk.Label(left_panel, text="Save Slots", font=('Arial', 12, 'bold'),
+        tk.Label(left_panel, text="Save Slots", font=('Arial', self.scale_font(12), 'bold'),
                 bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"], pady=5).pack()
         
         # Scrollable list of saves
@@ -4548,7 +4653,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         details_canvas.pack(side="left", fill="both", expand=True, padx=5, pady=5)
         details_scrollbar.pack(side="right", fill="y", pady=5)
         
-        tk.Label(self.details_panel, text="Select a save slot", font=('Arial', 14),
+        tk.Label(self.details_panel, text="Select a save slot", font=('Arial', self.scale_font(14)),
                 bg=self.current_colors["bg_secondary"], fg='#888888', pady=180).pack()
         
         # Create save slot list items
@@ -4632,7 +4737,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             if save_name:
                 slot_label += f": {save_name}"
             
-            tk.Label(slot_item, text=slot_label, font=('Arial', 10, 'bold'),
+            tk.Label(slot_item, text=slot_label, font=('Arial', self.scale_font(10), 'bold'),
                     bg='#3d2415', fg='#ffd700', anchor='w').pack(fill=tk.X, padx=8, pady=(5, 2))
             
             # Location
@@ -4654,10 +4759,10 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
                     bg='#3d2415', fg='#888888', anchor='w').pack(fill=tk.X, padx=8, pady=(0, 5))
         else:
             # Empty slot
-            tk.Label(slot_item, text=f"Save {slot_num}", font=('Arial', 10, 'bold'),
+            tk.Label(slot_item, text=f"Save {slot_num}", font=('Arial', self.scale_font(10), 'bold'),
                     bg='#3d2415', fg='#888888', anchor='w').pack(fill=tk.X, padx=8, pady=(5, 2))
             
-            tk.Label(slot_item, text="[Empty Slot]", font=('Arial', 9),
+            tk.Label(slot_item, text="[Empty Slot]", font=('Arial', self.scale_font(9)),
                     bg='#3d2415', fg='#666666', anchor='w').pack(fill=tk.X, padx=8, pady=(0, 5))
         
         # Bind click to select this slot
@@ -4703,7 +4808,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
                 is_occupied = False
         
         # Header
-        tk.Label(self.details_panel, text=f"Save Slot {slot_num}", font=('Arial', 16, 'bold'),
+        tk.Label(self.details_panel, text=f"Save Slot {slot_num}", font=('Arial', self.scale_font(16), 'bold'),
                 bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"], pady=10).pack(anchor='center')
         
         # Details frame
@@ -4717,22 +4822,22 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             # Custom name - on same line
             name_line = tk.Frame(details, bg=self.current_colors["bg_secondary"])
             name_line.pack(fill=tk.X, pady=(0, 10))
-            tk.Label(name_line, text="Save Name: ", font=('Arial', 10, 'bold'),
+            tk.Label(name_line, text="Save Name: ", font=('Arial', self.scale_font(10), 'bold'),
                     bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"], anchor='w').pack(side=tk.LEFT)
             tk.Label(name_line, text=save_name if save_name else "(Unnamed Save)", 
-                    font=('Arial', 10), bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_primary"], anchor='w').pack(side=tk.LEFT)
+                    font=('Arial', self.scale_font(10)), bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_primary"], anchor='w').pack(side=tk.LEFT)
             
             # Location - on same line
             floor = save_data.get('floor', 1)
             location_line = tk.Frame(details, bg=self.current_colors["bg_secondary"])
             location_line.pack(fill=tk.X, pady=(0, 15))
-            tk.Label(location_line, text="Current Location: ", font=('Arial', 10, 'bold'),
+            tk.Label(location_line, text="Current Location: ", font=('Arial', self.scale_font(10), 'bold'),
                     bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"], anchor='w').pack(side=tk.LEFT)
-            tk.Label(location_line, text=f"Floor {floor} - The Depths", font=('Arial', 10),
+            tk.Label(location_line, text=f"Floor {floor} - The Depths", font=('Arial', self.scale_font(10)),
                     bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_primary"], anchor='w').pack(side=tk.LEFT)
             
             # Character stats
-            tk.Label(details, text="Character Stats:", font=('Arial', 10, 'bold'),
+            tk.Label(details, text="Character Stats:", font=('Arial', self.scale_font(10), 'bold'),
                     bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"], anchor='w').pack(fill=tk.X, pady=(0, 5))
             
             stats_frame = tk.Frame(details, bg=self.current_colors["bg_panel"], relief=tk.SUNKEN, borderwidth=1)
@@ -4754,22 +4859,22 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             save_time = save_data.get('save_time', 'Unknown time')
             time_line = tk.Frame(details, bg=self.current_colors["bg_secondary"])
             time_line.pack(fill=tk.X, pady=(5, 15))
-            tk.Label(time_line, text="Last Saved: ", font=('Arial', 10, 'bold'),
+            tk.Label(time_line, text="Last Saved: ", font=('Arial', self.scale_font(10), 'bold'),
                     bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"], anchor='w').pack(side=tk.LEFT)
-            tk.Label(time_line, text=save_time, font=('Arial', 10),
+            tk.Label(time_line, text=save_time, font=('Arial', self.scale_font(10)),
                     bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_primary"], anchor='w').pack(side=tk.LEFT)
             
             # Rename section
             rename_frame = tk.Frame(details, bg=self.current_colors["bg_secondary"])
             rename_frame.pack(fill=tk.X, pady=(10, 15))
             
-            tk.Label(rename_frame, text="Rename Save:", font=('Arial', 9, 'bold'),
+            tk.Label(rename_frame, text="Rename Save:", font=('Arial', self.scale_font(9), 'bold'),
                     bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"]).pack(anchor='w')
             
             name_input_frame = tk.Frame(rename_frame, bg=self.current_colors["bg_secondary"])
             name_input_frame.pack(fill=tk.X, pady=(5, 0))
             
-            self.rename_entry = tk.Entry(name_input_frame, font=('Arial', 10), width=25)
+            self.rename_entry = tk.Entry(name_input_frame, font=('Arial', self.scale_font(10)), width=25)
             self.rename_entry.insert(0, save_name)
             self.rename_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
             
@@ -4779,7 +4884,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             
             tk.Button(name_input_frame, text="Rename", 
                      command=lambda: self._rename_slot(slot_num, self.rename_entry.get().strip()),
-                     font=('Arial', 9), bg='#ffd700', fg='#000000',
+                     font=('Arial', self.scale_font(9)), bg='#ffd700', fg='#000000',
                      width=10, pady=3).pack(side=tk.LEFT)
             
             # Spacer
@@ -4796,9 +4901,9 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             # Load button (always available for occupied slots)
             load_btn = tk.Button(action_frame, text="Load", 
                      command=lambda: self.load_from_slot(slot_num),
-                     font=('Arial', 10, 'bold'), bg=load_bg, fg='#000000',
-                     width=14, pady=8)
-            load_btn.pack(side=tk.LEFT, padx=5)
+                     font=('Arial', self.scale_font(10), 'bold'), bg=load_bg, fg='#000000',
+                     padx=20, pady=8)
+            load_btn.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
             
             # Save/Overwrite button (only enabled if in game and not in combat)
             in_game = hasattr(self, 'current_room') and self.current_room is not None
@@ -4809,25 +4914,25 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             button_bg = save_bg if can_save else ('#8B0000' if self.in_combat else '#666666')
             overwrite_btn = tk.Button(action_frame, text=button_text, 
                      command=lambda: self._confirm_overwrite(slot_num),
-                     font=('Arial', 10, 'bold'), bg=button_bg, fg=button_fg,
-                     width=22, pady=8)
-            overwrite_btn.pack(side=tk.LEFT, padx=5)
+                     font=('Arial', self.scale_font(10), 'bold'), bg=button_bg, fg=button_fg,
+                     padx=20, pady=8)
+            overwrite_btn.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
             if not can_save:
                 overwrite_btn.config(state='disabled')
             
             # Delete button
             tk.Button(action_frame, text="Delete", 
                      command=lambda: self._confirm_delete(slot_num),
-                     font=('Arial', 10), bg='#ff6b6b', fg='#000000',
-                     width=14, pady=8).pack(side=tk.LEFT, padx=5)
+                     font=('Arial', self.scale_font(10)), bg='#ff6b6b', fg='#000000',
+                     padx=20, pady=8).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
             
         else:
             # Empty slot
-            tk.Label(details, text="Empty Slot", font=('Arial', 14, 'bold'),
+            tk.Label(details, text="Empty Slot", font=('Arial', self.scale_font(14), 'bold'),
                     bg=self.current_colors["bg_secondary"], fg='#888888', pady=20).pack()
             
             tk.Label(details, text="No save data in this slot.\nYou can save your current game here.", 
-                    font=('Arial', 10), bg=self.current_colors["bg_secondary"], fg='#666666', 
+                    font=('Arial', self.scale_font(10)), bg=self.current_colors["bg_secondary"], fg='#666666', 
                     justify=tk.CENTER, pady=10).pack()
             
             # Spacer
@@ -4846,18 +4951,18 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             save_bg = '#4ecdc4' if can_save else ('#8B0000' if self.in_combat else '#666666')
             save_btn = tk.Button(action_frame, text=button_text, 
                      command=lambda: self._save_to_empty_slot(slot_num),
-                     font=('Arial', 12, 'bold'), bg=save_bg, fg=button_fg,
+                     font=('Arial', self.scale_font(12), 'bold'), bg=save_bg, fg=button_fg,
                      width=25, pady=12)
             save_btn.pack()
             if not can_save:
                 save_btn.config(state='disabled')
                 if not in_game:
                     tk.Label(action_frame, text="(No game in progress)", 
-                            font=('Arial', 9, 'italic'), bg='#2c1810', fg='#888888',
+                            font=('Arial', self.scale_font(9), 'italic'), bg='#2c1810', fg='#888888',
                             pady=10).pack()
                 elif self.in_combat:
                     tk.Label(action_frame, text="(Cannot save during combat)", 
-                            font=('Arial', 9, 'italic'), bg='#2c1810', fg='#ff6b6b',
+                            font=('Arial', self.scale_font(9), 'italic'), bg='#2c1810', fg='#ff6b6b',
                             pady=10).pack()
     
     def _navigate_slots(self, direction):
@@ -4917,17 +5022,18 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         # Create confirmation overlay inside the game window
         confirm_overlay = tk.Frame(self.dialog_frame, bg='#1a0f0a', relief=tk.RIDGE, borderwidth=3)
-        confirm_overlay.place(relx=0.5, rely=0.5, anchor='center', width=500, height=250)
+        confirm_overlay.place(relx=0.5, rely=0.5, anchor='center', 
+                              width=int(500 * self.scale_factor), height=int(250 * self.scale_factor))
         confirm_overlay.lift()
         
         # Warning message
         tk.Label(confirm_overlay, text="⚠ OVERWRITE SAVE? ⚠",
-                font=('Arial', 18, 'bold'), bg='#1a0f0a', fg='#ff6b6b',
+                font=('Arial', self.scale_font(18), 'bold'), bg='#1a0f0a', fg='#ff6b6b',
                 pady=20).pack()
         
         tk.Label(confirm_overlay, 
                 text=f"Are you sure you want to overwrite Save Slot {slot_num}?\n\nThis will replace the existing save data.",
-                font=('Arial', 12), bg='#1a0f0a', fg='#d4a574',
+                font=('Arial', self.scale_font(12)), bg='#1a0f0a', fg='#d4a574',
                 pady=10, justify='center').pack()
         
         # Button frame
@@ -4944,12 +5050,12 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         tk.Button(btn_frame, text="YES, OVERWRITE",
                  command=do_overwrite,
-                 font=('Arial', 12, 'bold'), bg='#ff6b6b', fg='#000000',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#ff6b6b', fg='#000000',
                  width=18, pady=10).pack(side=tk.LEFT, padx=10)
         
         tk.Button(btn_frame, text="CANCEL",
                  command=cancel,
-                 font=('Arial', 12, 'bold'), bg='#666666', fg='#000000',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#666666', fg='#000000',
                  width=18, pady=10).pack(side=tk.LEFT, padx=10)
         
         # Bind Escape key to cancel
@@ -4962,24 +5068,26 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         confirm_dialog = tk.Toplevel(self.root)
         confirm_dialog.title("Delete Save?")
         confirm_dialog.configure(bg='#1a0f0a')
-        confirm_dialog.geometry('500x250')
+        dw = int(500 * self.scale_factor)
+        dh = int(250 * self.scale_factor)
+        confirm_dialog.geometry(f'{dw}x{dh}')
         
         # Center the dialog
         confirm_dialog.update_idletasks()
-        x = (confirm_dialog.winfo_screenwidth() // 2) - (500 // 2)
-        y = (confirm_dialog.winfo_screenheight() // 2) - (250 // 2)
-        confirm_dialog.geometry(f'500x250+{x}+{y}')
+        x = (confirm_dialog.winfo_screenwidth() // 2) - (dw // 2)
+        y = (confirm_dialog.winfo_screenheight() // 2) - (dh // 2)
+        confirm_dialog.geometry(f'{dw}x{dh}+{x}+{y}')
         confirm_dialog.transient(self.root)
         confirm_dialog.grab_set()
         
         # Warning message
         tk.Label(confirm_dialog, text="⚠ DELETE SAVE? ⚠",
-                font=('Arial', 18, 'bold'), bg='#1a0f0a', fg='#ff6b6b',
+                font=('Arial', self.scale_font(18), 'bold'), bg='#1a0f0a', fg='#ff6b6b',
                 pady=20).pack()
         
         tk.Label(confirm_dialog, 
                 text=f"Are you sure you want to delete Save Slot {slot_num}?\n\nThis cannot be undone.",
-                font=('Arial', 12), bg='#1a0f0a', fg='#d4a574',
+                font=('Arial', self.scale_font(12)), bg='#1a0f0a', fg='#d4a574',
                 pady=10, justify='center').pack()
         
         # Button frame
@@ -4997,12 +5105,12 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         tk.Button(btn_frame, text="YES, DELETE",
                  command=do_delete,
-                 font=('Arial', 12, 'bold'), bg='#ff6b6b', fg='#000000',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#ff6b6b', fg='#000000',
                  width=18, pady=10).pack(side=tk.LEFT, padx=10)
         
         tk.Button(btn_frame, text="CANCEL",
                  command=cancel,
-                 font=('Arial', 12, 'bold'), bg='#666666', fg='#000000',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#666666', fg='#000000',
                  width=18, pady=10).pack(side=tk.LEFT, padx=10)
         
         # Bind Escape key to cancel
@@ -5060,16 +5168,16 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         name_frame = tk.Frame(slot_frame, bg='#3d2415')
         name_frame.pack(padx=10, pady=(0, 5))
         
-        tk.Label(name_frame, text="Name (optional):", font=('Arial', 9),
+        tk.Label(name_frame, text="Name (optional):", font=('Arial', self.scale_font(9)),
                 bg='#3d2415', fg='#ffffff').pack(side=tk.LEFT, padx=(0, 5))
         
-        name_entry = tk.Entry(name_frame, font=('Arial', 9), width=30)
+        name_entry = tk.Entry(name_frame, font=('Arial', self.scale_font(9)), width=30)
         name_entry.insert(0, save_name)
         name_entry.pack(side=tk.LEFT)
         
         tk.Button(slot_frame, text=btn_text, 
                  command=lambda: self.save_to_slot(slot_num, name_entry.get().strip()),
-                 font=('Arial', 10, 'bold'), bg=btn_color, fg='#000000',
+                 font=('Arial', self.scale_font(10), 'bold'), bg=btn_color, fg='#000000',
                  width=25, pady=8).pack(padx=10, pady=5)
     
     def save_to_slot(self, slot_num, save_name=""):
@@ -5675,12 +5783,12 @@ Chests Opened: {self.chests_opened}"""
         
         tk.Button(btn_frame, text="View High Scores",
                  command=self.show_high_scores,
-                 font=('Arial', 12, 'bold'), bg='#ffd700', fg='#000000',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#ffd700', fg='#000000',
                  width=18, pady=10).pack(side=tk.LEFT, padx=10)
         
         tk.Button(btn_frame, text="Main Menu",
                  command=self.show_main_menu,
-                 font=('Arial', 12, 'bold'), bg=self.current_colors["button_primary"], fg='#000000',
+                 font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["button_primary"], fg='#000000',
                  width=18, pady=10).pack(side=tk.LEFT, padx=10)
     
     def game_over(self):
@@ -5703,9 +5811,10 @@ Chests Opened: {self.chests_opened}"""
             self.dialog_frame.destroy()
         
         self.dialog_frame = tk.Frame(self.root, bg='#1a0f08', relief=tk.RAISED, borderwidth=3)
-        self.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, width=400, height=350)
+        self.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, 
+                               width=int(400 * self.scale_factor), height=int(350 * self.scale_factor))
         
-        tk.Label(self.dialog_frame, text="[GAME OVER]", font=('Arial', 20, 'bold'),
+        tk.Label(self.dialog_frame, text="[GAME OVER]", font=('Arial', self.scale_font(20), 'bold'),
                 bg='#1a0f08', fg='#ff6b6b', pady=15).pack()
         
         stats = f"""
@@ -5718,11 +5827,11 @@ Gold Earned: {self.total_gold_earned}
 Final Score: {self.run_score}
 """
         
-        tk.Label(self.dialog_frame, text=stats, font=('Arial', 11),
+        tk.Label(self.dialog_frame, text=stats, font=('Arial', self.scale_font(11)),
                 bg='#1a0f08', fg='#ffffff', justify=tk.LEFT).pack(pady=10)
         
         tk.Button(self.dialog_frame, text="Return to Menu", command=lambda: [self.close_dialog(), self.show_main_menu()],
-                 font=('Arial', 12, 'bold'), bg='#4ecdc4', fg='#000000',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#4ecdc4', fg='#000000',
                  width=20, pady=12).pack(pady=10)
     
     def save_high_score(self):
@@ -5795,7 +5904,7 @@ Final Score: {self.run_score}
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
         # Title
-        title_label = tk.Label(main_frame, text="SETTINGS", font=('Arial', 20, 'bold'),
+        title_label = tk.Label(main_frame, text="SETTINGS", font=('Arial', self.scale_font(20), 'bold'),
                 bg=bg_color, fg=self.current_colors["text_gold"])
         title_label.pack(pady=(0, 15))
         
@@ -5837,15 +5946,15 @@ Final Score: {self.run_score}
                              relief=tk.RAISED, borderwidth=2)
         diff_frame.pack(fill=tk.X, pady=(0, 15), padx=5)
         
-        tk.Label(diff_frame, text="DIFFICULTY", font=('Arial', 16, 'bold'),
+        tk.Label(diff_frame, text="DIFFICULTY", font=('Arial', self.scale_font(16), 'bold'),
                 bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"],
                 pady=10).pack()
         
         current_diff = self.settings.get("difficulty", "Normal")
         
-        diff_desc = tk.Label(diff_frame, text="", font=('Arial', 9, 'italic'),
+        diff_desc = tk.Label(diff_frame, text="", font=('Arial', self.scale_font(9), 'italic'),
                             bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_primary"],
-                            wraplength=600, pady=5)
+                            wraplength=self.get_scaled_wraplength(600), pady=5)
         diff_desc.pack()
         
         diff_descriptions = {
@@ -5864,7 +5973,7 @@ Final Score: {self.run_score}
             
             btn = tk.Button(diff_buttons_frame, text=difficulty,
                           command=lambda d=difficulty: self.update_setting('difficulty', d),
-                          font=('Arial', 12, 'bold'), bg=bg, fg=fg,
+                          font=('Arial', self.scale_font(12), 'bold'), bg=bg, fg=fg,
                           width=10, pady=8)
             btn.pack(side=tk.LEFT, padx=5)
             
@@ -5879,19 +5988,19 @@ Final Score: {self.run_score}
                                  relief=tk.RAISED, borderwidth=2)
         graphics_frame.pack(fill=tk.X, pady=(0, 15), padx=5)
         
-        tk.Label(graphics_frame, text="COLOR SCHEME", font=('Arial', 16, 'bold'),
+        tk.Label(graphics_frame, text="COLOR SCHEME", font=('Arial', self.scale_font(16), 'bold'),
                 bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"],
                 pady=10).pack()
         
         current_scheme = self.settings.get("color_scheme", "Classic")
         
         tk.Label(graphics_frame, text="Choose your preferred visual theme",
-                font=('Arial', 10), bg=self.current_colors["bg_secondary"],
+                font=('Arial', self.scale_font(10)), bg=self.current_colors["bg_secondary"],
                 fg=self.current_colors["text_primary"], pady=5).pack()
         
         # Show current color scheme
         tk.Label(graphics_frame, text=f"Current: {current_scheme}",
-                font=('Arial', 9, 'italic'), bg=self.current_colors["bg_secondary"],
+                font=('Arial', self.scale_font(9), 'italic'), bg=self.current_colors["bg_secondary"],
                 fg=self.current_colors["text_gold"], pady=2).pack()
         
         scheme_buttons_frame = tk.Frame(graphics_frame, bg=self.current_colors["bg_secondary"])
@@ -5907,7 +6016,7 @@ Final Score: {self.run_score}
             
             tk.Button(first_row, text=scheme,
                      command=lambda s=scheme: self.update_setting('color_scheme', s),
-                     font=('Arial', 11, 'bold'), bg=bg, fg=fg,
+                     font=('Arial', self.scale_font(11), 'bold'), bg=bg, fg=fg,
                      width=10, pady=8).pack(side=tk.LEFT, padx=5)
         
         # Second row of color scheme buttons
@@ -5920,7 +6029,7 @@ Final Score: {self.run_score}
             
             tk.Button(second_row, text=scheme,
                      command=lambda s=scheme: self.update_setting('color_scheme', s),
-                     font=('Arial', 11, 'bold'), bg=bg, fg=fg,
+                     font=('Arial', self.scale_font(11), 'bold'), bg=bg, fg=fg,
                      width=10, pady=8).pack(side=tk.LEFT, padx=5)
         
         # Reset button
@@ -5929,7 +6038,7 @@ Final Score: {self.run_score}
         
         tk.Button(reset_row, text="Reset to Classic",
                  command=lambda: self.update_setting('color_scheme', 'Classic'),
-                 font=('Arial', 10), bg='#ff6b6b', fg='#ffffff',
+                 font=('Arial', self.scale_font(10)), bg='#ff6b6b', fg='#ffffff',
                  width=15, pady=5).pack()
         
         # Audio Section
@@ -5937,28 +6046,89 @@ Final Score: {self.run_score}
                               relief=tk.RAISED, borderwidth=2)
         audio_frame.pack(fill=tk.X, pady=(0, 15), padx=5)
         
-        tk.Label(audio_frame, text="AUDIO", font=('Arial', 16, 'bold'),
+        tk.Label(audio_frame, text="AUDIO", font=('Arial', self.scale_font(16), 'bold'),
                 bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"],
                 pady=10).pack()
         
         tk.Label(audio_frame, text="♪ Coming Soon ♪",
-                font=('Arial', 14, 'italic'), bg=self.current_colors["bg_secondary"],
+                font=('Arial', self.scale_font(14), 'italic'), bg=self.current_colors["bg_secondary"],
                 fg=self.current_colors["text_primary"], pady=20).pack()
+        
+        # Resolution Section
+        display_frame = tk.Frame(content_frame, bg=self.current_colors["bg_secondary"],
+                                relief=tk.RAISED, borderwidth=2)
+        display_frame.pack(fill=tk.X, pady=(0, 15), padx=5)
+        
+        tk.Label(display_frame, text="RESOLUTION", font=('Arial', self.scale_font(16), 'bold'),
+                bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"],
+                pady=10).pack()
+        
+        current_res = self.settings.get("resolution", "950x700")
+        
+        res_desc = tk.Label(display_frame, text="", font=('Arial', self.scale_font(9), 'italic'),
+                           bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_primary"],
+                           wraplength=self.get_scaled_wraplength(600), pady=5)
+        res_desc.pack()
+        
+        # Resolution options with friendly labels
+        resolution_options = [
+            ("950x700",   "950 × 700"),
+            ("1100x800",  "1100 × 800"),
+            ("1280x720",  "1280 × 720 (HD)"),
+            ("1280x960",  "1280 × 960"),
+            ("1366x768",  "1366 × 768"),
+            ("1600x900",  "1600 × 900 (HD+)"),
+            ("1920x1080", "1920 × 1080 (Full HD)"),
+            ("Fullscreen", "Fullscreen"),
+        ]
+        
+        res_buttons_frame = tk.Frame(display_frame, bg=self.current_colors["bg_secondary"])
+        res_buttons_frame.pack(pady=10)
+        
+        res_buttons = {}
+        
+        def select_resolution(selected_res):
+            self.apply_resolution(selected_res, save=False)
+            self.update_setting('resolution', selected_res)
+            for rk, btn in res_buttons.items():
+                if rk == selected_res:
+                    btn.config(bg=self.current_colors["button_primary"], fg='#000000')
+                else:
+                    btn.config(bg=self.current_colors["bg_dark"], fg=self.current_colors["text_primary"])
+            # Refresh the settings dialog after resize
+            self.root.after(150, lambda: self.show_settings(self.settings_return_to))
+        
+        # Lay out in rows of 3
+        row_frame = None
+        for idx, (res_key, res_label) in enumerate(resolution_options):
+            if idx % 3 == 0:
+                row_frame = tk.Frame(res_buttons_frame, bg=self.current_colors["bg_secondary"])
+                row_frame.pack(pady=2)
+            
+            bg = self.current_colors["button_primary"] if res_key == current_res else self.current_colors["bg_dark"]
+            fg = '#000000' if res_key == current_res else self.current_colors["text_primary"]
+            
+            btn = tk.Button(row_frame, text=res_label,
+                           command=lambda r=res_key: select_resolution(r),
+                           font=('Arial', self.scale_font(10), 'bold'), bg=bg, fg=fg,
+                           width=18, pady=6)
+            btn.pack(side=tk.LEFT, padx=4)
+            res_buttons[res_key] = btn
         
         # Text Speed Section
         text_speed_frame = tk.Frame(content_frame, bg=self.current_colors["bg_secondary"],
                                    relief=tk.RAISED, borderwidth=2)
         text_speed_frame.pack(fill=tk.X, pady=(0, 15), padx=5)
         
-        tk.Label(text_speed_frame, text="TEXT ANIMATION SPEED", font=('Arial', 16, 'bold'),
+        tk.Label(text_speed_frame, text="TEXT ANIMATION SPEED", font=('Arial', self.scale_font(16), 'bold'),
                 bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"],
                 pady=10).pack()
         
         current_speed = self.settings.get("text_speed", "Medium")
         
-        speed_desc = tk.Label(text_speed_frame, text="", font=('Arial', 9, 'italic'),
+        speed_desc = tk.Label(text_speed_frame, text="", font=('Arial', self.scale_font(9), 'italic'),
                              bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_primary"],
-                             wraplength=600, pady=5)
+                             wraplength=self.get_scaled_wraplength(600), pady=5)
         speed_desc.pack()
         
         speed_descriptions = {
@@ -5990,7 +6160,7 @@ Final Score: {self.run_score}
             
             btn = tk.Button(speed_buttons_frame, text=speed,
                           command=lambda s=speed: select_speed(s),
-                          font=('Arial', 11, 'bold'), bg=bg, fg=fg,
+                          font=('Arial', self.scale_font(11), 'bold'), bg=bg, fg=fg,
                           width=10, pady=8)
             btn.pack(side=tk.LEFT, padx=5)
             speed_buttons[speed] = btn
@@ -6006,12 +6176,12 @@ Final Score: {self.run_score}
                                  relief=tk.RAISED, borderwidth=2)
         controls_frame.pack(fill=tk.X, pady=(0, 15), padx=5)
         
-        tk.Label(controls_frame, text="CONTROLS", font=('Arial', 16, 'bold'),
+        tk.Label(controls_frame, text="CONTROLS", font=('Arial', self.scale_font(16), 'bold'),
                 bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"],
                 pady=10).pack()
         
         tk.Label(controls_frame, text="Click any key binding to change it",
-                font=('Arial', 10, 'italic'), bg=self.current_colors["bg_secondary"],
+                font=('Arial', self.scale_font(10), 'italic'), bg=self.current_colors["bg_secondary"],
                 fg=self.current_colors["text_primary"], pady=5).pack()
         
         # Get current keybindings
@@ -6053,14 +6223,14 @@ Final Score: {self.run_score}
             action_frame.grid(row=row, column=col*2, padx=(0, 10), pady=5, sticky='w')
             
             tk.Label(action_frame, text=f"{label}:", 
-                    font=('Arial', 10), bg=self.current_colors["bg_secondary"],
+                    font=('Arial', self.scale_font(10)), bg=self.current_colors["bg_secondary"],
                     fg=self.current_colors["text_primary"], width=12, anchor='w').pack(side=tk.LEFT)
             
             # Button showing current key
             current_key = current_keybindings.get(action, "Unbound")
             key_button = tk.Button(action_frame, text=current_key,
                                   command=lambda a=action: self.start_key_remap(a),
-                                  font=('Arial', 10, 'bold'), 
+                                  font=('Arial', self.scale_font(10), 'bold'), 
                                   bg=self.current_colors["button_primary"], fg='#000000',
                                   width=8)
             key_button.pack(side=tk.RIGHT)
@@ -6093,7 +6263,7 @@ Final Score: {self.run_score}
         
         tk.Button(reset_frame, text="Reset to Defaults",
                  command=reset_keybindings,
-                 font=('Arial', 10, 'bold'), bg="#FF9800", fg='#000000',
+                 font=('Arial', self.scale_font(10), 'bold'), bg="#FF9800", fg='#000000',
                  padx=15, pady=5).pack()
         
         # Dice Customization Section
@@ -6101,25 +6271,25 @@ Final Score: {self.run_score}
                              relief=tk.RAISED, borderwidth=2)
         dice_frame.pack(fill=tk.X, pady=(0, 15), padx=5)
         
-        tk.Label(dice_frame, text="DICE APPEARANCE", font=('Arial', 16, 'bold'),
+        tk.Label(dice_frame, text="DICE APPEARANCE", font=('Arial', self.scale_font(16), 'bold'),
                 bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_gold"],
                 pady=10).pack()
         
         tk.Label(dice_frame, text="Customize your dice appearance",
-                font=('Arial', 10), bg=self.current_colors["bg_secondary"],
+                font=('Arial', self.scale_font(10)), bg=self.current_colors["bg_secondary"],
                 fg=self.current_colors["text_primary"], pady=5).pack()
         
         # Current style display
         current_style_name = self.dice_styles[self.current_dice_style]["label"]
         tk.Label(dice_frame, text=f"Current Style: {current_style_name}",
-                font=('Arial', 9, 'italic'), bg=self.current_colors["bg_secondary"],
+                font=('Arial', self.scale_font(9), 'italic'), bg=self.current_colors["bg_secondary"],
                 fg=self.current_colors["text_gold"], pady=2).pack()
         
         # Preview area
         preview_frame = tk.Frame(dice_frame, bg='#0a0a0a', relief=tk.SUNKEN, borderwidth=2)
         preview_frame.pack(pady=10, padx=20)
         
-        tk.Label(preview_frame, text="Preview:", font=('Arial', 9, 'bold'),
+        tk.Label(preview_frame, text="Preview:", font=('Arial', self.scale_font(9), 'bold'),
                 bg='#0a0a0a', fg='#ffd700', padx=10, pady=5).pack()
         
         # Create preview dice container
@@ -6142,7 +6312,7 @@ Final Score: {self.run_score}
             self.preview_dice.append((die_canvas, value))  # Store canvas and value
         
         # Preset selector
-        tk.Label(dice_frame, text="Presets:", font=('Arial', 12, 'bold'),
+        tk.Label(dice_frame, text="Presets:", font=('Arial', self.scale_font(12), 'bold'),
                 bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_primary"],
                 pady=5).pack()
         
@@ -6168,7 +6338,7 @@ Final Score: {self.run_score}
             
             tk.Button(preset_row1, text=style["label"],
                      command=lambda sid=style_id: self.apply_dice_style(sid),
-                     font=('Arial', 10, 'bold'), bg=bg, fg=fg,
+                     font=('Arial', self.scale_font(10), 'bold'), bg=bg, fg=fg,
                      width=12, pady=6, relief=tk.RAISED, borderwidth=2).pack(side=tk.LEFT, padx=3)
         
         # Second row of presets (3 buttons)
@@ -6189,7 +6359,7 @@ Final Score: {self.run_score}
             
             tk.Button(preset_row2, text=style["label"],
                      command=lambda sid=style_id: self.apply_dice_style(sid),
-                     font=('Arial', 10, 'bold'), bg=bg, fg=fg,
+                     font=('Arial', self.scale_font(10), 'bold'), bg=bg, fg=fg,
                      width=12, pady=6, relief=tk.RAISED, borderwidth=2).pack(side=tk.LEFT, padx=3)
         
         # Third row for rose_quartz (centered)
@@ -6208,16 +6378,16 @@ Final Score: {self.run_score}
         
         tk.Button(preset_row3, text=style["label"],
                  command=lambda: self.apply_dice_style("rose_quartz"),
-                 font=('Arial', 10, 'bold'), bg=bg, fg=fg,
+                 font=('Arial', self.scale_font(10), 'bold'), bg=bg, fg=fg,
                  width=12, pady=6, relief=tk.RAISED, borderwidth=2).pack(padx=3)
         
         # Override controls
-        tk.Label(dice_frame, text="Custom Overrides:", font=('Arial', 12, 'bold'),
+        tk.Label(dice_frame, text="Custom Overrides:", font=('Arial', self.scale_font(12), 'bold'),
                 bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_primary"],
                 pady=8).pack()
         
         tk.Label(dice_frame, text="Mix and match elements from different styles",
-                font=('Arial', 9, 'italic'), bg=self.current_colors["bg_secondary"],
+                font=('Arial', self.scale_font(9), 'italic'), bg=self.current_colors["bg_secondary"],
                 fg=self.current_colors["text_primary"], pady=2).pack()
         
         override_frame = tk.Frame(dice_frame, bg=self.current_colors["bg_secondary"])
@@ -6227,7 +6397,7 @@ Final Score: {self.run_score}
         face_mode_frame = tk.Frame(override_frame, bg=self.current_colors["bg_secondary"])
         face_mode_frame.pack(pady=5)
         
-        tk.Label(face_mode_frame, text="Face Display:", font=('Arial', 10),
+        tk.Label(face_mode_frame, text="Face Display:", font=('Arial', self.scale_font(10)),
                 bg=self.current_colors["bg_secondary"], fg=self.current_colors["text_primary"]).pack(side=tk.LEFT, padx=5)
         
         current_face_mode = self.dice_style_overrides.get("face_mode") or self.dice_styles[self.current_dice_style]["face_mode"]
@@ -6246,7 +6416,7 @@ Final Score: {self.run_score}
         
         numbers_btn = tk.Button(face_mode_frame, text="Numbers (1-6)",
                  command=lambda: select_face_mode("numbers"),
-                 font=('Arial', 9, 'bold'),
+                 font=('Arial', self.scale_font(9), 'bold'),
                  bg=self.current_colors["button_primary"] if current_face_mode == "numbers" else self.current_colors["bg_dark"],
                  fg='#000000' if current_face_mode == "numbers" else self.current_colors["text_primary"],
                  width=14, pady=4)
@@ -6255,7 +6425,7 @@ Final Score: {self.run_score}
         
         pips_btn = tk.Button(face_mode_frame, text="Pips (⚀⚁⚂⚃⚄⚅)",
                  command=lambda: select_face_mode("pips"),
-                 font=('Arial', 9, 'bold'),
+                 font=('Arial', self.scale_font(9), 'bold'),
                  bg=self.current_colors["button_primary"] if current_face_mode == "pips" else self.current_colors["bg_dark"],
                  fg='#000000' if current_face_mode == "pips" else self.current_colors["text_primary"],
                  width=14, pady=4)
@@ -6268,7 +6438,7 @@ Final Score: {self.run_score}
         
         tk.Button(dice_reset_frame, text="Reset to Classic White",
                  command=self.reset_dice_customization,
-                 font=('Arial', 10, 'bold'), bg='#ff6b6b', fg='#ffffff',
+                 font=('Arial', self.scale_font(10), 'bold'), bg='#ff6b6b', fg='#ffffff',
                  width=20, pady=5).pack()
         
         # Add buttons to the button_container that was created earlier
@@ -6278,22 +6448,22 @@ Final Score: {self.run_score}
         
         self.save_button = tk.Button(button_container, text="Save Changes", 
                                      command=self.save_settings_only,
-                                     font=('Arial', 13, 'bold'), bg=save_bg, fg='#000000',
+                                     font=('Arial', self.scale_font(13), 'bold'), bg=save_bg, fg='#000000',
                                      width=15, pady=8, state=save_state)
         self.save_button.grid(row=0, column=0, padx=(0, 10))
         
         # Save & Back button (save and close)
         tk.Button(button_container, text="Save & Back", command=self.save_and_close_settings,
-                 font=('Arial', 13, 'bold'), bg=self.current_colors["button_secondary"], fg='#000000',
+                 font=('Arial', self.scale_font(13), 'bold'), bg=self.current_colors["button_secondary"], fg='#000000',
                  width=15, pady=8).grid(row=0, column=1, padx=(5, 5))
         
         # Cancel button (close without saving)
         tk.Button(button_container, text="Cancel", command=self.cancel_settings,
-                 font=('Arial', 13, 'bold'), bg='#ff6b6b', fg='#ffffff',
+                 font=('Arial', self.scale_font(13), 'bold'), bg='#ff6b6b', fg='#ffffff',
                  width=15, pady=8).grid(row=0, column=2, padx=(10, 0))
         
         # Red X close button (top right corner) - saves changes automatically
-        close_btn = tk.Label(main_frame, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(main_frame, text="✕", font=('Arial', self.scale_font(16), 'bold'),
                             bg=bg_color, fg='#ff4444', cursor="hand2", padx=5)
         close_btn.place(relx=0.98, rely=0.02, anchor='ne')
         close_btn.bind('<Button-1>', lambda e: self.save_and_close_settings())
@@ -6717,25 +6887,25 @@ Final Score: {self.run_score}
         self.dialog_frame = tk.Frame(self.root, bg='#1a0f08', relief=tk.RAISED, borderwidth=3)
         self.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, width=dialog_width, height=dialog_height)
         
-        tk.Label(self.dialog_frame, text="UNSAVED CHANGES", font=('Arial', 16, 'bold'),
+        tk.Label(self.dialog_frame, text="UNSAVED CHANGES", font=('Arial', self.scale_font(16), 'bold'),
                 bg='#1a0f08', fg='#ff6b6b', pady=15).pack()
         
         tk.Label(self.dialog_frame, text="You have unsaved changes.\nWhat would you like to do?",
-                font=('Arial', 12), bg='#1a0f08', fg='#ffffff', pady=10).pack()
+                font=('Arial', self.scale_font(12)), bg='#1a0f08', fg='#ffffff', pady=10).pack()
         
         btn_frame = tk.Frame(self.dialog_frame, bg='#1a0f08')
         btn_frame.pack(pady=20)
         
         tk.Button(btn_frame, text="Save & Exit", command=self.save_and_exit_from_dialog,
-                 font=('Arial', 12, 'bold'), bg='#4ecdc4', fg='#000000',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#4ecdc4', fg='#000000',
                  width=15, pady=10).pack(side=tk.LEFT, padx=5)
         
         tk.Button(btn_frame, text="Exit Without Saving", command=self.exit_without_saving,
-                 font=('Arial', 12, 'bold'), bg='#ff6b6b', fg='#000000',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#ff6b6b', fg='#000000',
                  width=18, pady=10).pack(side=tk.LEFT, padx=5)
         
         tk.Button(btn_frame, text="Cancel", command=self.close_dialog,
-                 font=('Arial', 12, 'bold'), bg='#95e1d3', fg='#000000',
+                 font=('Arial', self.scale_font(12), 'bold'), bg='#95e1d3', fg='#000000',
                  width=12, pady=10).pack(side=tk.LEFT, padx=5)
     
     def save_and_exit_from_dialog(self):
@@ -6785,13 +6955,14 @@ Final Score: {self.run_score}
         
         self.dialog_frame = tk.Frame(self.root, bg=self.current_colors["bg_primary"], 
                                      relief=tk.RAISED, borderwidth=3)
-        self.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, width=400, height=500)
+        self.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, 
+                               width=int(400 * self.scale_factor), height=int(500 * self.scale_factor))
         
         # Title
         title_text = "PAUSED"
         if self.dev_mode:
             title_text += " [DEV MODE]"
-        tk.Label(self.dialog_frame, text=title_text, font=('Arial', 24, 'bold'),
+        tk.Label(self.dialog_frame, text=title_text, font=('Arial', self.scale_font(24), 'bold'),
                 bg=self.current_colors["bg_primary"], fg=self.current_colors["text_gold"], 
                 pady=20).pack()
         
@@ -6801,35 +6972,35 @@ Final Score: {self.run_score}
         
         tk.Button(self.dialog_frame, text="Resume Game", 
                  command=self.close_dialog,
-                 font=('Arial', 14, 'bold'), bg=self.current_colors["button_primary"], 
+                 font=('Arial', self.scale_font(14), 'bold'), bg=self.current_colors["button_primary"], 
                  fg='#000000', width=button_width, pady=button_pady).pack(padx=20, pady=10)
         
         tk.Button(self.dialog_frame, text="Settings", 
                  command=self.show_settings_from_game,
-                 font=('Arial', 14, 'bold'), bg=self.current_colors["button_secondary"], 
+                 font=('Arial', self.scale_font(14), 'bold'), bg=self.current_colors["button_secondary"], 
                  fg='#000000', width=button_width, pady=button_pady).pack(padx=20, pady=10)
         
         tk.Button(self.dialog_frame, text="Save/Load Game", 
                  command=self.show_load_slots,
-                 font=('Arial', 14, 'bold'), bg=self.current_colors["button_secondary"], 
+                 font=('Arial', self.scale_font(14), 'bold'), bg=self.current_colors["button_secondary"], 
                  fg='#000000', width=button_width, pady=button_pady).pack(padx=20, pady=10)
         
         # Dev mode only: Dev Tools and Export Debug Log
         if self.dev_mode:
             tk.Button(self.dialog_frame, text="🛠 Dev Tools", 
                      command=self.show_dev_tools,
-                     font=('Arial', 14, 'bold'), bg='#9b59b6', 
+                     font=('Arial', self.scale_font(14), 'bold'), bg='#9b59b6', 
                      fg='#ffffff', width=button_width, pady=button_pady).pack(padx=20, pady=10)
             
             tk.Button(self.dialog_frame, text="Export Debug Log", 
                      command=self.export_adventure_log,
-                     font=('Arial', 12), bg=self.current_colors["text_cyan"], 
+                     font=('Arial', self.scale_font(12)), bg=self.current_colors["text_cyan"], 
                      fg='#000000', width=button_width, pady=8).pack(padx=20, pady=5)
         
         # Always show Return to Main Menu
         tk.Button(self.dialog_frame, text="Return to Main Menu", 
                  command=lambda: [self.close_dialog(), self.show_main_menu()],
-                 font=('Arial', 14, 'bold'), bg=self.current_colors["button_secondary"], 
+                 font=('Arial', self.scale_font(14), 'bold'), bg=self.current_colors["button_secondary"], 
                  fg='#000000', width=button_width, pady=button_pady).pack(padx=20, pady=10)
         
         # Bind escape key to resume
@@ -6870,7 +7041,7 @@ Final Score: {self.run_score}
         self.dialog_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER, width=dialog_width, height=dialog_height)
         
         # Red X close button (top right corner)
-        close_btn = tk.Label(self.dialog_frame, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(self.dialog_frame, text="✕", font=('Arial', self.scale_font(16), 'bold'),
                             bg=self.current_colors["bg_primary"], fg='#ff4444', cursor="hand2", padx=5)
         close_btn.place(relx=0.98, rely=0.02, anchor='ne')
         if return_callback:
@@ -6882,7 +7053,7 @@ Final Score: {self.run_score}
         
         # Title
         tk.Label(self.dialog_frame, text="▦ STATISTICS ▦",
-                font=('Arial', 18, 'bold'),
+                font=('Arial', self.scale_font(18), 'bold'),
                 bg=self.current_colors["bg_primary"],
                 fg=self.current_colors["text_gold"]).pack(pady=15)
         
@@ -6996,7 +7167,7 @@ Final Score: {self.run_score}
         
         # Section title
         tk.Label(section_frame, text=title,
-                font=('Arial', 12, 'bold'),
+                font=('Arial', self.scale_font(12), 'bold'),
                 bg=self.current_colors["bg_dark"],
                 fg=self.current_colors["text_cyan"]).pack(anchor=tk.W, padx=10, pady=5)
         
@@ -7006,12 +7177,12 @@ Final Score: {self.run_score}
             item_frame.pack(fill=tk.X, padx=15, pady=2)
             
             tk.Label(item_frame, text=label,
-                    font=('Arial', 10),
+                    font=('Arial', self.scale_font(10)),
                     bg=self.current_colors["bg_dark"],
                     fg=self.current_colors["text_secondary"]).pack(side=tk.LEFT)
             
             tk.Label(item_frame, text=str(value),
-                    font=('Arial', 10, 'bold'),
+                    font=('Arial', self.scale_font(10), 'bold'),
                     bg=self.current_colors["bg_dark"],
                     fg=self.current_colors["text_gold"]).pack(side=tk.RIGHT)
     
@@ -7027,7 +7198,7 @@ Final Score: {self.run_score}
         
         # Title
         tk.Label(self.dialog_frame, text="📖 LORE CODEX 📖",
-                font=('Arial', 18, 'bold'),
+                font=('Arial', self.scale_font(18), 'bold'),
                 bg=self.current_colors["bg_primary"],
                 fg=self.current_colors["text_gold"]).pack(pady=(15, 5))
         
@@ -7035,7 +7206,7 @@ Final Score: {self.run_score}
         total_found = len(self.lore_codex)
         total_max = sum(self.lore_max_counts.values())
         tk.Label(self.dialog_frame, text=f"Total: {total_found}/{total_max}",
-                font=('Arial', 11, 'bold'),
+                font=('Arial', self.scale_font(11), 'bold'),
                 bg=self.current_colors["bg_primary"],
                 fg=self.current_colors["text_cyan"]).pack(pady=(0, 10))
         
@@ -7102,7 +7273,7 @@ Final Score: {self.run_score}
             expanded = self._lore_expanded.get(lore_type, False)
             arrow = "▼" if expanded else "►"
             arrow_label = tk.Label(header_frame, text=arrow,
-                    font=('Arial', 10),
+                    font=('Arial', self.scale_font(10)),
                     bg=self.current_colors["bg_dark"],
                     fg=self.current_colors["text_cyan"],
                     width=2)
@@ -7110,7 +7281,7 @@ Final Score: {self.run_score}
             
             # Category name
             name_label = tk.Label(header_frame, text=display_name,
-                    font=('Arial', 11, 'bold'),
+                    font=('Arial', self.scale_font(11), 'bold'),
                     bg=self.current_colors["bg_dark"],
                     fg=self.current_colors["text_cyan"])
             name_label.pack(side=tk.LEFT, padx=5)
@@ -7118,7 +7289,7 @@ Final Score: {self.run_score}
             # Count (color based on completion)
             count_color = self.current_colors["text_gold"] if count == max_count and count > 0 else self.current_colors["text_secondary"]
             count_label = tk.Label(header_frame, text=f"{count}/{max_count}",
-                    font=('Arial', 10, 'bold'),
+                    font=('Arial', self.scale_font(10), 'bold'),
                     bg=self.current_colors["bg_dark"],
                     fg=count_color)
             count_label.pack(side=tk.RIGHT, padx=10, pady=5)
@@ -7145,7 +7316,7 @@ Final Score: {self.run_score}
                     # Title and floor with unique ID
                     title_text = f"{entry['title']}{id_text} (Floor {entry['floor_found']})"
                     entry_title = tk.Label(entry_header, text=title_text,
-                            font=('Arial', 9),
+                            font=('Arial', self.scale_font(9)),
                             bg=self.current_colors["bg_dark"],
                             fg=self.current_colors["text_primary"])
                     entry_title.pack(side=tk.LEFT, padx=8, pady=3)
@@ -7153,7 +7324,7 @@ Final Score: {self.run_score}
                     # Read button
                     read_btn = tk.Button(entry_header, text="Read",
                             command=lambda e=entry: self.show_lore_entry_popup(e, lambda: self.show_lore_codex(None)),
-                            font=('Arial', 8, 'bold'),
+                            font=('Arial', self.scale_font(8), 'bold'),
                             bg=self.current_colors["button_primary"],
                             fg='#000000',
                             width=8,
@@ -7163,7 +7334,7 @@ Final Score: {self.run_score}
                 # Show "none found" message when expanded
                 if expanded:
                     tk.Label(content_frame, text="None discovered yet",
-                            font=('Arial', 9, 'italic'),
+                            font=('Arial', self.scale_font(9), 'italic'),
                             bg=self.current_colors["bg_secondary"],
                             fg=self.current_colors["text_secondary"]).pack(pady=5)
             
@@ -7209,7 +7380,7 @@ Final Score: {self.run_score}
         bind_mousewheel_to_tree(scrollable_frame)
         
         # Red X close button (top right corner)
-        close_btn = tk.Label(self.dialog_frame, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(self.dialog_frame, text="✕", font=('Arial', self.scale_font(16), 'bold'),
                             bg=self.current_colors["bg_primary"], fg='#ff4444', cursor="hand2", padx=5)
         close_btn.place(relx=0.98, rely=0.02, anchor='ne')
         if return_callback:
@@ -7238,7 +7409,7 @@ Final Score: {self.run_score}
         
         # Title
         tk.Label(self.dialog_frame, text=category_name,
-                font=('Arial', 18, 'bold'),
+                font=('Arial', self.scale_font(18), 'bold'),
                 bg=self.current_colors["bg_primary"],
                 fg=self.current_colors["text_gold"]).pack(pady=15)
         
@@ -7275,26 +7446,26 @@ Final Score: {self.run_score}
             header_frame.pack(fill=tk.X, padx=10, pady=5)
             
             tk.Label(header_frame, text=entry["title"],
-                    font=('Arial', 12, 'bold'),
+                    font=('Arial', self.scale_font(12), 'bold'),
                     bg=self.current_colors["bg_dark"],
                     fg=self.current_colors["text_cyan"]).pack(side=tk.LEFT)
             
             tk.Label(header_frame, text=f"Floor {entry['floor_found']}",
-                    font=('Arial', 10, 'italic'),
+                    font=('Arial', self.scale_font(10), 'italic'),
                     bg=self.current_colors["bg_dark"],
                     fg=self.current_colors["text_secondary"]).pack(side=tk.RIGHT)
             
             # Subtitle if present
             if entry.get("subtitle"):
                 tk.Label(entry_frame, text=entry["subtitle"],
-                        font=('Arial', 10, 'italic'),
+                        font=('Arial', self.scale_font(10), 'italic'),
                         bg=self.current_colors["bg_dark"],
                         fg=self.current_colors["text_secondary"]).pack(anchor=tk.W, padx=10, pady=(0, 5))
             
             # Content preview (first 100 characters)
             preview_text = entry["content"][:100] + ("..." if len(entry["content"]) > 100 else "")
             tk.Label(entry_frame, text=preview_text,
-                    font=('Arial', 10),
+                    font=('Arial', self.scale_font(10)),
                     bg=self.current_colors["bg_dark"],
                     fg=self.current_colors["text_primary"],
                     wraplength=dialog_width-80,
@@ -7303,7 +7474,7 @@ Final Score: {self.run_score}
             # Read button
             tk.Button(entry_frame, text="Read",
                      command=lambda e=entry, lt=lore_type, cn=category_name: self.show_codex_entry_from_category(e, lt, cn, main_return_callback),
-                     font=('Arial', 9, 'bold'),
+                     font=('Arial', self.scale_font(9), 'bold'),
                      bg=self.current_colors["button_primary"],
                      fg='#000000', width=12, pady=3).pack(pady=5)
         
@@ -7325,7 +7496,7 @@ Final Score: {self.run_score}
         
         tk.Button(btn_frame, text="Back to Categories",
                  command=lambda: self.show_lore_codex(main_return_callback),
-                 font=('Arial', 12, 'bold'), bg=self.current_colors["button_secondary"],
+                 font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["button_secondary"],
                  fg='#ffffff', width=20, pady=8).pack()
         
         self.dialog_frame.bind('<Escape>', lambda e: self.show_lore_codex(main_return_callback) or "break")
@@ -7343,7 +7514,7 @@ Final Score: {self.run_score}
         
         # Title
         tk.Label(self.dialog_frame, text=lore_entry["title"],
-                font=('Arial', 16, 'bold'),
+                font=('Arial', self.scale_font(16), 'bold'),
                 bg=self.current_colors["bg_panel"],
                 fg=self.current_colors["text_gold"]).pack(pady=10)
         
@@ -7353,12 +7524,12 @@ Final Score: {self.run_score}
         
         if lore_entry.get("subtitle"):
             tk.Label(info_frame, text=lore_entry["subtitle"],
-                    font=('Arial', 11, 'italic'),
+                    font=('Arial', self.scale_font(11), 'italic'),
                     bg=self.current_colors["bg_panel"],
                     fg=self.current_colors["text_secondary"]).pack()
         
         tk.Label(info_frame, text=f"Discovered on Floor {lore_entry['floor_found']}",
-                font=('Arial', 10, 'italic'),
+                font=('Arial', self.scale_font(10), 'italic'),
                 bg=self.current_colors["bg_panel"],
                 fg=self.current_colors["text_secondary"]).pack(pady=3)
         
@@ -7368,7 +7539,7 @@ Final Score: {self.run_score}
         
         text_widget = tk.Text(text_frame,
                              wrap=tk.WORD,
-                             font=('Arial', 11),
+                             font=('Arial', self.scale_font(11)),
                              bg=self.current_colors["bg_dark"],
                              fg=self.current_colors["text_primary"],
                              relief=tk.FLAT,
@@ -7386,7 +7557,7 @@ Final Score: {self.run_score}
         # Back button
         tk.Button(self.dialog_frame, text="Back to List",
                  command=lambda: self.show_lore_category(lore_type, category_name, main_return_callback),
-                 font=('Arial', 12, 'bold'), bg=self.current_colors["button_secondary"],
+                 font=('Arial', self.scale_font(12), 'bold'), bg=self.current_colors["button_secondary"],
                  fg='#ffffff', width=15, pady=8).pack(pady=15)
         
         self.dialog_frame.bind('<Escape>', lambda e: self.show_lore_category(lore_type, category_name, main_return_callback) or "break")
@@ -7406,7 +7577,7 @@ Final Score: {self.run_score}
         
         # Title
         tk.Label(self.dialog_frame, text=lore_entry["title"],
-                font=('Arial', 16, 'bold'),
+                font=('Arial', self.scale_font(16), 'bold'),
                 bg=self.current_colors["bg_panel"],
                 fg=self.current_colors["text_gold"]).pack(pady=10)
         
@@ -7416,12 +7587,12 @@ Final Score: {self.run_score}
         
         if lore_entry.get("subtitle"):
             tk.Label(info_frame, text=lore_entry["subtitle"],
-                    font=('Arial', 11, 'italic'),
+                    font=('Arial', self.scale_font(11), 'italic'),
                     bg=self.current_colors["bg_panel"],
                     fg=self.current_colors["text_secondary"]).pack()
         
         tk.Label(info_frame, text=f"(Discovered on Floor {lore_entry['floor_found']})",
-                font=('Arial', 10, 'italic'),
+                font=('Arial', self.scale_font(10), 'italic'),
                 bg=self.current_colors["bg_panel"],
                 fg=self.current_colors["text_secondary"]).pack(pady=3)
         
@@ -7462,7 +7633,7 @@ Final Score: {self.run_score}
         
         # Full content
         tk.Label(text_frame, text=lore_entry["content"],
-                font=('Arial', 12),
+                font=('Arial', self.scale_font(12)),
                 bg=self.current_colors["bg_panel"],
                 fg=self.current_colors["text_primary"],
                 wraplength=dialog_width-100,
@@ -7474,7 +7645,7 @@ Final Score: {self.run_score}
         # Back button
         tk.Button(self.dialog_frame, text="Back to Codex",
                  command=lambda: self.show_lore_codex(return_callback),
-                 font=('Arial', 12, 'bold'),
+                 font=('Arial', self.scale_font(12), 'bold'),
                  bg=self.current_colors["button_secondary"],
                  fg='#ffffff', width=15, pady=8).pack(pady=15)
         
@@ -7672,12 +7843,12 @@ Final Score: {self.run_score}
         
         # Title
         tk.Label(self.dialog_frame, text="🛠 DEVELOPER TOOLS 🛠",
-                font=('Arial', 18, 'bold'),
+                font=('Arial', self.scale_font(18), 'bold'),
                 bg=self.current_colors["bg_primary"],
                 fg=self.current_colors["text_gold"]).pack(pady=(15, 5))
         
         # Red X close button (top right corner)
-        close_btn = tk.Label(self.dialog_frame, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(self.dialog_frame, text="✕", font=('Arial', self.scale_font(16), 'bold'),
                             bg=self.current_colors["bg_primary"], fg='#ff4444', cursor="hand2", padx=5)
         close_btn.place(relx=0.98, rely=0.02, anchor='ne')
         close_btn.bind('<Button-1>', lambda e: self.close_dialog())
@@ -7754,13 +7925,13 @@ Final Score: {self.run_score}
         enemy_controls_frame.pack(fill=tk.X, padx=20, pady=10)
         
         tk.Label(enemy_controls_frame, text="Search:", bg=self.current_colors["bg_secondary"],
-                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+                fg=self.current_colors["text_cyan"], font=('Arial', self.scale_font(10), 'bold')).pack(side=tk.LEFT, padx=5)
         enemy_search_var = tk.StringVar()
         enemy_search_entry = tk.Entry(enemy_controls_frame, textvariable=enemy_search_var, width=20)
         enemy_search_entry.pack(side=tk.LEFT, padx=5)
         
         tk.Label(enemy_controls_frame, text="Sort:", bg=self.current_colors["bg_secondary"],
-                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(20, 5))
+                fg=self.current_colors["text_cyan"], font=('Arial', self.scale_font(10), 'bold')).pack(side=tk.LEFT, padx=(20, 5))
         enemy_sort_var = tk.StringVar(value="name_asc")
         
         # Sort buttons
@@ -7770,7 +7941,7 @@ Final Score: {self.run_score}
                 enemy_sort_var.set(st)
                 refresh_enemy_list()
             btn = tk.Button(enemy_controls_frame, text=label, command=set_enemy_sort,
-                    font=('Arial', 8), bg=self.current_colors["bg_dark"],
+                    font=('Arial', self.scale_font(8)), bg=self.current_colors["bg_dark"],
                     fg=self.current_colors["text_secondary"], width=5, pady=2)
             btn.pack(side=tk.LEFT, padx=2)
         
@@ -7779,7 +7950,7 @@ Final Score: {self.run_score}
         filter_frame.pack(fill=tk.X, padx=20, pady=5)
         
         tk.Label(filter_frame, text="Filter:", bg=self.current_colors["bg_secondary"],
-                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+                fg=self.current_colors["text_cyan"], font=('Arial', self.scale_font(10), 'bold')).pack(side=tk.LEFT, padx=5)
         
         enemy_filter_var = tk.StringVar(value="all")
         
@@ -7796,7 +7967,7 @@ Final Score: {self.run_score}
                 enemy_filter_var.set(ft)
                 refresh_enemy_list()
             btn = tk.Button(filter_frame, text=label, command=set_filter,
-                    font=('Arial', 9, 'bold'), bg=color,
+                    font=('Arial', self.scale_font(9), 'bold'), bg=color,
                     fg='#ffffff', width=10, pady=4)
             btn.pack(side=tk.LEFT, padx=2)
         
@@ -7973,7 +8144,7 @@ Final Score: {self.run_score}
             print(f"DEBUG: Filtered enemies: {len(filtered_enemies)} of {len(enemy_list)}")
             
             if not filtered_enemies:
-                tk.Label(enemy_scroll_frame, text="No enemies found", font=('Arial', 10, 'italic'),
+                tk.Label(enemy_scroll_frame, text="No enemies found", font=('Arial', self.scale_font(10), 'italic'),
                         bg=self.current_colors["bg_primary"], fg=self.current_colors["text_secondary"]).pack(pady=20)
                 return
             
@@ -8014,14 +8185,14 @@ Final Score: {self.run_score}
                     "Mini-Boss": "#e67e22",
                     "Floor Boss": "#e74c3c"
                 }
-                badge = tk.Label(row_frame, text=f"[{category}]", font=('Arial', 7, 'bold'),
+                badge = tk.Label(row_frame, text=f"[{category}]", font=('Arial', self.scale_font(7), 'bold'),
                         bg=badge_colors.get(category, "#95a5a6"), fg='#ffffff')
                 badge.pack(side=tk.LEFT, padx=2)
                 badge.bind("<Button-1>", lambda e, name=enemy_name, is_b=is_boss, is_mb=is_mini_boss: spawn_this_enemy(name, is_b, is_mb))
                 badge.config(cursor="hand2")
                 
                 # Enemy name
-                name_label = tk.Label(row_frame, text=f"☠ {enemy_name}", font=('Arial', 9),
+                name_label = tk.Label(row_frame, text=f"☠ {enemy_name}", font=('Arial', self.scale_font(9)),
                         bg=self.current_colors["bg_dark"], fg=self.current_colors["text_secondary"])
                 name_label.pack(side=tk.LEFT, pady=2, padx=5)
                 name_label.bind("<Button-1>", lambda e, name=enemy_name, is_b=is_boss, is_mb=is_mini_boss: spawn_this_enemy(name, is_b, is_mb))
@@ -8033,7 +8204,7 @@ Final Score: {self.run_score}
                 else:
                     hp_text = f"HP:{hp_min}-{hp_max}"
                 
-                stats_label = tk.Label(row_frame, text=f"{hp_text} | Dice:{dice_count}", font=('Arial', 8),
+                stats_label = tk.Label(row_frame, text=f"{hp_text} | Dice:{dice_count}", font=('Arial', self.scale_font(8)),
                         bg=self.current_colors["bg_dark"], fg=self.current_colors["text_gold"])
                 stats_label.pack(side=tk.RIGHT, padx=5)
                 stats_label.bind("<Button-1>", lambda e, name=enemy_name, is_b=is_boss, is_mb=is_mini_boss: spawn_this_enemy(name, is_b, is_mb))
@@ -8099,7 +8270,7 @@ Final Score: {self.run_score}
         search_row.pack(fill=tk.X, pady=(0, 5))
         
         tk.Label(search_row, text="Search:", bg=self.current_colors["bg_secondary"],
-                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+                fg=self.current_colors["text_cyan"], font=('Arial', self.scale_font(10), 'bold')).pack(side=tk.LEFT, padx=5)
         item_search_var = tk.StringVar()
         item_search_entry = tk.Entry(search_row, textvariable=item_search_var, width=30)
         item_search_entry.pack(side=tk.LEFT, padx=5)
@@ -8109,7 +8280,7 @@ Final Score: {self.run_score}
         filter_row.pack(fill=tk.X, pady=2)
         
         tk.Label(filter_row, text="Filter:", bg=self.current_colors["bg_secondary"],
-                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+                fg=self.current_colors["text_cyan"], font=('Arial', self.scale_font(10), 'bold')).pack(side=tk.LEFT, padx=5)
         
         # Create scrollable canvas for filter buttons
         filter_canvas = tk.Canvas(filter_row, bg=self.current_colors["bg_secondary"], 
@@ -8129,7 +8300,7 @@ Final Score: {self.run_score}
                 item_filter_var.set(cat)
                 refresh_item_list()
             btn = tk.Button(filter_buttons_frame, text=category, command=set_item_filter,
-                    font=('Arial', 7), bg=self.current_colors["bg_dark"],
+                    font=('Arial', self.scale_font(7)), bg=self.current_colors["bg_dark"],
                     fg=self.current_colors["text_secondary"], padx=3, pady=2)
             btn.pack(side=tk.LEFT, padx=1)
         
@@ -8145,7 +8316,7 @@ Final Score: {self.run_score}
         sort_row.pack(fill=tk.X, pady=(5, 0))
         
         tk.Label(sort_row, text="Sort:", bg=self.current_colors["bg_secondary"],
-                fg=self.current_colors["text_cyan"], font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+                fg=self.current_colors["text_cyan"], font=('Arial', self.scale_font(10), 'bold')).pack(side=tk.LEFT, padx=5)
         item_sort_var = tk.StringVar(value="name_asc")
         
         # Sort buttons
@@ -8155,7 +8326,7 @@ Final Score: {self.run_score}
                 item_sort_var.set(st)
                 refresh_item_list()
             btn = tk.Button(sort_row, text=label, command=set_item_sort,
-                    font=('Arial', 8), bg=self.current_colors["bg_dark"],
+                    font=('Arial', self.scale_font(8)), bg=self.current_colors["bg_dark"],
                     fg=self.current_colors["text_secondary"], width=5, pady=2)
             btn.pack(side=tk.LEFT, padx=2)
         
@@ -8236,7 +8407,7 @@ Final Score: {self.run_score}
                 filtered_items.sort(key=lambda x: get_item_category(x))
             
             if not filtered_items:
-                tk.Label(item_scroll_frame, text="No items found", font=('Arial', 10, 'italic'),
+                tk.Label(item_scroll_frame, text="No items found", font=('Arial', self.scale_font(10), 'italic'),
                         bg=self.current_colors["bg_primary"], fg=self.current_colors["text_secondary"]).pack(pady=20)
                 return
             
@@ -8253,11 +8424,11 @@ Final Score: {self.run_score}
                     "Consumable": "#27ae60", "Combat Item": "#e67e22", "Utility": "#f39c12",
                     "Upgrade": "#1abc9c", "Repair Kit": "#95a5a6", "Lore": "#d4a574", "Other": "#7f8c8d"
                 }
-                tk.Label(row_frame, text=f"[{category}]", font=('Arial', 7),
+                tk.Label(row_frame, text=f"[{category}]", font=('Arial', self.scale_font(7)),
                         bg=badge_colors.get(category, "#95a5a6"), fg='#ffffff').pack(side=tk.LEFT, padx=2)
                 
                 # Item name
-                name_label = tk.Label(row_frame, text=f"📦 {item_name}", font=('Arial', 9),
+                name_label = tk.Label(row_frame, text=f"📦 {item_name}", font=('Arial', self.scale_font(9)),
                         bg=self.current_colors["bg_dark"], fg=self.current_colors["text_secondary"])
                 name_label.pack(side=tk.LEFT, pady=2, padx=5)
                 
@@ -8287,10 +8458,10 @@ Final Score: {self.run_score}
                 btn_frame.pack(side=tk.RIGHT, padx=2)
                 
                 tk.Button(btn_frame, text="Give", command=give_this_item,
-                         bg='#3498db', fg='#ffffff', font=('Arial', 7, 'bold'),
+                         bg='#3498db', fg='#ffffff', font=('Arial', self.scale_font(7), 'bold'),
                          padx=4, pady=1).pack(side=tk.LEFT, padx=1)
                 tk.Button(btn_frame, text="Spawn", command=spawn_this_item,
-                         bg='#27ae60', fg='#ffffff', font=('Arial', 7, 'bold'),
+                         bg='#27ae60', fg='#ffffff', font=('Arial', self.scale_font(7), 'bold'),
                          padx=4, pady=1).pack(side=tk.LEFT, padx=1)
         
         item_search_var.trace('w', lambda *args: refresh_item_list())
@@ -8320,7 +8491,7 @@ Final Score: {self.run_score}
         player_outer_scrollbar.pack(side="right", fill="y")
         
         # Gold controls
-        tk.Label(player_tab, text="Gold Management", font=('Arial', 14, 'bold'),
+        tk.Label(player_tab, text="Gold Management", font=('Arial', self.scale_font(14), 'bold'),
                 bg=self.current_colors["bg_primary"], fg=self.current_colors["text_gold"]).pack(pady=10)
         
         gold_frame = tk.Frame(player_tab, bg='#3c2820')
@@ -8337,10 +8508,10 @@ Final Score: {self.run_score}
             self.update_display()
         
         tk.Button(gold_frame, text="Add Gold", command=add_gold,
-                 bg='#f39c12', fg='#000000', font=('Arial', 10, 'bold')).grid(row=0, column=2, padx=10)
+                 bg='#f39c12', fg='#000000', font=('Arial', self.scale_font(10), 'bold')).grid(row=0, column=2, padx=10)
         
         # Health controls
-        tk.Label(player_tab, text="Health Management", font=('Arial', 14, 'bold'),
+        tk.Label(player_tab, text="Health Management", font=('Arial', self.scale_font(14), 'bold'),
                 bg=self.current_colors["bg_primary"], fg=self.current_colors["text_gold"]).pack(pady=10)
         
         health_frame = tk.Frame(player_tab, bg='#3c2820')
@@ -8365,9 +8536,9 @@ Final Score: {self.run_score}
             self.update_health_display()
         
         tk.Button(health_frame, text="Damage Player", command=damage_player,
-                 bg='#e74c3c', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=0, column=2, padx=5)
+                 bg='#e74c3c', fg='#ffffff', font=('Arial', self.scale_font(10), 'bold')).grid(row=0, column=2, padx=5)
         tk.Button(health_frame, text="Full Heal", command=heal_player,
-                 bg='#27ae60', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=0, column=3, padx=5)
+                 bg='#27ae60', fg='#ffffff', font=('Arial', self.scale_font(10), 'bold')).grid(row=0, column=3, padx=5)
         
         # God mode toggle
         god_mode_var = tk.BooleanVar(value=self.dev_invincible)
@@ -8379,10 +8550,10 @@ Final Score: {self.run_score}
         
         tk.Checkbutton(health_frame, text="⚡ GOD MODE (Invincible)", variable=god_mode_var,
                       command=toggle_god_mode, bg='#3c2820', fg='#9b59b6',
-                      selectcolor='#000000', font=('Arial', 11, 'bold')).grid(row=1, column=0, columnspan=4, pady=10)
+                      selectcolor='#000000', font=('Arial', self.scale_font(11), 'bold')).grid(row=1, column=0, columnspan=4, pady=10)
         
         # Player stats
-        tk.Label(player_tab, text="Player Stats", font=('Arial', 14, 'bold'),
+        tk.Label(player_tab, text="Player Stats", font=('Arial', self.scale_font(14), 'bold'),
                 bg=self.current_colors["bg_primary"], fg=self.current_colors["text_gold"]).pack(pady=10)
         
         stats_frame = tk.Frame(player_tab, bg='#3c2820')
@@ -8418,7 +8589,7 @@ Final Score: {self.run_score}
         params_tab = tk.Frame(notebook, bg='#2c1810')
         notebook.add(params_tab, text="Parameters")
         
-        tk.Label(params_tab, text="Live Gameplay Multipliers", font=('Arial', 14, 'bold'),
+        tk.Label(params_tab, text="Live Gameplay Multipliers", font=('Arial', self.scale_font(14), 'bold'),
                 bg='#2c1810', fg='#f39c12').pack(pady=10)
         
         # Create scrollable frame for parameters
@@ -8459,7 +8630,7 @@ Final Score: {self.run_score}
             
             label_text = f"{name}: {current_val:.2f}x"
             param_labels[key] = tk.Label(frame, text=label_text, bg='#3c2820', fg='#ffffff',
-                                        font=('Arial', 10, 'bold'), width=35, anchor='w')
+                                        font=('Arial', self.scale_font(10), 'bold'), width=35, anchor='w')
             param_labels[key].pack(side=tk.TOP, padx=10, pady=5)
             
             def make_update(k, lbl, n):
@@ -8478,7 +8649,7 @@ Final Score: {self.run_score}
         world_tab = tk.Frame(notebook, bg='#2c1810')
         notebook.add(world_tab, text="World")
         
-        tk.Label(world_tab, text="World Navigation", font=('Arial', 14, 'bold'),
+        tk.Label(world_tab, text="World Navigation", font=('Arial', self.scale_font(14), 'bold'),
                 bg='#2c1810', fg='#f39c12').pack(pady=10)
         
         nav_frame = tk.Frame(world_tab, bg='#3c2820')
@@ -8501,9 +8672,9 @@ Final Score: {self.run_score}
             self.log(f"🛠 DEV: Advanced to floor {self.floor}", 'system')
         
         tk.Button(nav_frame, text="Jump to Floor", command=jump_floor,
-                 bg='#3498db', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=0, column=2, padx=5)
+                 bg='#3498db', fg='#ffffff', font=('Arial', self.scale_font(10), 'bold')).grid(row=0, column=2, padx=5)
         tk.Button(nav_frame, text="Next Floor", command=next_floor_dev,
-                 bg='#27ae60', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=0, column=3, padx=5)
+                 bg='#27ae60', fg='#ffffff', font=('Arial', self.scale_font(10), 'bold')).grid(row=0, column=3, padx=5)
         
         # Store debugging buttons
         def test_store():
@@ -8521,15 +8692,15 @@ Final Score: {self.run_score}
             messagebox.showinfo("Store Debug", "Store inventory cleared. Visit store again to see regenerated items.")
         
         tk.Button(nav_frame, text="Test Store", command=test_store,
-                 bg='#e67e22', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=1, column=0, padx=5, pady=5)
+                 bg='#e67e22', fg='#ffffff', font=('Arial', self.scale_font(10), 'bold')).grid(row=1, column=0, padx=5, pady=5)
         tk.Button(nav_frame, text="Clear Store", command=refresh_store_debug,
-                 bg='#e74c3c', fg='#ffffff', font=('Arial', 10, 'bold')).grid(row=1, column=1, padx=5, pady=5)
+                 bg='#e74c3c', fg='#ffffff', font=('Arial', self.scale_font(10), 'bold')).grid(row=1, column=1, padx=5, pady=5)
         
         # ===== TAB 5: DEBUG INFO =====
         info_tab = tk.Frame(notebook, bg='#2c1810')
         notebook.add(info_tab, text="Info")
         
-        tk.Label(info_tab, text="Debug Information", font=('Arial', 14, 'bold'),
+        tk.Label(info_tab, text="Debug Information", font=('Arial', self.scale_font(14), 'bold'),
                 bg='#2c1810', fg='#f39c12').pack(pady=10)
         
         info_text = tk.Text(info_tab, bg='#1a1410', fg='#ffffff', font=('Consolas', 10),
@@ -8573,7 +8744,7 @@ Backpack: {self.equipped_items.get('backpack', 'None')}
         refresh_info()
         
         tk.Button(info_tab, text="↻ Refresh", command=refresh_info,
-                 bg='#3498db', fg='#ffffff', font=('Arial', 10, 'bold')).pack(pady=10)
+                 bg='#3498db', fg='#ffffff', font=('Arial', self.scale_font(10), 'bold')).pack(pady=10)
 
 if __name__ == "__main__":
     # Import required modules for splash screen
@@ -8586,6 +8757,7 @@ if __name__ == "__main__":
             self.splash.title("Dice Dungeon")
             self.splash.resizable(False, False)
             self.splash.configure(bg='#0a0604')
+            self.scale_factor = 1.0  # Splash is fixed size, but fonts go through scale_font for consistency
             
             # Calculate center position - increased size for better text visibility
             width = 650
@@ -8625,20 +8797,20 @@ if __name__ == "__main__":
                     logo_label.pack(pady=(30, 15))
                 else:
                     # Fallback text logo
-                    tk.Label(main_frame, text="DD", font=('Arial', 42, 'bold'), 
+                    tk.Label(main_frame, text="DD", font=('Arial', self.scale_font(42), 'bold'), 
                             bg='#0a0604', fg='#d4af37').pack(pady=(40, 15))
             except Exception as e:
                 # Fallback text logo if PIL not available
-                tk.Label(main_frame, text="DD", font=('Arial', 42, 'bold'), 
+                tk.Label(main_frame, text="DD", font=('Arial', self.scale_font(42), 'bold'), 
                         bg='#0a0604', fg='#d4af37').pack(pady=(40, 15))
             
             # Game title
             tk.Label(main_frame, text="DICE DUNGEON", 
-                    font=('Arial', 22, 'bold'), bg='#0a0604', fg='#d4af37').pack(pady=8)
+                    font=('Arial', self.scale_font(22), 'bold'), bg='#0a0604', fg='#d4af37').pack(pady=8)
             
             # Subtitle
             tk.Label(main_frame, text="Explore • Fight • Loot • Survive", 
-                    font=('Arial', 12, 'italic'), bg='#0a0604', fg='#8b7355').pack(pady=5)
+                    font=('Arial', self.scale_font(12), 'italic'), bg='#0a0604', fg='#8b7355').pack(pady=5)
             
             # Loading area - more space and better positioning
             loading_frame = tk.Frame(main_frame, bg='#0a0604')
@@ -8649,12 +8821,12 @@ if __name__ == "__main__":
             text_frame.pack()
             
             self.loading_label = tk.Label(text_frame, text="Loading game engine", 
-                                        font=('Arial', 14), bg='#0a0604', fg='#e8dcc4')
+                                        font=('Arial', self.scale_font(14)), bg='#0a0604', fg='#e8dcc4')
             self.loading_label.pack(side=tk.LEFT)
             
             # Animated loading dots - on same line as text
             self.dots_label = tk.Label(text_frame, text="", 
-                                     font=('Arial', 14), bg='#0a0604', fg='#d4af37')
+                                     font=('Arial', self.scale_font(14)), bg='#0a0604', fg='#d4af37')
             self.dots_label.pack(side=tk.LEFT)
             
             # Progress tracking - slower animation
@@ -8677,6 +8849,10 @@ if __name__ == "__main__":
             
             # Start the main application after delay
             self.splash.after(5000, self.launch_game)  # 5 second splash
+        
+        def scale_font(self, base_size):
+            """Scale font size for display consistency"""
+            return max(8, int(base_size * self.scale_factor * 1.15))
         
         def animate_loading(self):
             """Animate the loading screen - change messages in fixed position, slower animation"""

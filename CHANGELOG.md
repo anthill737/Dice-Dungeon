@@ -1,5 +1,103 @@
 # Dice Dungeon - Changelog
 
+## [Unreleased] - 2026-02-03
+
+### Added
+- **Resolution Settings System**: Replaced abstract "Display Size" presets with standard resolution picker
+  - WHY: Display Size presets (Small/Medium/Large/Extra Large) were conceptually wrong — players expect real resolution options like every other game
+  - PROBLEM SOLVED: UI stayed small at larger sizes, sprites shrank instead of grew, scale factors were arbitrarily hardcoded
+  - TECHNICAL IMPLEMENTATION:
+    - **Resolution Presets**: 950×700 (base), 1100×800, 1280×720, 1280×960, 1366×768, 1600×900, 1920×1080, Fullscreen
+    - **Derived Scale Factor**: `min(width/950, height/700)` — no more hardcoded scale factors per preset
+    - **apply_resolution()**: Replaces old `apply_display_size()`, sets geometry + derives scale factor + rebuilds sprites + refreshes HUD
+    - **Settings Migration**: Automatically converts old `display_size` setting to new `resolution` on first load
+    - **Settings UI**: Resolution buttons displayed in rows of 3 with current selection highlighted
+    - **Fullscreen Resize Handler**: `on_window_resize` only recalculates scale for Fullscreen mode
+    - **Files Updated**: dice_dungeon_explorer.py (resolution_presets, apply_resolution, settings UI, migration)
+
+- **Full Font Scaling System**: Converted 514+ hardcoded font declarations to dynamic `scale_font()` across entire codebase
+  - WHY: All text was fixed-size and never scaled with resolution, making larger resolutions have tiny unreadable text
+  - PROBLEM SOLVED: Every font in the game now scales proportionally with chosen resolution
+  - TECHNICAL IMPLEMENTATION:
+    - **scale_font(base_size)**: Returns `max(8, int(base_size * scale_factor * 1.15))` — minimum 8pt, 15% boost for readability
+    - **scale_padding(base)**: Returns `max(1, int(base * scale_factor))` for consistent UI spacing
+    - **get_scaled_wraplength()**: Returns `max(200, int(base * scale_factor))` for text wrapping
+    - **Launcher**: Added `scale_font()` method to DiceDungeonLauncher class, 17 fonts converted
+    - **Classic Mode**: Added `scale_font()` method to DiceDungeonRPG class, 78 fonts converted
+    - **Adventure Mode**: 411+ fonts converted in dice_dungeon_explorer.py and all explorer/ modules
+    - **Files Updated**: dice_dungeon_explorer.py, dice_dungeon_launcher.py, dice_dungeon_rpg.py, explorer/combat.py, explorer/dice.py, explorer/inventory.py, explorer/inventory_display.py, explorer/inventory_equipment.py, explorer/inventory_pickup.py, explorer/inventory_usage.py, explorer/lore.py, explorer/navigation.py, explorer/quests.py, explorer/rooms.py, explorer/save_system.py, explorer/store.py, explorer/tutorial.py, explorer/ui_character_menu.py, explorer/ui_dialogs.py, explorer/ui_main.py, explorer/ui_main_menu.py
+
+- **HUD Font Refresh on Resolution Change**: HUD labels now update fonts when resolution changes mid-game
+  - WHY: Gold, HP, floor, room title, and room description labels were created once with baked-in fonts
+  - PROBLEM SOLVED: Changing resolution in settings now immediately updates all HUD text sizes
+  - TECHNICAL IMPLEMENTATION:
+    - **_refresh_hud_fonts()**: Updates gold_label, floor_label, progress_label, dev_indicator, room_title, room_desc
+    - **Called From**: `apply_resolution()` after scale factor recalculation
+    - **File Updated**: dice_dungeon_explorer.py
+
+### Changed
+- **Dialog Scaling**: All popup overlays now scale with resolution instead of using fixed pixel sizes
+  - WHY: Dialogs were hardcoded to fixed widths/heights (e.g., 500×250) that became tiny or squished at high resolutions
+  - PROBLEM SOLVED: All 8 major dialog types now scale proportionally with the chosen resolution
+  - TECHNICAL IMPLEMENTATION:
+    - **Overwrite Confirm**: 500×250 base → scales with `int(base * scale_factor)`
+    - **Delete Confirm**: 500×250 base → scales
+    - **Key Usage Dialog**: 500×300 base → scales
+    - **Sign Dialog**: 600×500 base → scales
+    - **Chest Dialog**: 500×400 base → scales
+    - **Game Over Dialog**: 400×350 base → scales
+    - **Pause Menu**: 400×500 base → scales
+    - **Navigation Chest**: 500×450 base → scales
+    - **Files Updated**: dice_dungeon_explorer.py, explorer/navigation.py
+
+- **Save Slot Button Layout**: Action buttons now use flexible layout instead of fixed character widths
+  - WHY: Save/Load/Overwrite/Delete buttons used fixed `width=14`/`width=22` that squished at higher resolutions
+  - PROBLEM SOLVED: Buttons now stretch proportionally using `padx=20` + `fill=tk.X, expand=True`
+  - TECHNICAL IMPLEMENTATION:
+    - **Removed**: Fixed `width=` parameter from save slot action buttons
+    - **Added**: `fill=tk.X, expand=True` for horizontal stretching, `padx=20` for consistent padding
+    - **File Updated**: dice_dungeon_explorer.py save slot overlay
+
+- **Sprite Scaling Uncapped**: Removed 180px upper clamp on sprite sizing
+  - WHY: Sprites shrank or stayed small at larger resolutions because of an artificial maximum size
+  - PROBLEM SOLVED: Sprites now scale freely with resolution, growing as large as the resolution demands
+  - TECHNICAL IMPLEMENTATION:
+    - **Removed**: `min(target, 180)` clamp in `_rebuild_sprite_photos()`
+    - **File Updated**: dice_dungeon_explorer.py
+
+- **Flint and Steel → Fire Potion**: Replaced item throughout the game
+  - WHY: Old item name didn't fit dungeon RPG theme
+  - PROBLEM SOLVED: Fire Potion is thematically consistent with fantasy dungeon setting
+  - TECHNICAL IMPLEMENTATION:
+    - **Files Updated**: dice_dungeon_content/data/items_definitions.json, related content files
+
+### Fixed
+- **Window Icon**: Fixed game window showing full logo instead of small die icon
+  - WHY: Icon path referenced `DD Logo.png` (the large banner logo) instead of `DD Icon.png` (the die icon)
+  - PROBLEM SOLVED: Window icon and taskbar now correctly show small die icon
+  - TECHNICAL IMPLEMENTATION:
+    - **Changed**: `DD Logo.png` → `DD Icon.png` in icon loading code
+    - **File Updated**: dice_dungeon_explorer.py
+
+- **Character Status Screen Blank/Crash**: Fixed character gear screen rendering completely blank
+  - WHY: `explorer/ui_character_menu.py` uses standalone module functions (not class methods), but all 47 font calls used `self.game.scale_font()` — `self` doesn't exist in that context
+  - PROBLEM SOLVED: All 47 instances changed from `self.game.scale_font()` to `game.scale_font()`, screen renders correctly
+  - TECHNICAL IMPLEMENTATION:
+    - **Pattern Fix**: `self.game.scale_font` → `game.scale_font` throughout entire file
+    - **File Updated**: explorer/ui_character_menu.py (47 replacements)
+
+- **SplashScreen Launch Scheduling**: Fixed splash screen's `launch_game()` becoming dead code after font scaling method was added
+  - WHY: The `self.splash.after(5000, self.launch_game)` call was accidentally placed after a `return` statement
+  - PROBLEM SOLVED: Reordered code so launch scheduling stays at end of `__init__`, `scale_font` as separate method
+  - TECHNICAL IMPLEMENTATION:
+    - **File Updated**: dice_dungeon_explorer.py SplashScreen class
+
+- **Logo Path Fix**: Fixed logo not displaying in splash screen when running as bundled EXE
+  - WHY: Logo path was incorrect for PyInstaller-frozen executables
+  - PROBLEM SOLVED: Logo path now uses `get_data_dir()` for correct resolution in both dev and EXE modes
+  - TECHNICAL IMPLEMENTATION:
+    - **File Updated**: dice_dungeon_explorer.py SplashScreen class
+
 ## [Unreleased] - 2026-02-02
 
 ### Added

@@ -47,7 +47,7 @@ class UIDialogsManager:
                                 width=dialog_width, height=dialog_height)
         
         # Red X close button (top right corner)
-        close_btn = tk.Label(self.game.dialog_frame, text="✕", font=('Arial', 16, 'bold'),
+        close_btn = tk.Label(self.game.dialog_frame, text="✕", font=('Arial', self.game.scale_font(16), 'bold'),
                             bg=self.game.current_colors["bg_primary"], fg='#ff4444', cursor="hand2", padx=5)
         close_btn.place(relx=0.98, rely=0.02, anchor='ne')
         close_btn.bind('<Button-1>', lambda e: self.game.close_dialog())
@@ -56,7 +56,7 @@ class UIDialogsManager:
         
         # Title
         tk.Label(self.game.dialog_frame, text="🏆 HIGH SCORES 🏆",
-                font=('Arial', 20, 'bold'),
+                font=('Arial', self.game.scale_font(20), 'bold'),
                 bg=self.game.current_colors["bg_primary"],
                 fg=self.game.current_colors["text_gold"],
                 pady=15).pack()
@@ -87,32 +87,32 @@ class UIDialogsManager:
             # Rank (1st, 2nd, etc.)
             rank_colors = {1: '#ffd700', 2: '#c0c0c0', 3: '#cd7f32'}
             rank_color = rank_colors.get(i, self.game.current_colors["text_secondary"])
-            tk.Label(content, text=f"#{i}", font=('Arial', 14, 'bold'),
+            tk.Label(content, text=f"#{i}", font=('Arial', self.game.scale_font(14), 'bold'),
                     bg=self.game.current_colors["bg_panel"], fg=rank_color,
                     width=3).grid(row=0, column=0, sticky='w', padx=(0, 10))
             
             # Score
-            tk.Label(content, text=f"{score['score']:,} pts", font=('Arial', 13, 'bold'),
+            tk.Label(content, text=f"{score['score']:,} pts", font=('Arial', self.game.scale_font(13), 'bold'),
                     bg=self.game.current_colors["bg_panel"], fg=self.game.current_colors["text_gold"],
                     width=12, anchor='w').grid(row=0, column=1, sticky='w', padx=5)
             
             # Floor
-            tk.Label(content, text=f"Floor {score['floor']}", font=('Arial', 11),
+            tk.Label(content, text=f"Floor {score['floor']}", font=('Arial', self.game.scale_font(11)),
                     bg=self.game.current_colors["bg_panel"], fg=self.game.current_colors["text_cyan"],
                     width=10, anchor='w').grid(row=0, column=2, sticky='w', padx=5)
             
             # Rooms
-            tk.Label(content, text=f"{score['rooms']} rooms", font=('Arial', 11),
+            tk.Label(content, text=f"{score['rooms']} rooms", font=('Arial', self.game.scale_font(11)),
                     bg=self.game.current_colors["bg_panel"], fg=self.game.current_colors["text_secondary"],
                     width=10, anchor='w').grid(row=0, column=3, sticky='w', padx=5)
             
             # Gold
-            tk.Label(content, text=f"{score['gold']}g", font=('Arial', 11),
+            tk.Label(content, text=f"{score['gold']}g", font=('Arial', self.game.scale_font(11)),
                     bg=self.game.current_colors["bg_panel"], fg=self.game.current_colors["text_secondary"],
                     width=10, anchor='w').grid(row=0, column=4, sticky='w', padx=5)
             
             # Kills
-            tk.Label(content, text=f"{score['kills']} kills", font=('Arial', 11),
+            tk.Label(content, text=f"{score['kills']} kills", font=('Arial', self.game.scale_font(11)),
                     bg=self.game.current_colors["bg_panel"], fg=self.game.current_colors["text_secondary"],
                     width=10, anchor='w').grid(row=0, column=5, sticky='w', padx=5)
             
@@ -120,7 +120,7 @@ class UIDialogsManager:
             if 'stats' in score:
                 tk.Button(content, text="Stats",
                          command=lambda s=score: self.game.show_stats(s.get('stats', {}), self.show_high_scores),
-                         font=('Arial', 9, 'bold'), bg=self.game.current_colors["button_primary"], 
+                         font=('Arial', self.game.scale_font(9), 'bold'), bg=self.game.current_colors["button_primary"], 
                          fg='#000000', width=8, pady=3).grid(row=0, column=6, padx=10)
         
         # Setup mousewheel scrolling AFTER all widgets are added
