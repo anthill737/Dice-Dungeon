@@ -1436,9 +1436,9 @@ class CombatManager:
         
         self.game.roll_button = tk.Button(btn_frame, text="⚄ Roll Dice",
                  command=self.game.dice_manager.roll_dice,
-                 font=('Arial', self.game.scale_font(11), 'bold'), bg='#4ecdc4', fg='#000000',
-                 width=13, pady=self.game.scale_padding(8), relief=tk.FLAT, state=tk.NORMAL)
-        self.game.roll_button.pack(side=tk.LEFT, padx=4)
+                 font=('Arial', self.game.scale_font(13), 'bold'), bg='#4ecdc4', fg='#000000',
+                 padx=self.game.scale_padding(18), pady=self.game.scale_padding(10), relief=tk.FLAT, state=tk.NORMAL)
+        self.game.roll_button.pack(side=tk.LEFT, padx=6)
         self.debug_logger.button("Roll Dice button created", command="roll_dice", state="NORMAL")
         
         # Store reference for enabling/disabling during combat
@@ -1452,15 +1452,15 @@ class CombatManager:
         if self.game.equipped_items.get('accessory') == 'Mystic Ring' and not self.game.mystic_ring_used:
             self.game.mystic_ring_button = tk.Button(btn_frame, text="◊ Mystic Ring",
                      command=self.use_mystic_ring,
-                     font=('Arial', self.game.scale_font(11), 'bold'), bg='#9b59b6', fg='#ffffff',
-                     width=13, pady=self.game.scale_padding(8), relief=tk.FLAT)
-            self.game.mystic_ring_button.pack(side=tk.LEFT, padx=4)
+                     font=('Arial', self.game.scale_font(13), 'bold'), bg='#9b59b6', fg='#ffffff',
+                     padx=self.game.scale_padding(18), pady=self.game.scale_padding(10), relief=tk.FLAT)
+            self.game.mystic_ring_button.pack(side=tk.LEFT, padx=6)
         
         self.game.attack_button = tk.Button(btn_frame, text="⚔️ ATTACK!",
                  command=self.attack_enemy,
-                 font=('Arial', self.game.scale_font(11), 'bold'), bg='#666666', fg='#333333',
-                 width=13, pady=self.game.scale_padding(8), state=tk.DISABLED, relief=tk.FLAT)
-        self.game.attack_button.pack(side=tk.LEFT, padx=4)
+                 font=('Arial', self.game.scale_font(13), 'bold'), bg='#666666', fg='#333333',
+                 padx=self.game.scale_padding(18), pady=self.game.scale_padding(10), state=tk.DISABLED, relief=tk.FLAT)
+        self.game.attack_button.pack(side=tk.LEFT, padx=6)
         self.debug_logger.button("ATTACK! button created", command="attack_enemy", state="DISABLED", bg="#666666")
         
         # Try to force widgets to be visible by lifting them

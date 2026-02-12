@@ -625,12 +625,13 @@ class StoreManager:
         max_quantity = min(max_affordable, max_inventory_space) if is_consumable else 1
         
         # Adjust panel height based on whether we show quantity selector
-        panel_height = 280 if is_consumable and max_quantity > 1 else 200
+        panel_height = int(280 * self.game.scale_factor) if is_consumable and max_quantity > 1 else int(200 * self.game.scale_factor)
+        panel_width = int(400 * self.game.scale_factor)
         
         # Create confirmation popup panel directly on store dialog (no overlay)
         popup = tk.Frame(self.game.dialog_frame, bg=self.game.current_colors["bg_primary"],
                         relief=tk.RIDGE, borderwidth=3)
-        popup.place(relx=0.5, rely=0.5, anchor='center', width=400, height=panel_height)
+        popup.place(relx=0.5, rely=0.5, anchor='center', width=panel_width, height=panel_height)
         
         # Title
         tk.Label(popup, text="Confirm Purchase", font=('Arial', self.game.scale_font(14), 'bold'),
@@ -734,12 +735,13 @@ class StoreManager:
             return
         
         # Adjust size based on whether we need a slider
-        panel_height = 280 if item_count > 1 else 200
+        panel_height = int(280 * self.game.scale_factor) if item_count > 1 else int(200 * self.game.scale_factor)
+        panel_width = int(400 * self.game.scale_factor)
         
         # Create confirmation popup panel directly on store dialog (no overlay)
         popup = tk.Frame(self.game.dialog_frame, bg=self.game.current_colors["bg_primary"],
                         relief=tk.RIDGE, borderwidth=3)
-        popup.place(relx=0.5, rely=0.5, anchor='center', width=400, height=panel_height)
+        popup.place(relx=0.5, rely=0.5, anchor='center', width=panel_width, height=panel_height)
         
         # Title
         tk.Label(popup, text="Confirm Sale", font=('Arial', self.game.scale_font(14), 'bold'),
