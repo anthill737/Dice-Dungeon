@@ -1275,7 +1275,7 @@ class DiceDungeonExplorer:
     
     def _rebuild_sprite_photos(self):
         """Rebuild all enemy sprite PhotoImages at the current scale factor"""
-        sprite_size = int(90 * self.scale_factor)
+        sprite_size = int(110 * self.scale_factor)
         sprite_size = max(48, sprite_size)  # No upper clamp - let sprites grow with resolution
         self.enemy_sprites = {}
         self.sprite_images = {}
@@ -1397,14 +1397,19 @@ class DiceDungeonExplorer:
         self._refresh_minimap_size()
     
     def _refresh_enemy_sprite(self):
-        """Update the currently displayed enemy sprite label after sprite rebuild"""
+        """Update the currently displayed sprite areas and labels after sprite rebuild"""
         try:
+            sprite_size = max(60, int(110 * self.scale_factor))
+            
             # Resize the enemy_sprite_area frame
             if hasattr(self, 'enemy_sprite_area') and self.enemy_sprite_area.winfo_exists():
-                sprite_size = max(48, int(90 * self.scale_factor))
                 self.enemy_sprite_area.config(width=sprite_size, height=sprite_size)
             
-            # Update the sprite label image to the newly rebuilt PhotoImage
+            # Resize the player_sprite_box frame
+            if hasattr(self, 'player_sprite_box') and self.player_sprite_box.winfo_exists():
+                self.player_sprite_box.config(width=sprite_size, height=sprite_size)
+            
+            # Update the enemy sprite label image to the newly rebuilt PhotoImage
             if (hasattr(self, 'enemy_sprite_label') and self.enemy_sprite_label
                     and self.enemy_sprite_label.winfo_exists()
                     and hasattr(self, 'enemies') and self.enemies
@@ -1499,6 +1504,21 @@ class DiceDungeonExplorer:
         except Exception:
             # Fallback — just reshow settings
             self.show_settings('main_menu')
+    
+    def _rebuild_game_ui_and_reshow_settings(self):
+        """Rebuild the entire game UI at the new resolution, then overlay settings again"""
+        try:
+            self.setup_game_ui()
+            # Restore current room display and update HUD values
+            self.update_display()
+            self.update_minimap()
+            if hasattr(self, 'current_room') and self.current_room:
+                self.room_title.config(text=self.current_room.name)
+                self.room_desc.config(text=getattr(self.current_room, 'description', ''))
+            self.root.after(50, lambda: self.show_settings('game'))
+        except Exception:
+            # Fallback — just reshow settings
+            self.show_settings('game')
     
     def show_main_menu(self):
         """Show the main menu - delegates to MainMenuManager"""
@@ -2028,13 +2048,13 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         
         # === ACTION PANEL - Player VS Enemy ===
         self.action_panel = tk.Frame(parent_frame, bg=self.current_colors["bg_panel"])
-        self.action_panel.pack(fill=tk.X, side=tk.TOP, padx=self.scale_padding(3), pady=self.scale_padding(2))
+        self.action_panel.pack(fill=tk.X, side=tk.TOP, padx=self.scale_padding(3), pady=(self.scale_padding(2), 0))
         
         action_inner = tk.Frame(self.action_panel, bg=self.current_colors["bg_panel"])
         action_inner.pack(fill=tk.X, padx=self.scale_padding(8), pady=self.scale_padding(6))
         
         # Left: Player sub-frame
-        player_frame = tk.Frame(action_inner, bg=self.current_colors["bg_panel"], width=140)
+        player_frame = tk.Frame(action_inner, bg=self.current_colors["bg_panel"], width=int(140 * self.scale_factor))
         player_frame.pack(side=tk.LEFT, fill=tk.Y)
         player_frame.pack_propagate(False)
         
@@ -2043,8 +2063,9 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
                 bg=self.current_colors["bg_panel"], 
                 fg=self.current_colors["text_cyan"]).pack(anchor='w', pady=(0, 4))
         
-        # Player sprite placeholder - larger space for future sprite
-        self.player_sprite_box = tk.Frame(player_frame, bg='#1a1410', relief=tk.SUNKEN, borderwidth=1, height=90, width=90)
+        # Player sprite placeholder - scales with resolution
+        sprite_box_size = max(60, int(110 * self.scale_factor))
+        self.player_sprite_box = tk.Frame(player_frame, bg='#1a1410', relief=tk.SUNKEN, borderwidth=1, height=sprite_box_size, width=sprite_box_size)
         self.player_sprite_box.pack(anchor='w', pady=(4, 0))
         self.player_sprite_box.pack_propagate(False)
         self.player_sprite_label = tk.Label(self.player_sprite_box, text="Player\nSprite", font=('Arial', self.scale_font(7)), 
@@ -2082,7 +2103,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         self.combat_buttons_frame.pack(pady=self.scale_padding(2))
         
         # Right: Enemy sub-frame
-        self.enemy_column = tk.Frame(action_inner, bg=self.current_colors["bg_panel"], width=160)
+        self.enemy_column = tk.Frame(action_inner, bg=self.current_colors["bg_panel"], width=int(160 * self.scale_factor))
         self.enemy_column.pack(side=tk.RIGHT, fill=tk.Y)
         self.enemy_column.pack_propagate(False)
         
@@ -2100,8 +2121,9 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         self.enemy_sprite_dice_container = tk.Frame(self.enemy_column, bg=self.current_colors["bg_panel"])
         self.enemy_sprite_dice_container.pack(anchor='e', pady=(4, 0))
         
-        # Enemy sprite placeholder
-        self.enemy_sprite_area = tk.Frame(self.enemy_sprite_dice_container, bg='#1a1410', relief=tk.SUNKEN, borderwidth=1, height=90, width=90)
+        # Enemy sprite placeholder - scales with resolution
+        enemy_sprite_size = max(60, int(110 * self.scale_factor))
+        self.enemy_sprite_area = tk.Frame(self.enemy_sprite_dice_container, bg='#1a1410', relief=tk.SUNKEN, borderwidth=1, height=enemy_sprite_size, width=enemy_sprite_size)
         self.enemy_sprite_area.pack(side=tk.RIGHT)
         
         # Enemy dice display - to the left of sprite (pack AFTER sprite so it appears to the left)
@@ -2119,19 +2141,16 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         self.enemy_sprite_area.pack_forget()
         
         # === ACTION BUTTONS BAR (no movement controls) ===
-        actions_bar = tk.Frame(parent_frame, bg=self.current_colors["bg_panel"], relief=tk.RIDGE, borderwidth=1)
-        actions_bar.pack(side=tk.TOP, fill=tk.X, padx=self.scale_padding(3), pady=(0, self.scale_padding(2)))
-        
-        actions_inner = tk.Frame(actions_bar, bg=self.current_colors["bg_panel"])
-        actions_inner.pack(fill=tk.X, padx=self.scale_padding(6), pady=self.scale_padding(3))
+        self.actions_bar = tk.Frame(parent_frame, bg=self.current_colors["bg_secondary"])
+        self.actions_bar.pack(side=tk.TOP, fill=tk.X, padx=0, pady=0)
         
         # Action buttons (Rest, Inventory, Store) - centered
-        self.action_buttons_strip = tk.Frame(actions_inner, bg=self.current_colors["bg_panel"])
+        self.action_buttons_strip = tk.Frame(self.actions_bar, bg=self.current_colors["bg_secondary"])
         self.action_buttons_strip.pack(expand=True)
         
         # === ADVENTURE LOG (expanded) ===
         log_outer = tk.Frame(parent_frame, bg=self.current_colors["bg_secondary"])
-        log_outer.pack(fill=tk.BOTH, expand=True, side=tk.BOTTOM, padx=0, pady=self.scale_padding(2))
+        log_outer.pack(fill=tk.BOTH, expand=True, side=tk.BOTTOM, padx=0, pady=0)
         
         # Log header
         log_header = self.create_section_header(log_outer, "ADVENTURE LOG", icon="", font_size=11)
@@ -6220,6 +6239,9 @@ Final Score: {self.run_score}
             if self.settings_return_to == 'main_menu':
                 # Rebuild main menu behind settings so it isn't oversized/cut off
                 self.root.after(100, lambda: self._rebuild_main_menu_and_reshow_settings())
+            elif self.settings_return_to == 'game':
+                # Rebuild the entire game UI at new scale, then reshow settings
+                self.root.after(100, lambda: self._rebuild_game_ui_and_reshow_settings())
             else:
                 # Refresh the settings dialog after resize
                 self.root.after(150, lambda: self.show_settings(self.settings_return_to))
