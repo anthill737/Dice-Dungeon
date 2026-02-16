@@ -10,16 +10,22 @@ A roguelike dungeon crawler where you roll dice to fight enemies, explore proced
 
 ## 📥 Installation
 
-### Windows (Easy — No Python Required)
+### Windows
 
-1. Go to the [**Latest Release**](https://github.com/anthill737/Dice-Dungeon/releases/latest)
-2. Download **`DiceDungeon.exe`** from the **Assets** section at the bottom
-3. Move it anywhere you like (Desktop, Games folder, etc.)
-4. Double-click **`DiceDungeon.exe`** to play!
+1. [Click here to download the game](https://github.com/anthill737/dice-dungeon/archive/refs/heads/main.zip) — this downloads a file called **`dice-dungeon-main.zip`**
+2. Find the downloaded ZIP file (usually in your **Downloads** folder)
+3. **Right-click** the ZIP file → select **"Extract All..."**
+4. Choose where to extract it (e.g. your Desktop) and click **"Extract"**
+5. Open the extracted **`dice-dungeon-main`** folder
+6. If you see **another** `dice-dungeon-main` folder inside, open that one too *(this is normal — Windows sometimes double-nests folders when extracting)*
+7. Double-click **`SETUP.bat`**
+8. A graphical installer window opens — click **"Continue"**
+9. Choose where to install the game (the default location is fine), then click **"Install"**
+10. Once installation finishes, click **"Launch Game"** — or close the installer and use the **Desktop shortcut** or **Start Menu** entry
 
-> **Windows SmartScreen warning?** Click **"More info"** → **"Run anyway"**. This happens because the EXE isn't code-signed — it's safe.
+**Done!** The downloaded ZIP and extracted folder can be safely deleted after installation — the game is now installed separately.
 
-### Mac / Linux (Requires Python 3.11+)
+### Mac / Linux
 
 ```bash
 git clone https://github.com/anthill737/dice-dungeon.git
@@ -28,11 +34,10 @@ chmod +x scripts/setup.sh
 ./scripts/setup.sh
 ```
 
-**That's it!** The game runs directly — no installer or Python needed on Windows.
-
-### Updating the Game
-
-To update, just download the new `DiceDungeon.exe` from the [Releases page](https://github.com/anthill737/Dice-Dungeon/releases) and replace the old one. Your save files are stored in `%APPDATA%/DiceDungeon` and will carry over automatically.
+**That's it** The installer:
+- Copies the pre-built DiceDungeon.exe to your chosen location
+- Takes about 10 seconds
+- The downloaded folder can be deleted after installation
 
 ---
 
@@ -95,19 +100,23 @@ dice-dungeon/
 
 ## 🆘 Troubleshooting
 
-**Windows SmartScreen blocks the EXE**
-- Click "More info" → "Run anyway" — this happens because the EXE isn't code-signed
+Installer won't run / "Python is not recognized"**
+- The installer should handle Python installation automatically
+- If it fails, you can manually install Python from https://www.python.org/downloads/
+- Make sure to check "Add Python to PATH" during installation
+- Then run scripts/SETUP.bat again
+- During installation, check "Add Python to PATH"
 
-**Game won't launch / crashes immediately**
-- Make sure you downloaded the latest version from [Releases](https://github.com/anthill737/Dice-Dungeon/releases/latest)
-- Try right-clicking → "Run as administrator"
+**"No module named 'PIL'"**
+- The installer should handle this, but you can manually run: `pip install pillow`
 
-**"No module named 'PIL'" (Mac/Linux only)**
-- Run: `pip install pillow`
+**Game won't launch**
+- Make sure the installation completed successfully
+- Try running `Launch Dice Dungeon.bat` from your install folder
+- Verify Python 3.11+: `python --version`
 
-**Saves not appearing after update?**
-- Save files are stored in `%APPDATA%/DiceDungeon/saves/` and should persist across updates automatically
-- If you previously ran an older version, saves will be migrated on first launch
+**Need more help?**
+- [Open an issue on GitHub](https://github.com/anthill737/Dice-Dungeon/issues)
 
 ## 📝 Credits
 

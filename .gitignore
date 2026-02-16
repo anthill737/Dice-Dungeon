@@ -69,7 +69,6 @@ saves/
 
 # Build output folders (created by build_exe.py)
 build/
-dist/
 DiceDungeon_Portable/
 
 # Icon generation pipeline (dev-only tooling, not needed for the game)
