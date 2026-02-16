@@ -1,6 +1,6 @@
 # Building the EXE for Distribution
 
-The EXE is stored in the repo via **Git LFS** (Large File Storage) so users can download and install it directly.
+The EXE is too large for the Git repo (388+ MB), so it's hosted on **GitHub Releases**. The installer (`SETUP.bat` → `setup.py`) downloads it automatically.
 
 ## Steps:
 
@@ -12,14 +12,15 @@ The EXE is stored in the repo via **Git LFS** (Large File Storage) so users can 
 
 3. The EXE will be created in `dist/DiceDungeon.exe`
 
-4. Commit it to GitHub (Git LFS handles the large file automatically):
-   ```bash
-   git add dist/DiceDungeon.exe
-   git commit -m "Update DiceDungeon.exe with latest build"
-   git push
-   ```
+4. Upload it as a GitHub Release:
+   - Go to https://github.com/anthill737/Dice-Dungeon/releases
+   - Click **"Draft a new release"**
+   - Choose a tag (e.g., `v1.1.0`) → **"Create new tag"**
+   - Set the title (e.g., `Dice Dungeon v1.1.0`)
+   - Drag `dist/DiceDungeon.exe` into the **"Attach binaries"** area
+   - Click **"Publish release"**
 
-5. Users download the repo ZIP and run SETUP.bat to install!
+5. Users download the repo ZIP, run SETUP.bat, and the installer downloads the EXE for them!
 
 ## When to Rebuild:
 
@@ -29,4 +30,4 @@ Rebuild the EXE whenever you:
 - Add new features
 - Change assets
 
-Just run `python scripts/build_exe.py` again and commit the new EXE.
+Run `python scripts/build_exe.py` again and create a new release on GitHub.

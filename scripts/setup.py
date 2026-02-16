@@ -1,6 +1,8 @@
 """
 Dice Dungeon - Simple GUI Installer
-Copies pre-built EXE to chosen location and creates shortcuts
+Copies pre-built EXE to chosen location and creates shortcuts.
+If the EXE isn't bundled (e.g. downloaded as ZIP from GitHub),
+it downloads the latest release automatically.
 """
 
 import subprocess
@@ -8,9 +10,29 @@ import sys
 import os
 import platform
 import shutil
+import urllib.request
+import urllib.error
+import json
+import threading
 from pathlib import Path
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox
+
+GITHUB_REPO = "anthill737/Dice-Dungeon"
+EXE_NAME = "DiceDungeon.exe"
+
+
+def _get_latest_release_exe_url():
+    """Query GitHub API for the latest release and return the DiceDungeon.exe download URL."""
+    api_url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+    req = urllib.request.Request(api_url, headers={"Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        data = json.loads(resp.read().decode())
+    for asset in data.get("assets", []):
+        if asset["name"] == EXE_NAME:
+            return asset["browser_download_url"]
+    raise FileNotFoundError("DiceDungeon.exe not found in the latest GitHub release.")
+
 
 class SimpleInstallerGUI:
     def __init__(self, root):
@@ -29,15 +51,9 @@ class SimpleInstallerGUI:
         self.install_dir = None
         self.source_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Go up one level from scripts/
         
-        # Check if EXE exists
-        self.exe_source = os.path.join(self.source_dir, "dist", "DiceDungeon.exe")
-        if not os.path.exists(self.exe_source):
-            messagebox.showerror("Error", 
-                "DiceDungeon.exe not found!\n\n"
-                "The executable should be in the 'dist' folder.\n"
-                "Please download the complete package from GitHub.")
-            root.quit()
-            return
+        # Check if EXE exists locally, otherwise we'll download it later
+        self.exe_source = os.path.join(self.source_dir, "dist", EXE_NAME)
+        self.needs_download = not os.path.exists(self.exe_source)
         
         # Default installation path
         if platform.system() == "Windows":
@@ -55,6 +71,11 @@ class SimpleInstallerGUI:
         title.pack(pady=30)
         
         # Welcome message
+        if self.needs_download:
+            size_note = "Installation size: ~400 MB (downloaded from GitHub)\nTime required: depends on internet speed"
+        else:
+            size_note = "Installation size: ~400 MB\nTime required: ~10 seconds"
+        
         msg = tk.Label(self.root, 
                       text="Welcome to Dice Dungeon!\n\n"
                            "This installer will set up the game on your computer.\n\n"
@@ -62,8 +83,7 @@ class SimpleInstallerGUI:
                            "• DiceDungeon.exe (game executable)\n"
                            "• Desktop shortcut\n"
                            "• Start Menu shortcut\n\n"
-                           "Installation size: ~100 MB\n"
-                           "Time required: ~10 seconds",
+                           f"{size_note}",
                       font=('Arial', 11), bg='#2c1810', fg='#ffffff',
                       justify='left')
         msg.pack(pady=20)
@@ -152,19 +172,42 @@ class SimpleInstallerGUI:
         tk.Label(self.root, text="Installing...", 
                 font=('Arial', 20, 'bold'), bg='#2c1810', fg='#ffd700').pack(pady=40)
         
-        status = tk.Label(self.root, text="Copying files...",
+        self.status_label = tk.Label(self.root, text="Preparing...",
                          font=('Arial', 12), bg='#2c1810', fg='#ffffff')
-        status.pack(pady=20)
+        self.status_label.pack(pady=20)
+        
+        # Progress bar for download
+        self.progress_var = tk.DoubleVar()
+        self.progress_bar = tk.ttk.Progressbar(self.root, variable=self.progress_var,
+                                                maximum=100, length=400)
+        self.progress_bar.pack(pady=10)
+        self.progress_pct = tk.Label(self.root, text="",
+                                     font=('Arial', 10), bg='#2c1810', fg='#cccccc')
+        self.progress_pct.pack(pady=5)
         
         self.root.update()
         
+        # Run installation in a thread so UI stays responsive during download
+        threading.Thread(target=self._do_install, daemon=True).start()
+
+    def _do_install(self):
+        """Actual installation logic (runs in background thread)."""
         try:
             # Create install directory
             os.makedirs(self.install_dir, exist_ok=True)
             
-            # Copy EXE
-            exe_dest = os.path.join(self.install_dir, "DiceDungeon.exe")
-            shutil.copy2(self.exe_source, exe_dest)
+            exe_dest = os.path.join(self.install_dir, EXE_NAME)
+
+            if self.needs_download:
+                # Download EXE from GitHub Releases
+                self._update_status("Finding latest release...")
+                url = _get_latest_release_exe_url()
+                self._update_status("Downloading DiceDungeon.exe...")
+                self._download_file(url, exe_dest)
+            else:
+                # Copy local EXE
+                self._update_status("Copying files...")
+                shutil.copy2(self.exe_source, exe_dest)
             
             # Create saves folder
             saves_dir = os.path.join(self.install_dir, "saves")
@@ -176,8 +219,7 @@ class SimpleInstallerGUI:
                 if os.path.exists(src):
                     shutil.copy2(src, self.install_dir)
             
-            status.config(text="Creating shortcuts...")
-            self.root.update()
+            self._update_status("Creating shortcuts...")
             
             # Create shortcuts
             self.create_shortcuts()
@@ -186,11 +228,38 @@ class SimpleInstallerGUI:
             self.create_uninstaller()
             
             # Done!
-            self.show_completion()
+            self.root.after(0, self.show_completion)
         
         except Exception as e:
-            messagebox.showerror("Installation Error", f"Installation failed: {e}")
-            self.root.quit()
+            self.root.after(0, lambda: messagebox.showerror("Installation Error", f"Installation failed: {e}"))
+            self.root.after(0, self.root.quit)
+
+    def _update_status(self, text):
+        """Thread-safe status label update."""
+        self.root.after(0, lambda: self.status_label.config(text=text))
+
+    def _download_file(self, url, dest):
+        """Download a file with progress updates."""
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            total = int(resp.headers.get("Content-Length", 0))
+            downloaded = 0
+            chunk_size = 256 * 1024  # 256 KB
+            with open(dest, "wb") as f:
+                while True:
+                    chunk = resp.read(chunk_size)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    if total > 0:
+                        pct = downloaded / total * 100
+                        mb_done = downloaded / (1024 * 1024)
+                        mb_total = total / (1024 * 1024)
+                        self.root.after(0, lambda p=pct: self.progress_var.set(p))
+                        self.root.after(0, lambda d=mb_done, t=mb_total: self.progress_pct.config(
+                            text=f"{d:.0f} MB / {t:.0f} MB"))
+        self.root.after(0, lambda: self.progress_pct.config(text="Download complete!"))
     
     def create_shortcuts(self):
         """Create desktop and start menu shortcuts"""

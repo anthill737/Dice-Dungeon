@@ -25,6 +25,8 @@ A roguelike dungeon crawler where you roll dice to fight enemies, explore proced
 
 **Done!** The downloaded ZIP and extracted folder can be safely deleted after installation — the game is now installed separately.
 
+> **Note:** The installer will download DiceDungeon.exe (~400 MB) from GitHub during installation. An internet connection is required.
+
 ### Mac / Linux
 
 ```bash
@@ -35,8 +37,8 @@ chmod +x scripts/setup.sh
 ```
 
 **That's it** The installer:
-- Copies the pre-built DiceDungeon.exe to your chosen location
-- Takes about 10 seconds
+- Downloads the pre-built DiceDungeon.exe to your chosen location
+- Creates desktop and Start Menu shortcuts
 - The downloaded folder can be deleted after installation
 
 ---
