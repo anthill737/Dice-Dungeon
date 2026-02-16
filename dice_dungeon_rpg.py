@@ -8,6 +8,7 @@ from tkinter import messagebox
 import random
 import json
 import os
+import sys
 
 class DiceDungeonRPG:
     def __init__(self, root):
@@ -18,8 +19,22 @@ class DiceDungeonRPG:
         self.root.minsize(650, 700)  # Allow resizing
         self.root.configure(bg='#2c1810')
         
-        # High scores file
-        self.scores_file = os.path.join(os.path.dirname(__file__), 'dice_dungeon_scores.json')
+        # High scores file — use APPDATA when running as EXE
+        if getattr(sys, 'frozen', False):
+            appdata = os.environ.get('APPDATA', os.path.expanduser('~'))
+            scores_dir = os.path.join(appdata, 'DiceDungeon')
+            os.makedirs(scores_dir, exist_ok=True)
+            self.scores_file = os.path.join(scores_dir, 'dice_dungeon_scores.json')
+            # Migrate old scores from EXE-adjacent location
+            old_scores = os.path.join(os.path.dirname(sys.executable), 'dice_dungeon_scores.json')
+            if os.path.isfile(old_scores) and not os.path.exists(self.scores_file):
+                try:
+                    import shutil
+                    shutil.copy2(old_scores, self.scores_file)
+                except Exception:
+                    pass
+        else:
+            self.scores_file = os.path.join(os.path.dirname(__file__), 'dice_dungeon_scores.json')
         
         # Player stats
         self.gold = 0

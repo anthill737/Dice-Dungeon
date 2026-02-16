@@ -619,19 +619,15 @@ class StoreManager:
         # Consumables include: heal, token, cleanse, repair, and other non-equipment/upgrade items
         is_consumable = item_type not in ['upgrade', 'equipment']
         
-        # Calculate max affordable quantity
+        # Calculate max buyable quantity
         max_affordable = self.game.gold // price if is_consumable else 1
         max_inventory_space = self.game.max_inventory - self.game.get_unequipped_inventory_count() if needs_inventory else 999
         max_quantity = min(max_affordable, max_inventory_space) if is_consumable else 1
         
-        # Adjust panel height based on whether we show quantity selector
-        panel_height = int(280 * self.game.scale_factor) if is_consumable and max_quantity > 1 else int(200 * self.game.scale_factor)
-        panel_width = int(400 * self.game.scale_factor)
-        
-        # Create confirmation popup panel directly on store dialog (no overlay)
+        # Create confirmation popup panel directly on store dialog (auto-sized)
         popup = tk.Frame(self.game.dialog_frame, bg=self.game.current_colors["bg_primary"],
                         relief=tk.RIDGE, borderwidth=3)
-        popup.place(relx=0.5, rely=0.5, anchor='center', width=panel_width, height=panel_height)
+        popup.place(relx=0.5, rely=0.5, anchor='center')
         
         # Title
         tk.Label(popup, text="Confirm Purchase", font=('Arial', self.game.scale_font(14), 'bold'),
@@ -652,7 +648,12 @@ class StoreManager:
         total_price_var = tk.IntVar(value=price)
         
         if is_consumable and max_quantity > 1:
-            tk.Label(popup, text=f"Max affordable: {max_quantity}", font=('Arial', self.game.scale_font(10)),
+            # Show what limits quantity (inventory space or gold)
+            if max_inventory_space < max_affordable:
+                limit_text = f"Inventory space: {max_inventory_space}"
+            else:
+                limit_text = f"Max affordable: {max_quantity}"
+            tk.Label(popup, text=limit_text, font=('Arial', self.game.scale_font(10)),
                     bg=self.game.current_colors["bg_primary"], 
                     fg=self.game.current_colors["text_secondary"]).pack(pady=5)
             
@@ -734,14 +735,10 @@ class StoreManager:
         if item_count == 0:
             return
         
-        # Adjust size based on whether we need a slider
-        panel_height = int(280 * self.game.scale_factor) if item_count > 1 else int(200 * self.game.scale_factor)
-        panel_width = int(400 * self.game.scale_factor)
-        
-        # Create confirmation popup panel directly on store dialog (no overlay)
+        # Create confirmation popup panel directly on store dialog (auto-sized)
         popup = tk.Frame(self.game.dialog_frame, bg=self.game.current_colors["bg_primary"],
                         relief=tk.RIDGE, borderwidth=3)
-        popup.place(relx=0.5, rely=0.5, anchor='center', width=panel_width, height=panel_height)
+        popup.place(relx=0.5, rely=0.5, anchor='center')
         
         # Title
         tk.Label(popup, text="Confirm Sale", font=('Arial', self.game.scale_font(14), 'bold'),
