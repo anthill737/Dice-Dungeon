@@ -527,7 +527,11 @@ class StoreManager:
             si_lbl.image = store_icon
             si_lbl.pack(side=tk.LEFT, padx=(0, 5))
         
-        # Left side - Item info (with weight to take up more space)
+        # Right side - Price and button (pack FIRST so it reserves space)
+        action_frame = tk.Frame(container, bg=self.game.current_colors["bg_panel"])
+        action_frame.pack(side=tk.RIGHT, padx=5)
+        
+        # Left side - Item info (fills remaining space)
         info_frame = tk.Frame(container, bg=self.game.current_colors["bg_panel"])
         info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
         
@@ -552,12 +556,12 @@ class StoreManager:
             desc_label = tk.Label(info_frame, text=desc, 
                     font=('Arial', self.game.scale_font(9)), bg=self.game.current_colors["bg_panel"], 
                     fg=self.game.current_colors["text_secondary"], anchor='w',
-                    wraplength=self.game.get_scaled_wraplength(350), justify=tk.LEFT)
+                    wraplength=1, justify=tk.LEFT)
             desc_label.pack(anchor='w', fill=tk.X, pady=(2, 0))
-        
-        # Right side - Price and button
-        action_frame = tk.Frame(container, bg=self.game.current_colors["bg_panel"])
-        action_frame.pack(side=tk.RIGHT, padx=5)
+            # Dynamically adjust wraplength to match the actual available width
+            def _update_wrap(event, lbl=desc_label):
+                lbl.config(wraplength=event.width - 4)
+            desc_label.bind('<Configure>', _update_wrap)
         
         tk.Label(action_frame, text=f"{price}g", font=('Arial', self.game.scale_font(11), 'bold'),
                 bg=self.game.current_colors["bg_panel"], fg=self.game.current_colors["text_gold"]).pack()

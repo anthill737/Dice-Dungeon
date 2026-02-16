@@ -3,6 +3,17 @@
 ## [Unreleased] - 2026-02-16
 
 ### Added
+- **288 AI-Generated Enemy Sprites**: Every enemy type now has a unique 1024×1024 sprite displayed during combat
+  - Sprites use a vibrant colorful fantasy art style matching the existing item icons
+  - Generated via OpenAI `gpt-image-1` API with transparent backgrounds
+  - Stored in `assets/sprites/enemies/<name>/rotations/south.png`
+
+- **Real Loading Screen with Progress**: Replaced the fake 5-second loading timer with a real progress screen that tracks actual initialization
+  - Shows ~20 loading phases: content engine, world lore, item definitions, combat data, enemy data, status effects, dice mechanics, enemy sprites, sprite textures, item icons, character stats, dice styles, settings, display config, dungeon levels, quest system, and more
+  - Animated ellipsis (`.` → `..` → `...`) cycles per message, and keeps looping during long operations like sprite loading
+  - Splash screen uses `Toplevel` over a hidden `Tk()` root, with single-threaded `update()` calls for progress
+  - Instant transition to game window with no blank/brown flash (uses alpha transparency trick)
+
 - **Item Icons Displayed in All Game UI**: Integrated AI-generated icons into every screen that shows items
   - WHY: Icons existed on disk but the game still displayed text-only item names everywhere
   - PROBLEM SOLVED: Players now see visual icons next to every item in inventory, tooltips, ground pickups, store, containers, and character menu
@@ -26,6 +37,23 @@
     - **File Updated**: `dice_dungeon_explorer.py` (`get_item_icon_photo`), `explorer/inventory_display.py` (`create_item_tooltip`)
 
 ### Fixed
+- **Store Item Description Overlapping Buttons**: Long item descriptions (e.g. Fire Potion) pushed the Buy/Sell button off-screen
+  - Root cause: `info_frame` with `expand=True` was packed before `action_frame`, consuming all horizontal space
+  - Fix: Pack `action_frame` (side=RIGHT) first to reserve button space, then `info_frame` fills the remainder
+  - Description `wraplength` now auto-adjusts to the label's actual rendered width via `<Configure>` binding
+
+- **Loading Screen Text Clipping**: First characters of loading messages were cut off (e.g. ".oading enemy sprites...")
+  - Root cause: Two fixed-width labels (`width=35` + `width=4`) packed side-by-side with `anchor='w'`
+  - Fix: Merged into a single centered label with dots appended directly to the message text
+
+- **Wrong Window Scale After Loading**: Game window appeared at incorrect size/scale after splash screen transition
+  - Root cause: `apply_resolution()` was called on the withdrawn window during `__init__`, mapping it prematurely
+  - Fix: Init only computes `scale_factor` without touching window geometry; `_transition()` applies resolution on a transparent window, rebuilds the main menu, then reveals via alpha=1.0
+
+- **Brown Flash on Game Launch**: A blank brown window flashed briefly before the main menu appeared
+  - Root cause: `self.root.update()` calls in sprite loading loops mapped the withdrawn game window
+  - Fix: Replaced with `_report_progress()` calls that only update the splash; transition uses `alpha=0.0` → build menu → `alpha=1.0`
+
 - **Fullscreen Switch Destroyed Game UI (Round 1)**: Switching resolution to/from Fullscreen left players with a blank screen — no action buttons, no adventure log, no room content
   - WHY: `_rebuild_game_ui_and_reshow_settings()` called `setup_game_ui()` to rebuild the layout but never re-populated any dynamic content — buttons, log entries, and room descriptions were all lost
   - PROBLEM SOLVED: Resolution switching now fully restores the game state players were in before switching

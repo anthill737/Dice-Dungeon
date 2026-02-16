@@ -93,8 +93,9 @@ from explorer.ui_main_menu import MainMenuManager
 from explorer.tutorial import TutorialManager
 
 class DiceDungeonExplorer:
-    def __init__(self, root):
+    def __init__(self, root, progress_callback=None):
         self.root = root
+        self._progress_callback = progress_callback
         self.root.title("Dice Dungeon")
         
         # Set window and taskbar icon
@@ -160,6 +161,7 @@ class DiceDungeonExplorer:
         # Load content system
         try:
             base_dir = get_data_dir()
+            self._report_progress("Loading content engine...")
             attach_content(self, base_dir)
             
             # Ensure _rooms was initialized by attach_content
@@ -175,11 +177,13 @@ class DiceDungeonExplorer:
             
             self.content_loaded = True
             
+            self._report_progress("Loading world lore...")
             # Load world lore and starter area
             lore_file = os.path.join(base_dir, 'dice_dungeon_content', 'data', 'world_lore.json')
             with open(lore_file, 'r', encoding='utf-8') as f:
                 self.world_lore = json.load(f)
                 
+            self._report_progress("Loading item definitions...")
             # Load item definitions for tooltips
             items_file = os.path.join(base_dir, 'dice_dungeon_content', 'data', 'items_definitions.json')
             with open(items_file, 'r', encoding='utf-8') as f:
@@ -190,6 +194,7 @@ class DiceDungeonExplorer:
             with open(lore_items_file, 'r', encoding='utf-8') as f:
                 self.lore_items = json.load(f)
             
+            self._report_progress("Loading combat data...")
             # Load combat flavor text
             combat_flavor_file = os.path.join(base_dir, 'dice_dungeon_content', 'data', 'combat_flavor.json')
             with open(combat_flavor_file, 'r', encoding='utf-8') as f:
@@ -200,11 +205,13 @@ class DiceDungeonExplorer:
                 self.player_attacks = combat_flavor['player_attacks']
                 self.player_crits = combat_flavor['player_crits']
             
+            self._report_progress("Loading enemy data...")
             # Load enemy type definitions (spawning/splitting mechanics)
             enemy_types_file = os.path.join(base_dir, 'dice_dungeon_content', 'data', 'enemy_types.json')
             with open(enemy_types_file, 'r', encoding='utf-8') as f:
                 self.enemy_types = json.load(f)
             
+            self._report_progress("Loading status effects...")
             # Load color schemes from manager
             self.color_schemes = COLOR_SCHEMES
             
@@ -228,6 +235,7 @@ class DiceDungeonExplorer:
                 "arrow_right": "►",
             }
             
+            self._report_progress("Initializing dice mechanics...")
             # Load difficulty settings
             difficulty_file = os.path.join(base_dir, 'dice_dungeon_content', 'data', 'difficulty_settings.json')
             with open(difficulty_file, 'r', encoding='utf-8') as f:
@@ -238,11 +246,13 @@ class DiceDungeonExplorer:
             with open(container_file, 'r', encoding='utf-8') as f:
                 self.container_definitions = json.load(f)
             
+            self._report_progress("Loading enemy sprites...")
             # Load enemy sprites
             self.enemy_sprites = {}
             self.sprite_images = {}  # Store PhotoImage references to prevent garbage collection
             self.load_enemy_sprites(base_dir)
             
+            self._report_progress("Initializing item icons...")
             # Item icon cache  {(slug, size): PhotoImage}
             self.item_icon_cache = {}
                 
@@ -252,6 +262,7 @@ class DiceDungeonExplorer:
             self.root.quit()
             return
         
+        self._report_progress("Building character stats...")
         # Player stats (reduced health pool from 100 to 50 for increased difficulty)
         self.gold = 0
         self.health = 50
@@ -284,6 +295,7 @@ class DiceDungeonExplorer:
         # Used to scale equipment stats based on which floor it was found/bought on
         self.equipment_floor_level = {}
         
+        self._report_progress("Rolling the dice...")
         # Dice state
         self.num_dice = 3
         self.max_dice = 8
@@ -435,6 +447,7 @@ class DiceDungeonExplorer:
         # Game settings
         self.settings = {"difficulty": "Normal", "color_scheme": "Classic", "audio_volume": 0.5, "text_speed": "Medium"}
         
+        self._report_progress("Crafting dice styles...")
         # Dice style presets - rich, high-contrast dark fantasy theme
         self.dice_styles = {
             "classic_white": {
@@ -590,6 +603,7 @@ class DiceDungeonExplorer:
         # Enemy type definitions will be loaded from JSON file
         # (Loaded in content system initialization above)
         
+        self._report_progress("Loading settings...")
         self.load_settings()
         # Apply saved color scheme (with Classic as fallback)
         saved_scheme = self.settings.get("color_scheme", "Classic")
@@ -597,15 +611,32 @@ class DiceDungeonExplorer:
             saved_scheme = "Classic"
         self.current_colors = self.color_schemes[saved_scheme]
         
-        # Apply saved resolution
+        self._report_progress("Configuring display...")
+        # Compute scale factor from saved resolution, but DON'T call apply_resolution
+        # during init — it would map the withdrawn window and cause a brown flash.
+        # The splash _transition() will call apply_resolution after loading is done.
         saved_resolution = self.settings.get("resolution", "950x700")
-        self.apply_resolution(saved_resolution, save=False)
+        if saved_resolution == "Fullscreen":
+            # Estimate scale from screen size
+            sw = self.root.winfo_screenwidth()
+            sh = self.root.winfo_screenheight()
+            width_scale = sw / self.base_window_width
+            height_scale = sh / self.base_window_height
+            self.scale_factor = max(0.8, min(min(width_scale, height_scale), 3.0))
+        elif saved_resolution in self.resolution_presets:
+            w, h = self.resolution_presets[saved_resolution]
+            width_scale = w / self.base_window_width
+            height_scale = h / self.base_window_height
+            self.scale_factor = min(width_scale, height_scale)
+        else:
+            self.scale_factor = 1.0
         
         # Settings tracking
         self.settings_return_to = None  # Track where to return after settings
         self.original_settings = None  # Track original settings for change detection
         self.settings_modified = False  # Track if settings were changed
         
+        self._report_progress("Building dungeon levels...")
         # Exploration state
         self.dungeon = {}
         self.current_pos = (0, 0)
@@ -653,6 +684,7 @@ class DiceDungeonExplorer:
         # Keybindings
         self.setup_keybindings()
         
+        self._report_progress("Preparing adventure...")
         # Initialize manager instances
         # These managers handle specific subsystems and keep the main class cleaner
         self.combat_manager = CombatManager(self)
@@ -666,6 +698,7 @@ class DiceDungeonExplorer:
         self.store_manager = StoreManager(self)
         self.lore_manager = LoreManager(self)
         self.save_system = SaveSystem(self)
+        self._report_progress("Initializing quest system...")
         self.quest_manager = QuestManager(self)
         self.main_menu_manager = MainMenuManager(self)
         self.tutorial_manager = TutorialManager(self)
@@ -677,8 +710,10 @@ class DiceDungeonExplorer:
         # Register default quests
         self.quest_manager.register_default_quests(create_default_quests())
         
-        # Show main menu
-        self.main_menu_manager.show_main_menu()
+        self._report_progress("Starting adventure...")
+        # Show main menu (skip if splash screen will rebuild it after transition)
+        if not self._progress_callback:
+            self.main_menu_manager.show_main_menu()
     
     def load_settings(self):
         """Load or initialize game settings"""
@@ -1235,6 +1270,10 @@ class DiceDungeonExplorer:
         self.enemy_sprite_pil = {}
         
         for folder_name in enemy_folders:
+            # Pulse the splash dot animation periodically via the progress callback
+            # (Do NOT call self.root.update() here — it can map the withdrawn game window)
+            if (loaded_count + failed_count) % 8 == 0:
+                self._report_progress("Loading enemy sprites")
             # Convert folder name back to enemy name with special handling for apostrophes
             # e.g., "charmers_serpent" -> "Charmer's Serpent"
             # e.g., "jury_of_crows" -> "Jury of Crows"
@@ -1273,9 +1312,19 @@ class DiceDungeonExplorer:
                 else:
                     failed_count += 1
         
+        self._report_progress("Building sprite textures...")
         # Build initial PhotoImages at default size
         self._rebuild_sprite_photos()
+        self._report_progress("Sprites loaded!")
         print(f"Loaded {loaded_count} enemy sprites ({failed_count} failed)")
+    
+    def _report_progress(self, message):
+        """Send a progress message to the splash screen callback if available."""
+        if self._progress_callback:
+            try:
+                self._progress_callback(message)
+            except Exception:
+                pass
     
     # ── Item icon helpers ───────────────────────────────────────────────
     def get_item_icon_photo(self, item_name, size=None):
@@ -1314,6 +1363,7 @@ class DiceDungeonExplorer:
         sprite_size = max(48, sprite_size)  # No upper clamp - let sprites grow with resolution
         self.enemy_sprites = {}
         self.sprite_images = {}
+        count = 0
         for name, pil_img in self.enemy_sprite_pil.items():
             try:
                 resized = pil_img.resize((sprite_size, sprite_size), Image.LANCZOS)
@@ -1322,6 +1372,10 @@ class DiceDungeonExplorer:
                 self.sprite_images[name] = photo
             except Exception:
                 pass
+            # Pulse splash dot animation via progress callback
+            count += 1
+            if count % 8 == 0:
+                self._report_progress("Building sprite textures")
     
     def scale_font(self, base_size):
         """Calculate scaled font size based on current window size (15% larger)"""
@@ -8959,157 +9013,182 @@ Backpack: {self.equipped_items.get('backpack', 'None')}
                  bg='#3498db', fg='#ffffff', font=('Arial', self.scale_font(10), 'bold')).pack(pady=10)
 
 if __name__ == "__main__":
-    # Import required modules for splash screen
-    import threading
     import time
     
     class SplashScreen:
+        """Splash screen that stays up while the game actually loads."""
+        
         def __init__(self):
-            self.splash = tk.Tk()
+            # Create the real root first (will become the game window)
+            self.game_root = tk.Tk()
+            self.game_root.withdraw()  # Hide until loading is done
+            
+            # Create splash as a Toplevel so destroying it doesn't kill the app
+            self.splash = tk.Toplevel(self.game_root)
             self.splash.title("Dice Dungeon")
             self.splash.resizable(False, False)
             self.splash.configure(bg='#0a0604')
-            self.scale_factor = 1.0  # Splash is fixed size, but fonts go through scale_font for consistency
+            self.scale_factor = 1.0
             
-            # Calculate center position - increased size for better text visibility
             width = 650
             height = 450
             x = (self.splash.winfo_screenwidth() // 2) - (width // 2)
             y = (self.splash.winfo_screenheight() // 2) - (height // 2)
             self.splash.geometry(f'{width}x{height}+{x}+{y}')
             
-            # Remove window decorations for true splash screen effect
             self.splash.overrideredirect(True)
             
-            # Set window icon
             try:
                 import os
                 icon_path = os.path.join(get_data_dir(), "assets", "DD Logo.png")
                 if os.path.exists(icon_path):
-                    icon = tk.PhotoImage(file=icon_path)
+                    icon = tk.PhotoImage(file=icon_path, master=self.splash)
                     self.splash.iconphoto(True, icon)
             except:
                 pass
             
-            # Create main frame
             main_frame = tk.Frame(self.splash, bg='#0a0604', relief=tk.RAISED, borderwidth=3)
             main_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
             
-            # Logo - smaller to leave more room for text
             try:
                 logo_path = os.path.join(get_data_dir(), "assets", "DD Logo.png")
                 if os.path.exists(logo_path):
-                    # Load and resize logo - slightly smaller
                     from PIL import Image, ImageTk
                     img = Image.open(logo_path)
                     img = img.resize((120, 120), Image.LANCZOS)
-                    self.logo_image = ImageTk.PhotoImage(img)
-                    
+                    self.logo_image = ImageTk.PhotoImage(img, master=self.splash)
                     logo_label = tk.Label(main_frame, image=self.logo_image, bg='#0a0604')
                     logo_label.pack(pady=(30, 15))
                 else:
-                    # Fallback text logo
                     tk.Label(main_frame, text="DD", font=('Arial', self.scale_font(42), 'bold'), 
                             bg='#0a0604', fg='#d4af37').pack(pady=(40, 15))
-            except Exception as e:
-                # Fallback text logo if PIL not available
+            except Exception:
                 tk.Label(main_frame, text="DD", font=('Arial', self.scale_font(42), 'bold'), 
                         bg='#0a0604', fg='#d4af37').pack(pady=(40, 15))
             
-            # Game title
             tk.Label(main_frame, text="DICE DUNGEON", 
                     font=('Arial', self.scale_font(22), 'bold'), bg='#0a0604', fg='#d4af37').pack(pady=8)
             
-            # Subtitle
-            tk.Label(main_frame, text="Explore • Fight • Loot • Survive", 
+            tk.Label(main_frame, text="Explore \u2022 Fight \u2022 Loot \u2022 Survive", 
                     font=('Arial', self.scale_font(12), 'italic'), bg='#0a0604', fg='#8b7355').pack(pady=5)
             
-            # Loading area - more space and better positioning
             loading_frame = tk.Frame(main_frame, bg='#0a0604')
-            loading_frame.pack(pady=(30, 30), expand=True)
+            loading_frame.pack(pady=(30, 30), fill=tk.X, expand=True)
             
-            # Loading text with dots on same line - fixed width to prevent movement
-            text_frame = tk.Frame(loading_frame, bg='#0a0604')
-            text_frame.pack()
+            self.loading_label = tk.Label(loading_frame, text="Initializing...", 
+                                        font=('Arial', self.scale_font(14)), bg='#0a0604', fg='#e8dcc4',
+                                        anchor='center')
+            self.loading_label.pack(expand=True)
             
-            self.loading_label = tk.Label(text_frame, text="Loading game engine", 
-                                        font=('Arial', self.scale_font(14)), bg='#0a0604', fg='#e8dcc4')
-            self.loading_label.pack(side=tk.LEFT)
+            self.dot_tick = 0
             
-            # Animated loading dots - on same line as text
-            self.dots_label = tk.Label(text_frame, text="", 
-                                     font=('Arial', self.scale_font(14)), bg='#0a0604', fg='#d4af37')
-            self.dots_label.pack(side=tk.LEFT)
+            # Make splash visible before starting to load
+            self.splash.update()
             
-            # Progress tracking - slower animation
-            self.progress = 0
-            self.max_progress = 25  # Slower - 5 seconds at 200ms intervals
-            self.loading_messages = [
-                "Loading game engine",
-                "Loading content system", 
-                "Initializing dice mechanics",
-                "Loading enemy data",
-                "Loading item definitions",
-                "Preparing world lore",
-                "Starting adventure"
-            ]
-            self.message_index = 0
-            self.animation_callback_id = None  # Track animation callback
-            
-            # Start loading animation
-            self.animate_loading()
-            
-            # Start the main application after delay
-            self.splash.after(5000, self.launch_game)  # 5 second splash
+            # Schedule loading to start after splash is painted
+            self.splash.after(200, self._do_load)
         
         def scale_font(self, base_size):
-            """Scale font size for display consistency"""
             return max(8, int(base_size * self.scale_factor * 1.15))
         
-        def animate_loading(self):
-            """Animate the loading screen - change messages in fixed position, slower animation"""
-            # Check if splash still exists before updating
-            if not self.splash or not self.splash.winfo_exists():
+        def update_status(self, message):
+            """Update the splash loading text with a .  ..  ... ellipsis animation.
+            
+            Strips any trailing dots from the message first, then animates
+            exactly 3 dots (.  ..  ...). Between update_status calls, a
+            background loop keeps the dots cycling so long-running loads
+            still show activity. If the same message is sent again, just
+            pumps the event loop to keep the async dot cycle alive.
+            """
+            if not (self.splash and self.splash.winfo_exists()):
+                return
+            # Strip trailing dots/spaces from message so we control the count
+            clean = message.rstrip('. ')
+            # If the message hasn't changed, just pump the event loop
+            # so the async dot cycle keeps running
+            if clean == getattr(self, '_current_message', ''):
+                self.splash.update()
+                return
+            self._current_message = clean
+            # Stop any previous dot-cycling loop
+            if hasattr(self, '_dot_after_id') and self._dot_after_id:
+                self.splash.after_cancel(self._dot_after_id)
+                self._dot_after_id = None
+            # Show the 3-frame dot animation synchronously
+            for dot_count in range(1, 4):
+                dots = "." * dot_count
+                self.loading_label.config(text=f"{clean}{dots}")
+                self.splash.update()
+                time.sleep(0.18)
+            # Start an async loop that keeps cycling dots until the next message
+            self._dot_phase = 0
+            self._start_dot_cycle()
+
+        def _start_dot_cycle(self):
+            """Keep cycling .  ..  ... on the current message until the next update."""
+            if not (self.splash and self.splash.winfo_exists()):
+                return
+            self._dot_phase = (self._dot_phase % 3) + 1
+            dots = "." * self._dot_phase
+            self.loading_label.config(text=f"{self._current_message}{dots}")
+            self.splash.update_idletasks()
+            self._dot_after_id = self.splash.after(220, self._start_dot_cycle)
+        
+        def _do_load(self):
+            """Load the game on the main thread, updating splash as we go."""
+            try:
+                app = DiceDungeonExplorer(
+                    self.game_root,
+                    progress_callback=self.update_status
+                )
+            except Exception as e:
+                self.update_status(f"Error: {e}")
+                self.splash.after(3000, self.splash.destroy)
                 return
             
-            if self.progress < self.max_progress:
-                # Update dots animation - slower cycling
-                dots = "." * ((self.progress % 3) + 1)  # Cycle through 1-3 dots
-                self.dots_label.config(text=dots)
-                
-                # Update loading message occasionally - spread across 5 seconds
-                message_interval = max(1, self.max_progress // len(self.loading_messages))
-                if self.progress % message_interval == 0 and self.message_index < len(self.loading_messages):
-                    self.loading_label.config(text=self.loading_messages[self.message_index])
-                    self.message_index += 1
-                
-                self.progress += 1
-                # Store callback ID and check if splash exists before scheduling
-                if self.splash and self.splash.winfo_exists():
-                    self.animation_callback_id = self.splash.after(200, self.animate_loading)
-            else:
-                # Loading complete
-                self.loading_label.config(text="Ready")
-                self.dots_label.config(text="!")
+            # Loading complete - show final messages instantly, then transition
+            self._show_instant("Starting adventure...")
+            self._show_instant("Ready!")
+            self._transition(app)
         
-        def launch_game(self):
-            """Close splash and launch main game"""
-            # Cancel any pending animation callbacks
-            if self.animation_callback_id:
+        def _show_instant(self, message):
+            """Flash a message on the splash without the slow dot animation."""
+            if self.splash and self.splash.winfo_exists():
+                # Cancel any running dot cycle
+                if hasattr(self, '_dot_after_id') and self._dot_after_id:
+                    self.splash.after_cancel(self._dot_after_id)
+                    self._dot_after_id = None
+                clean = message.rstrip('. ')
+                self._current_message = clean
+                self.loading_label.config(text=f"{clean}...")
+                self.splash.update()
+        
+        def _transition(self, app):
+            """Destroy splash and show the game window."""
+            # Cancel dot animation loop
+            if hasattr(self, '_dot_after_id') and self._dot_after_id:
                 try:
-                    self.splash.after_cancel(self.animation_callback_id)
-                except:
-                    pass  # Ignore if already cancelled or splash destroyed
-            
-            # Destroy splash screen
+                    self.splash.after_cancel(self._dot_after_id)
+                except Exception:
+                    pass
+                self._dot_after_id = None
+            # Make game window fully transparent, then deiconify so geometry works
+            self.game_root.attributes('-alpha', 0.0)
+            self.game_root.deiconify()
+            self.game_root.update_idletasks()
+            # Clear the progress callback so apply_resolution's sprite rebuild
+            # doesn't re-trigger the splash animation
+            app._progress_callback = None
+            # Apply saved resolution (sets correct size and centers on screen)
+            saved_res = app.settings.get("resolution", "950x700")
+            app.apply_resolution(saved_res, save=False)
+            # Build the main menu with correct window dimensions
+            app.main_menu_manager.show_main_menu()
+            self.game_root.update_idletasks()
+            # Now destroy splash and reveal the fully-built game window
             if self.splash and self.splash.winfo_exists():
                 self.splash.destroy()
-            
-            # Now launch the main game
-            root = tk.Tk()
-            app = DiceDungeonExplorer(root)
-            root.mainloop()
+            self.game_root.attributes('-alpha', 1.0)
     
-    # Show splash screen
     splash = SplashScreen()
-    splash.splash.mainloop()
+    splash.game_root.mainloop()
