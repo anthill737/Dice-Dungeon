@@ -15,6 +15,7 @@ from collections import Counter
 from debug_logger import get_logger
 from explorer import ui_character_menu
 from explorer.color_schemes import COLOR_SCHEMES, DEFAULT_SCHEME, ColorManager
+from explorer.item_icons import get_item_icon_path, slugify as icon_slugify
 
 # Helper function to get base directory (works with PyInstaller)
 def get_base_dir():
@@ -241,6 +242,9 @@ class DiceDungeonExplorer:
             self.enemy_sprites = {}
             self.sprite_images = {}  # Store PhotoImage references to prevent garbage collection
             self.load_enemy_sprites(base_dir)
+            
+            # Item icon cache  {(slug, size): PhotoImage}
+            self.item_icon_cache = {}
                 
         except Exception as e:
             messagebox.showerror("Content Load Error", f"Failed to load game content:\n{e}")
@@ -1200,7 +1204,7 @@ class DiceDungeonExplorer:
     def on_window_resize(self, event):
         """Handle window resize events to update scale factor for Fullscreen mode"""
         # Only recalculate if using Fullscreen (other resolutions have fixed scale)
-        if event.widget == self.root and self.settings.get("resolution") == "Fullscreen":
+        if event.widget == self.root and hasattr(self, 'settings') and self.settings.get("resolution") == "Fullscreen":
             current_width = self.root.winfo_width()
             current_height = self.root.winfo_height()
             width_scale = current_width / self.base_window_width
@@ -1273,8 +1277,39 @@ class DiceDungeonExplorer:
         self._rebuild_sprite_photos()
         print(f"Loaded {loaded_count} enemy sprites ({failed_count} failed)")
     
+    # ── Item icon helpers ───────────────────────────────────────────────
+    def get_item_icon_photo(self, item_name, size=None):
+        """Return an ImageTk.PhotoImage for *item_name*, scaled to *size* px.
+
+        Returns None if the icon file is missing or cannot be loaded.
+        Results are cached; safe to call repeatedly.
+        """
+        if size is None:
+            size = max(36, int(42 * self.scale_factor))
+        slug = icon_slugify(item_name)
+        key = (slug, size)
+        if key in self.item_icon_cache:
+            return self.item_icon_cache[key]
+        try:
+            path = get_item_icon_path(item_name)
+            if not path.exists():
+                return None
+            pil_img = Image.open(path).convert('RGBA')
+            pil_img = pil_img.resize((size, size), Image.LANCZOS)
+            photo = ImageTk.PhotoImage(pil_img)
+            self.item_icon_cache[key] = photo
+            return photo
+        except Exception:
+            return None
+
+    def clear_item_icon_cache(self):
+        """Drop cached icons (call after resolution change)."""
+        if hasattr(self, 'item_icon_cache'):
+            self.item_icon_cache.clear()
+
     def _rebuild_sprite_photos(self):
         """Rebuild all enemy sprite PhotoImages at the current scale factor"""
+        self.clear_item_icon_cache()  # icons depend on scale_factor too
         sprite_size = int(110 * self.scale_factor)
         sprite_size = max(48, sprite_size)  # No upper clamp - let sprites grow with resolution
         self.enemy_sprites = {}
@@ -1508,13 +1543,41 @@ class DiceDungeonExplorer:
     def _rebuild_game_ui_and_reshow_settings(self):
         """Rebuild the entire game UI at the new resolution, then overlay settings again"""
         try:
+            # Check if we're actually in the starter area (floor 0 AND no dungeon rooms)
+            if getattr(self, 'in_starter_area', False) and self.floor == 0:
+                self.show_starter_area()
+                self.root.after(50, lambda: self.show_settings('game'))
+                return
+
             self.setup_game_ui()
+
+            # Restore adventure log content into the fresh log_text widget
+            if hasattr(self, 'log_text') and self.adventure_log:
+                try:
+                    self.log_text.config(state=tk.NORMAL)
+                    self.log_text.delete('1.0', tk.END)
+                    for message, tag in self.adventure_log:
+                        self.log_text.insert(tk.END, message + '\n', tag)
+                    self.log_text.see(tk.END)
+                    self.log_text.config(state=tk.DISABLED)
+                except Exception:
+                    pass
+
             # Restore current room display and update HUD values
             self.update_display()
             self.update_minimap()
+
+            # Re-populate the room content and action buttons
             if hasattr(self, 'current_room') and self.current_room:
-                self.room_title.config(text=self.current_room.name)
-                self.room_desc.config(text=getattr(self.current_room, 'description', ''))
+                if self.in_combat:
+                    # Re-enter room in combat mode
+                    self.enter_room(self.current_room, skip_effects=True)
+                else:
+                    # Set room title/description and show exploration buttons
+                    self.room_title.config(text=self.current_room.name)
+                    self.room_desc.config(text=getattr(self.current_room, 'description', ''))
+                    self.show_exploration_options()
+
             self.root.after(50, lambda: self.show_settings('game'))
         except Exception:
             # Fallback — just reshow settings
@@ -5820,6 +5883,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             # Reset combat state
             self.in_combat = False
             self.current_enemy = None
+            self.in_starter_area = False  # Loaded games are never in the starter area
             
             # DON'T re-apply equipment bonuses - they're already included in saved stats!
             # The saved damage_bonus, crit_chance, etc. already have equipment bonuses applied.

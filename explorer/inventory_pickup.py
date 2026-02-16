@@ -194,6 +194,12 @@ class InventoryPickupManager:
                 item_frame = tk.Frame(contents_frame, bg=self.game.current_colors["bg_dark"])
                 item_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=5)
                 
+                con_icon = self.game.get_item_icon_photo(item_found)
+                if con_icon:
+                    ci_lbl = tk.Label(item_frame, image=con_icon, bg=self.game.current_colors["bg_dark"])
+                    ci_lbl.image = con_icon
+                    ci_lbl.pack(side=tk.LEFT, padx=(5, 0), pady=2)
+                
                 item_label = tk.Label(item_frame, text=f"⚡ {item_found}",
                         font=('Arial', self.game.scale_font(11)),
                         bg=self.game.current_colors["bg_dark"],

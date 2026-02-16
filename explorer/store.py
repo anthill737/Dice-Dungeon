@@ -520,6 +520,13 @@ class StoreManager:
         container = tk.Frame(item_frame, bg=self.game.current_colors["bg_panel"])
         container.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
+        # Item icon (left of info)
+        store_icon = self.game.get_item_icon_photo(item_name)
+        if store_icon:
+            si_lbl = tk.Label(container, image=store_icon, bg=self.game.current_colors["bg_panel"])
+            si_lbl.image = store_icon
+            si_lbl.pack(side=tk.LEFT, padx=(0, 5))
+        
         # Left side - Item info (with weight to take up more space)
         info_frame = tk.Frame(container, bg=self.game.current_colors["bg_panel"])
         info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)

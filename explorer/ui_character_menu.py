@@ -166,6 +166,13 @@ def _populate_character_tab(game: 'DiceDungeonExplorer', parent):
         if equipped_item:
             item_def = game.item_definitions.get(equipped_item, {})
             
+            # Equipment icon
+            eq_icon = game.get_item_icon_photo(equipped_item)
+            if eq_icon:
+                eq_lbl = tk.Label(slot_frame, image=eq_icon, bg=game.current_colors["bg_dark"])
+                eq_lbl.image = eq_icon
+                eq_lbl.pack(side=tk.LEFT, padx=(5, 0), pady=2)
+            
             # Build effect string from actual bonus properties
             effect_parts = []
             if 'damage_bonus' in item_def: 

@@ -129,6 +129,12 @@ class InventoryDisplayManager:
                 count_text = f" x{item_counts[normalized_item]}" if item_counts[normalized_item] > 1 else ""
                 
                 # Display with normalized name (cleaner without #X suffixes in old saves)
+                icon_photo = self.game.get_item_icon_photo(normalized_item)
+                if icon_photo:
+                    icon_label = tk.Label(item_frame, image=icon_photo, bg='#3d2415')
+                    icon_label.image = icon_photo  # prevent GC
+                    icon_label.pack(side=tk.LEFT, padx=(5, 0), pady=2)
+                
                 item_label = tk.Label(item_frame, text=f"• {normalized_item}{count_text}{equipped_text}{durability_text}", font=('Arial', self.game.scale_font(10)),
                         bg='#3d2415', fg='#ffffff', anchor='w', wraplength=self.game.get_scaled_wraplength(280), justify='left')
                 item_label.pack(side=tk.LEFT, padx=10, pady=5, fill=tk.BOTH, expand=True)
@@ -249,10 +255,17 @@ class InventoryDisplayManager:
             tooltip_frame = tk.Frame(tooltip, bg='#1a0f08', relief=tk.SOLID, borderwidth=2)
             tooltip_frame.pack()
             
+            # Tooltip icon
+            tip_icon = self.game.get_item_icon_photo(item_name, size=max(48, int(56 * self.game.scale_factor)))
+            if tip_icon:
+                icon_lbl = tk.Label(tooltip_frame, image=tip_icon, bg='#1a0f08')
+                icon_lbl.image = tip_icon
+                icon_lbl.pack(side=tk.LEFT, padx=(8, 0), pady=8)
+            
             label = tk.Label(tooltip_frame, text=tooltip_text,
                            font=('Arial', self.game.scale_font(9)), bg='#1a0f08', fg='#ffd700',
                            justify=tk.LEFT, padx=10, pady=8, wraplength=self.game.get_scaled_wraplength(300))
-            label.pack()
+            label.pack(side=tk.LEFT)
         
         def hide_tooltip(event):
             nonlocal tooltip
@@ -415,6 +428,12 @@ class InventoryDisplayManager:
                 item_frame = tk.Frame(scrollable_frame, bg=self.game.current_colors["bg_dark"])
                 item_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=2)
                 
+                ground_icon = self.game.get_item_icon_photo(item)
+                if ground_icon:
+                    gi_lbl = tk.Label(item_frame, image=ground_icon, bg=self.game.current_colors["bg_dark"])
+                    gi_lbl.image = ground_icon
+                    gi_lbl.pack(side=tk.LEFT, padx=(5, 0), pady=2)
+                
                 item_label = tk.Label(item_frame, text=item, font=('Arial', self.game.scale_font(10)),
                         bg=self.game.current_colors["bg_dark"], 
                         fg=self.game.current_colors["text_light"],
@@ -482,6 +501,12 @@ class InventoryDisplayManager:
                 item_info = self.game.item_definitions.get(item, {})
                 item_desc = item_info.get('desc', 'No description available')
                 
+                uc_icon = self.game.get_item_icon_photo(item)
+                if uc_icon:
+                    uc_lbl = tk.Label(item_frame, image=uc_icon, bg=self.game.current_colors["bg_dark"])
+                    uc_lbl.image = uc_icon
+                    uc_lbl.pack(side=tk.LEFT, padx=(5, 0), pady=2)
+                
                 item_label = tk.Label(item_frame, text=item, font=('Arial', self.game.scale_font(10)),
                         bg=self.game.current_colors["bg_dark"], 
                         fg=self.game.current_colors["text_light"],
@@ -508,6 +533,12 @@ class InventoryDisplayManager:
                 # Get item description for tooltip
                 item_info = self.game.item_definitions.get(item, {})
                 item_desc = item_info.get('desc', 'No description available')
+                
+                dr_icon = self.game.get_item_icon_photo(item)
+                if dr_icon:
+                    dr_lbl = tk.Label(item_frame, image=dr_icon, bg=self.game.current_colors["bg_dark"])
+                    dr_lbl.image = dr_icon
+                    dr_lbl.pack(side=tk.LEFT, padx=(5, 0), pady=2)
                 
                 item_label = tk.Label(item_frame, text=item, font=('Arial', self.game.scale_font(10)),
                         bg=self.game.current_colors["bg_dark"], 

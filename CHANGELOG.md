@@ -1,5 +1,140 @@
 # Dice Dungeon - Changelog
 
+## [Unreleased] - 2026-02-16
+
+### Added
+- **Item Icons Displayed in All Game UI**: Integrated AI-generated icons into every screen that shows items
+  - WHY: Icons existed on disk but the game still displayed text-only item names everywhere
+  - PROBLEM SOLVED: Players now see visual icons next to every item in inventory, tooltips, ground pickups, store, containers, and character menu
+  - TECHNICAL IMPLEMENTATION:
+    - **get_item_icon_photo(item_name, size=None)**: New method on the main game class. Opens PNG via `PIL.Image.open()`, converts to RGBA, resizes with `Image.LANCZOS`, wraps as `ImageTk.PhotoImage`, and returns from cache. Default size: `max(36, int(42 * self.scale_factor))`. Keyed by `(slug, size)` tuple.
+    - **item_icon_cache**: Dictionary cache on the game instance, cleared on resolution change via `clear_item_icon_cache()`. Guarded with `hasattr(self, 'item_icon_cache')` to avoid AttributeError during early init.
+    - **Inventory Grid** (`explorer/inventory_display.py` — `show_inventory()`): Each item row renders its icon to the left of the item name label
+    - **Item Tooltips** (`explorer/inventory_display.py` — `create_item_tooltip()`): Tooltip header shows a larger icon at `max(48, int(56 * scale_factor))` alongside the item name
+    - **Ground Items** (`explorer/inventory_display.py` — `show_ground_items()`): Loose items, uncollected items, and dropped items all display icons in their pickup rows
+    - **Store** (`explorer/store.py` — `_create_store_item_row()`): Buy/sell item rows show the icon next to the item name and price
+    - **Container Contents** (`explorer/inventory_pickup.py` — `show_container_contents()`): Chest/bag/barrel loot rows include item icons
+    - **Character Menu** (`explorer/ui_character_menu.py` — `_populate_character_tab()`): Equipped gear section shows icons for each equipped item
+    - **Files Updated**: `dice_dungeon_explorer.py`, `explorer/inventory_display.py`, `explorer/store.py`, `explorer/inventory_pickup.py`, `explorer/ui_character_menu.py`
+
+- **Icon Size Tuning for Visibility**: Increased default icon sizes after player feedback that icons were too small
+  - WHY: Initial icon sizes (24–28px default, 36–40px tooltip) were barely visible at most resolutions
+  - PROBLEM SOLVED: Icons are now clearly visible across all resolution presets
+  - TECHNICAL IMPLEMENTATION:
+    - **Default Icon Size**: Changed from `max(24, int(28 * scale_factor))` to `max(36, int(42 * scale_factor))` — ~50% larger
+    - **Tooltip Icon Size**: Changed from `max(36, int(40 * scale_factor))` to `max(48, int(56 * scale_factor))` — ~40% larger
+    - **File Updated**: `dice_dungeon_explorer.py` (`get_item_icon_photo`), `explorer/inventory_display.py` (`create_item_tooltip`)
+
+### Fixed
+- **Fullscreen Switch Destroyed Game UI (Round 1)**: Switching resolution to/from Fullscreen left players with a blank screen — no action buttons, no adventure log, no room content
+  - WHY: `_rebuild_game_ui_and_reshow_settings()` called `setup_game_ui()` to rebuild the layout but never re-populated any dynamic content — buttons, log entries, and room descriptions were all lost
+  - PROBLEM SOLVED: Resolution switching now fully restores the game state players were in before switching
+  - TECHNICAL IMPLEMENTATION:
+    - **Adventure Log Restoration**: After rebuilding UI, iterates `self.adventure_log` history and re-inserts all entries into the new text widget
+    - **Exploration Buttons**: Calls `show_exploration_options()` to repopulate action buttons for the current room
+    - **Starter Area Detection**: Checks `getattr(self, 'in_starter_area', False) and self.floor == 0` to call the correct room display method
+    - **Combat State Handling**: If player was in combat when switching, restores combat UI instead of exploration UI
+    - **File Updated**: `dice_dungeon_explorer.py` (`_rebuild_game_ui_and_reshow_settings`)
+
+- **Fullscreen Switch Restarted the Game (Round 2)**: Switching resolution mid-dungeon teleported players back to the starter area and reset their game state
+  - WHY: `in_starter_area` flag remained `True` even after the player had entered the dungeon, causing the rebuild logic to show the starter room instead of the current dungeon room
+  - PROBLEM SOLVED: Resolution switch now correctly detects whether the player is actually in the starter area vs. the dungeon
+  - TECHNICAL IMPLEMENTATION:
+    - **Floor Check Added**: Changed condition from `if getattr(self, 'in_starter_area', False)` to `if getattr(self, 'in_starter_area', False) and self.floor == 0` — starter area is only floor 0
+    - **File Updated**: `dice_dungeon_explorer.py` (`_rebuild_game_ui_and_reshow_settings`)
+
+- **Window Resize Crash During Initialization**: Game crashed on startup because the `<Configure>` event fired before settings were loaded
+  - WHY: Tkinter fires `<Configure>` immediately when the window is created, but `self.settings` didn't exist yet during `__init__`
+  - PROBLEM SOLVED: Resize handler silently exits when called before initialization is complete
+  - TECHNICAL IMPLEMENTATION:
+    - **Guard Added**: `if not hasattr(self, 'settings'): return` at the top of `on_window_resize()`
+    - **File Updated**: `dice_dungeon_explorer.py` (`on_window_resize`)
+
+- **Icon Cache AttributeError During Sprite Loading**: `clear_item_icon_cache()` crashed because it was called before the cache dictionary was initialized
+  - WHY: `load_enemy_sprites()` → `_rebuild_sprite_photos()` → `clear_item_icon_cache()` runs during init, before `self.item_icon_cache = {}` is assigned
+  - PROBLEM SOLVED: Cache clear is now safe to call at any point during initialization
+  - TECHNICAL IMPLEMENTATION:
+    - **Guard Added**: `if not hasattr(self, 'item_icon_cache'): return` at the top of `clear_item_icon_cache()`
+    - **File Updated**: `dice_dungeon_explorer.py` (`clear_item_icon_cache`)
+
+- **Undersized and Invisible Icons**: 3 item icons were 48×48 (should be 1024×1024) and `unknown.png` was fully transparent
+  - WHY: Early pipeline generated some icons at the wrong resolution; the unknown fallback icon had no visible content
+  - PROBLEM SOLVED: All 231 icons are now confirmed 1024×1024 with visible content
+  - TECHNICAL IMPLEMENTATION:
+    - **Regenerated**: `critical_upgrade.png`, `weighted_die.png`, `hourglass_shard.png` — regenerated at 1024×1024 via OpenAI `gpt-image-1` API using the same BASE_PROMPT as the original pipeline
+    - **Regenerated**: `unknown.png` — replaced transparent fallback with a visible solid stone question mark icon
+    - **Verified**: Scanned all 231 icons in `assets/icons/items/` — 0 undersized remaining
+    - **Files Updated**: `assets/icons/items/critical_upgrade.png`, `assets/icons/items/weighted_die.png`, `assets/icons/items/hourglass_shard.png`, `assets/icons/items/unknown.png`
+
+### Changed
+- **Gitignore: Excluded Icon Generation Tooling**: Added icon pipeline dev tooling to `.gitignore` so only game-ready assets are pushed to GitHub
+  - WHY: The `tools/` pipeline, `outputs/` intermediates, and one-off regen scripts are dev-only — they contain no game code and reference the OpenAI API key via environment variable
+  - PROBLEM SOLVED: GitHub repository only contains the files needed to play the game; no dev tooling or API-related code is uploaded
+  - TECHNICAL IMPLEMENTATION:
+    - **tools/**: Entire icon generation pipeline (21 files) — prompts, manifest, batch generator, pixelizer, QA sheets
+    - **outputs/**: Intermediate hi-res images and pipeline logs
+    - **regen_icons.py**: One-off icon regeneration script in project root
+    - **Already Safe**: API key was never hardcoded — always read from `OPENAI_API_KEY` environment variable
+    - **Game Icons Kept**: `assets/icons/items/` (231 PNGs) is NOT ignored and will be pushed to GitHub
+    - **File Updated**: `.gitignore`
+
+## [Unreleased] - 2026-02-15
+
+### Added
+- **Automated Item Icon Pipeline**: Built complete end-to-end tooling to generate, process, and manage 48×48 pixel-art item icons for all 230 items
+  - WHY: Game had no visual item icons — inventory, tooltips, and store all showed only text names
+  - PROBLEM SOLVED: Fully automated pipeline from item definitions → AI-generated concept art → true pixel-art icons, with QA validation and game integration
+  - TECHNICAL IMPLEMENTATION:
+    - **Pipeline Location**: `tools/icon_pipeline/` — 9 Python modules, runnable as CLI or single command
+    - **common.py**: Shared constants, project paths (`PROJECT_ROOT`, `HI_RES_DIR`, `PIXEL_ICONS_DIR`), `slugify()` for filesystem-safe names, manifest I/O helpers, centralized logging to `outputs/icon_pipeline/icon_pipeline.log`
+    - **icon_manifest.py**: Parses `dice_dungeon_content/data/items_definitions.json` (supports dict-of-dicts or list-of-dicts), builds 230-row manifest at `tools/icon_pipeline/item_icons_manifest.json` with item_id, display_name, item_type, description, slug, hi_res_path, pixel_path, status (missing|generated_hi_res|pixelized|approved|needs_reroll), and prompt fields. Preserves previous status/prompt on rebuild. CLI: `python -m tools.icon_pipeline.icon_manifest --build`
+    - **style_guide.py**: Scans ONLY `assets/sprites/enemies/` recursively (1207 PNGs found), samples ~600K opaque pixels, extracts 20-color target palette via Pillow median-cut quantization, computes `outline_dark_rgb` from darkest 1% luminance pixels, `luminance_p10`/`luminance_p90` percentiles. Saves to `tools/icon_pipeline/style_guide.json`. Raises clear error if no PNGs found. CLI: `python -m tools.icon_pipeline.style_guide --build`
+    - **prompt_builder.py**: Generates consistent OpenAI image prompts per item. Base prompt: "clean fantasy RPG inventory icon, single centered object, strong silhouette, high contrast, minimal detail, studio lighting from upper-left, subtle rim light, no text, no border, transparent background". Adds type-specific hints from `_TYPE_HINTS` dict (heal→potion, equipment→gear, buff→charm, etc.) and keyword-specific overrides from `_KEYWORD_HINTS` list (60+ patterns: sword, dagger, potion, ring, scroll, etc.). Writes prompt back into manifest. CLI: `python -m tools.icon_pipeline.prompt_builder --apply`
+    - **image_generate_openai.py**: Calls OpenAI Images API (`gpt-image-1` default, override via `ICON_OPENAI_MODEL` env var). Generates 1024×1024 PNG with transparent background, high quality. Decodes base64 response (or downloads from URL). Only generates when BOTH hi_res and pixel files are absent. Saves to `outputs/icon_pipeline/hi_res/{slug}.png`. Retry logic: 3 attempts per icon with exponential backoff (5s, 10s, 15s). Graceful `KeyboardInterrupt` handling — saves manifest progress on interrupt. Rate-limited with 1.5s between calls. 120s client timeout. Updates manifest status to `generated_hi_res`. CLI: `python -m tools.icon_pipeline.image_generate_openai --generate-missing --limit N`
+    - **pixelize.py**: Full conversion pipeline per icon: (1) ensure RGBA transparency via corner-color distance thresholding if no alpha channel, (2) crop to content bounding box with 2px padding, (3) pad to square centered, (4) resize to 48×48 using `Image.NEAREST` only — no blur/AA/smoothing, (5) quantize to target palette from style_guide.json (no dithering, nearest-color mapping), (6) boost contrast if opaque pixel luminance range < 80. Saves to `assets/icons/items/{slug}.png`. Respects `--force` flag. CLI: `python -m tools.icon_pipeline.pixelize --pixelize-missing [--force]`
+    - **qa_sheet.py**: Builds contact sheets at `outputs/icon_pipeline/qa_sheets/`. 12 columns × 20 rows per sheet (240 icons max). Each cell: 80×80px with 48×48 icon centered + slug label. Warning labels in red: MISSING, EMPTY (all transparent), LOW_CONTRAST (luminance range < 40), CORRUPT. CLI: `python -m tools.icon_pipeline.qa_sheet --build`
+    - **run_all.py**: One-command runner executing all 6 stages in order: build manifest → build style guide → apply prompts → generate missing hi-res (default limit 10) → pixelize missing → build QA sheets. Gracefully skips OpenAI generation if package not installed or API key not set. CLI: `python -m tools.icon_pipeline.run_all --gen_limit N [--force]`
+    - **create_unknown.py**: Generates `assets/icons/items/unknown.png` — 48×48 pixel-art question mark on dark rounded-square background (warm gold `?` on `(50,35,25)` bg with `(120,90,60)` outline)
+    - **Files Created**: `tools/__init__.py`, `tools/icon_pipeline/__init__.py`, `tools/icon_pipeline/common.py`, `tools/icon_pipeline/icon_manifest.py`, `tools/icon_pipeline/style_guide.py`, `tools/icon_pipeline/prompt_builder.py`, `tools/icon_pipeline/image_generate_openai.py`, `tools/icon_pipeline/pixelize.py`, `tools/icon_pipeline/qa_sheet.py`, `tools/icon_pipeline/run_all.py`, `tools/icon_pipeline/create_unknown.py`
+
+- **Game Item Icon Helper**: Added `explorer/item_icons.py` for safe icon lookup in game UI
+  - WHY: UI code needs a simple way to get an item's icon path without ever crashing if the icon is missing
+  - PROBLEM SOLVED: Single function call returns the correct icon path or a fallback, with LRU caching for performance
+  - TECHNICAL IMPLEMENTATION:
+    - **get_item_icon_path(item_name)**: Returns `Path` to `assets/icons/items/{slug}.png` if it exists, else `assets/icons/items/unknown.png`. Uses `@lru_cache(maxsize=512)` for performance. Never raises exceptions.
+    - **icon_exists(item_name)**: Returns `True` only if the specific icon (not fallback) exists
+    - **slugify(item_name)**: Converts item name to filesystem slug (lowercase, underscores, stripped apostrophes)
+    - **_icons_dir()**: Resolves icon directory correctly for both dev mode (`__file__` parent) and frozen EXE (`sys._MEIPASS`)
+    - **File Created**: `explorer/item_icons.py`
+
+- **Persistent Save Location (APPDATA)**: Moved all user data (saves, settings, scores) to `%APPDATA%/DiceDungeon` for EXE builds
+  - WHY: When players download a new EXE from GitHub, saves stored next to the old EXE would be lost or invisible to the new version
+  - PROBLEM SOLVED: Saves now persist across EXE updates/moves/redownloads in a permanent OS-standard location
+  - TECHNICAL IMPLEMENTATION:
+    - **get_base_dir() Updated**: When `sys.frozen` is True, returns `os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'DiceDungeon')` instead of `os.path.dirname(sys.executable)`
+    - **Auto-Migration**: `_migrate_old_saves()` runs once on first launch — copies all files from old EXE-adjacent `saves/` folder to `%APPDATA%/DiceDungeon/saves/`. One-time operation marked by `.saves_migrated` file. Only copies files that don't already exist at destination (no overwrite).
+    - **Classic Mode Scores**: `dice_dungeon_rpg.py` scores file now uses `%APPDATA%/DiceDungeon/dice_dungeon_scores.json` when frozen. Migrates old scores from EXE-adjacent location.
+    - **Adventure Mode**: Automatically uses new path since `self.saves_dir = os.path.join(get_base_dir(), 'saves')` at line 150 — no code change needed
+    - **Dev Mode Unchanged**: Running as Python script still uses project root directory
+    - **Files Updated**: `explorer/path_utils.py` (get_base_dir rewrite + _migrate_old_saves), `dice_dungeon_rpg.py` (scores_file path + migration)
+
+### Fixed
+- **Store Buy Quantity Label**: Fixed misleading "Max: X" label that didn't distinguish between inventory space and gold limits
+  - WHY: Players couldn't tell whether they were limited by full inventory or insufficient gold
+  - PROBLEM SOLVED: Label now shows "Inventory space: X" or "Max affordable: X" depending on which is the actual constraint
+  - TECHNICAL IMPLEMENTATION:
+    - **Dual Calculation**: Computes both `max_by_gold = player_gold // item_price` and `max_by_space = max_inventory - len(inventory)`
+    - **Dynamic Label**: Displays whichever is the limiting factor with descriptive text
+    - **File Updated**: explorer/store.py buy confirmation popup
+
+- **Store Buy/Sell Popup Buttons Clipped at Fullscreen**: Fixed confirmation popup buttons getting cut off at high resolutions
+  - WHY: Popups used fixed `place(width=panel_width, height=panel_height)` that didn't account for scaled content
+  - PROBLEM SOLVED: Removed fixed width/height from `place()` calls, letting popups auto-size to fit all content
+  - TECHNICAL IMPLEMENTATION:
+    - **Buy Popup**: Removed `width=panel_width, height=panel_height` from `place()`, popup now auto-sizes
+    - **Sell Popup**: Same fix applied
+    - **File Updated**: explorer/store.py (both `_show_buy_confirmation` and `_show_sell_confirmation`)
+
 ## [Unreleased] - 2026-02-03
 
 ### Added
