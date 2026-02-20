@@ -12,7 +12,7 @@ A roguelike dungeon crawler where you roll dice to fight enemies, explore proced
 
 ### Windows
 
-1. [Click here to download the game](https://github.com/anthill737/dice-dungeon/archive/refs/heads/main.zip) — this downloads a file called **`dice-dungeon-main.zip`**
+1. [Click here to download the game](https://github.com/anthill737/dice-dungeon/archive/refs/heads/main.zip) — this downloads a file called **`dice-dungeon-main.zip`**. It's about 900MB.
 2. Find the downloaded ZIP file (usually in your **Downloads** folder)
 3. **Right-click** the ZIP file → select **"Extract All..."**
 4. Choose where to extract it (e.g. your Desktop) and click **"Extract"**
@@ -25,7 +25,7 @@ A roguelike dungeon crawler where you roll dice to fight enemies, explore proced
 
 **Done!** The downloaded ZIP and extracted folder can be safely deleted after installation — the game is now installed separately.
 
-> **Note:** The installer will download DiceDungeon.exe (~400 MB) from GitHub during installation. An internet connection is required.
+> **Note:** The installer will download DiceDungeon.exe (~900 MB) from GitHub during installation. An internet connection is required.
 
 ### Mac / Linux
 
