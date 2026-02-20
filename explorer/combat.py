@@ -370,9 +370,11 @@ class CombatManager:
             "Demon": 2.0, "Dragon": 2.5, "Lich": 1.8, "Vampire": 1.6,
             "Phoenix": 2.0, "Titan": 2.8,
             
+            # FLOOR BOSSES - Specific names (then multiplied by 8x)
+            "Crystal Golem": 1.8,
             # MINI-BOSSES - Specific names (then multiplied by 3x)
             "Gelatinous Slime": 1.3, "Slime Blob": 1.0,
-            "Shadow Hydra": 2.1, "Crystal Golem": 1.8, "Crystal Shard": 1.0,
+            "Shadow Hydra": 2.1, "Crystal Shard": 1.0,
             "Acid Hydra": 2.3, "Void Wraith": 1.4, "Shadow Head": 1.0,
             "Imp": 0.7, "Incense Spirit": 1.5, "Lightning Warden": 1.7,
             # REGULAR ENEMIES WITH STATUS EFFECTS - Specific names

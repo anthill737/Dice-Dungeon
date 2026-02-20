@@ -3253,7 +3253,7 @@
   {
     "id": 105,
     "name": "Crystal Cavern",
-    "difficulty": "Elite",
+    "difficulty": "Boss",
     "threats": [
       "Crystal Golem"
     ],
@@ -3265,15 +3265,16 @@
     ],
     "tags": [
       "combat",
-      "elite",
+      "boss",
       "splits",
       "construct"
     ],
     "mechanics": {
       "on_enter": {
-        "shield": 5
+        "shield": 15
       },
       "on_clear": {
+        "gold_mult": 1.3,
         "item": "Perfect Crystal"
       }
     }

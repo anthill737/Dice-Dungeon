@@ -256,8 +256,15 @@ Dynamic map • Mysterious lore"""
         splash.mainloop()
     
     def show_splash_explorer(self):
-        """Show splash screen for Explorer Mode"""
-        splash = tk.Tk()
+        """Show splash screen for Explorer Mode with real progress tracking"""
+        import time
+        
+        # Create the real root first (will become the game window)
+        game_root = tk.Tk()
+        game_root.withdraw()  # Hide until loading is done
+        
+        # Create splash as a Toplevel so destroying it doesn't kill the app
+        splash = tk.Toplevel(game_root)
         splash.title("Dice Dungeon")
         splash.resizable(False, False)
         splash.configure(bg='#0a0604')
@@ -269,95 +276,143 @@ Dynamic map • Mysterious lore"""
         splash.geometry(f'{width}x{height}+{x}+{y}')
         splash.overrideredirect(True)
         
+        try:
+            icon_path = get_resource_path(os.path.join("assets", "DD Logo.png"))
+            if os.path.exists(icon_path):
+                icon = tk.PhotoImage(file=icon_path, master=splash)
+                splash.iconphoto(True, icon)
+        except:
+            pass
+        
         main_frame = tk.Frame(splash, bg='#0a0604', relief=tk.RAISED, borderwidth=3)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
         
         # Logo
-        logo_image = None
+        logo_image_ref = None
         try:
             logo_path = get_resource_path(os.path.join("assets", "DD Logo.png"))
             if os.path.exists(logo_path):
                 from PIL import Image, ImageTk
                 img = Image.open(logo_path)
                 img = img.resize((120, 120), Image.LANCZOS)
-                logo_image = ImageTk.PhotoImage(img)
-                logo_label = tk.Label(main_frame, image=logo_image, bg='#0a0604')
-                logo_label.image = logo_image
+                logo_image_ref = ImageTk.PhotoImage(img, master=splash)
+                logo_label = tk.Label(main_frame, image=logo_image_ref, bg='#0a0604')
                 logo_label.pack(pady=(30, 15))
-        except:
-            pass
+            else:
+                tk.Label(main_frame, text="DD", font=('Arial', self.scale_font(42), 'bold'),
+                        bg='#0a0604', fg='#d4af37').pack(pady=(40, 15))
+        except Exception:
+            tk.Label(main_frame, text="DD", font=('Arial', self.scale_font(42), 'bold'),
+                    bg='#0a0604', fg='#d4af37').pack(pady=(40, 15))
         
         tk.Label(main_frame, text="DICE DUNGEON",
                 font=('Arial', self.scale_font(22), 'bold'), bg='#0a0604', fg='#d4af37').pack(pady=8)
-        tk.Label(main_frame, text="Explore • Fight • Loot • Survive",
+        tk.Label(main_frame, text="Explore \u2022 Fight \u2022 Loot \u2022 Survive",
                 font=('Arial', self.scale_font(12), 'italic'), bg='#0a0604', fg='#8b7355').pack(pady=5)
         
-        # Loading area
         loading_frame = tk.Frame(main_frame, bg='#0a0604')
-        loading_frame.pack(pady=(30, 30), expand=True)
+        loading_frame.pack(pady=(30, 30), fill=tk.X, expand=True)
         
-        text_frame = tk.Frame(loading_frame, bg='#0a0604')
-        text_frame.pack()
+        loading_label = tk.Label(loading_frame, text="Initializing...",
+                                font=('Arial', self.scale_font(14)), bg='#0a0604', fg='#e8dcc4',
+                                anchor='center')
+        loading_label.pack(expand=True)
         
-        loading_label = tk.Label(text_frame, text="Loading game engine",
-                               font=('Arial', self.scale_font(14)), bg='#0a0604', fg='#e8dcc4')
-        loading_label.pack(side=tk.LEFT)
+        # State for dot animation
+        _current_message = ['']
+        _dot_after_id = [None]
+        _dot_phase = [0]
         
-        dots_label = tk.Label(text_frame, text="",
-                            font=('Arial', self.scale_font(14)), bg='#0a0604', fg='#d4af37')
-        dots_label.pack(side=tk.LEFT)
+        def _start_dot_cycle():
+            """Keep cycling .  ..  ... on the current message until the next update."""
+            if not (splash and splash.winfo_exists()):
+                return
+            _dot_phase[0] = (_dot_phase[0] % 3) + 1
+            dots = "." * _dot_phase[0]
+            loading_label.config(text=f"{_current_message[0]}{dots}")
+            splash.update_idletasks()
+            _dot_after_id[0] = splash.after(220, _start_dot_cycle)
         
-        # Progress tracking
-        progress = [0]
-        max_progress = 25
-        loading_messages = [
-            "Loading game engine",
-            "Loading content system",
-            "Initializing dice mechanics",
-            "Loading enemy data",
-            "Loading item definitions",
-            "Preparing world lore",
-            "Starting adventure"
-        ]
-        message_index = [0]
+        def update_status(message):
+            """Update the splash loading text with animated dots."""
+            if not (splash and splash.winfo_exists()):
+                return
+            clean = message.rstrip('. ')
+            if clean == _current_message[0]:
+                splash.update()
+                return
+            _current_message[0] = clean
+            if _dot_after_id[0]:
+                splash.after_cancel(_dot_after_id[0])
+                _dot_after_id[0] = None
+            for dot_count in range(1, 4):
+                dots = "." * dot_count
+                loading_label.config(text=f"{clean}{dots}")
+                splash.update()
+                time.sleep(0.18)
+            _dot_phase[0] = 0
+            _start_dot_cycle()
         
-        def animate():
-            if progress[0] < max_progress:
-                # Update dots
-                dots = "." * ((progress[0] % 3) + 1)
-                dots_label.config(text=dots)
-                
-                # Update loading message
-                message_interval = max(1, max_progress // len(loading_messages))
-                if progress[0] % message_interval == 0 and message_index[0] < len(loading_messages):
-                    loading_label.config(text=loading_messages[message_index[0]])
-                    message_index[0] += 1
-                
-                progress[0] += 1
-                splash.after(200, animate)
-            else:
-                # Loading complete - launch immediately
-                launch_game()
+        def show_instant(message):
+            """Flash a message without slow dot animation."""
+            if splash and splash.winfo_exists():
+                if _dot_after_id[0]:
+                    splash.after_cancel(_dot_after_id[0])
+                    _dot_after_id[0] = None
+                clean = message.rstrip('. ')
+                _current_message[0] = clean
+                loading_label.config(text=f"{clean}...")
+                splash.update()
         
-        def launch_game():
-            splash.destroy()
+        # Make splash visible before starting to load
+        splash.update()
+        
+        def do_load():
+            """Load the game on the main thread, updating splash as we go."""
             try:
                 import dice_dungeon_explorer
-                root = tk.Tk()
-                app = dice_dungeon_explorer.DiceDungeonExplorer(root)
-                root.mainloop()
+                app = dice_dungeon_explorer.DiceDungeonExplorer(
+                    game_root,
+                    progress_callback=update_status
+                )
             except Exception as e:
                 import traceback
-                err_root = tk.Tk()
-                err_root.withdraw()
-                import tkinter.messagebox as mb
-                mb.showerror("Launch Error", 
-                    f"Could not launch Adventure Mode:\n\n{e}\n\n{traceback.format_exc()}",
-                    parent=err_root)
-                err_root.destroy()
+                update_status(f"Error: {e}")
+                splash.after(3000, splash.destroy)
+                return
+            
+            # Loading complete - show final messages, then transition
+            show_instant("Starting adventure...")
+            show_instant("Ready!")
+            
+            # Cancel dot animation loop
+            if _dot_after_id[0]:
+                try:
+                    splash.after_cancel(_dot_after_id[0])
+                except Exception:
+                    pass
+                _dot_after_id[0] = None
+            
+            # Make game window fully transparent, then deiconify so geometry works
+            game_root.attributes('-alpha', 0.0)
+            game_root.deiconify()
+            game_root.update_idletasks()
+            # Clear the progress callback so apply_resolution's sprite rebuild
+            # doesn't re-trigger the splash animation
+            app._progress_callback = None
+            # Apply saved resolution
+            saved_res = app.settings.get("resolution", "950x700")
+            app.apply_resolution(saved_res, save=False)
+            # Build the main menu with correct window dimensions
+            app.main_menu_manager.show_main_menu()
+            game_root.update_idletasks()
+            # Destroy splash and reveal the fully-built game window
+            if splash and splash.winfo_exists():
+                splash.destroy()
+            game_root.attributes('-alpha', 1.0)
         
-        animate()
-        splash.mainloop()
+        splash.after(200, do_load)
+        game_root.mainloop()
 
 if __name__ == "__main__":
     root = tk.Tk()

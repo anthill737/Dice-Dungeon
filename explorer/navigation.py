@@ -46,6 +46,10 @@ class NavigationManager:
         if hasattr(self.game, 'typewriter_active') and self.game.typewriter_active:
             return
         
+        # Don't allow movement during combat or interactions
+        if getattr(self.game, 'in_combat', False) or getattr(self.game, 'in_interaction', False):
+            return
+        
         # Reset environmental hazard penalties when leaving a room
         self.game.combat_accuracy_penalty = 0.0
         if hasattr(self.game, 'combat_crit_penalty'):
