@@ -1,5 +1,4 @@
 import tkinter as tk
-import random
 
 
 class LoreManager:
@@ -29,11 +28,11 @@ class LoreManager:
         
         if not available_indices:
             # All entries have been used - start reusing from beginning
-            entry_index = random.randint(0, total_entries - 1)
+            entry_index = self.game.rng.randint(0, total_entries - 1)
             self.game.log(reread_msg, 'system')
         else:
             # Pick a random unused entry
-            entry_index = random.choice(available_indices)
+            entry_index = self.game.rng.choice(available_indices)
             # Mark this entry as used
             self.game.used_lore_entries[lore_key].append(entry_index)
         
