@@ -5,14 +5,15 @@ A roguelike dice game with multipliers, power-ups, and strategic risk/reward gam
 
 import tkinter as tk
 from tkinter import messagebox
-import random
 import json
 import os
 import sys
+from rng import RNG, DefaultRNG
 
 class DiceDungeonRPG:
-    def __init__(self, root):
+    def __init__(self, root, rng: RNG = None):
         self.root = root
+        self.rng = rng or DefaultRNG()
         self.scale_factor = 1.0  # Font scaling factor for display size consistency
         self.root.title("Dice Dungeon Classic")
         self.root.geometry("650x700")  # Increased height for 10-line combat log
@@ -678,7 +679,7 @@ POWER-UPS:
         # Roll unlocked dice
         for i in range(self.num_dice):
             if not self.dice_locked[i]:
-                self.dice_values[i] = random.randint(1, 6)
+                self.dice_values[i] = self.rng.randint(1, 6)
         
         self.rolls_left -= 1
         
@@ -830,7 +831,7 @@ POWER-UPS:
         total = base + set_bonus + self.damage_bonus
         
         # Check for crit BEFORE logging
-        if random.random() < self.crit_chance:
+        if self.rng.random() < self.crit_chance:
             total = int(total * 2)
             self.last_damage_was_crit = True
         
@@ -862,9 +863,9 @@ POWER-UPS:
         
         # Player attack flavor text
         if self.last_damage_was_crit:
-            self.log(random.choice(self.player_crits), 'crit')
+            self.log(self.rng.choice(self.player_crits), 'crit')
         else:
-            self.log(random.choice(self.player_attacks), 'player')
+            self.log(self.rng.choice(self.player_attacks), 'player')
         
         self.log(f"You deal {damage} damage!", 'player')
         
@@ -872,20 +873,20 @@ POWER-UPS:
         if damage > 30:
             # High damage - enemy is hurt
             enemy_reaction = self.enemy_hurt.get(self.enemy_name, ["*groans*"])
-            self.log(f"{self.enemy_name}: '{random.choice(enemy_reaction)}'", 'enemy')
+            self.log(f"{self.enemy_name}: '{self.rng.choice(enemy_reaction)}'", 'enemy')
         elif damage > 0:
             # Low damage - enemy taunts
             enemy_taunt = self.enemy_taunts.get(self.enemy_name, ["You'll have to do better!"])
-            self.log(f"{self.enemy_name}: '{random.choice(enemy_taunt)}'", 'enemy')
+            self.log(f"{self.enemy_name}: '{self.rng.choice(enemy_taunt)}'", 'enemy')
         
         if self.enemy_health <= 0:
             # Enemy death message
             death_msg = self.enemy_death.get(self.enemy_name, ["*dies*"])
-            self.log(f"{self.enemy_name}: '{random.choice(death_msg)}'", 'enemy')
+            self.log(f"{self.enemy_name}: '{self.rng.choice(death_msg)}'", 'enemy')
             self.defeat_enemy()
         else:
             # Enemy counterattack - roll dice!
-            enemy_dice = [random.randint(1, 6) for _ in range(self.enemy_num_dice)]
+            enemy_dice = [self.rng.randint(1, 6) for _ in range(self.enemy_num_dice)]
             enemy_base = sum(enemy_dice)
             enemy_floor_bonus = self.floor  # Small bonus per floor
             enemy_damage = enemy_base + enemy_floor_bonus
@@ -897,7 +898,7 @@ POWER-UPS:
                 f"{self.enemy_name} counterattacks! Rolled {enemy_dice}",
                 f"{self.enemy_name} lashes out! Dice: {enemy_dice}"
             ]
-            self.log(random.choice(attack_phrases), 'enemy')
+            self.log(self.rng.choice(attack_phrases), 'enemy')
             
             # Show enemy damage breakdown
             self.log(f"  Enemy: Base {enemy_base} + Floor Bonus {enemy_floor_bonus} = {enemy_damage}", 'enemy')
@@ -914,7 +915,7 @@ POWER-UPS:
         self.update_display()
     
     def defeat_enemy(self):
-        gold_earned = random.randint(10, 30) + (self.floor * 5)
+        gold_earned = self.rng.randint(10, 30) + (self.floor * 5)
         gold_with_multiplier = int(gold_earned * self.multiplier)
         
         self.gold += gold_with_multiplier
@@ -1055,7 +1056,7 @@ POWER-UPS:
         
         # Roll all dice for new turn
         for i in range(self.num_dice):
-            self.dice_values[i] = random.randint(1, 6)
+                self.dice_values[i] = self.rng.randint(1, 6)
         
         # Update dice display
         for i in range(len(self.dice_buttons)):

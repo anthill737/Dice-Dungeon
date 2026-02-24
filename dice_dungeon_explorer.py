@@ -6,13 +6,13 @@ A roguelike dice game with dungeon exploration, combat, and interactive rooms
 import tkinter as tk
 from tkinter import messagebox, ttk
 from PIL import Image, ImageTk
-import random
 import json
 import os
 import sys
 import copy
 from collections import Counter
 from debug_logger import get_logger
+from rng import RNG, DefaultRNG
 from explorer import ui_character_menu
 from explorer.color_schemes import COLOR_SCHEMES, DEFAULT_SCHEME, ColorManager
 from explorer.item_icons import get_item_icon_path, slugify as icon_slugify
@@ -52,7 +52,7 @@ except ImportError as ie:
     CONTENT_ENGINE_AVAILABLE = False
     # Provide dummy functions if content engine is not available
     def load_rooms(): return []
-    def pick_room_for_floor(rooms, floor): 
+    def pick_room_for_floor(rooms, floor, rng=None): 
         # Return a basic fallback room if content engine isn't available
         return {
             'name': 'Empty Chamber',
@@ -93,9 +93,10 @@ from explorer.ui_main_menu import MainMenuManager
 from explorer.tutorial import TutorialManager
 
 class DiceDungeonExplorer:
-    def __init__(self, root, progress_callback=None):
+    def __init__(self, root, progress_callback=None, rng: RNG = None):
         self.root = root
         self._progress_callback = progress_callback
+        self.rng = rng or DefaultRNG()
         self.root.title("Dice Dungeon")
         
         # Set window and taskbar icon
@@ -646,7 +647,7 @@ class DiceDungeonExplorer:
         self.in_interaction = False
         
         # Boss spawn tracking
-        self.next_mini_boss_at = random.randint(6, 10)
+        self.next_mini_boss_at = self.rng.randint(6, 10)
         self.next_boss_at = None
         
         # Store tracking
@@ -1888,7 +1889,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         self.unlocked_rooms = set()  # Set of (x, y) tuples for rooms where keys were used
         self.is_boss_fight = False  # Flag for current combat
         self.rooms_explored_on_floor = 0  # Track rooms explored to trigger boss spawns
-        self.next_mini_boss_at = random.randint(6, 10)  # Random target for first mini-boss
+        self.next_mini_boss_at = self.rng.randint(6, 10)  # Random target for first mini-boss
         self.next_boss_at = None  # Will be set on floor 5+
         
         # Reset inventory
@@ -3082,20 +3083,20 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
         loot_mult = self.difficulty_multipliers[difficulty]["loot_chance_mult"]
         
         # Random loot (adjusted by difficulty)
-        if random.random() < (0.6 * loot_mult):  # Better loot chance on Easy
-            loot_type = random.choice(['gold', 'gold', 'item', 'health'])
+        if self.rng.random() < (0.6 * loot_mult):  # Better loot chance on Easy
+            loot_type = self.rng.choice(['gold', 'gold', 'item', 'health'])
         else:
             loot_type = 'gold'
         
         if loot_type == 'gold':
-            amount = random.randint(20, 50) + (self.floor * 10)
+            amount = self.rng.randint(20, 50) + (self.floor * 10)
             amount = int(amount * loot_mult)
             self.gold += amount
             self.total_gold_earned += amount
             self.stats["gold_found"] += amount
             self.log(f"[CHEST] Opened chest: +{amount} gold!", 'loot')
         elif loot_type == 'health':
-            heal = random.randint(15, 30)
+            heal = self.rng.randint(15, 30)
             heal = int(heal * self.difficulty_multipliers[difficulty]["heal_mult"])
             self.health = min(self.health + heal, self.max_health)
             self.log(f"[CHEST] Opened chest: Health Potion! +{heal} HP", 'loot')
@@ -3103,7 +3104,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             # Use actual items from item_definitions instead of placeholder names
             items = ['Weighted Die', 'Hourglass Shard', 'Tuner\'s Hammer', 'Conductor Rod', 
                     'Honey Jar', 'Lucky Chip', 'Lockpick Kit', 'Silk Bundle', 'Blue Quartz']
-            item = random.choice(items)
+            item = self.rng.choice(items)
             if len(self.inventory) < self.max_inventory:
                 self.inventory.append(item)
                 # Track acquisition using centralized function
@@ -4195,11 +4196,11 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             
             if not available_indices:
                 # All entries have been used - start reusing from beginning
-                entry_index = random.randint(0, total_entries - 1)
+                entry_index = self.rng.randint(0, total_entries - 1)
                 self.log("You've read all the scrawled notes. This one seems familiar...", 'system')
             else:
                 # Pick a random unused entry
-                entry_index = random.choice(available_indices)
+                entry_index = self.rng.choice(available_indices)
                 # Mark this entry as used
                 self.used_lore_entries[lore_key].append(entry_index)
             
@@ -5703,15 +5704,15 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
             self.rooms_explored_on_floor = save_data.get('rooms_explored_on_floor', 0)
             
             # Restore boss spawn targets (set defaults for old saves)
-            self.next_mini_boss_at = save_data.get('next_mini_boss_at', random.randint(6, 10))
-            self.next_boss_at = save_data.get('next_boss_at', random.randint(20, 30) if self.floor >= 5 else None)
+            self.next_mini_boss_at = save_data.get('next_mini_boss_at', self.rng.randint(6, 10))
+            self.next_boss_at = save_data.get('next_boss_at', self.rng.randint(20, 30) if self.floor >= 5 else None)
             
             # Restore key fragment counter (backward compatible with old saves)
             self.key_fragments_collected = save_data.get('key_fragments_collected', 0)
             
             # Compatibility fix: if all 3 mini-bosses defeated but no boss spawn target set, set it now
             if self.mini_bosses_defeated >= 3 and self.next_boss_at is None and not self.boss_defeated:
-                self.next_boss_at = self.rooms_explored_on_floor + random.randint(4, 6)
+                self.next_boss_at = self.rooms_explored_on_floor + self.rng.randint(4, 6)
                 print(f"[SAVE COMPATIBILITY] Boss spawn target set to {self.next_boss_at} rooms (currently at {self.rooms_explored_on_floor})")
             
             # Restore special rooms tracking
