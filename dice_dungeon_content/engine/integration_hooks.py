@@ -13,7 +13,8 @@ def attach_content(game_obj: Any, base_dir: str):
 
 def start_room_for_floor(game_obj: Any, floor: int, log_fn):
     from .rooms_loader import pick_room_for_floor
-    room = pick_room_for_floor(game_obj._rooms, floor)
+    rng = getattr(game_obj, 'rng', None)
+    room = pick_room_for_floor(game_obj._rooms, floor, rng=rng)
     game_obj._current_room = room
     log_fn(f"=== ROOM: {room['name']} ({room['difficulty']}) ===")
     log_fn(room["flavor"])

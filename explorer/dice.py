@@ -2,7 +2,6 @@
 Dice System Manager - Handles all dice mechanics for Dice Dungeon
 Manages: Rolling, locking, display, animation, rendering, combo calculation, damage preview
 """
-import random
 import tkinter as tk
 from collections import Counter
 from debug_logger import get_logger
@@ -57,10 +56,10 @@ class DiceManager:
         for i in dice_to_roll:
             if restricted_values:
                 # Roll only from restricted values (boss curse)
-                final_values[i] = random.choice(restricted_values)
+                final_values[i] = self.game.rng.choice(restricted_values)
             else:
                 # Normal roll
-                final_values[i] = random.randint(1, 6)
+                final_values[i] = self.game.rng.randint(1, 6)
         
         # Start animation (15 frames = 375ms total at 25ms per frame, reduced from 20 frames/500ms)
         self._animate_dice_roll(dice_to_roll, final_values, frame=0, max_frames=15)
@@ -70,7 +69,7 @@ class DiceManager:
         if frame < max_frames:
             # Show random values during animation
             for i in dice_to_roll:
-                self.game.dice_values[i] = random.randint(1, 6)
+                self.game.dice_values[i] = self.game.rng.randint(1, 6)
             self.update_dice_display()
             
             # Schedule next frame (25ms delay for smooth animation)
