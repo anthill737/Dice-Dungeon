@@ -20,14 +20,24 @@ def load_rooms(json_path: str) -> List[Dict[str, Any]]:
                 raise RoomLoadError(f"Room missing key '{key}': {r}")
     return data
 
-def pick_room_for_floor(rooms: List[Dict[str, Any]], floor: int) -> Dict[str, Any]:
+def pick_room_for_floor(rooms: List[Dict[str, Any]], floor: int, rng=None) -> Dict[str, Any]:
     """
     Map floor → difficulty → random room.
     1–3: Easy, 4–6: Medium, 7–9: Hard, 10–12: Elite, 13+: Elite with Boss chance
     
     Reduces combat encounters by ~20% by preferring non-combat rooms when available.
+    
+    Args:
+        rng: Optional RNG instance. Falls back to module-level random if None.
     """
-    import random
+    if rng is None:
+        import random as _fallback
+        _rng_random = _fallback.random
+        _rng_choice = _fallback.choice
+    else:
+        _rng_random = rng.random
+        _rng_choice = rng.choice
+
     if floor <= 3:
         target = "Easy"
     elif floor <= 6:
@@ -45,7 +55,7 @@ def pick_room_for_floor(rooms: List[Dict[str, Any]], floor: int) -> Dict[str, An
     pool = [r for r in rooms if r.get("difficulty") == target] or rooms
     
     # Reduce combat by 20% - prefer non-combat rooms 20% of the time
-    if random.random() < 0.20:
+    if _rng_random() < 0.20:
         # Try to find non-combat rooms (those with "lore", "puzzle", "event", "rest" tags)
         non_combat_tags = {"lore", "puzzle", "event", "rest", "environment"}
         non_combat_pool = [r for r in pool 
@@ -54,7 +64,7 @@ def pick_room_for_floor(rooms: List[Dict[str, Any]], floor: int) -> Dict[str, An
         if non_combat_pool:
             pool = non_combat_pool
     
-    return random.choice(pool)
+    return _rng_choice(pool)
 
 def find_room_by_id(rooms: List[Dict[str, Any]], rid: int) -> Optional[Dict[str, Any]]:
     for r in rooms:

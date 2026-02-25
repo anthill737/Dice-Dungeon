@@ -7,7 +7,6 @@ enemy attacks, and combat flow.
 All methods use self.game.* to reference the main game state.
 """
 
-import random
 import tkinter as tk
 from collections import Counter
 from debug_logger import get_logger
@@ -69,10 +68,10 @@ class CombatManager:
         for i in dice_to_roll:
             if restricted_values:
                 # Roll only from restricted values
-                final_values[i] = random.choice(restricted_values)
+                final_values[i] = self.game.rng.choice(restricted_values)
             else:
                 # Normal roll
-                final_values[i] = random.randint(1, 6)
+                final_values[i] = self.game.rng.randint(1, 6)
         
         # Animate the roll (8 frames, ~25ms each = ~200ms total)
         self.game._animate_dice_roll(dice_to_roll, final_values, 0, 8)
@@ -168,7 +167,7 @@ class CombatManager:
         
         enemy_type = self.game.enemy_name.split()[0]
         if enemy_type in self.game.enemy_death:
-            self.game.log(random.choice(self.game.enemy_death[enemy_type]), 'enemy')
+            self.game.log(self.game.rng.choice(self.game.enemy_death[enemy_type]), 'enemy')
         
         # Clear temporary combat buffs
         self.game.clear_combat_buffs()
@@ -176,7 +175,7 @@ class CombatManager:
         # Rewards - scale based on boss type
         if is_boss:
             # Main boss rewards - amazing loot for clearing the floor
-            gold_reward = random.randint(200, 350) + (self.game.floor * 100)
+            gold_reward = self.game.rng.randint(200, 350) + (self.game.floor * 100)
             self.game.gold += gold_reward
             self.game.total_gold_earned += gold_reward
             self.game.stats["gold_found"] += gold_reward
@@ -195,9 +194,9 @@ class CombatManager:
             ]
             
             # Give 3-5 random items from the rare loot pool
-            num_rewards = random.randint(3, 5)
+            num_rewards = self.game.rng.randint(3, 5)
             for _ in range(num_rewards):
-                boss_drop = random.choice(rare_equipment)
+                boss_drop = self.game.rng.choice(rare_equipment)
                 self.game.try_add_to_inventory(boss_drop, "reward")
             
             self.game.boss_defeated = True
@@ -211,7 +210,7 @@ class CombatManager:
             
         elif is_mini_boss:
             # Mini-boss rewards - guaranteed good loot
-            gold_reward = random.randint(50, 80) + (self.game.floor * 20)
+            gold_reward = self.game.rng.randint(50, 80) + (self.game.floor * 20)
             self.game.gold += gold_reward
             self.game.total_gold_earned += gold_reward
             self.game.stats["gold_found"] += gold_reward
@@ -251,14 +250,14 @@ class CombatManager:
                     "Steel Dagger", "Iron Sword", "Hand Axe",
                     "Leather Armor", "Chain Vest", "Wooden Shield"
                 ]
-            bonus_loot = random.choice(useful_loot)
+            bonus_loot = self.game.rng.choice(useful_loot)
             self.game.try_add_to_inventory(bonus_loot, "reward")
             
             self.game.mini_bosses_defeated += 1
             
             # When 3rd mini-boss is defeated, set boss spawn target for 4-6 rooms from now
             if self.game.mini_bosses_defeated == 3:
-                self.game.next_boss_at = self.game.rooms_explored_on_floor + random.randint(4, 6)
+                self.game.next_boss_at = self.game.rooms_explored_on_floor + self.game.rng.randint(4, 6)
                 self.game.log(f"The floor boss will appear soon...", 'enemy')
             
             # Permanently unlock this room after defeating mini-boss
@@ -266,7 +265,7 @@ class CombatManager:
             # Room is now permanently accessible (no need to announce)
         else:
             # Normal enemy rewards
-            gold_reward = random.randint(10, 30) + (self.game.floor * 5)
+            gold_reward = self.game.rng.randint(10, 30) + (self.game.floor * 5)
             self.game.gold += gold_reward
             self.game.total_gold_earned += gold_reward
             self.game.stats["gold_found"] += gold_reward
@@ -305,8 +304,8 @@ class CombatManager:
             self.game.show_exploration_options()
         else:
             # 50% chance to flee, but lose some HP
-            if random.random() < 0.5:
-                damage = random.randint(5, 15)
+            if self.game.rng.random() < 0.5:
+                damage = self.game.rng.randint(5, 15)
                 self.game.health -= damage
                 self.game.log(f"[FLEE] You fled! Lost {damage} HP in the escape.", 'system')
                 
@@ -408,7 +407,7 @@ class CombatManager:
         
         # Apply enemy-specific multiplier before random variation
         base_hp = int(base_hp * multiplier)
-        enemy_hp = base_hp + random.randint(-5, 10)
+        enemy_hp = base_hp + self.game.rng.randint(-5, 10)
         
         # Determine enemy dice count - increased to be more competitive with player
         if is_boss:
@@ -907,12 +906,12 @@ class CombatManager:
             print(f"DEBUG: dice_lock_random - unlocked indices: {unlocked_indices}, trying to lock {lock_count}")
             
             if unlocked_indices:
-                to_lock = random.sample(unlocked_indices, min(lock_count, len(unlocked_indices)))
+                to_lock = self.game.rng.sample(unlocked_indices, min(lock_count, len(unlocked_indices)))
                 print(f"DEBUG: Locking dice indices: {to_lock}")
                 
                 # Set all locked dice to random values (they're frozen at that value)
                 for idx in to_lock:
-                    random_value = random.randint(1, 6)
+                    random_value = self.game.rng.randint(1, 6)
                     self.game.dice_values[idx] = random_value
                     print(f"DEBUG: Force-locked die {idx} to random value {random_value}")
                 
@@ -1738,7 +1737,7 @@ class CombatManager:
                 
                 enemy_type = target['name'].split()[0]
                 if enemy_type in self.game.enemy_hurt:
-                    self.game.log(random.choice(self.game.enemy_hurt[enemy_type]), 'enemy')
+                    self.game.log(self.game.rng.choice(self.game.enemy_hurt[enemy_type]), 'enemy')
                 
                 self.check_spawn_conditions()
                 
@@ -1762,7 +1761,7 @@ class CombatManager:
                 self.game.log(f"Enemy HP: {max(0, self.game.enemy_health)}/{self.game.enemy_max_health}", 'enemy')
                 enemy_type = self.game.enemy_name.split()[0]
                 if enemy_type in self.game.enemy_hurt:
-                    self.game.log(random.choice(self.game.enemy_hurt[enemy_type]), 'enemy')
+                    self.game.log(self.game.rng.choice(self.game.enemy_hurt[enemy_type]), 'enemy')
                 
                 # Proceed to enemy turn after delay
                 self.game.root.after(400, self._start_enemy_turn_sequence)
@@ -2312,7 +2311,7 @@ class CombatManager:
             
             if first_attacking_enemy:
                 num_dice = first_attacking_enemy["num_dice"]
-                enemy_dice = [random.randint(1, 6) for _ in range(num_dice)]
+                enemy_dice = [self.game.rng.randint(1, 6) for _ in range(num_dice)]
                 
                 # Animate enemy dice roll
                 self._show_and_animate_enemy_dice(enemy_dice, num_dice)
@@ -2332,7 +2331,7 @@ class CombatManager:
                         })
                     else:
                         # Other enemies roll but aren't animated
-                        other_dice = [random.randint(1, 6) for _ in range(enemy["num_dice"])]
+                        other_dice = [self.game.rng.randint(1, 6) for _ in range(enemy["num_dice"])]
                         self.game.enemy_roll_results.append({
                             'name': enemy['name'],
                             'dice': other_dice,
@@ -2344,7 +2343,7 @@ class CombatManager:
         else:
             # Fallback single enemy
             num_dice = self.game.enemy_num_dice
-            enemy_dice = [random.randint(1, 6) for _ in range(num_dice)]
+            enemy_dice = [self.game.rng.randint(1, 6) for _ in range(num_dice)]
             
             self._show_and_animate_enemy_dice(enemy_dice, num_dice)
             
@@ -2407,7 +2406,7 @@ class CombatManager:
             # Show random values during animation
             for i, canvas in enumerate(self.game.enemy_dice_canvases):
                 if i < len(final_values):
-                    self.game.enemy_dice_values[i] = random.randint(1, 6)
+                    self.game.enemy_dice_values[i] = self.game.rng.randint(1, 6)
                     self._render_enemy_die(canvas, self.game.enemy_dice_values[i])
             
             # Schedule next frame (25ms delay for smooth animation)
@@ -2755,13 +2754,13 @@ class CombatManager:
         else:
             # Show taunt
             if len(self.game.enemies) > 0:
-                taunter = random.choice(self.game.enemies)
+                taunter = self.game.rng.choice(self.game.enemies)
                 enemy_type = taunter['name'].split()[0]
             else:
                 enemy_type = self.game.enemy_name.split()[0]
             
             if enemy_type in self.game.enemy_taunts:
-                self.game.log(random.choice(self.game.enemy_taunts[enemy_type]), 'enemy')
+                self.game.log(self.game.rng.choice(self.game.enemy_taunts[enemy_type]), 'enemy')
             
             # End of round - re-enable controls and start new turn
             self.game.root.after(500, self._end_combat_round)
@@ -2794,7 +2793,7 @@ class CombatManager:
         
         # Check for fumble
         if hasattr(self, 'combat_fumble_chance') and self.game.combat_fumble_chance > 0:
-            if random.random() < self.game.combat_fumble_chance:
+            if self.game.rng.random() < self.game.combat_fumble_chance:
                 non_zero_dice = [d for d in attack_dice if d > 0]
                 if non_zero_dice:
                     lowest_die = min(non_zero_dice)
@@ -2814,11 +2813,11 @@ class CombatManager:
         if hasattr(self, 'combat_crit_penalty') and self.game.combat_crit_penalty > 0:
             crit_chance = max(0, crit_chance - self.game.combat_crit_penalty)
         
-        is_crit = random.random() < crit_chance
+        is_crit = self.game.rng.random() < crit_chance
         if is_crit:
             damage = int(damage * 1.5)
             self.game.stats["critical_hits"] += 1
-            self.game.log(random.choice(self.game.player_crits), 'crit')
+            self.game.log(self.game.rng.choice(self.game.player_crits), 'crit')
         
         # Track stats
         self.game.stats["total_damage_dealt"] += damage
@@ -3012,7 +3011,7 @@ class CombatManager:
         
         # Check for fumble
         if hasattr(self, 'combat_fumble_chance') and self.game.combat_fumble_chance > 0:
-            if random.random() < self.game.combat_fumble_chance:
+            if self.game.rng.random() < self.game.combat_fumble_chance:
                 non_zero_dice = [d for d in attack_dice if d > 0]
                 if non_zero_dice:
                     lowest_die = min(non_zero_dice)
@@ -3035,11 +3034,11 @@ class CombatManager:
         if hasattr(self, 'combat_crit_penalty') and self.game.combat_crit_penalty > 0:
             crit_chance = max(0, crit_chance - self.game.combat_crit_penalty)
         
-        is_crit = random.random() < crit_chance
+        is_crit = self.game.rng.random() < crit_chance
         if is_crit:
             damage = int(damage * 1.5)
             self.game.stats["critical_hits"] += 1
-            self.game.log(random.choice(self.game.player_crits), 'crit')
+            self.game.log(self.game.rng.choice(self.game.player_crits), 'crit')
         
         # Track stats
         self.game.stats["total_damage_dealt"] += damage

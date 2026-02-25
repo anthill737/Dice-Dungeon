@@ -6,7 +6,6 @@ including buying/selling items, generating store inventory, and price calculatio
 """
 
 import tkinter as tk
-import random
 from collections import Counter
 
 

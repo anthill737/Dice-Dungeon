@@ -9,7 +9,6 @@ Handles all room navigation and exploration logic including:
 - Special room spawning (boss, mini-boss, stairs, store)
 """
 
-import random
 import tkinter as tk
 from tkinter import messagebox
 
@@ -29,7 +28,7 @@ except ImportError:
     def apply_on_enter(game, room_data, log_func): pass
     def on_floor_transition(game): pass
     def apply_effective_modifiers(game): pass
-    def pick_room_for_floor(rooms, floor): return {}
+    def pick_room_for_floor(rooms, floor, rng=None): return {}
     class Room: pass
 
 
@@ -126,7 +125,7 @@ class NavigationManager:
             should_be_mini_boss = True
             self.game.mini_bosses_spawned_this_floor += 1
             # Set next mini-boss target for the next one (will be used after current one is defeated)
-            self.game.next_mini_boss_at = self.game.rooms_explored_on_floor + random.randint(6, 10)
+            self.game.next_mini_boss_at = self.game.rooms_explored_on_floor + self.game.rng.randint(6, 10)
         
         # Boss spawn logic: 
         # - Boss spawns 5-8 rooms after defeating all 3 mini-bosses
@@ -143,25 +142,25 @@ class NavigationManager:
             # Force Boss difficulty room
             boss_rooms = [r for r in self.game._rooms if r.get('difficulty') == 'Boss']
             if boss_rooms:
-                room_data = random.choice(boss_rooms)
+                room_data = self.game.rng.choice(boss_rooms)
             else:
-                room_data = pick_room_for_floor(self.game._rooms, self.game.floor)
+                room_data = pick_room_for_floor(self.game._rooms, self.game.floor, rng=self.game.rng)
         elif should_be_mini_boss:
             # Force Elite difficulty room for mini-boss
             elite_rooms = [r for r in self.game._rooms if r.get('difficulty') == 'Elite']
             if elite_rooms:
-                room_data = random.choice(elite_rooms)
+                room_data = self.game.rng.choice(elite_rooms)
             else:
-                room_data = pick_room_for_floor(self.game._rooms, self.game.floor)
+                room_data = pick_room_for_floor(self.game._rooms, self.game.floor, rng=self.game.rng)
         else:
             # Normal room selection
-            room_data = pick_room_for_floor(self.game._rooms, self.game.floor)
+            room_data = pick_room_for_floor(self.game._rooms, self.game.floor, rng=self.game.rng)
         
         new_room = Room(room_data, new_pos[0], new_pos[1])
         
         # Randomly block some exits (30% chance per direction)
         for dir in ['N', 'S', 'E', 'W']:
-            if random.random() < 0.3:
+            if self.game.rng.random() < 0.3:
                 new_room.exits[dir] = False
                 new_room.blocked_exits.append(dir)
         
@@ -176,7 +175,7 @@ class NavigationManager:
         open_other = [d for d in other_exits if new_room.exits[d]]
         if len(open_other) == 0:
             # Force open one random direction
-            to_open = random.choice(other_exits)
+            to_open = self.game.rng.choice(other_exits)
             new_room.exits[to_open] = True
             if to_open in new_room.blocked_exits:
                 new_room.blocked_exits.remove(to_open)
@@ -198,7 +197,7 @@ class NavigationManager:
             threats = room_data.get('threats', [])
             has_combat_tag = 'combat' in room_data.get('tags', [])
             if threats or has_combat_tag:
-                new_room.has_combat = random.random() < 0.4
+                new_room.has_combat = self.game.rng.random() < 0.4
             else:
                 new_room.has_combat = False
         
@@ -366,7 +365,7 @@ class NavigationManager:
             apply_effective_modifiers(self.game)
         
         # Randomly add stairs (10% chance in any room after 3+ rooms explored) - ONLY on first visit
-        if not skip_effects and is_first_visit and not self.game.stairs_found and self.game.rooms_explored >= 3 and random.random() < 0.1:
+        if not skip_effects and is_first_visit and not self.game.stairs_found and self.game.rooms_explored >= 3 and self.game.rng.random() < 0.1:
             room.has_stairs = True
             self.game.stairs_found = True
             self.game.log("⚡ You found stairs to the next floor!", 'success')
@@ -384,14 +383,14 @@ class NavigationManager:
         
         # Guarantee store spawn after 15 rooms
         if not skip_effects and is_first_visit and not self.game.store_found and self.game.rooms_explored >= 2:
-            if self.game.rooms_explored >= 15 or random.random() < store_chance:
+            if self.game.rooms_explored >= 15 or self.game.rng.random() < store_chance:
                 self.game.store_found = True
                 self.game.store_position = self.game.current_pos
                 self.game.store_room = room
                 self.game.log("You discovered a mysterious shop!", 'loot')
         
         # Randomly add chest (20% chance, only in unvisited rooms)
-        if not skip_effects and not room.has_chest and not room.visited and random.random() < 0.2:
+        if not skip_effects and not room.has_chest and not room.visited and self.game.rng.random() < 0.2:
             room.has_chest = True
             self.game.log("✨ There's a chest here!", 'loot')
         
@@ -417,7 +416,7 @@ class NavigationManager:
             is_mini_boss = getattr(room, 'is_mini_boss_room', False) and not is_boss
             
             if combat_threats:
-                enemy_name = random.choice(combat_threats)
+                enemy_name = self.game.rng.choice(combat_threats)
             else:
                 enemy_name = "Monster"
             
@@ -438,7 +437,7 @@ class NavigationManager:
                     "You carefully avoid any lurking dangers.",
                     "The room appears safe for now."
                 ]
-                self.game.log(random.choice(peaceful_messages), 'system')
+                self.game.log(self.game.rng.choice(peaceful_messages), 'system')
             
             # Show exploration options
             self.show_exploration_options()
@@ -587,28 +586,28 @@ class NavigationManager:
         if room.data.get('discoverables'):
             if is_mini_boss:
                 # 100% container spawn for mini-boss rooms
-                room.ground_container = random.choice(room.data['discoverables'])
-            elif random.random() < 0.6:
+                room.ground_container = self.game.rng.choice(room.data['discoverables'])
+            elif self.game.rng.random() < 0.6:
                 # 60% chance for normal rooms
-                room.ground_container = random.choice(room.data['discoverables'])
+                room.ground_container = self.game.rng.choice(room.data['discoverables'])
             
             # 30% chance for container to be locked on floor 2+
-            if room.ground_container and self.game.floor >= 2 and random.random() < 0.30:
+            if room.ground_container and self.game.floor >= 2 and self.game.rng.random() < 0.30:
                 room.container_locked = True
         
         # 40% chance for loose items/gold to spawn directly on ground (not for mini-boss rooms)
-        if not is_mini_boss and random.random() < 0.4:
+        if not is_mini_boss and self.game.rng.random() < 0.4:
             # 50/50 split between gold or items
-            if random.random() < 0.5:
+            if self.game.rng.random() < 0.5:
                 # Loose gold
-                room.ground_gold = random.randint(5, 20)
+                room.ground_gold = self.game.rng.randint(5, 20)
             else:
                 # Loose items - pick 1-2 random items
-                num_items = random.randint(1, 2)
+                num_items = self.game.rng.randint(1, 2)
                 available_items = ['Health Potion', 'Weighted Die', 'Lucky Chip', 'Honey Jar', 
                                  'Lockpick Kit', 'Antivenom Leaf', 'Silk Bundle']
                 for _ in range(num_items):
-                    item = random.choice(available_items)
+                    item = self.game.rng.choice(available_items)
                     room.ground_items.append(item)
     
     def describe_ground_items(self, room):
@@ -652,8 +651,8 @@ class NavigationManager:
         self.game.unlocked_rooms = set()
         self.game.is_boss_fight = False
         self.game.rooms_explored_on_floor = 0  # Track rooms explored to trigger boss spawns
-        self.game.next_mini_boss_at = random.randint(6, 10)  # Random target for first mini-boss
-        self.game.next_boss_at = random.randint(20, 30) if self.game.floor >= 5 else None  # Random target for boss
+        self.game.next_mini_boss_at = self.game.rng.randint(6, 10)  # Random target for first mini-boss
+        self.game.next_boss_at = self.game.rng.randint(20, 30) if self.game.floor >= 5 else None  # Random target for boss
         
         # Reset store tracking for new floor
         self.game.store_found = False
@@ -662,14 +661,14 @@ class NavigationManager:
         self.game.floor_store_inventory = None  # Reset for new floor
         
         # Pick entrance room
-        room_data = pick_room_for_floor(self.game._rooms, self.game.floor)
+        room_data = pick_room_for_floor(self.game._rooms, self.game.floor, rng=self.game.rng)
         entrance = Room(room_data, 0, 0)
         entrance.visited = True
         entrance.has_combat = False  # Entrance never has combat
         
         # Randomly block some exits to create dead ends (30% chance per direction)
         for direction in ['N', 'S', 'E', 'W']:
-            if random.random() < 0.3:
+            if self.game.rng.random() < 0.3:
                 entrance.exits[direction] = False
                 entrance.blocked_exits.append(direction)
         
@@ -679,7 +678,7 @@ class NavigationManager:
             # Randomly open a blocked exit
             blocked = [d for d in ['N', 'S', 'E', 'W'] if not entrance.exits[d]]
             if blocked:
-                to_open = random.choice(blocked)
+                to_open = self.game.rng.choice(blocked)
                 entrance.exits[to_open] = True
                 if to_open in entrance.blocked_exits:
                     entrance.blocked_exits.remove(to_open)

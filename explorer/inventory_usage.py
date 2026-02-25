@@ -10,7 +10,6 @@ Handles all item usage logic including:
 - Utility and quest items
 """
 
-import random
 import tkinter as tk
 
 
@@ -295,7 +294,7 @@ class InventoryUsageManager:
             
         elif item_type == 'consumable_blessing':
             # Prayer Candle - random blessing
-            blessing_type = random.choice(['heal', 'crit', 'gold'])
+            blessing_type = self.game.rng.choice(['heal', 'crit', 'gold'])
             if blessing_type == 'heal':
                 heal_amount = 15
                 old_hp = self.game.health
@@ -308,7 +307,7 @@ class InventoryUsageManager:
                 self.game.crit_chance += 0.05
                 self.game.log(f"The Prayer Candle fills you with confidence... +5% crit chance for 3 combats!", 'loot')
             else:  # gold
-                gold_amount = random.randint(5, 10)
+                gold_amount = self.game.rng.randint(5, 10)
                 self.game.gold += gold_amount
                 self.game.stats["gold_found"] += gold_amount
                 self.game.log(f"The Prayer Candle reveals hidden gold... Found {gold_amount} gold!", 'loot')

@@ -11,7 +11,6 @@ Handles all item pickup and container interactions:
 """
 
 import tkinter as tk
-import random
 
 
 class InventoryPickupManager:
@@ -79,7 +78,7 @@ class InventoryPickupManager:
         else:
             # Roll for loot - can get gold, item, both, or nothing
             # Adjusted weights: 15% nothing, 35% gold only, 30% item only, 20% both
-            loot_roll = random.random()
+            loot_roll = self.game.rng.random()
             
             found_gold = 0
             found_item = None
@@ -90,30 +89,30 @@ class InventoryPickupManager:
             elif loot_roll < 0.50:
                 # Gold only
                 gold_data = loot_pools.get("gold", {"min": 5, "max": 15})
-                found_gold = random.randint(gold_data["min"], gold_data["max"])
+                found_gold = self.game.rng.randint(gold_data["min"], gold_data["max"])
                 self.game.stats["gold_found"] += found_gold
             elif loot_roll < 0.80:
                 # Item only
                 # Pick a random loot category (excluding "gold" and "nothing")
                 item_categories = [cat for cat in loot_table if cat not in ["gold", "nothing"]]
                 if item_categories:
-                    category = random.choice(item_categories)
+                    category = self.game.rng.choice(item_categories)
                     item_pool = loot_pools.get(category, [])
                     if item_pool:
-                        found_item = random.choice(item_pool)
+                        found_item = self.game.rng.choice(item_pool)
                         self.game.stats["items_found"] += 1
             else:
                 # Both gold and item
                 gold_data = loot_pools.get("gold", {"min": 5, "max": 15})
-                found_gold = random.randint(gold_data["min"], gold_data["max"])
+                found_gold = self.game.rng.randint(gold_data["min"], gold_data["max"])
                 self.game.stats["gold_found"] += found_gold
                 
                 item_categories = [cat for cat in loot_table if cat not in ["gold", "nothing"]]
                 if item_categories:
-                    category = random.choice(item_categories)
+                    category = self.game.rng.choice(item_categories)
                     item_pool = loot_pools.get(category, [])
                     if item_pool:
-                        found_item = random.choice(item_pool)
+                        found_item = self.game.rng.choice(item_pool)
                         self.game.stats["items_found"] += 1
             
             # Store contents on room so they persist if not taken
