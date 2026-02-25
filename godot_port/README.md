@@ -40,6 +40,33 @@ This imports resources, validates the project, and exits. Exit code 0 means the 
 godot --path godot_port --main-loop SceneTree
 ```
 
+## Running tests
+
+Tests use [GUT (Godot Unit Test)](https://github.com/bitwes/Gut) v9.3.0, vendored in `addons/gut/`.
+
+### Quick run
+
+```bash
+cd godot_port
+./run_tests.sh
+```
+
+### Manual command
+
+```bash
+godot --headless -s res://addons/gut/gut_cmdln.gd -gdir=res://tests/ -gprefix=test_ -gsuffix=.gd -gexit
+```
+
+### Run a specific test script
+
+```bash
+./run_tests.sh -gselect=test_sanity
+```
+
+### Writing new tests
+
+Create files in `tests/` with the `test_` prefix. Each test file must `extends GutTest` and contain functions prefixed with `test_`.
+
 ## Project structure
 
 ```
@@ -47,10 +74,15 @@ godot_port/
 ├── project.godot          # Godot 4 project file
 ├── icon.svg               # Project icon
 ├── .gitignore             # Ignores .godot/ cache
+├── .gutconfig.json        # GUT test runner config
+├── run_tests.sh           # Headless test runner script
+├── addons/gut/            # GUT v9.3.0 (vendored)
 ├── scenes/
 │   └── Main.tscn          # Main scene (Control root)
 ├── scripts/
 │   └── Main.gd            # Main scene script
+├── tests/
+│   └── test_sanity.gd     # Sanity tests (arithmetic, arrays, dicts)
 └── README.md              # This file
 ```
 
