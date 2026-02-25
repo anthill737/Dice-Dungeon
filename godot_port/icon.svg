@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="16" fill="#2c1810"/>
+  <text x="64" y="56" font-family="Arial,sans-serif" font-size="40" font-weight="bold"
+        fill="#ffd700" text-anchor="middle" dominant-baseline="central">DD</text>
+  <text x="64" y="96" font-family="Arial,sans-serif" font-size="14"
+        fill="#95e1d3" text-anchor="middle" dominant-baseline="central">Godot Port</text>
+</svg>
