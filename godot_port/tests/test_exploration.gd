@@ -350,6 +350,22 @@ func test_entrance_no_combat():
 # Determinism of ground loot generation
 # ------------------------------------------------------------------
 
+func test_chest_roll_is_dead_code_python_parity():
+	## In Python, the 20% chest check uses `not room.visited`, but room.visited
+	## is already set to True before the check runs. So chests never spawn from
+	## the random roll. This test documents that exact Python behavior.
+	var engine := _make_engine(25000)
+	engine.start_floor(1)
+	var chest_count := 0
+	for i in 40:
+		var room := engine.move("E")
+		if room == null:
+			room = engine.move("N")
+		if room != null and room.has_chest:
+			chest_count += 1
+	assert_eq(chest_count, 0, "chest roll is dead code in Python — chests never spawn from 20% roll")
+
+
 func test_ground_loot_deterministic():
 	var engine_a := _make_engine(21000)
 	engine_a.start_floor(1)
