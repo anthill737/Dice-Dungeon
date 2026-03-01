@@ -177,6 +177,11 @@ func move(direction: String) -> RoomState:
 	if floor.floor_index == 1 and floor.rooms_explored <= 3:
 		floor.starter_rooms[new_pos] = true
 
+	## Python _continue_room_entry: combat skipped for starter rooms.
+	## Applied AFTER starter_rooms is updated so the current room is included.
+	if floor.starter_rooms.has(new_pos):
+		room.has_combat = false
+
 	# Python _continue_room_entry first-visit path:
 	# 1. generate_ground_loot
 	# 2. apply_on_enter
@@ -277,10 +282,6 @@ func _generate_room(pos: Vector2i, from_direction: String) -> RoomState:
 			room.has_combat = rng.randf() < ExplorationRules.COMBAT_CHANCE
 		else:
 			room.has_combat = false
-
-	## Python: skip combat in starter rooms (first 3 rooms on floor 1)
-	if floor.starter_rooms.has(pos):
-		room.has_combat = false
 
 	return room
 
