@@ -742,3 +742,18 @@ func test_revisiting_room_no_rng_consumption():
 	assert_not_null(revisit, "should be able to revisit")
 	assert_eq(revisit.data.get("name", "?"), room_e.data.get("name", "?"),
 		"revisit should return same room")
+
+
+# ==================================================================
+# RNG policy: PortableLCG must never be the default
+# ==================================================================
+
+func test_default_rng_is_not_portable_lcg():
+	## ExplorationEngine with null RNG should default to DefaultRNG,
+	## never PortableLCG (which exists only for cross-language parity tests).
+	var state := GameState.new()
+	var engine := ExplorationEngine.new(null, state, _rooms_db)
+	assert_true(engine.rng is DefaultRNG,
+		"null RNG should default to DefaultRNG, got %s" % engine.rng.get_class())
+	assert_false(engine.rng is PortableLCG,
+		"default RNG must NOT be PortableLCG")

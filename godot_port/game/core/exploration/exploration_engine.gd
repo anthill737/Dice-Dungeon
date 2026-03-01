@@ -24,7 +24,7 @@ const PEACEFUL_MESSAGES := [
 
 
 func _init(p_rng: RNG, p_state: GameState, p_rooms_db: Array) -> void:
-	rng = p_rng
+	rng = p_rng if p_rng != null else DefaultRNG.new()
 	state = p_state
 	rooms_db = p_rooms_db
 	mechanics = MechanicsEngine.new(func(msg: String): logs.append(msg))
