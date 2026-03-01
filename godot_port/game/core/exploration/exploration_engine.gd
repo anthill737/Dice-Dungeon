@@ -72,6 +72,10 @@ func start_floor(floor_index: int) -> RoomState:
 	floor.rooms[Vector2i.ZERO] = entrance
 	floor.current_pos = Vector2i.ZERO
 
+	## Mark starting position as starter room (no combat) — Python floor 1 only
+	if floor_index == 1:
+		floor.starter_rooms[Vector2i.ZERO] = true
+
 	mechanics.settle_temp_effects(state, "floor_transition")
 
 	## Python then calls enter_room(entrance, is_first=True)
@@ -81,6 +85,16 @@ func start_floor(floor_index: int) -> RoomState:
 	logs.append("=== Floor %d ===" % floor_index)
 	logs.append("Entered: %s" % room_data.get("name", "Unknown"))
 	return entrance
+
+
+## Descend to next floor — mirrors Python descend_floor().
+## Returns the entrance room of the new floor, or null if stairs unusable.
+func descend_floor() -> RoomState:
+	if not can_use_stairs():
+		logs.append("Cannot descend: boss not defeated or no stairs here.")
+		return null
+	floor.floor_index += 1
+	return start_floor(floor.floor_index)
 
 
 # ------------------------------------------------------------------
@@ -95,7 +109,34 @@ func can_move(direction: String) -> bool:
 		return false
 	if not room.exits.get(direction, true):
 		return false
+
+	## Python: check if destination room has blocked exit on opposite side
+	var delta := RoomState.dir_delta(direction)
+	var new_pos := floor.current_pos + delta
+	if floor.has_room_at(new_pos):
+		var dest: RoomState = floor.rooms[new_pos]
+		var opp := RoomState.opposite_dir(direction)
+		if opp in dest.blocked_exits:
+			return false
+
 	return true
+
+
+## Check whether a locked special room at pos can be entered.
+## Returns "" if entry is allowed, otherwise a reason string.
+func check_room_gating(pos: Vector2i) -> String:
+	if not floor.special_rooms.has(pos):
+		return ""
+	if floor.unlocked_rooms.has(pos):
+		return ""
+	var room_type: String = floor.special_rooms[pos]
+	if room_type == "mini_boss":
+		if not state.inventory.has("Old Key"):
+			return "locked_mini_boss"
+	elif room_type == "boss":
+		if floor.key_fragments < 3:
+			return "locked_boss"
+	return ""
 
 
 func move(direction: String) -> RoomState:
@@ -104,6 +145,12 @@ func move(direction: String) -> RoomState:
 
 	var delta := RoomState.dir_delta(direction)
 	var new_pos := floor.current_pos + delta
+
+	## Python: check special room gating BEFORE allowing entry
+	var gate := check_room_gating(new_pos)
+	if not gate.is_empty():
+		logs.append("Path blocked: %s" % gate)
+		return null
 
 	# Revisiting existing room — Python handles this in explore_direction
 	if floor.has_room_at(new_pos):
@@ -125,6 +172,10 @@ func move(direction: String) -> RoomState:
 	# Then room.visited = True
 	# Then rooms_explored += 1 (for non-entrance rooms)
 	floor.rooms_explored += 1
+
+	## Python: first 3 rooms on floor 1 are starter rooms (never combat)
+	if floor.floor_index == 1 and floor.rooms_explored <= 3:
+		floor.starter_rooms[new_pos] = true
 
 	# Python _continue_room_entry first-visit path:
 	# 1. generate_ground_loot
@@ -213,9 +264,11 @@ func _generate_room(pos: Vector2i, from_direction: String) -> RoomState:
 	if should_be_boss or room_data.get("difficulty") == "Boss" or (room_data.get("tags", []) as Array).has("boss"):
 		room.is_boss_room = true
 		room.has_combat = true
+		floor.special_rooms[pos] = "boss"
 	elif should_be_mini_boss or room_data.get("difficulty") == "Elite":
 		room.is_mini_boss_room = true
 		room.has_combat = true
+		floor.special_rooms[pos] = "mini_boss"
 	else:
 		## Python RNG call: rng.random() < 0.4 for combat (only if threats or combat tag)
 		var threats: Array = room_data.get("threats", [])
@@ -224,6 +277,10 @@ func _generate_room(pos: Vector2i, from_direction: String) -> RoomState:
 			room.has_combat = rng.randf() < ExplorationRules.COMBAT_CHANCE
 		else:
 			room.has_combat = false
+
+	## Python: skip combat in starter rooms (first 3 rooms on floor 1)
+	if floor.starter_rooms.has(pos):
+		room.has_combat = false
 
 	return room
 
@@ -348,9 +405,12 @@ func on_combat_clear(room: RoomState) -> void:
 	room.cleared = true
 	mechanics.apply_on_clear(state, room.data)
 
+	var room_pos := room.coords()
+
 	if room.is_mini_boss_room:
 		floor.mini_bosses_defeated += 1
 		floor.key_fragments += 1
+		floor.unlocked_rooms[room_pos] = true
 		logs.append("Mini-boss defeated! Key fragment: %d/3" % floor.key_fragments)
 		if floor.mini_bosses_defeated == 3:
 			## Python RNG call: rng.randint(4, 6)
@@ -361,6 +421,7 @@ func on_combat_clear(room: RoomState) -> void:
 
 	if room.is_boss_room:
 		floor.boss_defeated = true
+		floor.unlocked_rooms[room_pos] = true
 		logs.append("Boss defeated! Stairs are now usable.")
 
 
@@ -474,12 +535,32 @@ func can_use_stairs() -> bool:
 	return room != null and room.has_stairs and floor.boss_defeated
 
 
-func can_enter_miniboss_room(_room: RoomState) -> bool:
-	return state.ground_items.has("Old Key")
+func can_enter_miniboss_room() -> bool:
+	return state.inventory.has("Old Key")
 
 
 func can_enter_boss_room() -> bool:
 	return floor.key_fragments >= 3
+
+
+## Unlock a miniboss room by consuming an Old Key. Returns true on success.
+func unlock_miniboss_room(pos: Vector2i) -> bool:
+	if not can_enter_miniboss_room():
+		return false
+	state.inventory.erase("Old Key")
+	floor.unlocked_rooms[pos] = true
+	logs.append("Used Old Key to unlock elite room.")
+	return true
+
+
+## Unlock a boss room by consuming 3 key fragments. Returns true on success.
+func unlock_boss_room(pos: Vector2i) -> bool:
+	if not can_enter_boss_room():
+		return false
+	floor.key_fragments = 0
+	floor.unlocked_rooms[pos] = true
+	logs.append("Key fragments merged! Boss door opened.")
+	return true
 
 
 func enter_store(_room: RoomState) -> Array:
