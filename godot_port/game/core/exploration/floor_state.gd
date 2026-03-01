@@ -22,6 +22,11 @@ var stairs_found: bool = false
 var store_found: bool = false
 var store_pos: Vector2i = Vector2i(-999, -999)
 
+## Special room tracking — mirrors Python special_rooms / unlocked_rooms / starter_rooms
+var special_rooms: Dictionary = {}    ## Vector2i -> String ("mini_boss" | "boss")
+var unlocked_rooms: Dictionary = {}   ## Vector2i -> true (set-like)
+var starter_rooms: Dictionary = {}    ## Vector2i -> true (first 3 rooms on floor 1)
+
 
 func get_current_room() -> RoomState:
 	return rooms.get(current_pos)
