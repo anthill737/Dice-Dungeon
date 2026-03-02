@@ -42,10 +42,13 @@ var _debug_panel: PanelContainer
 var _debug_label: RichTextLabel
 var _debug_visible: bool = false
 
+var _minimap_panel: PanelContainer
+
 var _combat_scene := preload("res://ui/scenes/CombatPanel.tscn")
 var _inventory_scene := preload("res://ui/scenes/InventoryPanel.tscn")
 var _store_scene := preload("res://ui/scenes/StorePanel.tscn")
 var _save_load_scene := preload("res://ui/scenes/SaveLoadPanel.tscn")
+var _minimap_scene := preload("res://ui/scenes/MinimapPanel.tscn")
 
 
 func _ready() -> void:
@@ -150,6 +153,10 @@ func _build_ui() -> void:
 	actions.add_child(_btn_save_load)
 	_btn_descend = _make_btn("Descend Stairs")
 	actions.add_child(_btn_descend)
+
+	_minimap_panel = _minimap_scene.instantiate()
+	_minimap_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right.add_child(_minimap_panel)
 
 
 func _build_debug_overlay() -> void:
