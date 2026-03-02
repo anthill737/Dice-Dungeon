@@ -374,6 +374,12 @@ func use_item(idx: int) -> Dictionary:
 		"equipment":
 			logs.append("%s is equipment. Equip it instead." % item_name)
 			return {"ok": false, "reason": "equipment"}
+		"lore":
+			var desc: String = item_def.get("desc", "An old document.")
+			logs.append("%s: %s" % [item_name, desc])
+			return {"ok": true, "type": "lore", "desc": desc}
+		"readable_lore":
+			return {"ok": true, "type": "readable_lore", "item_name": item_name, "idx": idx}
 		_:
 			logs.append("Cannot use %s." % item_name)
 			return {"ok": false, "reason": "unusable"}
