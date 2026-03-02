@@ -54,6 +54,12 @@ func test_multiple_moves_no_crash() -> void:
 	var directions := ["N", "E", "S", "W", "N", "N", "E", "E", "S", "W"]
 	for dir in directions:
 		GameSession.move_direction(dir)
+		# If we hit a combat room, resolve pending so movement continues
+		if GameSession.combat_pending:
+			var r := GameSession.get_current_room()
+			if r != null:
+				r.combat_escaped = true
+			GameSession.combat_pending = false
 
 	assert_not_null(GameSession.get_current_room(), "Room exists after 10 move attempts")
 	assert_gt(GameSession.game_state.floor, 0, "Floor is positive")

@@ -1,6 +1,18 @@
 extends Node
 ## Autoload singleton holding core engines + shared state for all UI scenes.
 ## UI scripts read/write game state exclusively through this node.
+##
+## Combat lifecycle
+## ────────────────
+## 1. Player enters a room with has_combat && !enemies_defeated && !combat_escaped
+##    → combat_pending = true (movement blocked, Attack/Flee shown)
+## 2a. Player clicks Attack → accept_combat() → CombatEngine created
+## 2b. Player clicks Flee   → attempt_flee_pending()
+##       success → room.combat_escaped = true, combat_pending cleared
+##       failure → stays pending, player may retry or attack
+## 3. During active combat the player may also flee via flee_from_combat()
+##       success → room.combat_escaped = true, combat + pending cleared
+##       failure → stays in combat
 
 var game_state: GameState
 var rng: RNG
@@ -13,11 +25,16 @@ var rooms_db: Array = []
 var items_db: Dictionary = {}
 var enemy_types_db: Dictionary = {}
 
+## True between entering a combat room and resolving the encounter
+## (Attack pressed or flee succeeded).  Movement is blocked while true.
+var combat_pending: bool = false
+
 var _data_loaded: bool = false
 
 signal state_changed()
 signal combat_started()
 signal combat_ended()
+signal combat_pending_changed()
 signal log_message(msg: String)
 
 
@@ -51,6 +68,7 @@ func start_new_game() -> void:
 	inventory_engine = InventoryEngine.new(rng, game_state, items_db)
 	store_engine = StoreEngine.new(game_state, items_db)
 	combat = null
+	combat_pending = false
 
 	exploration.start_floor(1)
 	_emit_logs(exploration.logs)
@@ -69,13 +87,16 @@ func get_floor_state() -> FloorState:
 	return exploration.floor
 
 
+# -------------------------------------------------------------------
+# Movement
+# -------------------------------------------------------------------
+
 func move_direction(direction: String) -> RoomState:
 	if exploration == null:
 		return null
 
-	# Block movement while in an active combat encounter
-	if combat != null:
-		log_message.emit("Cannot move during combat!")
+	if is_combat_blocking():
+		log_message.emit("Cannot move — fight or flee first!")
 		return null
 
 	var room := exploration.move(direction)
@@ -83,31 +104,35 @@ func move_direction(direction: String) -> RoomState:
 
 	if room != null:
 		_log_room_enter(room)
-
-		# Auto-start combat when entering a room with undefeated enemies
-		if room.has_combat and not room.enemies_defeated and combat == null:
-			start_combat_for_room(room)
+		_check_combat_pending(room)
 
 	state_changed.emit()
 	return room
 
 
-func _log_room_enter(room: RoomState) -> void:
-	if room == null or exploration == null:
+func _check_combat_pending(room: RoomState) -> void:
+	if room == null:
 		return
-	var fs := exploration.floor
-	var pos := fs.current_pos
-	var is_starter := fs.starter_rooms.has(pos)
-	var threats: Array = room.data.get("threats", [])
-	var suppressed := is_starter and room.has_combat == false and not threats.is_empty()
-	print("[ROOM ENTER] floor=%d coord=(%d,%d) type=%s has_combat=%s enemies=%d starter=%s suppressed=%s" % [
-		game_state.floor, pos.x, pos.y,
-		room.data.get("name", "Unknown"),
-		str(room.has_combat),
-		threats.size() if room.has_combat else 0,
-		str(is_starter),
-		str(suppressed),
-	])
+	if room.has_combat and not room.enemies_defeated and not room.combat_escaped:
+		combat_pending = true
+		var threats: Array = room.data.get("threats", [])
+		if not threats.is_empty():
+			log_message.emit("Enemies ahead! Attack or Flee?")
+		combat_pending_changed.emit()
+
+
+# -------------------------------------------------------------------
+# Combat lifecycle
+# -------------------------------------------------------------------
+
+## Player chose Attack from the pending-choice prompt.
+func accept_combat() -> void:
+	combat_pending = false
+	var room := get_current_room()
+	if room == null:
+		return
+	start_combat_for_room(room)
+	combat_pending_changed.emit()
 
 
 func start_combat_for_room(room: RoomState) -> void:
@@ -132,7 +157,44 @@ func start_combat_for_room(room: RoomState) -> void:
 	state_changed.emit()
 
 
+## Player chose Flee from the pending-choice prompt (before combat starts).
+## Uses core 50 % chance.  No CombatEngine exists yet.
+func attempt_flee_pending() -> bool:
+	var success := rng.randf() < 0.5
+	if success:
+		var room := get_current_room()
+		if room != null:
+			room.combat_escaped = true
+		combat_pending = false
+		log_message.emit("Fled successfully!")
+		combat_pending_changed.emit()
+		state_changed.emit()
+	else:
+		log_message.emit("Failed to flee!")
+	return success
+
+
+## Player chose Flee from within the active combat panel.
+func flee_from_combat() -> bool:
+	if combat == null:
+		return false
+	var success := combat.attempt_flee()
+	if success:
+		var room := get_current_room()
+		if room != null:
+			room.combat_escaped = true
+		log_message.emit("Fled successfully!")
+		_end_combat_internal(false)
+	else:
+		log_message.emit("Failed to flee!")
+	return success
+
+
 func end_combat(victory: bool) -> void:
+	_end_combat_internal(victory)
+
+
+func _end_combat_internal(victory: bool) -> void:
 	var room := get_current_room()
 	if combat == null:
 		return
@@ -146,9 +208,32 @@ func end_combat(victory: bool) -> void:
 
 	inventory_engine.clear_combat_temps()
 	combat = null
+	combat_pending = false
 	state_changed.emit()
 	combat_ended.emit()
+	combat_pending_changed.emit()
 
+
+# -------------------------------------------------------------------
+# Queries
+# -------------------------------------------------------------------
+
+## Movement is blocked during both pending-choice and active combat.
+func is_combat_blocking() -> bool:
+	return combat_pending or combat != null
+
+
+func is_combat_active() -> bool:
+	return combat != null
+
+
+func is_pending_choice() -> bool:
+	return combat_pending and combat == null
+
+
+# -------------------------------------------------------------------
+# Exploration helpers
+# -------------------------------------------------------------------
 
 func open_chest() -> Dictionary:
 	var room := get_current_room()
@@ -208,13 +293,27 @@ func get_saves_dir() -> String:
 	return dir
 
 
-## Returns true while a combat encounter is actively running.
-## Movement is blocked only when the CombatEngine exists (between
-## start_combat_for_room and end_combat). After fleeing, combat is
-## nil so the player may leave — re-entering the room auto-starts
-## combat again.
-func is_combat_blocking() -> bool:
-	return combat != null
+# -------------------------------------------------------------------
+# Logging
+# -------------------------------------------------------------------
+
+func _log_room_enter(room: RoomState) -> void:
+	if room == null or exploration == null:
+		return
+	var fs := exploration.floor
+	var pos := fs.current_pos
+	var is_starter := fs.starter_rooms.has(pos)
+	var threats: Array = room.data.get("threats", [])
+	var suppressed := is_starter and room.has_combat == false and not threats.is_empty()
+	print("[ROOM ENTER] floor=%d coord=(%d,%d) type=%s has_combat=%s enemies=%d starter=%s suppressed=%s escaped=%s" % [
+		game_state.floor, pos.x, pos.y,
+		room.data.get("name", "Unknown"),
+		str(room.has_combat),
+		threats.size() if room.has_combat else 0,
+		str(is_starter),
+		str(suppressed),
+		str(room.combat_escaped),
+	])
 
 
 func _emit_logs(logs: Array) -> void:

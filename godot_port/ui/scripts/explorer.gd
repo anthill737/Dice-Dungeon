@@ -68,7 +68,6 @@ func _build_ui() -> void:
 	main_hbox.add_theme_constant_override("separation", 12)
 	add_child(main_hbox)
 
-	# --- Left panel: info + log ---
 	var left := VBoxContainer.new()
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left.size_flags_stretch_ratio = 2.0
@@ -96,7 +95,6 @@ func _build_ui() -> void:
 	_log_text.scroll_following = true
 	left.add_child(_log_text)
 
-	# --- Right panel: movement + actions ---
 	var right := VBoxContainer.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.add_theme_constant_override("separation", 6)
@@ -157,13 +155,14 @@ func _build_ui() -> void:
 func _build_debug_overlay() -> void:
 	_debug_panel = PanelContainer.new()
 	_debug_panel.name = "DebugOverlay"
+	_debug_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.0, 0.0, 0.0, 0.75)
 	_debug_panel.add_theme_stylebox_override("panel", style)
-	_debug_panel.anchor_left = 0.6
-	_debug_panel.anchor_top = 0.0
-	_debug_panel.anchor_right = 1.0
-	_debug_panel.anchor_bottom = 0.5
+	_debug_panel.anchor_left = 0.0
+	_debug_panel.anchor_top = 0.5
+	_debug_panel.anchor_right = 0.5
+	_debug_panel.anchor_bottom = 1.0
 	_debug_panel.visible = false
 	add_child(_debug_panel)
 
@@ -171,6 +170,7 @@ func _build_debug_overlay() -> void:
 	_debug_label.bbcode_enabled = true
 	_debug_label.fit_content = true
 	_debug_label.scroll_active = true
+	_debug_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_debug_panel.add_child(_debug_label)
 
 
@@ -212,6 +212,7 @@ func _connect_signals() -> void:
 	GameSession.log_message.connect(_append_log)
 	GameSession.combat_started.connect(_on_combat_started)
 	GameSession.combat_ended.connect(_on_combat_ended)
+	GameSession.combat_pending_changed.connect(_refresh_ui)
 
 	if _combat_panel.has_signal("close_requested"):
 		_combat_panel.close_requested.connect(func(): _combat_panel.visible = false)
@@ -266,6 +267,10 @@ func _move(direction: String) -> void:
 
 
 func _on_attack() -> void:
+	if GameSession.is_pending_choice():
+		GameSession.accept_combat()
+		return
+
 	var room := GameSession.get_current_room()
 	if room == null:
 		return
@@ -278,12 +283,12 @@ func _on_attack() -> void:
 
 
 func _on_flee() -> void:
+	if GameSession.is_pending_choice():
+		GameSession.attempt_flee_pending()
+		return
+
 	if GameSession.combat != null:
-		if GameSession.combat.attempt_flee():
-			_append_log("Fled from combat!")
-			GameSession.end_combat(false)
-		else:
-			_append_log("Failed to flee!")
+		GameSession.flee_from_combat()
 
 
 func _on_chest() -> void:
@@ -372,7 +377,7 @@ func _refresh_ui() -> void:
 	if room != null:
 		_room_name_label.text = "Room: %s" % room.data.get("name", "Unknown")
 		var flags: PackedStringArray = []
-		if room.has_combat and not room.enemies_defeated:
+		if room.has_combat and not room.enemies_defeated and not room.combat_escaped:
 			flags.append("COMBAT")
 		if room.has_chest and not room.chest_looted:
 			flags.append("CHEST")
@@ -399,15 +404,17 @@ func _refresh_ui() -> void:
 
 func _update_button_visibility(room: RoomState) -> void:
 	var blocking := GameSession.is_combat_blocking()
-	var has_enemies := room != null and room.has_combat and not room.enemies_defeated
+	var pending := GameSession.is_pending_choice()
+	var active := GameSession.is_combat_active()
+	var show_combat_buttons := pending or (room != null and room.has_combat and not room.enemies_defeated and not room.combat_escaped and active)
 
 	_btn_north.disabled = blocking
 	_btn_south.disabled = blocking
 	_btn_east.disabled = blocking
 	_btn_west.disabled = blocking
 
-	_btn_attack.visible = has_enemies
-	_btn_flee.visible = has_enemies
+	_btn_attack.visible = show_combat_buttons
+	_btn_flee.visible = show_combat_buttons
 	_btn_chest.visible = room != null and room.has_chest and not room.chest_looted and not blocking
 	_btn_ground.visible = room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 or (not room.ground_container.is_empty() and not room.container_searched)) and not blocking
 	_btn_store.visible = room != null and room.has_store and not blocking
@@ -454,6 +461,9 @@ func _refresh_debug() -> void:
 		"tags: %s" % str(tags),
 		"has_combat: %s" % str(room.has_combat),
 		"enemies_defeated: %s" % str(room.enemies_defeated),
+		"combat_escaped: %s" % str(room.combat_escaped),
+		"combat_pending: %s" % str(GameSession.combat_pending),
+		"combat_active: %s" % str(GameSession.is_combat_active()),
 		"enemy_count: %d" % enemy_count,
 		"enemy_names: %s" % (", ".join(enemy_names) if not enemy_names.is_empty() else "none"),
 		"threats_pool: %s" % str(threats),

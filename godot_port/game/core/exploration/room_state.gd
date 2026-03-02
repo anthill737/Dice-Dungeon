@@ -21,6 +21,7 @@ var has_store: bool = false
 var is_mini_boss_room: bool = false
 var is_boss_room: bool = false
 var enemies_defeated: bool = false
+var combat_escaped: bool = false  ## true after a successful flee; encounter ignored
 
 ## Ground loot (generated on first visit)
 var ground_container: String = ""   ## container name (empty = none)

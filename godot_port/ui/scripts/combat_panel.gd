@@ -219,14 +219,11 @@ func _on_attack() -> void:
 
 
 func _on_flee() -> void:
-	var ce := GameSession.combat
-	if ce == null:
+	if GameSession.combat == null:
 		return
-	if ce.attempt_flee():
+	var ok := GameSession.flee_from_combat()
+	if ok:
 		_log_text.append_text("Fled successfully!\n")
-		GameSession.log_message.emit("Fled successfully!")
-		GameSession.end_combat(false)
 	else:
 		_log_text.append_text("Failed to flee!\n")
-		GameSession.log_message.emit("Failed to flee!")
 	refresh()
