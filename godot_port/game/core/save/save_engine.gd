@@ -404,6 +404,7 @@ static func _serialize_room(room: RoomState) -> Dictionary:
 		"ground_gold": room.ground_gold,
 		"container_searched": room.container_searched,
 		"container_locked": room.container_locked,
+		"combat_escaped": room.combat_escaped,
 	}
 
 
@@ -444,6 +445,7 @@ static func _deserialize_room(rd: Dictionary) -> RoomState:
 
 	room.container_searched = bool(rd.get("container_searched", false))
 	room.container_locked = bool(rd.get("container_locked", false))
+	room.combat_escaped = bool(rd.get("combat_escaped", false))
 	room.ground_gold = int(rd.get("ground_gold", 0))
 
 	var gi = rd.get("ground_items", [])
