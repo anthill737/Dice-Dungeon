@@ -72,10 +72,42 @@ func get_floor_state() -> FloorState:
 func move_direction(direction: String) -> RoomState:
 	if exploration == null:
 		return null
+
+	# Block movement while in an active combat encounter
+	if combat != null:
+		log_message.emit("Cannot move during combat!")
+		return null
+
 	var room := exploration.move(direction)
 	_emit_logs(exploration.logs)
+
+	if room != null:
+		_log_room_enter(room)
+
+		# Auto-start combat when entering a room with undefeated enemies
+		if room.has_combat and not room.enemies_defeated and combat == null:
+			start_combat_for_room(room)
+
 	state_changed.emit()
 	return room
+
+
+func _log_room_enter(room: RoomState) -> void:
+	if room == null or exploration == null:
+		return
+	var fs := exploration.floor
+	var pos := fs.current_pos
+	var is_starter := fs.starter_rooms.has(pos)
+	var threats: Array = room.data.get("threats", [])
+	var suppressed := is_starter and room.has_combat == false and not threats.is_empty()
+	print("[ROOM ENTER] floor=%d coord=(%d,%d) type=%s has_combat=%s enemies=%d starter=%s suppressed=%s" % [
+		game_state.floor, pos.x, pos.y,
+		room.data.get("name", "Unknown"),
+		str(room.has_combat),
+		threats.size() if room.has_combat else 0,
+		str(is_starter),
+		str(suppressed),
+	])
 
 
 func start_combat_for_room(room: RoomState) -> void:
@@ -174,6 +206,15 @@ func get_saves_dir() -> String:
 	if not DirAccess.dir_exists_absolute(dir):
 		DirAccess.make_dir_recursive_absolute(dir)
 	return dir
+
+
+## Returns true while a combat encounter is actively running.
+## Movement is blocked only when the CombatEngine exists (between
+## start_combat_for_room and end_combat). After fleeing, combat is
+## nil so the player may leave — re-entering the room auto-starts
+## combat again.
+func is_combat_blocking() -> bool:
+	return combat != null
 
 
 func _emit_logs(logs: Array) -> void:

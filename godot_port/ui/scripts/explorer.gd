@@ -2,6 +2,7 @@ extends Control
 ## Explorer Scene — core gameplay screen.
 ## Displays room info, player stats, movement, action buttons, and adventure log.
 ## Hosts embedded overlay panels for Combat, Inventory, Store, SaveLoad.
+## Toggle debug overlay with F3.
 
 # --- Info labels ---
 var _floor_label: Label
@@ -36,6 +37,11 @@ var _inventory_panel: Control
 var _store_panel: Control
 var _save_load_panel: Control
 
+# --- Debug overlay ---
+var _debug_panel: PanelContainer
+var _debug_label: RichTextLabel
+var _debug_visible: bool = false
+
 var _combat_scene := preload("res://ui/scenes/CombatPanel.tscn")
 var _inventory_scene := preload("res://ui/scenes/InventoryPanel.tscn")
 var _store_scene := preload("res://ui/scenes/StorePanel.tscn")
@@ -44,6 +50,7 @@ var _save_load_scene := preload("res://ui/scenes/SaveLoadPanel.tscn")
 
 func _ready() -> void:
 	_build_ui()
+	_build_debug_overlay()
 	_instantiate_panels()
 	_connect_signals()
 	_refresh_ui()
@@ -147,6 +154,26 @@ func _build_ui() -> void:
 	actions.add_child(_btn_descend)
 
 
+func _build_debug_overlay() -> void:
+	_debug_panel = PanelContainer.new()
+	_debug_panel.name = "DebugOverlay"
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.75)
+	_debug_panel.add_theme_stylebox_override("panel", style)
+	_debug_panel.anchor_left = 0.6
+	_debug_panel.anchor_top = 0.0
+	_debug_panel.anchor_right = 1.0
+	_debug_panel.anchor_bottom = 0.5
+	_debug_panel.visible = false
+	add_child(_debug_panel)
+
+	_debug_label = RichTextLabel.new()
+	_debug_label.bbcode_enabled = true
+	_debug_label.fit_content = true
+	_debug_label.scroll_active = true
+	_debug_panel.add_child(_debug_label)
+
+
 func _instantiate_panels() -> void:
 	_combat_panel = _combat_scene.instantiate()
 	_combat_panel.visible = false
@@ -183,8 +210,8 @@ func _connect_signals() -> void:
 
 	GameSession.state_changed.connect(_refresh_ui)
 	GameSession.log_message.connect(_append_log)
-	GameSession.combat_started.connect(func(): _combat_panel.visible = true)
-	GameSession.combat_ended.connect(func(): _combat_panel.visible = false; _refresh_ui())
+	GameSession.combat_started.connect(_on_combat_started)
+	GameSession.combat_ended.connect(_on_combat_ended)
 
 	if _combat_panel.has_signal("close_requested"):
 		_combat_panel.close_requested.connect(func(): _combat_panel.visible = false)
@@ -196,13 +223,30 @@ func _connect_signals() -> void:
 		_save_load_panel.close_requested.connect(func(): _save_load_panel.visible = false)
 
 
+func _on_combat_started() -> void:
+	_combat_panel.visible = true
+	if _combat_panel.has_method("refresh"):
+		_combat_panel.refresh()
+
+
+func _on_combat_ended() -> void:
+	_combat_panel.visible = false
+	_refresh_ui()
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo:
-		match event.keycode:
-			KEY_W: _move("N")
-			KEY_S: _move("S")
-			KEY_A: _move("W")
-			KEY_D: _move("E")
+	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	match event.keycode:
+		KEY_W: _move("N")
+		KEY_S: _move("S")
+		KEY_A: _move("W")
+		KEY_D: _move("E")
+		KEY_F3:
+			_debug_visible = not _debug_visible
+			_debug_panel.visible = _debug_visible
+			if _debug_visible:
+				_refresh_debug()
 
 
 # -------------------------------------------------------------------
@@ -211,6 +255,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _move(direction: String) -> void:
 	if _any_panel_open():
+		return
+	if GameSession.is_combat_blocking():
+		_append_log("Enemies block your path! Fight or flee first.")
 		return
 	var room := GameSession.move_direction(direction)
 	if room == null:
@@ -226,6 +273,8 @@ func _on_attack() -> void:
 		if GameSession.combat == null:
 			GameSession.start_combat_for_room(room)
 		_combat_panel.visible = true
+		if _combat_panel.has_method("refresh"):
+			_combat_panel.refresh()
 
 
 func _on_flee() -> void:
@@ -344,22 +393,25 @@ func _refresh_ui() -> void:
 
 	_update_button_visibility(room)
 
+	if _debug_visible:
+		_refresh_debug()
+
 
 func _update_button_visibility(room: RoomState) -> void:
-	var in_combat := GameSession.combat != null
+	var blocking := GameSession.is_combat_blocking()
 	var has_enemies := room != null and room.has_combat and not room.enemies_defeated
 
-	_btn_north.disabled = in_combat
-	_btn_south.disabled = in_combat
-	_btn_east.disabled = in_combat
-	_btn_west.disabled = in_combat
+	_btn_north.disabled = blocking
+	_btn_south.disabled = blocking
+	_btn_east.disabled = blocking
+	_btn_west.disabled = blocking
 
 	_btn_attack.visible = has_enemies
 	_btn_flee.visible = has_enemies
-	_btn_chest.visible = room != null and room.has_chest and not room.chest_looted
-	_btn_ground.visible = room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 or (not room.ground_container.is_empty() and not room.container_searched))
-	_btn_store.visible = room != null and room.has_store
-	_btn_descend.visible = room != null and room.has_stairs
+	_btn_chest.visible = room != null and room.has_chest and not room.chest_looted and not blocking
+	_btn_ground.visible = room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 or (not room.ground_container.is_empty() and not room.container_searched)) and not blocking
+	_btn_store.visible = room != null and room.has_store and not blocking
+	_btn_descend.visible = room != null and room.has_stairs and not blocking
 
 
 func _any_panel_open() -> bool:
@@ -367,6 +419,53 @@ func _any_panel_open() -> bool:
 		   (_inventory_panel != null and _inventory_panel.visible) or \
 		   (_store_panel != null and _store_panel.visible) or \
 		   (_save_load_panel != null and _save_load_panel.visible)
+
+
+# -------------------------------------------------------------------
+# Debug overlay (F3 toggle)
+# -------------------------------------------------------------------
+
+func _refresh_debug() -> void:
+	var room := GameSession.get_current_room()
+	var fs := GameSession.get_floor_state()
+	var gs := GameSession.game_state
+	if room == null or fs == null or gs == null:
+		_debug_label.text = "[DEBUG] No room data"
+		return
+
+	var pos := fs.current_pos
+	var threats: Array = room.data.get("threats", [])
+	var tags: Array = room.data.get("tags", [])
+	var is_starter := fs.starter_rooms.has(pos)
+	var combat_suppressed := is_starter and not threats.is_empty()
+	var enemy_count := 0
+	var enemy_names: PackedStringArray = []
+	if GameSession.combat != null:
+		var alive := GameSession.combat.get_alive_enemies()
+		enemy_count = alive.size()
+		for e in alive:
+			enemy_names.append("%s (%dHP)" % [e.name, e.health])
+
+	var lines: PackedStringArray = [
+		"[b]--- DEBUG (F3) ---[/b]",
+		"floor: %d" % gs.floor,
+		"coord: (%d, %d)" % [pos.x, pos.y],
+		"room_type: %s" % room.data.get("difficulty", "?"),
+		"tags: %s" % str(tags),
+		"has_combat: %s" % str(room.has_combat),
+		"enemies_defeated: %s" % str(room.enemies_defeated),
+		"enemy_count: %d" % enemy_count,
+		"enemy_names: %s" % (", ".join(enemy_names) if not enemy_names.is_empty() else "none"),
+		"threats_pool: %s" % str(threats),
+		"chest: %s" % str(room.has_chest and not room.chest_looted),
+		"ground_items: %d" % (room.ground_items.size() + (1 if room.ground_gold > 0 else 0)),
+		"store: %s" % str(room.has_store),
+		"stairs: %s" % str(room.has_stairs),
+		"starter_room: %s" % str(is_starter),
+		"combat_suppressed: %s" % str(combat_suppressed),
+		"rooms_explored: %d" % fs.rooms_explored,
+	]
+	_debug_label.text = "\n".join(lines)
 
 
 # -------------------------------------------------------------------

@@ -130,6 +130,8 @@ func refresh() -> void:
 	if ce == null:
 		return
 
+	_result_label.text = ""
+
 	# Update dice display
 	var dice := ce.dice
 	for i in 5:
