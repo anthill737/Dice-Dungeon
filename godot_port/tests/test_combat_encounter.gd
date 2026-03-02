@@ -211,15 +211,20 @@ func test_deterministic_combat_encounter_seed_42() -> void:
 
 func test_pending_triggers_on_move_into_combat_room() -> void:
 	GameSession._load_data()
-	GameSession.start_new_game()
+
+	GameSession.rng = DeterministicRNG.new(300)
+	GameSession.game_state = GameState.new()
+	GameSession.game_state.reset()
+	GameSession.exploration = ExplorationEngine.new(GameSession.rng, GameSession.game_state, GameSession.rooms_db)
+	GameSession.inventory_engine = InventoryEngine.new(GameSession.rng, GameSession.game_state, GameSession.items_db)
+	GameSession.store_engine = StoreEngine.new(GameSession.game_state, GameSession.items_db)
+	GameSession.combat = null
+	GameSession.combat_pending = false
+	GameSession.exploration.start_floor(1)
+
+	var directions: Array[String] = ["N", "E", "S", "W", "N", "N"]
 
 	var found_pending := false
-	# Use a long spiral to maximise new rooms explored
-	var directions: Array[String] = []
-	for _rep in 4:
-		for d in ["N", "N", "N", "E", "E", "E", "S", "S", "S", "W", "W", "W"]:
-			directions.append(d)
-
 	for dir in directions:
 		var room := GameSession.move_direction(dir)
 		if room == null:
@@ -228,14 +233,9 @@ func test_pending_triggers_on_move_into_combat_room() -> void:
 			found_pending = true
 			assert_true(GameSession.is_pending_choice(), "is_pending_choice")
 			assert_null(GameSession.combat, "no CombatEngine yet")
-			# Resolve pending so further moves are allowed
-			GameSession.combat_pending = false
-			var r := GameSession.get_current_room()
-			if r != null:
-				r.combat_escaped = true
+			break
 
-	if not found_pending:
-		pending("No combat room reached in 48 moves (extremely rare with DefaultRNG)")
+	assert_true(found_pending, "combat_pending triggered within fixed move sequence (seed 300)")
 
 
 # ── starter rooms + floor-2 parity ───────────────────────────────────
