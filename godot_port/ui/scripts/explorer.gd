@@ -7,6 +7,7 @@ extends Control
 # --- Info widgets ---
 var _floor_label: Label
 var _room_pos_label: Label
+var _seed_label: Label
 var _hp_label: Label
 var _hp_bar: ProgressBar
 var _gold_label: Label
@@ -80,7 +81,15 @@ func _ready() -> void:
 		_context.session.quit_requested.connect(_on_quit_requested)
 	_connect_signals()
 	_connect_log_bridge()
+	_consume_pending_run_state()
 	_refresh_ui()
+
+
+func _consume_pending_run_state() -> void:
+	if GameSession.has_pending_run_state():
+		var run_state := GameSession.consume_pending_run_state()
+		if run_state.get("source") == "save":
+			_append_log("Loaded save from slot %d." % int(run_state.get("slot_id", 0)))
 
 
 # ==================================================================
@@ -150,6 +159,14 @@ func _build_top_bar(parent: Node) -> void:
 	_room_pos_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
 	_room_pos_label.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
 	hbox.add_child(_room_pos_label)
+
+	_seed_label = Label.new()
+	_seed_label.name = "SeedLabel"
+	_seed_label.text = ""
+	_seed_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	_seed_label.add_theme_color_override("font_color", DungeonTheme.TEXT_DIM)
+	_seed_label.modulate.a = 0.8
+	hbox.add_child(_seed_label)
 
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -769,6 +786,11 @@ func _refresh_ui() -> void:
 	_room_pos_label.text = "(%d, %d)" % [pos.x, pos.y]
 	_hp_label.text = "%d / %d" % [gs.health, gs.max_health]
 	_gold_label.text = "%d" % gs.gold
+
+	if GameSession.run_rng_mode == "deterministic":
+		_seed_label.text = "Seed: %d (Deterministic)" % GameSession.run_seed
+	else:
+		_seed_label.text = "Seed: Random"
 
 	_hp_bar.max_value = gs.max_health
 	_hp_bar.value = gs.health

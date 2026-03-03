@@ -37,6 +37,14 @@ var _content_manager: ContentManager
 ## Session trace — persists across scene transitions, reset on new/load game.
 var trace: SessionTrace = SessionTrace.new()
 
+## Handoff for load-from-main-menu: SessionService stores run state here
+## before the scene change to Explorer.  Explorer consumes it on _ready().
+var pending_run_state: Dictionary = {}
+
+## Run configuration — set by start_new_run() / start_new_game(), read by HUD.
+var run_rng_mode: String = "default"
+var run_seed: int = -1
+
 signal state_changed()
 signal combat_started()
 signal combat_ended()
@@ -65,7 +73,24 @@ func is_data_loaded() -> bool:
 
 
 func start_new_game() -> void:
-	rng = DefaultRNG.new()
+	start_new_run({})
+
+
+func start_new_run(options: Dictionary = {}) -> void:
+	var rng_mode: String = options.get("rng_mode", "default")
+	var seed_val: int = int(options.get("seed", -1))
+
+	if rng_mode == "deterministic" and seed_val >= 0:
+		rng = DeterministicRNG.new(seed_val)
+		run_rng_mode = "deterministic"
+		run_seed = seed_val
+	else:
+		rng = DefaultRNG.new()
+		run_rng_mode = "default"
+		run_seed = -1
+
+	var trace_rng_type := "DeterministicRNG" if run_rng_mode == "deterministic" else "DefaultRNG"
+
 	game_state = GameState.new()
 	game_state.reset()
 
@@ -78,12 +103,14 @@ func start_new_game() -> void:
 	combat = null
 	combat_pending = false
 
-	trace.reset(-1, "DefaultRNG")
+	trace.reset(run_seed, trace_rng_type)
 	trace.difficulty = game_state.difficulty
 	trace.record("run_started", {
 		"difficulty": game_state.difficulty,
 		"max_health": game_state.max_health,
 		"num_dice": game_state.num_dice,
+		"rng_mode": run_rng_mode,
+		"seed": run_seed,
 	})
 
 	exploration.start_floor(1)
@@ -475,6 +502,16 @@ func trace_deleted_slot(slot: int) -> void:
 
 func trace_renamed_slot(slot: int, new_name: String) -> void:
 	trace.record("renamed_slot", {"slot": slot, "new_name": new_name})
+
+
+func has_pending_run_state() -> bool:
+	return not pending_run_state.is_empty()
+
+
+func consume_pending_run_state() -> Dictionary:
+	var state := pending_run_state
+	pending_run_state = {}
+	return state
 
 
 # -------------------------------------------------------------------
