@@ -22,16 +22,22 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.12, 0.1, 0.05, 0.95)
+	bg.bg_color = Color(0.10, 0.08, 0.04, 0.97)
+	bg.border_color = Color(0.83, 0.69, 0.22)
+	bg.set_border_width_all(2)
+	bg.set_corner_radius_all(6)
+	bg.set_content_margin_all(16)
 	add_theme_stylebox_override("panel", bg)
 
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 6)
+	root.add_theme_constant_override("separation", 8)
 	add_child(root)
 
 	var title := Label.new()
-	title.text = "=== STORE ==="
+	title.text = "🏪 STORE"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(0.83, 0.69, 0.22))
 	root.add_child(title)
 
 	_gold_label = Label.new()
@@ -86,7 +92,7 @@ func _build_ui() -> void:
 
 	_btn_close = Button.new()
 	_btn_close.text = "Close"
-	_btn_close.pressed.connect(func(): close_requested.emit(); visible = false)
+	_btn_close.pressed.connect(func(): close_requested.emit())
 	btn_row.add_child(_btn_close)
 
 

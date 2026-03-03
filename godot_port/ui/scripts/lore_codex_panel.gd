@@ -59,7 +59,7 @@ func _build_ui() -> void:
 
 	_btn_close = Button.new()
 	_btn_close.text = "Close"
-	_btn_close.pressed.connect(func(): close_requested.emit(); visible = false)
+	_btn_close.pressed.connect(func(): close_requested.emit())
 	header.add_child(_btn_close)
 
 	# Content split
