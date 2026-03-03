@@ -164,7 +164,7 @@ func test_C_victory_clears_combat_panel_hides() -> void:
 	# Panel should be hidden (combat_ended triggers _on_combat_ended)
 	# Give fade tween time to complete
 	await get_tree().create_timer(0.3).timeout
-	assert_false(explorer._combat_panel.visible,
+	assert_false(explorer._overlay_manager.is_menu_open("combat"),
 		"CombatPanel hidden after victory")
 
 	explorer.queue_free()
