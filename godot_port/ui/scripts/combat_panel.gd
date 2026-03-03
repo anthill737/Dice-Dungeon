@@ -22,6 +22,7 @@ var _rolls_label: Label
 var _result_label: Label
 var _btn_roll: Button
 var _btn_attack: Button
+var _btn_flee: Button
 var _btn_close: Button
 var _log_text: RichTextLabel
 
@@ -150,9 +151,9 @@ func _build_ui() -> void:
 	_btn_attack.pressed.connect(_on_attack)
 	btn_row.add_child(_btn_attack)
 
-	var btn_flee := _styled_btn("Flee", Color(0.37, 0.65, 0.65))
-	btn_flee.pressed.connect(_on_flee)
-	btn_row.add_child(btn_flee)
+	_btn_flee = _styled_btn("Flee", Color(0.37, 0.65, 0.65))
+	_btn_flee.pressed.connect(_on_flee)
+	btn_row.add_child(_btn_flee)
 
 	_btn_close = _styled_btn("Close", Color(0.5, 0.5, 0.5))
 	_btn_close.pressed.connect(func(): close_requested.emit())
@@ -222,6 +223,7 @@ func _on_state_changed() -> void:
 func refresh() -> void:
 	var ce := GameSession.combat
 	if ce == null:
+		_sync_close_flee_visibility()
 		return
 
 	_result_label.text = ""
@@ -236,7 +238,6 @@ func refresh() -> void:
 			_lock_buttons[i].text = "Locked" if dice.locked[i] else "Lock"
 			_dice_panels[i].visible = true
 
-			# Highlight locked dice border
 			var die_style := StyleBoxFlat.new()
 			die_style.bg_color = COLOR_DICE_BG
 			die_style.set_corner_radius_all(6)
@@ -271,17 +272,33 @@ func refresh() -> void:
 	_btn_roll.disabled = dice.rolls_left <= 0
 	_btn_attack.disabled = not dice.has_rolled()
 
-	# Check for combat end
+	var combat_over := alive.is_empty() or GameSession.game_state.health <= 0
 	if alive.is_empty():
 		_result_label.text = "⚔ Victory! ⚔"
-		_btn_close.visible = true
 		_btn_roll.disabled = true
 		_btn_attack.disabled = true
 	elif GameSession.game_state.health <= 0:
 		_result_label.text = "☠ Defeated... ☠"
-		_btn_close.visible = true
 		_btn_roll.disabled = true
 		_btn_attack.disabled = true
+
+	_sync_close_flee_visibility(combat_over)
+
+
+## Keeps Close hidden during pending/active combat and shows it only
+## once the encounter is resolved (victory or defeat).
+## Flee is visible only during combat_pending (before Attack); once
+## combat_active begins, Flee is hidden.
+func _sync_close_flee_visibility(combat_over: bool = false) -> void:
+	var pending := GameSession.is_pending_choice()
+	var active := GameSession.is_combat_active()
+
+	# Close button: only visible when combat is fully resolved
+	_btn_close.visible = combat_over or (not pending and not active)
+
+	# Flee: allowed only during pending (before Attack pressed)
+	_btn_flee.visible = pending and not active
+	_btn_flee.disabled = not pending
 
 
 func _on_roll() -> void:
@@ -328,9 +345,12 @@ func _on_attack() -> void:
 
 
 func _on_flee() -> void:
-	if GameSession.combat == null:
+	# Flee is only allowed during combat_pending (before Attack).
+	if not GameSession.is_pending_choice():
 		return
-	var ok := GameSession.flee_from_combat()
+	if GameSession.combat != null:
+		return
+	var ok := GameSession.attempt_flee_pending()
 	if ok:
 		_log_text.append_text("Fled successfully!\n")
 	else:

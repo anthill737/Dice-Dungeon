@@ -523,7 +523,7 @@ func _connect_signals() -> void:
 	GameSession.combat_pending_changed.connect(_refresh_ui)
 
 	if _combat_panel.has_signal("close_requested"):
-		_combat_panel.close_requested.connect(func(): _hide_panel(_combat_panel))
+		_combat_panel.close_requested.connect(_on_combat_close_requested)
 	if _inventory_panel.has_signal("close_requested"):
 		_inventory_panel.close_requested.connect(func(): _hide_panel(_inventory_panel))
 	if _store_panel.has_signal("close_requested"):
@@ -564,14 +564,27 @@ func _close_topmost_panel() -> bool:
 	while not _panel_stack.is_empty():
 		var panel: Control = _panel_stack.pop_back()
 		if panel.visible:
+			if panel == _combat_panel and _is_combat_locking():
+				_panel_stack.push_back(panel)
+				return true
 			_hide_panel(panel)
 			return true
 	return false
 
 
+func _is_combat_locking() -> bool:
+	return GameSession.is_pending_choice() or GameSession.is_combat_active()
+
+
 # ==================================================================
 # COMBAT LIFECYCLE
 # ==================================================================
+
+func _on_combat_close_requested() -> void:
+	if _is_combat_locking():
+		return
+	_hide_panel(_combat_panel)
+
 
 func _on_combat_started() -> void:
 	_show_panel(_combat_panel)
@@ -631,12 +644,18 @@ func _on_settings() -> void:
 
 
 func _close_all_panels() -> void:
+	var combat_locked := _is_combat_locking()
 	for panel in [_combat_panel, _inventory_panel, _store_panel,
 				  _save_load_panel, _character_status_panel, _settings_panel]:
-		if panel != null:
-			panel.visible = false
-			panel.modulate.a = 0.0
+		if panel == null:
+			continue
+		if panel == _combat_panel and combat_locked:
+			continue
+		panel.visible = false
+		panel.modulate.a = 0.0
 	_panel_stack.clear()
+	if combat_locked and _combat_panel != null and _combat_panel.visible:
+		_panel_stack.push_back(_combat_panel)
 
 
 # -------------------------------------------------------------------
@@ -675,8 +694,7 @@ func _on_flee() -> void:
 	if GameSession.is_pending_choice():
 		GameSession.attempt_flee_pending()
 		return
-	if GameSession.combat != null:
-		GameSession.flee_from_combat()
+	# Flee from active combat is disabled by design (victory or defeat only)
 
 
 func _on_chest() -> void:
@@ -824,7 +842,7 @@ func _update_button_visibility(room: RoomState) -> void:
 	_update_move_btn_style(_btn_west)
 
 	_btn_attack.visible = show_combat_buttons
-	_btn_flee.visible = show_combat_buttons
+	_btn_flee.visible = pending and not active
 	_btn_chest.visible = room != null and room.has_chest and not room.chest_looted and not blocking
 	_btn_ground.visible = room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 or (not room.ground_container.is_empty() and not room.container_searched)) and not blocking
 	_btn_store.visible = room != null and room.has_store and not blocking
