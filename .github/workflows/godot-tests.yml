@@ -18,10 +18,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Python tkinter
+      - name: Install Python dependencies for parity tests
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-tk
+          pip install Pillow
 
       - name: Cache Godot binary
         id: cache-godot
