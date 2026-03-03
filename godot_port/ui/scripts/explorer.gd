@@ -36,6 +36,7 @@ var _combat_panel: Control
 var _inventory_panel: Control
 var _store_panel: Control
 var _save_load_panel: Control
+var _character_status_panel: Control
 
 # --- Debug overlay ---
 var _debug_panel: PanelContainer
@@ -49,6 +50,7 @@ var _inventory_scene := preload("res://ui/scenes/InventoryPanel.tscn")
 var _store_scene := preload("res://ui/scenes/StorePanel.tscn")
 var _save_load_scene := preload("res://ui/scenes/SaveLoadPanel.tscn")
 var _minimap_scene := preload("res://ui/scenes/MinimapPanel.tscn")
+var _character_status_scene := preload("res://ui/scenes/CharacterStatusPanel.tscn")
 
 
 func _ready() -> void:
@@ -198,6 +200,10 @@ func _instantiate_panels() -> void:
 	_save_load_panel.visible = false
 	add_child(_save_load_panel)
 
+	_character_status_panel = _character_status_scene.instantiate()
+	_character_status_panel.visible = false
+	add_child(_character_status_panel)
+
 
 func _connect_signals() -> void:
 	_btn_north.pressed.connect(_move.bind("N"))
@@ -229,6 +235,8 @@ func _connect_signals() -> void:
 		_store_panel.close_requested.connect(func(): _store_panel.visible = false)
 	if _save_load_panel.has_signal("close_requested"):
 		_save_load_panel.close_requested.connect(func(): _save_load_panel.visible = false)
+	if _character_status_panel.has_signal("close_requested"):
+		_character_status_panel.close_requested.connect(func(): _character_status_panel.visible = false)
 
 
 func _on_combat_started() -> void:
@@ -250,6 +258,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_S: _move("S")
 		KEY_A: _move("W")
 		KEY_D: _move("E")
+		KEY_G:
+			_on_character_status()
 		KEY_F3:
 			_debug_visible = not _debug_visible
 			_debug_panel.visible = _debug_visible
@@ -352,6 +362,12 @@ func _on_rest() -> void:
 	GameSession.attempt_rest()
 
 
+func _on_character_status() -> void:
+	_character_status_panel.visible = true
+	if _character_status_panel.has_method("refresh"):
+		_character_status_panel.refresh()
+
+
 func _on_save_load() -> void:
 	_save_load_panel.visible = true
 	if _save_load_panel.has_method("refresh"):
@@ -432,7 +448,8 @@ func _any_panel_open() -> bool:
 	return (_combat_panel != null and _combat_panel.visible) or \
 		   (_inventory_panel != null and _inventory_panel.visible) or \
 		   (_store_panel != null and _store_panel.visible) or \
-		   (_save_load_panel != null and _save_load_panel.visible)
+		   (_save_load_panel != null and _save_load_panel.visible) or \
+		   (_character_status_panel != null and _character_status_panel.visible)
 
 
 # -------------------------------------------------------------------

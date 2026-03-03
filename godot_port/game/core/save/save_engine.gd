@@ -99,11 +99,11 @@ static func serialize(game: GameState, floor_st: FloorState, slot_num: int = 1, 
 		"key_fragments_collected": floor_st.key_fragments,
 		"special_rooms": special_rooms,
 		"unlocked_rooms": unlocked_rooms,
-		"used_lore_entries": {},
+		"used_lore_entries": _dict_deep_copy(game.used_lore_entries),
 		"discovered_lore_items": [],
-		"lore_item_assignments": {},
+		"lore_item_assignments": _dict_deep_copy(game.lore_item_assignments),
 		"lore_item_counters": {},
-		"lore_codex": [],
+		"lore_codex": _array_deep_copy(game.lore_codex),
 		"settings": {
 			"color_scheme": "Classic",
 			"difficulty": "Normal",
@@ -174,6 +174,22 @@ static func deserialize(save_data: Dictionary, game: GameState, floor_st: FloorS
 			game.purchased_upgrades_this_floor[str(p)] = true
 	elif pur is Dictionary:
 		game.purchased_upgrades_this_floor = _dict_deep_copy(pur)
+
+	# Lore state
+	game.used_lore_entries = _dict_deep_copy(save_data.get("used_lore_entries", {}))
+	game.lore_item_assignments = _dict_deep_copy(save_data.get("lore_item_assignments", {}))
+	game.lore_codex = _array_deep_copy(save_data.get("lore_codex", []))
+
+	# Deduplicate codex by item_key
+	var _seen_keys := {}
+	var _deduped: Array = []
+	for entry in game.lore_codex:
+		var ik = entry.get("item_key", "")
+		if ik.is_empty() or not _seen_keys.has(ik):
+			_deduped.append(entry)
+			if not ik.is_empty():
+				_seen_keys[ik] = true
+	game.lore_codex = _deduped
 
 	# Combat state reset on load
 	game.in_combat = false

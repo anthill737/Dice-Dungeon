@@ -148,6 +148,7 @@ func _on_load() -> void:
 		GameSession.exploration.floor = fs
 		GameSession.inventory_engine = InventoryEngine.new(GameSession.rng, gs, GameSession.items_db)
 		GameSession.store_engine = StoreEngine.new(gs, GameSession.items_db)
+		GameSession.lore_engine = LoreEngine.new(GameSession.rng, gs, GameSession.lore_db)
 		GameSession.combat = null
 		_info_label.text = "Loaded slot %d!" % slot
 		GameSession.log_message.emit(_info_label.text)

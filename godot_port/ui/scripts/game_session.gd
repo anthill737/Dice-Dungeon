@@ -20,10 +20,12 @@ var exploration: ExplorationEngine
 var combat: CombatEngine
 var inventory_engine: InventoryEngine
 var store_engine: StoreEngine
+var lore_engine: LoreEngine
 
 var rooms_db: Array = []
 var items_db: Dictionary = {}
 var enemy_types_db: Dictionary = {}
+var lore_db: Dictionary = {}
 
 ## True between entering a combat room and resolving the encounter
 ## (Attack pressed or flee succeeded).  Movement is blocked while true.
@@ -52,6 +54,9 @@ func _load_data() -> void:
 	var ed := EnemyTypesData.new()
 	if ed.load():
 		enemy_types_db = ed.enemies
+	var ld := LoreData.new()
+	if ld.load():
+		lore_db = ld.lore
 	_data_loaded = true
 
 
@@ -67,6 +72,7 @@ func start_new_game() -> void:
 	exploration = ExplorationEngine.new(rng, game_state, rooms_db)
 	inventory_engine = InventoryEngine.new(rng, game_state, items_db)
 	store_engine = StoreEngine.new(game_state, items_db)
+	lore_engine = LoreEngine.new(rng, game_state, lore_db)
 	combat = null
 	combat_pending = false
 

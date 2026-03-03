@@ -74,6 +74,11 @@ var flags: Dictionary = {
 ## Temp effects: key -> {"delta": number, "duration": "combat"|"floor"}
 var temp_effects: Dictionary = {}
 
+## Lore state — mirrors Python game.lore_codex / lore_item_assignments / used_lore_entries
+var lore_codex: Array = []
+var lore_item_assignments: Dictionary = {}
+var used_lore_entries: Dictionary = {}
+
 
 func reset() -> void:
 	health = 50
@@ -113,3 +118,6 @@ func reset() -> void:
 	in_combat = false
 	flags = {"disarm_token": 0, "escape_token": 0, "statuses": []}
 	temp_effects = {}
+	lore_codex = []
+	lore_item_assignments = {}
+	used_lore_entries = {}

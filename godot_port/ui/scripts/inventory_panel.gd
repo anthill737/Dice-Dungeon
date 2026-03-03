@@ -7,11 +7,14 @@ signal close_requested()
 var _item_list: ItemList
 var _equip_label: Label
 var _btn_use: Button
+var _btn_read: Button
 var _btn_equip: Button
 var _btn_unequip: Button
 var _btn_drop: Button
 var _btn_close: Button
 var _info_label: Label
+
+var _lore_popup: PanelContainer
 
 
 func _ready() -> void:
@@ -60,6 +63,11 @@ func _build_ui() -> void:
 	_btn_use.text = "Use"
 	_btn_use.pressed.connect(_on_use)
 	btn_row.add_child(_btn_use)
+
+	_btn_read = Button.new()
+	_btn_read.text = "Read"
+	_btn_read.pressed.connect(_on_read)
+	btn_row.add_child(_btn_read)
 
 	_btn_equip = Button.new()
 	_btn_equip.text = "Equip"
@@ -124,9 +132,103 @@ func _on_use() -> void:
 	if idx < 0:
 		return
 	var result := GameSession.inventory_engine.use_item(idx)
+	if result.get("type", "") == "readable_lore":
+		_handle_readable_lore(result)
 	GameSession._emit_logs(GameSession.inventory_engine.logs)
 	GameSession.state_changed.emit()
 	refresh()
+
+
+func _on_read() -> void:
+	var idx := _get_selected_index()
+	if idx < 0:
+		return
+	var gs := GameSession.game_state
+	var item_name: String = gs.inventory[idx]
+	var item_def := GameSession.inventory_engine.get_item_def(item_name)
+	var item_type: String = item_def.get("type", "")
+
+	if item_type == "lore":
+		var desc: String = item_def.get("desc", "An old document.")
+		GameSession.log_message.emit("%s: %s" % [item_name, desc])
+	elif item_type == "readable_lore":
+		var result := GameSession.lore_engine.read_lore_item(item_name, idx)
+		GameSession._emit_logs(GameSession.lore_engine.logs)
+		if result.get("ok", false):
+			_show_lore_popup(result["entry"])
+		GameSession.state_changed.emit()
+	else:
+		GameSession.log_message.emit("Nothing to read on %s." % item_name)
+
+
+func _handle_readable_lore(use_result: Dictionary) -> void:
+	var item_name: String = use_result.get("item_name", "")
+	var idx: int = int(use_result.get("idx", 0))
+	if GameSession.lore_engine == null:
+		return
+	var result := GameSession.lore_engine.read_lore_item(item_name, idx)
+	GameSession._emit_logs(GameSession.lore_engine.logs)
+	if result.get("ok", false):
+		_show_lore_popup(result["entry"])
+
+
+func _show_lore_popup(entry: Dictionary) -> void:
+	if _lore_popup != null:
+		_lore_popup.queue_free()
+
+	_lore_popup = PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.05, 0.07, 0.1, 0.98)
+	style.border_color = Color(0.8, 0.7, 0.3)
+	style.set_border_width_all(2)
+	_lore_popup.add_theme_stylebox_override("panel", style)
+	_lore_popup.set_anchors_preset(Control.PRESET_CENTER)
+	_lore_popup.anchor_left = 0.1
+	_lore_popup.anchor_top = 0.1
+	_lore_popup.anchor_right = 0.9
+	_lore_popup.anchor_bottom = 0.9
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 6)
+	_lore_popup.add_child(vbox)
+
+	var popup_title := Label.new()
+	popup_title.text = entry.get("title", "")
+	popup_title.add_theme_font_size_override("font_size", 18)
+	popup_title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
+	vbox.add_child(popup_title)
+
+	var sub: String = str(entry.get("subtitle", ""))
+	if not sub.is_empty():
+		var popup_sub := Label.new()
+		popup_sub.text = sub
+		popup_sub.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8))
+		vbox.add_child(popup_sub)
+
+	var floor_lbl := Label.new()
+	floor_lbl.text = "Discovered on Floor %s" % str(entry.get("floor_found", "?"))
+	floor_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+	vbox.add_child(floor_lbl)
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	var content := RichTextLabel.new()
+	content.bbcode_enabled = true
+	content.text = str(entry.get("content", ""))
+	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(content)
+
+	var close_btn := Button.new()
+	close_btn.text = "Close"
+	close_btn.pressed.connect(func():
+		if _lore_popup != null:
+			_lore_popup.queue_free()
+			_lore_popup = null
+	)
+	vbox.add_child(close_btn)
+
+	get_parent().add_child(_lore_popup)
 
 
 func _on_equip() -> void:
