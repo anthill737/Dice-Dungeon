@@ -25,8 +25,9 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.06, 0.08, 0.12, 0.97)
+	var bg := DungeonTheme.make_panel_bg(
+		Color(0.06, 0.08, 0.12, 0.97), DungeonTheme.TEXT_GOLD)
+	bg.set_border_width_all(0)
 	add_theme_stylebox_override("panel", bg)
 
 	var root := VBoxContainer.new()
@@ -38,12 +39,11 @@ func _build_ui() -> void:
 	header.add_theme_constant_override("separation", 12)
 	root.add_child(header)
 
-	var title := Label.new()
-	title.text = "=== LORE CODEX ==="
-	title.add_theme_font_size_override("font_size", 20)
+	var title := DungeonTheme.make_header(
+		"=== LORE CODEX ===", DungeonTheme.TEXT_GOLD, DungeonTheme.FONT_HEADING)
 	header.add_child(title)
 
-	header.add_child(Control.new())  # spacer
+	header.add_child(Control.new())
 
 	_filter_option = OptionButton.new()
 	_filter_option.add_item("All Categories", 0)
@@ -57,10 +57,11 @@ func _build_ui() -> void:
 	_search_edit.text_changed.connect(_on_search_changed)
 	header.add_child(_search_edit)
 
-	_btn_close = Button.new()
-	_btn_close.text = "Close"
+	_btn_close = DungeonTheme.make_styled_btn("Close", DungeonTheme.TEXT_SECONDARY, 70)
 	_btn_close.pressed.connect(func(): close_requested.emit())
 	header.add_child(_btn_close)
+
+	root.add_child(DungeonTheme.make_separator(DungeonTheme.BORDER))
 
 	# Content split
 	var split := HSplitContainer.new()
@@ -68,16 +69,18 @@ func _build_ui() -> void:
 	split.split_offset = 320
 	root.add_child(split)
 
-	# Left pane — entry list
+	# Left pane
 	var left_box := VBoxContainer.new()
 	left_box.custom_minimum_size = Vector2(280, 0)
+	left_box.add_theme_constant_override("separation", 4)
 	split.add_child(left_box)
 
-	var list_label := Label.new()
-	list_label.text = "Discovered Entries"
+	var list_label := DungeonTheme.make_header(
+		"Discovered Entries", DungeonTheme.TEXT_SECONDARY, DungeonTheme.FONT_LABEL)
+	list_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	left_box.add_child(list_label)
 
-	_entry_list = ItemList.new()
+	_entry_list = DungeonTheme.make_item_list(200)
 	_entry_list.name = "CodexEntryList"
 	_entry_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_entry_list.item_selected.connect(_on_entry_selected)
@@ -86,10 +89,11 @@ func _build_ui() -> void:
 	_no_entries_label = Label.new()
 	_no_entries_label.text = "No lore entries discovered yet.\nRead items marked 'readable_lore' to fill the codex."
 	_no_entries_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_no_entries_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	_no_entries_label.add_theme_color_override("font_color", DungeonTheme.TEXT_DIM)
+	_no_entries_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
 	left_box.add_child(_no_entries_label)
 
-	# Right pane — detail view
+	# Right pane
 	var right_box := VBoxContainer.new()
 	right_box.name = "CodexDetailPane"
 	right_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -99,30 +103,31 @@ func _build_ui() -> void:
 	_detail_title = Label.new()
 	_detail_title.name = "DetailTitle"
 	_detail_title.text = ""
-	_detail_title.add_theme_font_size_override("font_size", 18)
-	_detail_title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
+	_detail_title.add_theme_font_size_override("font_size", DungeonTheme.FONT_SUBHEADING)
+	_detail_title.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	right_box.add_child(_detail_title)
 
 	_detail_subtitle = Label.new()
 	_detail_subtitle.name = "DetailSubtitle"
 	_detail_subtitle.text = ""
-	_detail_subtitle.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8))
+	_detail_subtitle.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
 	right_box.add_child(_detail_subtitle)
 
 	_detail_floor = Label.new()
 	_detail_floor.name = "DetailFloor"
 	_detail_floor.text = ""
-	_detail_floor.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+	_detail_floor.add_theme_color_override("font_color", DungeonTheme.TEXT_DIM)
 	right_box.add_child(_detail_floor)
 
-	var sep := HSeparator.new()
-	right_box.add_child(sep)
+	right_box.add_child(DungeonTheme.make_separator())
 
 	_detail_text = RichTextLabel.new()
 	_detail_text.name = "DetailText"
 	_detail_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_detail_text.bbcode_enabled = true
 	_detail_text.scroll_following = false
+	_detail_text.add_theme_font_size_override("normal_font_size", DungeonTheme.FONT_BODY)
+	_detail_text.add_theme_color_override("default_color", DungeonTheme.TEXT_BONE)
 	right_box.add_child(_detail_text)
 
 

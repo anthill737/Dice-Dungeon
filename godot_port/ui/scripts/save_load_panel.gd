@@ -22,72 +22,73 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.04, 0.06, 0.12, 0.97)
-	bg.border_color = Color(0.37, 0.45, 0.75)
-	bg.set_border_width_all(2)
-	bg.set_corner_radius_all(6)
-	bg.set_content_margin_all(16)
+	var bg := DungeonTheme.make_panel_bg(
+		Color(0.04, 0.06, 0.12, 0.97), DungeonTheme.TEXT_BLUE)
 	add_theme_stylebox_override("panel", bg)
 
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 8)
 	add_child(root)
 
-	var title := Label.new()
-	title.text = "💾 SAVE / LOAD"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 20)
-	title.add_theme_color_override("font_color", Color(0.5, 0.6, 0.9))
-	root.add_child(title)
+	# Header
+	var header := HBoxContainer.new()
+	root.add_child(header)
 
-	_slot_list = ItemList.new()
+	var title := DungeonTheme.make_header(
+		"💾 SAVE / LOAD", DungeonTheme.TEXT_BLUE, DungeonTheme.FONT_HEADING)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+
+	_btn_close = DungeonTheme.make_styled_btn("✕ Close", DungeonTheme.TEXT_SECONDARY, 80)
+	_btn_close.pressed.connect(func(): close_requested.emit())
+	header.add_child(_btn_close)
+
+	root.add_child(DungeonTheme.make_separator(DungeonTheme.TEXT_BLUE))
+
+	_slot_list = DungeonTheme.make_item_list(300)
 	_slot_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_slot_list.custom_minimum_size = Vector2(0, 300)
 	root.add_child(_slot_list)
 
 	_info_label = Label.new()
 	_info_label.text = "Select a slot."
+	_info_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
+	_info_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
 	root.add_child(_info_label)
 
 	var rename_row := HBoxContainer.new()
+	rename_row.add_theme_constant_override("separation", 8)
 	root.add_child(rename_row)
+
 	var rename_lbl := Label.new()
 	rename_lbl.text = "Name:"
+	rename_lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
+	rename_lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
 	rename_row.add_child(rename_lbl)
+
 	_rename_edit = LineEdit.new()
 	_rename_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_rename_edit.placeholder_text = "Save name..."
 	rename_row.add_child(_rename_edit)
 
 	var btn_row := HBoxContainer.new()
-	btn_row.add_theme_constant_override("separation", 8)
+	btn_row.add_theme_constant_override("separation", 6)
 	root.add_child(btn_row)
 
-	_btn_save = Button.new()
-	_btn_save.text = "Save"
+	_btn_save = DungeonTheme.make_styled_btn("Save", DungeonTheme.TEXT_GREEN)
 	_btn_save.pressed.connect(_on_save)
 	btn_row.add_child(_btn_save)
 
-	_btn_load = Button.new()
-	_btn_load.text = "Load"
+	_btn_load = DungeonTheme.make_styled_btn("Load", DungeonTheme.TEXT_CYAN)
 	_btn_load.pressed.connect(_on_load)
 	btn_row.add_child(_btn_load)
 
-	_btn_delete = Button.new()
-	_btn_delete.text = "Delete"
+	_btn_delete = DungeonTheme.make_styled_btn("Delete", DungeonTheme.TEXT_RED)
 	_btn_delete.pressed.connect(_on_delete)
 	btn_row.add_child(_btn_delete)
 
-	_btn_rename = Button.new()
-	_btn_rename.text = "Rename"
+	_btn_rename = DungeonTheme.make_styled_btn("Rename", DungeonTheme.TEXT_GOLD)
 	_btn_rename.pressed.connect(_on_rename)
 	btn_row.add_child(_btn_rename)
-
-	_btn_close = Button.new()
-	_btn_close.text = "Close"
-	_btn_close.pressed.connect(func(): close_requested.emit())
-	btn_row.add_child(_btn_close)
 
 
 func refresh() -> void:
