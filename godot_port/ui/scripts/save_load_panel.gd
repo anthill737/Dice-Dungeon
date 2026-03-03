@@ -1,7 +1,6 @@
 extends PanelContainer
 ## Save/Load Panel — two-panel layout: slot list (left) + detail view (right).
-## Mirrors Python save/load dialog layout.
-## All persistence delegated to SaveEngine via GameSession.
+## Hosted inside PopupFrame which provides title bar and close button.
 
 signal close_requested()
 
@@ -10,7 +9,6 @@ var _btn_save: Button
 var _btn_load: Button
 var _btn_delete: Button
 var _btn_rename: Button
-var _btn_close: Button
 var _info_label: Label
 var _rename_edit: LineEdit
 
@@ -27,30 +25,16 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var bg := DungeonTheme.make_panel_bg(
-		Color(0.04, 0.06, 0.12, 0.97), DungeonTheme.TEXT_BLUE)
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+	bg.set_content_margin_all(0)
 	add_theme_stylebox_override("panel", bg)
 
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 8)
+	root.add_theme_constant_override("separation", 6)
 	add_child(root)
 
-	# Header
-	var header := HBoxContainer.new()
-	root.add_child(header)
-
-	var title := DungeonTheme.make_header(
-		"💾 SAVE / LOAD", DungeonTheme.TEXT_BLUE, DungeonTheme.FONT_HEADING)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(title)
-
-	_btn_close = DungeonTheme.make_styled_btn("✕ Close", DungeonTheme.TEXT_SECONDARY, 80)
-	_btn_close.pressed.connect(func(): close_requested.emit())
-	header.add_child(_btn_close)
-
-	root.add_child(DungeonTheme.make_separator(DungeonTheme.TEXT_BLUE))
-
-	# Two-panel layout (matching Python left/right split)
+	# Two-panel layout
 	var split := HBoxContainer.new()
 	split.add_theme_constant_override("separation", 12)
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -59,7 +43,7 @@ func _build_ui() -> void:
 	# --- Left panel: slot list ---
 	var left_panel := VBoxContainer.new()
 	left_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left_panel.size_flags_stretch_ratio = 0.45
+	left_panel.size_flags_stretch_ratio = 0.40
 	split.add_child(left_panel)
 
 	var slots_header := DungeonTheme.make_header(
@@ -77,18 +61,17 @@ func _build_ui() -> void:
 	_detail_panel = VBoxContainer.new()
 	_detail_panel.name = "DetailPanel"
 	_detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_detail_panel.size_flags_stretch_ratio = 0.55
-	_detail_panel.add_theme_constant_override("separation", 8)
+	_detail_panel.size_flags_stretch_ratio = 0.60
+	_detail_panel.add_theme_constant_override("separation", 6)
 	split.add_child(_detail_panel)
 
-	# Detail background
 	var detail_bg := PanelContainer.new()
 	var detail_style := StyleBoxFlat.new()
 	detail_style.bg_color = Color(0.06, 0.08, 0.14, 0.9)
 	detail_style.border_color = DungeonTheme.BORDER.darkened(0.3)
 	detail_style.set_border_width_all(1)
 	detail_style.set_corner_radius_all(4)
-	detail_style.set_content_margin_all(12)
+	detail_style.set_content_margin_all(14)
 	detail_bg.add_theme_stylebox_override("panel", detail_style)
 	detail_bg.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_detail_panel.add_child(detail_bg)
@@ -114,7 +97,7 @@ func _build_ui() -> void:
 	_detail_info.add_theme_color_override("default_color", DungeonTheme.TEXT_BONE)
 	detail_inner.add_child(_detail_info)
 
-	# Rename row (in detail panel)
+	# Rename row
 	var rename_row := HBoxContainer.new()
 	rename_row.add_theme_constant_override("separation", 8)
 	detail_inner.add_child(rename_row)
@@ -132,32 +115,32 @@ func _build_ui() -> void:
 	_rename_edit.max_length = 35
 	rename_row.add_child(_rename_edit)
 
-	# Action buttons (in detail panel)
+	# Action buttons
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 6)
 	detail_inner.add_child(btn_row)
 
-	_btn_save = DungeonTheme.make_styled_btn("Save", DungeonTheme.TEXT_GREEN)
+	_btn_save = DungeonTheme.make_styled_btn("Save", DungeonTheme.TEXT_GREEN, 90)
 	_btn_save.name = "BtnSave"
 	_btn_save.pressed.connect(_on_save)
 	btn_row.add_child(_btn_save)
 
-	_btn_load = DungeonTheme.make_styled_btn("Load", DungeonTheme.TEXT_CYAN)
+	_btn_load = DungeonTheme.make_styled_btn("Load", DungeonTheme.TEXT_CYAN, 90)
 	_btn_load.name = "BtnLoad"
 	_btn_load.pressed.connect(_on_load)
 	btn_row.add_child(_btn_load)
 
-	_btn_delete = DungeonTheme.make_styled_btn("Delete", DungeonTheme.TEXT_RED)
+	_btn_delete = DungeonTheme.make_styled_btn("Delete", DungeonTheme.TEXT_RED, 90)
 	_btn_delete.name = "BtnDelete"
 	_btn_delete.pressed.connect(_on_delete)
 	btn_row.add_child(_btn_delete)
 
-	_btn_rename = DungeonTheme.make_styled_btn("Rename", DungeonTheme.TEXT_GOLD)
+	_btn_rename = DungeonTheme.make_styled_btn("Rename", DungeonTheme.TEXT_GOLD, 90)
 	_btn_rename.name = "BtnRename"
 	_btn_rename.pressed.connect(_on_rename)
 	btn_row.add_child(_btn_rename)
 
-	# Info label (bottom)
+	# Info label
 	_info_label = Label.new()
 	_info_label.text = "Select a slot."
 	_info_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
@@ -178,7 +161,6 @@ func refresh() -> void:
 				name_str = "Unnamed"
 			_slot_list.add_item("Slot %d: %s" % [slot_info["slot"], name_str])
 
-	# Disable save during combat (matching Python)
 	var in_combat := GameSession.is_combat_active()
 	_btn_save.disabled = in_combat
 	if in_combat:

@@ -1,6 +1,6 @@
 extends PanelContainer
 ## Pause Menu — Resume, Settings, Quit to Main Menu.
-## Hosted inside a PopupFrame via MenuOverlayManager.
+## Hosted inside PopupFrame which provides title bar and close button.
 
 signal close_requested()
 signal open_settings_requested()
@@ -17,13 +17,13 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var bg := DungeonTheme.make_panel_bg(
-		Color(0.06, 0.05, 0.08, 0.97), DungeonTheme.TEXT_GOLD)
-	bg.set_border_width_all(0)
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+	bg.set_content_margin_all(0)
 	add_theme_stylebox_override("panel", bg)
 
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 12)
+	root.add_theme_constant_override("separation", 16)
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(root)
 
@@ -31,29 +31,26 @@ func _build_ui() -> void:
 	spacer_top.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(spacer_top)
 
-	var title := DungeonTheme.make_header(
-		"☰ PAUSED", DungeonTheme.TEXT_GOLD, DungeonTheme.FONT_HEADING)
-	root.add_child(title)
-
-	root.add_child(DungeonTheme.make_separator(DungeonTheme.BORDER_GOLD))
-
 	var btn_container := VBoxContainer.new()
-	btn_container.add_theme_constant_override("separation", 8)
+	btn_container.add_theme_constant_override("separation", 10)
 	btn_container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	root.add_child(btn_container)
 
-	_btn_resume = DungeonTheme.make_styled_btn("Resume", DungeonTheme.TEXT_GREEN, 200)
+	_btn_resume = DungeonTheme.make_styled_btn("Resume", DungeonTheme.TEXT_GREEN, 220)
 	_btn_resume.name = "BtnResume"
+	_btn_resume.custom_minimum_size.y = 36
 	_btn_resume.pressed.connect(func(): close_requested.emit())
 	btn_container.add_child(_btn_resume)
 
-	_btn_settings = DungeonTheme.make_styled_btn("Settings", DungeonTheme.TEXT_CYAN, 200)
+	_btn_settings = DungeonTheme.make_styled_btn("Settings", DungeonTheme.TEXT_CYAN, 220)
 	_btn_settings.name = "BtnSettings"
+	_btn_settings.custom_minimum_size.y = 36
 	_btn_settings.pressed.connect(func(): open_settings_requested.emit())
 	btn_container.add_child(_btn_settings)
 
-	_btn_quit = DungeonTheme.make_styled_btn("Quit to Main Menu", DungeonTheme.TEXT_RED, 200)
+	_btn_quit = DungeonTheme.make_styled_btn("Quit to Main Menu", DungeonTheme.TEXT_RED, 220)
 	_btn_quit.name = "BtnQuit"
+	_btn_quit.custom_minimum_size.y = 36
 	_btn_quit.pressed.connect(_on_quit_pressed)
 	btn_container.add_child(_btn_quit)
 
@@ -76,13 +73,13 @@ func _show_confirm() -> void:
 		Color(0.05, 0.04, 0.06, 0.98), DungeonTheme.TEXT_RED)
 	_confirm_panel.add_theme_stylebox_override("panel", style)
 	_confirm_panel.set_anchors_preset(Control.PRESET_CENTER)
-	_confirm_panel.anchor_left = 0.2
-	_confirm_panel.anchor_top = 0.3
-	_confirm_panel.anchor_right = 0.8
-	_confirm_panel.anchor_bottom = 0.7
+	_confirm_panel.anchor_left = 0.15
+	_confirm_panel.anchor_top = 0.25
+	_confirm_panel.anchor_right = 0.85
+	_confirm_panel.anchor_bottom = 0.75
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 16)
+	vbox.add_theme_constant_override("separation", 20)
 	_confirm_panel.add_child(vbox)
 
 	var spacer1 := Control.new()
@@ -97,11 +94,11 @@ func _show_confirm() -> void:
 	vbox.add_child(msg)
 
 	var btn_row := HBoxContainer.new()
-	btn_row.add_theme_constant_override("separation", 16)
+	btn_row.add_theme_constant_override("separation", 20)
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_child(btn_row)
 
-	var btn_yes := DungeonTheme.make_styled_btn("Yes, Quit", DungeonTheme.TEXT_RED, 120)
+	var btn_yes := DungeonTheme.make_styled_btn("Yes, Quit", DungeonTheme.TEXT_RED, 130)
 	btn_yes.pressed.connect(func():
 		_confirm_panel.queue_free()
 		_confirm_panel = null
@@ -109,7 +106,7 @@ func _show_confirm() -> void:
 	)
 	btn_row.add_child(btn_yes)
 
-	var btn_no := DungeonTheme.make_styled_btn("Cancel", DungeonTheme.TEXT_GREEN, 120)
+	var btn_no := DungeonTheme.make_styled_btn("Cancel", DungeonTheme.TEXT_GREEN, 130)
 	btn_no.pressed.connect(func():
 		_confirm_panel.queue_free()
 		_confirm_panel = null
