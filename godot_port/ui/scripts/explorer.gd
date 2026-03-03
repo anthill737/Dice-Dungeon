@@ -33,7 +33,6 @@ var _btn_ground: Button
 var _btn_inventory: Button
 var _btn_store: Button
 var _btn_rest: Button
-var _btn_save_load: Button
 var _btn_descend: Button
 var _btn_settings: Button
 var _btn_character: Button
@@ -344,8 +343,6 @@ func _build_right_sidebar(parent: Node) -> void:
 	actions.add_child(_btn_store)
 	_btn_rest = _make_action_btn("💤 Rest", DungeonTheme.TEXT_GREEN)
 	actions.add_child(_btn_rest)
-	_btn_save_load = _make_action_btn("💾 Save/Load", DungeonTheme.BTN_SECONDARY)
-	actions.add_child(_btn_save_load)
 	_btn_descend = _make_action_btn("⬇ Descend", DungeonTheme.TEXT_CYAN)
 	actions.add_child(_btn_descend)
 
@@ -454,6 +451,10 @@ func _setup_overlay_manager() -> void:
 		_overlay_manager.close_menu("pause")
 		_overlay_manager.open_menu("settings")
 	)
+	_pause_menu.open_save_load_requested.connect(func():
+		_overlay_manager.close_menu("pause")
+		_overlay_manager.open_menu("save_load")
+	)
 	_pause_menu.quit_to_menu_requested.connect(_quit_to_main_menu)
 
 
@@ -474,7 +475,6 @@ func _connect_signals() -> void:
 	_btn_inventory.pressed.connect(_on_inventory)
 	_btn_store.pressed.connect(_on_store)
 	_btn_rest.pressed.connect(_on_rest)
-	_btn_save_load.pressed.connect(_on_save_load)
 	_btn_descend.pressed.connect(_on_descend)
 
 	GameSession.state_changed.connect(_refresh_ui)

@@ -1,12 +1,14 @@
 extends PanelContainer
-## Pause Menu — Resume, Settings, Quit to Main Menu.
+## Pause Menu — Resume, Save/Load, Settings, Quit to Main Menu.
 ## Hosted inside PopupFrame which provides title bar and close button.
 
 signal close_requested()
 signal open_settings_requested()
+signal open_save_load_requested()
 signal quit_to_menu_requested()
 
 var _btn_resume: Button
+var _btn_save_load: Button
 var _btn_settings: Button
 var _btn_quit: Button
 var _confirm_panel: PanelContainer
@@ -41,6 +43,12 @@ func _build_ui() -> void:
 	_btn_resume.custom_minimum_size.y = 36
 	_btn_resume.pressed.connect(func(): close_requested.emit())
 	btn_container.add_child(_btn_resume)
+
+	_btn_save_load = DungeonTheme.make_styled_btn("💾  Save / Load", DungeonTheme.TEXT_BLUE, 220)
+	_btn_save_load.name = "BtnSaveLoad"
+	_btn_save_load.custom_minimum_size.y = 36
+	_btn_save_load.pressed.connect(func(): open_save_load_requested.emit())
+	btn_container.add_child(_btn_save_load)
 
 	_btn_settings = DungeonTheme.make_styled_btn("Settings", DungeonTheme.TEXT_CYAN, 220)
 	_btn_settings.name = "BtnSettings"
