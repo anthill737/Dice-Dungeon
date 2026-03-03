@@ -33,9 +33,13 @@ func _ready() -> void:
 
 
 func register_menu(menu_key: String, title: String, content: Control,
-		can_close_fn: Callable = Callable()) -> void:
+		can_close_fn: Callable = Callable(),
+		base_w: int = 450, base_h: int = 500,
+		width_pct: float = 0.45, height_pct: float = 0.75) -> void:
 	var frame = PopupFrameScript.new()
 	frame.title_text = title
+	frame.size_config = {"base_w": base_w, "base_h": base_h,
+		"width_pct": width_pct, "height_pct": height_pct}
 	frame.visible = false
 	frame.modulate.a = 0.0
 	frame.set_content(content)
@@ -55,15 +59,18 @@ func open_menu(menu_key: String) -> void:
 		return
 	frame.visible = true
 	frame.modulate.a = 0.0
+
+	# Re-apply sizing each time the popup opens
+	if frame.has_method("_apply_sizing"):
+		frame._apply_sizing()
+
 	var tween: Tween = create_tween()
 	tween.tween_property(frame, "modulate:a", 1.0, FADE_DURATION)
 	_stack.erase(menu_key)
 	_stack.push_back(menu_key)
 
-	# Update closable state
 	frame.closable = can_close(menu_key)
 
-	# Refresh content if it has a refresh method
 	var content = _contents.get(menu_key)
 	if content != null and content.has_method("refresh"):
 		content.refresh()

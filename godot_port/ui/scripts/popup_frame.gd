@@ -1,7 +1,11 @@
-extends PanelContainer
-## Shared modal popup wrapper with proper centering and sizing.
-## Uses a plain Control for the popup panel so anchors aren't overridden
-## by PanelContainer's minimum-size behavior.
+extends Control
+## Shared modal popup wrapper with per-menu sizing that mimics the Python
+## get_responsive_dialog_size() function.
+##
+## Python formula:
+##   dialog_size = max(base, min(base*1.5, int(window * percent)))
+##
+## Set size_config before _ready or call configure_size() to customize.
 
 signal close_requested()
 
@@ -10,6 +14,14 @@ var _btn_close: Button
 var _content_container: MarginContainer
 var _popup_panel: Control
 var _content: Control
+
+## Per-popup sizing — matches Python get_responsive_dialog_size args
+var size_config := {
+	"base_w": 450,
+	"base_h": 500,
+	"width_pct": 0.45,
+	"height_pct": 0.75,
+}
 
 var closable: bool = true:
 	set(value):
@@ -22,6 +34,12 @@ var title_text: String = "":
 		title_text = value
 		if _title_label != null:
 			_title_label.text = value
+
+
+func configure_size(base_w: int, base_h: int, w_pct: float, h_pct: float) -> void:
+	size_config = {"base_w": base_w, "base_h": base_h,
+		"width_pct": w_pct, "height_pct": h_pct}
+	_apply_sizing()
 
 
 func _init() -> void:
@@ -39,39 +57,31 @@ func _notification(what: int) -> void:
 
 
 func _build_ui() -> void:
-	var bg_style := StyleBoxFlat.new()
-	bg_style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
-	bg_style.set_content_margin_all(0)
-	add_theme_stylebox_override("panel", bg_style)
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	set_offsets_preset(Control.PRESET_FULL_RECT)
 
-	# Dim background
 	var dim := ColorRect.new()
 	dim.name = "DimBackground"
-	dim.color = Color(0.0, 0.0, 0.0, 0.55)
+	dim.color = Color(0.0, 0.0, 0.0, 0.45)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(dim)
 
-	# Popup panel — a plain Control (not PanelContainer) so anchors work
 	_popup_panel = Control.new()
 	_popup_panel.name = "PopupPanel"
 	_popup_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_popup_panel)
 
-	# Visual background drawn via a Panel child
 	var visual_bg := Panel.new()
 	visual_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.08, 0.06, 0.05, 0.98)
+	panel_style.bg_color = Color(0.10, 0.07, 0.05, 0.98)
 	panel_style.border_color = DungeonTheme.BORDER_GOLD
 	panel_style.set_border_width_all(2)
 	panel_style.set_corner_radius_all(6)
 	visual_bg.add_theme_stylebox_override("panel", panel_style)
 	_popup_panel.add_child(visual_bg)
 
-	# Inner layout fills the popup panel
 	var inner := VBoxContainer.new()
 	inner.set_anchors_preset(Control.PRESET_FULL_RECT)
 	inner.add_theme_constant_override("separation", 0)
@@ -81,14 +91,13 @@ func _build_ui() -> void:
 	var title_bar := PanelContainer.new()
 	title_bar.name = "TitleBar"
 	var tb_style := StyleBoxFlat.new()
-	tb_style.bg_color = Color(0.10, 0.07, 0.05, 0.95)
-	tb_style.set_content_margin_all(8)
-	tb_style.content_margin_left = 16
-	tb_style.content_margin_right = 10
+	tb_style.bg_color = Color(0.12, 0.08, 0.06, 0.95)
+	tb_style.set_content_margin_all(6)
+	tb_style.content_margin_left = 14
+	tb_style.content_margin_right = 8
 	tb_style.corner_radius_top_left = 6
 	tb_style.corner_radius_top_right = 6
 	title_bar.add_theme_stylebox_override("panel", tb_style)
-	title_bar.custom_minimum_size.y = 36
 	inner.add_child(title_bar)
 
 	var title_hbox := HBoxContainer.new()
@@ -97,7 +106,7 @@ func _build_ui() -> void:
 
 	_title_label = Label.new()
 	_title_label.text = title_text
-	_title_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SUBHEADING)
+	_title_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
 	_title_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_hbox.add_child(_title_label)
@@ -105,9 +114,9 @@ func _build_ui() -> void:
 	_btn_close = Button.new()
 	_btn_close.name = "BtnPopupClose"
 	_btn_close.text = "✕"
-	_btn_close.custom_minimum_size = Vector2(32, 32)
+	_btn_close.custom_minimum_size = Vector2(28, 28)
 	_btn_close.visible = closable
-	_btn_close.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
+	_btn_close.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
 
 	var close_normal := StyleBoxFlat.new()
 	close_normal.bg_color = Color(0.65, 0.15, 0.15)
@@ -132,25 +141,21 @@ func _build_ui() -> void:
 	_btn_close.pressed.connect(func(): close_requested.emit())
 	title_hbox.add_child(_btn_close)
 
-	# Separator
-	inner.add_child(DungeonTheme.make_separator(DungeonTheme.BORDER_GOLD))
-
 	# Content area with padding
 	_content_container = MarginContainer.new()
 	_content_container.name = "ContentContainer"
 	_content_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_content_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_content_container.add_theme_constant_override("margin_left", 12)
-	_content_container.add_theme_constant_override("margin_right", 12)
-	_content_container.add_theme_constant_override("margin_top", 8)
-	_content_container.add_theme_constant_override("margin_bottom", 12)
+	_content_container.add_theme_constant_override("margin_left", 10)
+	_content_container.add_theme_constant_override("margin_right", 10)
+	_content_container.add_theme_constant_override("margin_top", 6)
+	_content_container.add_theme_constant_override("margin_bottom", 10)
 	inner.add_child(_content_container)
 
 
 func _apply_sizing() -> void:
 	if _popup_panel == null:
 		return
-
 	var vp := get_viewport()
 	if vp == null:
 		return
@@ -158,11 +163,22 @@ func _apply_sizing() -> void:
 	if vp_size.x <= 0 or vp_size.y <= 0:
 		return
 
-	var target_w: float = clampf(vp_size.x * 0.70, 900.0, vp_size.x * 0.92)
-	var target_h: float = clampf(vp_size.y * 0.75, 650.0, vp_size.y * 0.92)
-	target_w = minf(target_w, vp_size.x * 0.92)
-	target_h = minf(target_h, vp_size.y * 0.92)
+	# Mimic Python: max(base, min(base*1.5, int(window * percent)))
+	var base_w: float = float(size_config.get("base_w", 450))
+	var base_h: float = float(size_config.get("base_h", 500))
+	var w_pct: float = float(size_config.get("width_pct", 0.45))
+	var h_pct: float = float(size_config.get("height_pct", 0.75))
 
+	var max_w: float = base_w * 1.5
+	var max_h: float = base_h * 1.5
+	var target_w: float = maxf(base_w, minf(max_w, vp_size.x * w_pct))
+	var target_h: float = maxf(base_h, minf(max_h, vp_size.y * h_pct))
+
+	# Clamp to viewport
+	target_w = minf(target_w, vp_size.x * 0.95)
+	target_h = minf(target_h, vp_size.y * 0.95)
+
+	# Center
 	var margin_x: float = (vp_size.x - target_w) / 2.0
 	var margin_y: float = (vp_size.y - target_h) / 2.0
 
