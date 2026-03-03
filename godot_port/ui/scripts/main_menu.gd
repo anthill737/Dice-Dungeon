@@ -105,6 +105,7 @@ func _setup_overlay_manager() -> void:
 
 	_settings_panel = _settings_scene.instantiate()
 	_save_load_panel = _save_load_scene.instantiate()
+	_save_load_panel.panel_context = _save_load_panel.PanelContext.MAIN_MENU
 
 	_overlay_manager.register_menu("settings", "⚙ SETTINGS", _settings_panel, "settings")
 	_overlay_manager.register_menu("save_load", "💾 SAVE / LOAD", _save_load_panel, "save_load")
@@ -113,6 +114,8 @@ func _setup_overlay_manager() -> void:
 		_settings_panel.close_requested.connect(func(): _overlay_manager.close_menu("settings"))
 	if _save_load_panel.has_signal("close_requested"):
 		_save_load_panel.close_requested.connect(func(): _overlay_manager.close_menu("save_load"))
+	if _save_load_panel.has_signal("load_into_game_requested"):
+		_save_load_panel.load_into_game_requested.connect(_on_load_save)
 
 
 func _connect_signals() -> void:
@@ -133,6 +136,15 @@ func _on_save_load() -> void:
 
 func _on_settings() -> void:
 	_overlay_manager.open_menu("settings")
+
+
+func _on_load_save(slot_id: int) -> void:
+	if _context.session == null:
+		return
+	var ok := _context.session.start_run_from_save(slot_id)
+	if ok:
+		_overlay_manager.close_all_menus()
+		get_tree().change_scene_to_file("res://ui/scenes/Explorer.tscn")
 
 
 func _on_quit() -> void:

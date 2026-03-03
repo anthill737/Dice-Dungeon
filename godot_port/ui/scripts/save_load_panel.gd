@@ -1,8 +1,16 @@
 extends PanelContainer
 ## Save/Load Panel — two-panel layout: slot list (left) + detail view (right).
 ## Hosted inside PopupFrame which provides title bar and close button.
+##
+## Supports two contexts via `panel_context`:
+##   MAIN_MENU — Save is disabled; Load triggers load_into_game_requested.
+##   IN_GAME   — Full save/load within the current session.
 
 signal close_requested()
+signal load_into_game_requested(slot_id: int)
+
+enum PanelContext { IN_GAME, MAIN_MENU }
+var panel_context: int = PanelContext.IN_GAME
 
 var _slot_list: ItemList
 var _btn_save: Button
@@ -17,6 +25,13 @@ var _detail_title: Label
 var _detail_info: RichTextLabel
 
 var _slots_data: Array = []
+
+# Overwrite confirmation overlay
+var _confirm_overlay: Control
+var _confirm_label: Label
+var _confirm_yes: Button
+var _confirm_no: Button
+var _pending_save_slot: int = -1
 
 
 func _ready() -> void:
@@ -147,8 +162,73 @@ func _build_ui() -> void:
 	_info_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
 	root.add_child(_info_label)
 
+	_build_confirm_overlay()
+
+
+func _build_confirm_overlay() -> void:
+	_confirm_overlay = Control.new()
+	_confirm_overlay.name = "ConfirmOverlay"
+	_confirm_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_confirm_overlay.visible = false
+	_confirm_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_confirm_overlay)
+
+	var dim := ColorRect.new()
+	dim.color = Color(0.0, 0.0, 0.0, 0.6)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_confirm_overlay.add_child(dim)
+
+	var box := PanelContainer.new()
+	var box_style := StyleBoxFlat.new()
+	box_style.bg_color = Color(0.10, 0.07, 0.05, 0.98)
+	box_style.border_color = DungeonTheme.BORDER_GOLD
+	box_style.set_border_width_all(2)
+	box_style.set_corner_radius_all(6)
+	box_style.set_content_margin_all(20)
+	box.add_theme_stylebox_override("panel", box_style)
+	box.set_anchors_preset(Control.PRESET_CENTER)
+	box.anchor_left = 0.5
+	box.anchor_top = 0.5
+	box.anchor_right = 0.5
+	box.anchor_bottom = 0.5
+	box.offset_left = -160
+	box.offset_top = -60
+	box.offset_right = 160
+	box.offset_bottom = 60
+	box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	box.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_confirm_overlay.add_child(box)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+	box.add_child(vbox)
+
+	_confirm_label = Label.new()
+	_confirm_label.text = "Overwrite existing save?"
+	_confirm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_confirm_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
+	_confirm_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
+	vbox.add_child(_confirm_label)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 12)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(btn_row)
+
+	_confirm_yes = DungeonTheme.make_styled_btn("Confirm", DungeonTheme.TEXT_GREEN, 100)
+	_confirm_yes.name = "BtnConfirmYes"
+	_confirm_yes.pressed.connect(_on_overwrite_confirmed)
+	btn_row.add_child(_confirm_yes)
+
+	_confirm_no = DungeonTheme.make_styled_btn("Cancel", DungeonTheme.TEXT_RED, 100)
+	_confirm_no.name = "BtnConfirmNo"
+	_confirm_no.pressed.connect(_on_overwrite_cancelled)
+	btn_row.add_child(_confirm_no)
+
 
 func refresh() -> void:
+	_hide_confirm_overlay()
 	var saves_dir := GameSession.get_saves_dir()
 	_slots_data = SaveEngine.list_slots(saves_dir)
 	_slot_list.clear()
@@ -161,12 +241,16 @@ func refresh() -> void:
 				name_str = "Unnamed"
 			_slot_list.add_item("Slot %d: %s" % [slot_info["slot"], name_str])
 
-	var in_combat := GameSession.is_combat_active()
-	_btn_save.disabled = in_combat
-	if in_combat:
-		_btn_save.text = "Cannot Save"
-	else:
+	if panel_context == PanelContext.MAIN_MENU:
+		_btn_save.disabled = true
 		_btn_save.text = "Save"
+	else:
+		var in_combat := GameSession.is_combat_active()
+		_btn_save.disabled = in_combat
+		if in_combat:
+			_btn_save.text = "Cannot Save"
+		else:
+			_btn_save.text = "Save"
 
 	_refresh_detail()
 
@@ -241,6 +325,50 @@ func _on_save() -> void:
 	if gs == null or fs == null:
 		_info_label.text = "No active game to save."
 		return
+
+	if _is_slot_occupied(slot):
+		_pending_save_slot = slot
+		_show_confirm_overlay(slot)
+		return
+
+	_perform_save(slot)
+
+
+func _is_slot_occupied(slot: int) -> bool:
+	for slot_info in _slots_data:
+		if int(slot_info.get("slot", -1)) == slot:
+			return not slot_info.get("empty", false)
+	return false
+
+
+func _show_confirm_overlay(slot: int) -> void:
+	_confirm_label.text = "Overwrite existing save in Slot %d?" % slot
+	_confirm_overlay.visible = true
+
+
+func _hide_confirm_overlay() -> void:
+	_confirm_overlay.visible = false
+	_pending_save_slot = -1
+
+
+func _on_overwrite_confirmed() -> void:
+	var slot := _pending_save_slot
+	_hide_confirm_overlay()
+	if slot >= 0:
+		_perform_save(slot)
+
+
+func _on_overwrite_cancelled() -> void:
+	_info_label.text = "Save cancelled."
+	_hide_confirm_overlay()
+
+
+func _perform_save(slot: int) -> void:
+	var gs := GameSession.game_state
+	var fs := GameSession.get_floor_state()
+	if gs == null or fs == null:
+		_info_label.text = "No active game to save."
+		return
 	var save_name := _rename_edit.text.strip_edges()
 	if save_name.is_empty():
 		save_name = "Save Slot %d" % slot
@@ -257,6 +385,14 @@ func _on_load() -> void:
 	if slot < 0:
 		_info_label.text = "Select a slot first."
 		return
+
+	if panel_context == PanelContext.MAIN_MENU:
+		if not _is_slot_occupied(slot):
+			_info_label.text = "Slot %d is empty." % slot
+			return
+		load_into_game_requested.emit(slot)
+		return
+
 	var gs := GameSession.game_state
 	if gs == null:
 		gs = GameState.new()

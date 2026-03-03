@@ -80,7 +80,15 @@ func _ready() -> void:
 		_context.session.quit_requested.connect(_on_quit_requested)
 	_connect_signals()
 	_connect_log_bridge()
+	_consume_pending_run_state()
 	_refresh_ui()
+
+
+func _consume_pending_run_state() -> void:
+	if GameSession.has_pending_run_state():
+		var run_state := GameSession.consume_pending_run_state()
+		if run_state.get("source") == "save":
+			_append_log("Loaded save from slot %d." % int(run_state.get("slot_id", 0)))
 
 
 # ==================================================================

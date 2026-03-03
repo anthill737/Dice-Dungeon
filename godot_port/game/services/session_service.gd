@@ -23,6 +23,46 @@ func start_run() -> void:
 	run_started.emit()
 
 
+## Canonical entry point for loading a saved run from the Main Menu.
+## Loads the save data, rebuilds all engines, stores a handoff dict in
+## GameSession.pending_run_state so Explorer can consume it, and emits
+## run_started.  Returns true on success.
+func start_run_from_save(slot_id: int) -> bool:
+	var saves_dir: String = _game_session.get_saves_dir()
+	var gs := GameState.new()
+	var fs := FloorState.new()
+	var ok := SaveEngine.load_from_slot(saves_dir, slot_id, gs, fs)
+	if not ok:
+		return false
+
+	_game_session.game_state = gs
+	_game_session.rng = DefaultRNG.new()
+	_game_session.exploration = ExplorationEngine.new(
+		_game_session.rng, gs, _game_session.rooms_db)
+	_game_session.exploration.floor = fs
+	_game_session.inventory_engine = InventoryEngine.new(
+		_game_session.rng, gs, _game_session.items_db)
+	_game_session.store_engine = StoreEngine.new(gs, _game_session.items_db)
+	_game_session.lore_engine = LoreEngine.new(
+		_game_session.rng, gs, _game_session.lore_db)
+	_game_session.combat = null
+	_game_session.combat_pending = false
+
+	_game_session.trace.reset(-1, "DefaultRNG")
+	_game_session.trace.difficulty = gs.difficulty
+	_game_session.trace.record("loaded", {"slot": slot_id, "name": ""})
+	_game_session.trace.set_floor(fs.floor_index)
+	_game_session.trace.set_coord(fs.current_pos)
+
+	_game_session.pending_run_state = {
+		"source": "save",
+		"slot_id": slot_id,
+	}
+
+	run_started.emit()
+	return true
+
+
 func end_run() -> void:
 	if _game_session.combat != null:
 		_game_session.combat = null

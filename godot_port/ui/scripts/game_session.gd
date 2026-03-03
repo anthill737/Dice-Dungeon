@@ -37,6 +37,10 @@ var _content_manager: ContentManager
 ## Session trace — persists across scene transitions, reset on new/load game.
 var trace: SessionTrace = SessionTrace.new()
 
+## Handoff for load-from-main-menu: SessionService stores run state here
+## before the scene change to Explorer.  Explorer consumes it on _ready().
+var pending_run_state: Dictionary = {}
+
 signal state_changed()
 signal combat_started()
 signal combat_ended()
@@ -475,6 +479,16 @@ func trace_deleted_slot(slot: int) -> void:
 
 func trace_renamed_slot(slot: int, new_name: String) -> void:
 	trace.record("renamed_slot", {"slot": slot, "new_name": new_name})
+
+
+func has_pending_run_state() -> bool:
+	return not pending_run_state.is_empty()
+
+
+func consume_pending_run_state() -> Dictionary:
+	var state := pending_run_state
+	pending_run_state = {}
+	return state
 
 
 # -------------------------------------------------------------------

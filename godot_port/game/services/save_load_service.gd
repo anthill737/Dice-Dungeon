@@ -53,3 +53,10 @@ func rename_slot(slot: int, new_name: String) -> bool:
 
 func list_slots() -> Array:
 	return SaveEngine.list_slots(_saves_dir)
+
+
+func slot_has_save(slot_id: int) -> bool:
+	if not SaveEngine.is_valid_slot(slot_id):
+		return false
+	var path := _saves_dir.path_join(SaveEngine.slot_filename(slot_id))
+	return FileAccess.file_exists(path)
