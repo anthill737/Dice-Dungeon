@@ -95,6 +95,25 @@ ERROR: Export preset "Linux/X11" not found.
 
 Ensure `godot_port/export_presets.cfg` exists and has not been modified. Re-checkout the file from version control if needed.
 
+## CI Export (GitHub Actions)
+
+The repository includes a GitHub Actions workflow (`.github/workflows/godot-export.yml`) that builds Linux and Windows exports automatically.
+
+### Triggering a CI Export
+
+- **Manual:** Go to the repository on GitHub → **Actions** → **Godot Export** → **Run workflow** → click **Run workflow**.
+- **Tag push:** Push a tag matching `v*` (e.g. `git tag v1.0.0 && git push origin v1.0.0`). The workflow runs automatically on any tag starting with `v`.
+
+### Downloading Artifacts
+
+After the workflow completes:
+
+1. Go to **Actions** → click the completed **Godot Export** run.
+2. Scroll to the **Artifacts** section at the bottom of the run summary.
+3. Download the `dice-dungeon-builds` artifact (manual runs, kept 7 days) or `dice-dungeon-builds-<tag>` artifact (tag builds, kept 30 days).
+
+The artifact zip contains both `DiceDungeon_linux.x86_64` and `DiceDungeon_windows.exe`.
+
 ### Windows cross-compilation from Linux
 
 To export a Windows build from a Linux host you need the `mingw-w64` toolchain and the `rcedit` tool:
