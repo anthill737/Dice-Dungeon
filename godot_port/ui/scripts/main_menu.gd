@@ -79,7 +79,7 @@ func _build_ui() -> void:
 	center.add_child(_btn_quit)
 
 	var footer := Label.new()
-	footer.text = "v0.13  —  A dice-driven dungeon crawler"
+	footer.text = "v0.13 [%s]  —  A dice-driven dungeon crawler" % BuildInfo.version_label()
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
 	footer.add_theme_color_override("font_color", DungeonTheme.TEXT_DIM)

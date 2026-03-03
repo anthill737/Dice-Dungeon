@@ -17,6 +17,7 @@ var start_time_utc: String = ""
 var seed_value: int = -1
 var rng_type: String = "Unknown"
 var game_version: String = ""
+var build_time_utc: String = ""
 var difficulty: String = "Normal"
 
 # ------------------------------------------------------------------
@@ -43,7 +44,8 @@ func reset(p_seed: int = -1, p_rng_type: String = "DefaultRNG") -> void:
 	start_time_utc = Time.get_datetime_string_from_system(true)
 	seed_value = p_seed
 	rng_type = p_rng_type
-	game_version = _detect_version()
+	game_version = BuildInfo.git_sha()
+	build_time_utc = BuildInfo.build_time_utc()
 	_start_ticks_ms = Time.get_ticks_msec()
 	_current_floor = 1
 	_current_coord = Vector2i.ZERO
@@ -87,6 +89,7 @@ func export_json() -> String:
 		"seed": seed_value,
 		"rng_type": rng_type,
 		"game_version": game_version,
+		"build_time_utc": build_time_utc,
 		"difficulty": difficulty,
 		"event_count": events.size(),
 		"events": events,
@@ -117,6 +120,7 @@ func export_text() -> String:
 	lines.append("Seed        : %d" % seed_value)
 	lines.append("RNG Type    : %s" % rng_type)
 	lines.append("Version     : %s" % game_version)
+	lines.append("Build Time  : %s" % build_time_utc)
 	lines.append("Difficulty  : %s" % difficulty)
 	lines.append("Total Events: %d" % events.size())
 	lines.append("=====================")
@@ -175,9 +179,3 @@ static func _generate_run_id() -> String:
 	]
 	var rand_suffix := randi() % 10000
 	return "%s_%04d" % [ts, rand_suffix]
-
-
-static func _detect_version() -> String:
-	if ProjectSettings.has_setting("application/config/version"):
-		return str(ProjectSettings.get_setting("application/config/version"))
-	return "dev"
