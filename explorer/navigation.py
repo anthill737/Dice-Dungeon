@@ -124,6 +124,12 @@ class NavigationManager:
         if self.game.mini_bosses_spawned_this_floor < 3 and self.game.rooms_explored_on_floor >= self.game.next_mini_boss_at:
             should_be_mini_boss = True
             self.game.mini_bosses_spawned_this_floor += 1
+            if hasattr(self.game, 'debug_logger'):
+                self.game.debug_logger.navigation(
+                    f"MINIBOSS spawned at rooms_explored_on_floor={self.game.rooms_explored_on_floor}, "
+                    f"threshold={self.game.next_mini_boss_at}, "
+                    f"count={self.game.mini_bosses_spawned_this_floor}/3"
+                )
             # Set next mini-boss target for the next one (will be used after current one is defeated)
             self.game.next_mini_boss_at = self.game.rooms_explored_on_floor + self.game.rng.randint(6, 10)
         
@@ -365,7 +371,9 @@ class NavigationManager:
             apply_effective_modifiers(self.game)
         
         # Randomly add stairs (10% chance in any room after 3+ rooms explored) - ONLY on first visit
-        if not skip_effects and is_first_visit and not self.game.stairs_found and self.game.rooms_explored >= 3 and self.game.rng.random() < 0.1:
+        # Never spawn stairs in miniboss or boss rooms
+        is_special = getattr(room, 'is_mini_boss_room', False) or getattr(room, 'is_boss_room', False)
+        if not skip_effects and is_first_visit and not is_special and not self.game.stairs_found and self.game.rooms_explored >= 3 and self.game.rng.random() < 0.1:
             room.has_stairs = True
             self.game.stairs_found = True
             self.game.log("⚡ You found stairs to the next floor!", 'success')

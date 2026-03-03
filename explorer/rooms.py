@@ -9,6 +9,12 @@ class Room:
         self.x = x
         self.y = y
         self.visited = False
+
+        # Bind template fields to direct attributes
+        self.name = room_data.get('name', 'Unknown')
+        self.room_type = room_data.get('difficulty', '')
+        self.tags = list(room_data.get('tags', []))
+        self.threats = list(room_data.get('threats', []))
         self.cleared = False
         self.has_stairs = False
         self.has_chest = False

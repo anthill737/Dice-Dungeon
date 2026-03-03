@@ -1629,8 +1629,8 @@ class DiceDungeonExplorer:
                     self.enter_room(self.current_room, skip_effects=True)
                 else:
                     # Set room title/description and show exploration buttons
-                    self.room_title.config(text=self.current_room.name)
-                    self.room_desc.config(text=getattr(self.current_room, 'description', ''))
+                    self.room_title.config(text=self.current_room.data.get('name', self.current_room.name))
+                    self.room_desc.config(text=self.current_room.data.get('flavor', ''))
                     self.show_exploration_options()
 
             self.root.after(50, lambda: self.show_settings('game'))
