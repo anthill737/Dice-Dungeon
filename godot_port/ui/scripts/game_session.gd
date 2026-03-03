@@ -69,6 +69,8 @@ func start_new_game() -> void:
 	game_state = GameState.new()
 	game_state.reset()
 
+	_apply_difficulty_settings()
+
 	exploration = ExplorationEngine.new(rng, game_state, rooms_db)
 	inventory_engine = InventoryEngine.new(rng, game_state, items_db)
 	store_engine = StoreEngine.new(game_state, items_db)
@@ -79,6 +81,19 @@ func start_new_game() -> void:
 	exploration.start_floor(1)
 	_emit_logs(exploration.logs)
 	state_changed.emit()
+
+
+func _apply_difficulty_settings() -> void:
+	if game_state == null:
+		return
+	var sm = Engine.get_singleton("SettingsManager") if Engine.has_singleton("SettingsManager") else null
+	if sm == null:
+		sm = get_node_or_null("/root/SettingsManager")
+	if sm != null:
+		game_state.difficulty = sm.difficulty
+		game_state.difficulty_mults = sm.get_difficulty_multipliers()
+	else:
+		game_state.difficulty = "Normal"
 
 
 func get_current_room() -> RoomState:
@@ -154,7 +169,8 @@ func start_combat_for_room(room: RoomState) -> void:
 
 	var enemy_name: String = threats[0]
 	var enemy_data: Dictionary = enemy_types_db.get(enemy_name, {})
-	var hp: int = int(enemy_data.get("health", 20))
+	var base_hp: int = int(enemy_data.get("health", 20))
+	var hp: int = int(float(base_hp) * game_state.difficulty_mults.get("enemy_health_mult", 1.0))
 	var dice: int = int(enemy_data.get("num_dice", 2))
 	combat.add_enemy(enemy_name, hp, dice)
 
@@ -283,7 +299,9 @@ func descend_stairs() -> RoomState:
 func attempt_rest() -> void:
 	if game_state == null:
 		return
-	var heal := mini(10, game_state.max_health - game_state.health)
+	var base_heal := 10
+	var heal_mult: float = game_state.difficulty_mults.get("heal_mult", 1.0)
+	var heal := mini(int(float(base_heal) * heal_mult), game_state.max_health - game_state.health)
 	if heal > 0:
 		game_state.health += heal
 		log_message.emit("Rested and recovered %d HP." % heal)

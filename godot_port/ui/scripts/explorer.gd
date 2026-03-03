@@ -37,6 +37,7 @@ var _inventory_panel: Control
 var _store_panel: Control
 var _save_load_panel: Control
 var _character_status_panel: Control
+var _settings_panel: Control
 
 # --- Debug overlay ---
 var _debug_panel: PanelContainer
@@ -51,6 +52,7 @@ var _store_scene := preload("res://ui/scenes/StorePanel.tscn")
 var _save_load_scene := preload("res://ui/scenes/SaveLoadPanel.tscn")
 var _minimap_scene := preload("res://ui/scenes/MinimapPanel.tscn")
 var _character_status_scene := preload("res://ui/scenes/CharacterStatusPanel.tscn")
+var _settings_scene := preload("res://ui/scenes/SettingsPanel.tscn")
 
 
 func _ready() -> void:
@@ -204,6 +206,10 @@ func _instantiate_panels() -> void:
 	_character_status_panel.visible = false
 	add_child(_character_status_panel)
 
+	_settings_panel = _settings_scene.instantiate()
+	_settings_panel.visible = false
+	add_child(_settings_panel)
+
 
 func _connect_signals() -> void:
 	_btn_north.pressed.connect(_move.bind("N"))
@@ -237,6 +243,8 @@ func _connect_signals() -> void:
 		_save_load_panel.close_requested.connect(func(): _save_load_panel.visible = false)
 	if _character_status_panel.has_signal("close_requested"):
 		_character_status_panel.close_requested.connect(func(): _character_status_panel.visible = false)
+	if _settings_panel.has_signal("close_requested"):
+		_settings_panel.close_requested.connect(func(): _settings_panel.visible = false)
 
 
 func _on_combat_started() -> void:
@@ -253,18 +261,51 @@ func _on_combat_ended() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
-	match event.keycode:
-		KEY_W: _move("N")
-		KEY_S: _move("S")
-		KEY_A: _move("W")
-		KEY_D: _move("E")
-		KEY_G:
-			_on_character_status()
-		KEY_F3:
-			_debug_visible = not _debug_visible
-			_debug_panel.visible = _debug_visible
-			if _debug_visible:
-				_refresh_debug()
+
+	if event.is_action_pressed("move_north"):
+		_move("N")
+	elif event.is_action_pressed("move_south"):
+		_move("S")
+	elif event.is_action_pressed("move_west"):
+		_move("W")
+	elif event.is_action_pressed("move_east"):
+		_move("E")
+	elif event.is_action_pressed("character_status"):
+		_on_character_status()
+	elif event.is_action_pressed("open_inventory"):
+		_on_inventory()
+	elif event.is_action_pressed("open_menu"):
+		_on_save_load()
+	elif event.is_action_pressed("rest"):
+		_on_rest()
+	elif event.is_action_pressed("ui_cancel"):
+		_close_all_panels()
+	elif event.keycode == KEY_F3:
+		_debug_visible = not _debug_visible
+		_debug_panel.visible = _debug_visible
+		if _debug_visible:
+			_refresh_debug()
+
+
+func _on_settings() -> void:
+	_settings_panel.visible = true
+	if _settings_panel.has_method("refresh"):
+		_settings_panel.refresh()
+
+
+func _close_all_panels() -> void:
+	if _combat_panel != null:
+		_combat_panel.visible = false
+	if _inventory_panel != null:
+		_inventory_panel.visible = false
+	if _store_panel != null:
+		_store_panel.visible = false
+	if _save_load_panel != null:
+		_save_load_panel.visible = false
+	if _character_status_panel != null:
+		_character_status_panel.visible = false
+	if _settings_panel != null:
+		_settings_panel.visible = false
 
 
 # -------------------------------------------------------------------
@@ -449,7 +490,8 @@ func _any_panel_open() -> bool:
 		   (_inventory_panel != null and _inventory_panel.visible) or \
 		   (_store_panel != null and _store_panel.visible) or \
 		   (_save_load_panel != null and _save_load_panel.visible) or \
-		   (_character_status_panel != null and _character_status_panel.visible)
+		   (_character_status_panel != null and _character_status_panel.visible) or \
+		   (_settings_panel != null and _settings_panel.visible)
 
 
 # -------------------------------------------------------------------

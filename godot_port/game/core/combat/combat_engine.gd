@@ -139,6 +139,7 @@ func player_attack(target_index: int = 0) -> TurnResult:
 		# --- Damage ---
 		var dmg_bonus: int = state.damage_bonus + _get_temp_int("damage_bonus") + int(_get_status_modifier("damage_bonus"))
 		var damage := dice.calc_total_damage(state.multiplier, dmg_bonus)
+		damage = int(float(damage) * state.difficulty_mults.get("player_damage_mult", 1.0))
 		if result.was_crit:
 			damage = int(float(damage) * 1.5)
 		result.player_damage = damage
@@ -181,6 +182,9 @@ func player_attack(target_index: int = 0) -> TurnResult:
 		var enemy_mult := _get_status_modifier("enemy_damage_mult")
 		if enemy_mult > 0.0:
 			enemy_dmg = int(float(enemy_dmg) * enemy_mult)
+
+		# Difficulty enemy damage multiplier
+		enemy_dmg = int(float(enemy_dmg) * state.difficulty_mults.get("enemy_damage_mult", 1.0))
 
 		# Shield absorb
 		if state.temp_shield > 0:

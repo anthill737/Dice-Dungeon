@@ -74,6 +74,17 @@ var flags: Dictionary = {
 ## Temp effects: key -> {"delta": number, "duration": "combat"|"floor"}
 var temp_effects: Dictionary = {}
 
+## Difficulty multipliers applied from SettingsManager at run start
+var difficulty: String = "Normal"
+var difficulty_mults: Dictionary = {
+	"player_damage_mult": 1.0,
+	"player_damage_taken_mult": 1.0,
+	"enemy_health_mult": 1.0,
+	"enemy_damage_mult": 1.0,
+	"loot_chance_mult": 1.0,
+	"heal_mult": 1.0,
+}
+
 ## Lore state — mirrors Python game.lore_codex / lore_item_assignments / used_lore_entries
 var lore_codex: Array = []
 var lore_item_assignments: Dictionary = {}
@@ -118,6 +129,15 @@ func reset() -> void:
 	in_combat = false
 	flags = {"disarm_token": 0, "escape_token": 0, "statuses": []}
 	temp_effects = {}
+	difficulty = "Normal"
+	difficulty_mults = {
+		"player_damage_mult": 1.0,
+		"player_damage_taken_mult": 1.0,
+		"enemy_health_mult": 1.0,
+		"enemy_damage_mult": 1.0,
+		"loot_chance_mult": 1.0,
+		"heal_mult": 1.0,
+	}
 	lore_codex = []
 	lore_item_assignments = {}
 	used_lore_entries = {}
