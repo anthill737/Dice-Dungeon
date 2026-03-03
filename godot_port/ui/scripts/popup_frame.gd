@@ -1,11 +1,9 @@
 extends Control
-## Shared modal popup wrapper with per-menu sizing that mimics the Python
-## get_responsive_dialog_size() function.
+## Shared modal popup wrapper. Provides dim background, centered panel with
+## gold border, title bar with red ✕ close button, and a content slot.
 ##
-## Python formula:
-##   dialog_size = max(base, min(base*1.5, int(window * percent)))
-##
-## Set size_config before _ready or call configure_size() to customize.
+## Sizing is controlled by `size_config` (set by MenuOverlayManager before
+## this node enters the tree). The sizing formula lives in _apply_sizing().
 
 signal close_requested()
 
@@ -15,13 +13,8 @@ var _content_container: MarginContainer
 var _popup_panel: Control
 var _content: Control
 
-## Per-popup sizing — matches Python get_responsive_dialog_size args
-var size_config := {
-	"base_w": 450,
-	"base_h": 500,
-	"width_pct": 0.45,
-	"height_pct": 0.75,
-}
+## Sizing parameters — set by MenuOverlayManager.register_menu() from SIZE_PROFILES.
+var size_config: Dictionary = {}
 
 var closable: bool = true:
 	set(value):
@@ -34,12 +27,6 @@ var title_text: String = "":
 		title_text = value
 		if _title_label != null:
 			_title_label.text = value
-
-
-func configure_size(base_w: int, base_h: int, w_pct: float, h_pct: float) -> void:
-	size_config = {"base_w": base_w, "base_h": base_h,
-		"width_pct": w_pct, "height_pct": h_pct}
-	_apply_sizing()
 
 
 func _init() -> void:

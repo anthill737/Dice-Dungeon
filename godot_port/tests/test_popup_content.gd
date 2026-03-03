@@ -255,3 +255,48 @@ func test_size_profiles_defined() -> void:
 	for key in expected:
 		assert_true(OverlayManagerScript.SIZE_PROFILES.has(key),
 			"SIZE_PROFILES has '%s'" % key)
+
+
+# ------------------------------------------------------------------
+# Lore codex empty refresh
+# ------------------------------------------------------------------
+
+func test_codex_refresh_empty() -> void:
+	GameSession.start_new_game()
+	var panel := _lore_scene.instantiate()
+	add_child(panel)
+	await get_tree().process_frame
+
+	panel.refresh()
+	await get_tree().process_frame
+
+	assert_eq(panel._filtered_entries.size(), 0, "No entries in empty codex")
+
+	panel.queue_free()
+	await get_tree().process_frame
+
+
+# ------------------------------------------------------------------
+# Sidebar flee button hidden during active combat
+# ------------------------------------------------------------------
+
+func test_sidebar_flee_hidden_during_active() -> void:
+	_setup_combat_room()
+	var ex := _explorer_scene.instantiate()
+	add_child(ex)
+	await get_tree().process_frame
+
+	var room := GameSession.get_current_room()
+	GameSession._check_combat_pending(room)
+
+	ex._refresh_ui()
+	await get_tree().process_frame
+	assert_true(ex._btn_flee.visible, "Sidebar flee visible during pending")
+
+	GameSession.accept_combat()
+	ex._refresh_ui()
+	await get_tree().process_frame
+	assert_false(ex._btn_flee.visible, "Sidebar flee hidden during active")
+
+	ex.queue_free()
+	await get_tree().process_frame
