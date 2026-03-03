@@ -33,6 +33,9 @@ var combat_pending: bool = false
 
 var _data_loaded: bool = false
 
+## Session trace — persists across scene transitions, reset on new/load game.
+var trace: SessionTrace = SessionTrace.new()
+
 signal state_changed()
 signal combat_started()
 signal combat_ended()
@@ -78,8 +81,17 @@ func start_new_game() -> void:
 	combat = null
 	combat_pending = false
 
+	trace.reset(-1, "DefaultRNG")
+	trace.difficulty = game_state.difficulty
+	trace.record("run_started", {
+		"difficulty": game_state.difficulty,
+		"max_health": game_state.max_health,
+		"num_dice": game_state.num_dice,
+	})
+
 	exploration.start_floor(1)
 	_emit_logs(exploration.logs)
+	_trace_sync_position()
 	state_changed.emit()
 
 
@@ -118,12 +130,19 @@ func move_direction(direction: String) -> RoomState:
 
 	if is_combat_blocking():
 		log_message.emit("Cannot move — fight or flee first!")
+		trace.record("move_attempted", {"dir": direction, "success": false, "reason": "combat_blocking"})
 		return null
 
+	var old_pos: Vector2i = exploration.floor.current_pos if exploration.floor != null else Vector2i.ZERO
 	var room := exploration.move(direction)
 	_emit_logs(exploration.logs)
 
-	if room != null:
+	if room == null:
+		trace.record("move_attempted", {"dir": direction, "success": false, "reason": "blocked"})
+	else:
+		_trace_sync_position()
+		trace.record("move_attempted", {"dir": direction, "success": true})
+		_trace_room_entered(room)
 		_log_room_enter(room)
 		_check_combat_pending(room)
 
@@ -139,6 +158,9 @@ func _check_combat_pending(room: RoomState) -> void:
 		var threats: Array = room.data.get("threats", [])
 		if not threats.is_empty():
 			log_message.emit("Enemies ahead! Attack or Flee?")
+		trace.record("combat_pending_started", {
+			"threats": threats.duplicate(),
+		})
 		combat_pending_changed.emit()
 
 
@@ -174,6 +196,11 @@ func start_combat_for_room(room: RoomState) -> void:
 	var dice: int = int(enemy_data.get("num_dice", 2))
 	combat.add_enemy(enemy_name, hp, dice)
 
+	var enemy_list: Array = []
+	for e in combat.enemies:
+		enemy_list.append({"name": e.name, "hp": e.health, "dice": e.num_dice})
+	trace.record("combat_started", {"enemies": enemy_list})
+
 	log_message.emit("Combat begins against %s!" % enemy_name)
 	combat_started.emit()
 	state_changed.emit()
@@ -183,6 +210,7 @@ func start_combat_for_room(room: RoomState) -> void:
 ## Uses core 50 % chance.  No CombatEngine exists yet.
 func attempt_flee_pending() -> bool:
 	var success := rng.randf() < 0.5
+	trace.record("flee_attempted", {"context": "pending", "success": success})
 	if success:
 		var room := get_current_room()
 		if room != null:
@@ -201,6 +229,7 @@ func flee_from_combat() -> bool:
 	if combat == null:
 		return false
 	var success := combat.attempt_flee()
+	trace.record("flee_attempted", {"context": "combat", "success": success})
 	if success:
 		var room := get_current_room()
 		if room != null:
@@ -220,6 +249,11 @@ func _end_combat_internal(victory: bool) -> void:
 	var room := get_current_room()
 	if combat == null:
 		return
+
+	if victory:
+		trace.record("combat_victory", {})
+	else:
+		trace.record("combat_defeat", {})
 
 	if victory and room != null:
 		exploration.on_combat_clear(room)
@@ -263,6 +297,12 @@ func open_chest() -> Dictionary:
 		return {}
 	var result := exploration.open_chest(room)
 	_emit_logs(exploration.logs)
+	if not result.is_empty():
+		trace.record("item_picked_up", {
+			"source": "chest",
+			"gold": int(result.get("gold", 0)),
+			"item": str(result.get("item", "")),
+		})
 	state_changed.emit()
 	return result
 
@@ -273,6 +313,11 @@ func pickup_ground_gold() -> int:
 		return 0
 	var amount := exploration.pickup_ground_gold(room)
 	_emit_logs(exploration.logs)
+	if amount > 0:
+		trace.record("item_picked_up", {
+			"source": "ground",
+			"gold": amount,
+		})
 	state_changed.emit()
 	return amount
 
@@ -283,6 +328,13 @@ func pickup_ground_item(index: int) -> String:
 		return ""
 	var item := exploration.pickup_ground_item(room, index)
 	_emit_logs(exploration.logs)
+	if not item.is_empty():
+		trace.record("item_picked_up", {
+			"source": "ground",
+			"item_id": item,
+			"name": item,
+			"qty": 1,
+		})
 	state_changed.emit()
 	return item
 
@@ -292,6 +344,12 @@ func descend_stairs() -> RoomState:
 		return null
 	var room := exploration.descend_floor()
 	_emit_logs(exploration.logs)
+	if room != null:
+		trace.record("floor_descended", {
+			"new_floor": exploration.floor.floor_index,
+		})
+		_trace_sync_position()
+		_trace_room_entered(room)
 	state_changed.emit()
 	return room
 
@@ -315,6 +373,126 @@ func get_saves_dir() -> String:
 	if not DirAccess.dir_exists_absolute(dir):
 		DirAccess.make_dir_recursive_absolute(dir)
 	return dir
+
+
+# -------------------------------------------------------------------
+# Session trace — combat detail hooks (called by CombatPanel / UI)
+# -------------------------------------------------------------------
+
+func trace_dice_rolled(values: Array) -> void:
+	trace.record("dice_rolled", {"values": values.duplicate()})
+
+
+func trace_dice_locked(index: int, value: int) -> void:
+	trace.record("dice_locked", {"index": index, "value": value})
+
+
+func trace_reroll_used(remaining: int) -> void:
+	trace.record("reroll_used", {"remaining": remaining})
+
+
+func trace_attack_committed(target: String, damage: int, combo: int) -> void:
+	trace.record("attack_committed", {"target": target, "damage": damage, "combo": combo})
+
+
+func trace_enemy_attack(enemy: String, damage: int) -> void:
+	trace.record("enemy_attack", {"enemy": enemy, "damage": damage})
+
+
+func trace_status_applied(status_name: String) -> void:
+	trace.record("status_applied", {"status": status_name})
+
+
+func trace_status_tick(status_name: String, damage: int) -> void:
+	trace.record("status_tick", {"status": status_name, "damage": damage})
+
+
+func trace_status_removed(status_name: String) -> void:
+	trace.record("status_removed", {"status": status_name})
+
+
+# -------------------------------------------------------------------
+# Session trace — inventory hooks (called by UI panels)
+# -------------------------------------------------------------------
+
+func trace_item_used(item_name: String, effect_type: String) -> void:
+	trace.record("item_used", {"name": item_name, "effect": effect_type})
+
+
+func trace_item_equipped(item_name: String, slot: String) -> void:
+	trace.record("item_equipped", {"name": item_name, "slot": slot})
+
+
+func trace_item_unequipped(item_name: String, slot: String) -> void:
+	trace.record("item_unequipped", {"name": item_name, "slot": slot})
+
+
+func trace_item_dropped(item_name: String) -> void:
+	trace.record("item_dropped", {"name": item_name})
+
+
+func trace_durability_changed(item_name: String, new_dur: int, broken: bool) -> void:
+	trace.record("durability_changed", {"name": item_name, "durability": new_dur, "broken": broken})
+
+
+func trace_repaired(item_name: String, new_dur: int) -> void:
+	trace.record("repaired", {"name": item_name, "durability": new_dur})
+
+
+# -------------------------------------------------------------------
+# Session trace — store hooks
+# -------------------------------------------------------------------
+
+func trace_store_entered() -> void:
+	trace.record("store_entered", {})
+
+
+func trace_store_bought(item_name: String, price: int) -> void:
+	trace.record("store_bought", {"item": item_name, "price": price})
+
+
+func trace_store_sold(item_name: String, price: int) -> void:
+	trace.record("store_sold", {"item": item_name, "price": price})
+
+
+func trace_upgrade_bought(upgrade_type: String, cost: int, new_value: Variant) -> void:
+	trace.record("upgrade_bought", {"type": upgrade_type, "cost": cost, "new_value": str(new_value)})
+
+
+# -------------------------------------------------------------------
+# Session trace — save/load hooks
+# -------------------------------------------------------------------
+
+func trace_saved(slot: int, name: String) -> void:
+	trace.record("saved", {"slot": slot, "name": name})
+
+
+func trace_loaded(slot: int, name: String) -> void:
+	trace.record("loaded", {"slot": slot, "name": name})
+
+
+func trace_deleted_slot(slot: int) -> void:
+	trace.record("deleted_slot", {"slot": slot})
+
+
+func trace_renamed_slot(slot: int, new_name: String) -> void:
+	trace.record("renamed_slot", {"slot": slot, "new_name": new_name})
+
+
+# -------------------------------------------------------------------
+# Session trace — settings (optional)
+# -------------------------------------------------------------------
+
+func trace_settings_changed(key: String, value: Variant) -> void:
+	trace.record("settings_changed", {"key": key, "value": str(value)})
+
+
+# -------------------------------------------------------------------
+# Session trace — export
+# -------------------------------------------------------------------
+
+func export_session_trace() -> Dictionary:
+	return trace.export_all()
 
 
 # -------------------------------------------------------------------
@@ -344,3 +522,34 @@ func _emit_logs(logs: Array) -> void:
 	for msg in logs:
 		log_message.emit(str(msg))
 	logs.clear()
+
+
+# -------------------------------------------------------------------
+# Trace internal helpers
+# -------------------------------------------------------------------
+
+func _trace_sync_position() -> void:
+	if exploration == null or exploration.floor == null:
+		return
+	trace.set_floor(exploration.floor.floor_index)
+	trace.set_coord(exploration.floor.current_pos)
+
+
+func _trace_room_entered(room: RoomState) -> void:
+	if room == null or exploration == null:
+		return
+	var fs := exploration.floor
+	var tags: Array = room.data.get("tags", [])
+	var threats: Array = room.data.get("threats", [])
+	trace.record("room_entered", {
+		"room_name": room.data.get("name", "Unknown"),
+		"room_type": room.data.get("difficulty", ""),
+		"tags": tags.duplicate(),
+		"has_combat": room.has_combat,
+		"chest": room.has_chest,
+		"store": room.has_store,
+		"stairs": room.has_stairs,
+		"miniboss": room.is_mini_boss_room,
+		"boss": room.is_boss_room,
+		"blocked_exits": room.blocked_exits.duplicate(),
+	})

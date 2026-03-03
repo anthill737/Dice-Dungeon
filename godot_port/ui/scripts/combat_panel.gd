@@ -245,6 +245,8 @@ func _on_roll() -> void:
 	if ce == null:
 		return
 	ce.player_roll()
+	GameSession.trace_dice_rolled(ce.dice.values)
+	GameSession.trace_reroll_used(ce.dice.rolls_left)
 	refresh()
 
 
@@ -253,6 +255,8 @@ func _on_lock_toggled(index: int) -> void:
 	if ce == null:
 		return
 	ce.dice.toggle_lock(index)
+	if ce.dice.locked[index]:
+		GameSession.trace_dice_locked(index, ce.dice.values[index])
 	refresh()
 
 
@@ -267,6 +271,15 @@ func _on_attack() -> void:
 		target_idx = selected[0]
 
 	var result := ce.player_attack(target_idx)
+
+	GameSession.trace_attack_committed(
+		result.target_name, result.player_damage,
+		ce.dice.calc_combo_bonus())
+	for er in result.enemy_rolls:
+		GameSession.trace_enemy_attack(str(er.get("name", "")), int(er.get("damage", 0)))
+	if result.status_tick_damage > 0:
+		GameSession.trace_status_tick("combined", result.status_tick_damage)
+
 	for log_line in result.logs:
 		_log_text.append_text(log_line + "\n")
 		GameSession.log_message.emit(log_line)

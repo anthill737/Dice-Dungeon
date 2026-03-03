@@ -581,6 +581,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_debug_panel.visible = _debug_visible
 		if _debug_visible:
 			_refresh_debug()
+	elif event.keycode == KEY_F4:
+		_export_session_trace()
 
 
 func _on_settings() -> void:
@@ -1020,6 +1022,18 @@ func _update_move_btn_style(btn: Button) -> void:
 		btn.add_theme_color_override("font_color", DungeonTheme.BTN_DISABLED_TEXT)
 	else:
 		btn.add_theme_color_override("font_color", Color.BLACK)
+
+
+func _export_session_trace() -> void:
+	var paths := GameSession.export_session_trace()
+	var json_path: String = str(paths.get("json", ""))
+	var txt_path: String = str(paths.get("txt", ""))
+	if json_path.is_empty():
+		_append_log("[Session Trace] Export failed — could not write files.")
+		return
+	_append_log("[Session Trace] Exported to %s" % json_path)
+	_append_log("[Session Trace] Text summary: %s" % txt_path)
+	GameSession.log_message.emit("[Session Trace] Export complete.")
 
 
 func _spacer() -> Control:
