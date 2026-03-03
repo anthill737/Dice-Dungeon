@@ -155,11 +155,14 @@ func _check_combat_pending(room: RoomState) -> void:
 		return
 	if room.has_combat and not room.enemies_defeated and not room.combat_escaped:
 		combat_pending = true
-		var threats: Array = room.data.get("threats", [])
+		var threats: Array = room.threats if not room.threats.is_empty() else Array(room.data.get("threats", []))
 		if not threats.is_empty():
 			log_message.emit("Enemies ahead! Attack or Flee?")
+		else:
+			log_message.emit("Something lurks ahead! Attack or Flee?")
 		trace.record("combat_pending_started", {
 			"threats": threats.duplicate(),
+			"room_name": room.room_name,
 		})
 		combat_pending_changed.emit()
 
@@ -182,14 +185,12 @@ func start_combat_for_room(room: RoomState) -> void:
 	if room == null or not room.has_combat or room.enemies_defeated:
 		return
 
-	var threats: Array = room.data.get("threats", [])
-	if threats.is_empty():
-		return
+	var threats: Array = room.threats if not room.threats.is_empty() else Array(room.data.get("threats", []))
 
 	game_state.in_combat = true
 	combat = CombatEngine.new(rng, game_state, game_state.num_dice, enemy_types_db)
 
-	var enemy_name: String = threats[0]
+	var enemy_name: String = threats[0] if not threats.is_empty() else "Monster"
 	var enemy_data: Dictionary = enemy_types_db.get(enemy_name, {})
 	var base_hp: int = int(enemy_data.get("health", 20))
 	var hp: int = int(float(base_hp) * game_state.difficulty_mults.get("enemy_health_mult", 1.0))
@@ -505,13 +506,13 @@ func _log_room_enter(room: RoomState) -> void:
 	var fs := exploration.floor
 	var pos := fs.current_pos
 	var is_starter := fs.starter_rooms.has(pos)
-	var threats: Array = room.data.get("threats", [])
-	var suppressed := is_starter and room.has_combat == false and not threats.is_empty()
-	print("[ROOM ENTER] floor=%d coord=(%d,%d) type=%s has_combat=%s enemies=%d starter=%s suppressed=%s escaped=%s" % [
+	var suppressed := is_starter and room.has_combat == false and not room.threats.is_empty()
+	print("[ROOM ENTER] floor=%d coord=(%d,%d) name=%s type=%s has_combat=%s enemies=%d starter=%s suppressed=%s escaped=%s" % [
 		game_state.floor, pos.x, pos.y,
-		room.data.get("name", "Unknown"),
+		room.room_name,
+		room.room_type,
 		str(room.has_combat),
-		threats.size() if room.has_combat else 0,
+		room.threats.size() if room.has_combat else 0,
 		str(is_starter),
 		str(suppressed),
 		str(room.combat_escaped),
@@ -538,13 +539,11 @@ func _trace_sync_position() -> void:
 func _trace_room_entered(room: RoomState) -> void:
 	if room == null or exploration == null:
 		return
-	var fs := exploration.floor
-	var tags: Array = room.data.get("tags", [])
-	var threats: Array = room.data.get("threats", [])
 	trace.record("room_entered", {
-		"room_name": room.data.get("name", "Unknown"),
-		"room_type": room.data.get("difficulty", ""),
-		"tags": tags.duplicate(),
+		"room_name": room.room_name,
+		"room_type": room.room_type,
+		"tags": room.tags.duplicate(),
+		"threats": room.threats.duplicate(),
 		"has_combat": room.has_combat,
 		"chest": room.has_chest,
 		"store": room.has_store,

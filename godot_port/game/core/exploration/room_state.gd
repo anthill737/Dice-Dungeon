@@ -8,6 +8,12 @@ var y: int = 0
 var visited: bool = false
 var cleared: bool = false
 
+## Bound template fields (populated from data dict at creation)
+var room_name: String = "Unknown"
+var room_type: String = ""
+var tags: Array = []
+var threats: Array = []
+
 ## Exits
 var exits: Dictionary = {"N": true, "S": true, "E": true, "W": true}
 var blocked_exits: Array[String] = []
@@ -41,6 +47,10 @@ func _init(p_data: Dictionary = {}, p_x: int = 0, p_y: int = 0) -> void:
 	data = p_data
 	x = p_x
 	y = p_y
+	room_name = str(p_data.get("name", "Unknown"))
+	room_type = str(p_data.get("difficulty", ""))
+	tags = Array(p_data.get("tags", []))
+	threats = Array(p_data.get("threats", []))
 
 
 func coords() -> Vector2i:

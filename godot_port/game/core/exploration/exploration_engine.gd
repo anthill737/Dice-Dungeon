@@ -207,6 +207,8 @@ func _generate_room(pos: Vector2i, from_direction: String) -> RoomState:
 		if floor.rooms_explored_on_floor >= floor.next_mini_boss_at:
 			should_be_mini_boss = true
 			floor.mini_bosses_spawned += 1
+			print("[MINIBOSS] spawned at rooms_explored_on_floor=%d, threshold=%d, count=%d/3" % [
+				floor.rooms_explored_on_floor, floor.next_mini_boss_at, floor.mini_bosses_spawned])
 			## Python RNG call: rng.randint(6, 10) for next interval
 			floor.next_mini_boss_at = floor.rooms_explored_on_floor + rng.rand_int(
 				ExplorationRules.MINIBOSS_INTERVAL_MIN,
@@ -303,7 +305,9 @@ func _on_first_visit(room: RoomState) -> void:
 	## STEP 3: stairs check
 	## Python: only rolls if ALL conditions met. The rng.random() call is
 	## consumed ONLY when conditions pass.
-	if not floor.stairs_found and floor.rooms_explored >= ExplorationRules.STAIRS_MIN_ROOMS:
+	## Never spawn stairs in miniboss or boss rooms.
+	var is_special_room := room.is_mini_boss_room or room.is_boss_room
+	if not is_special_room and not floor.stairs_found and floor.rooms_explored >= ExplorationRules.STAIRS_MIN_ROOMS:
 		if rng.randf() < ExplorationRules.STAIRS_CHANCE:
 			room.has_stairs = true
 			floor.stairs_found = true
