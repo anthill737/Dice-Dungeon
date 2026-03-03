@@ -28,6 +28,22 @@ func _init(p_rng: RNG, p_state: GameState, p_rooms_db: Array) -> void:
 	state = p_state
 	rooms_db = p_rooms_db
 	mechanics = MechanicsEngine.new(func(msg: String): logs.append(msg))
+	_log_room_template_diagnostics()
+
+
+func _log_room_template_diagnostics() -> void:
+	var path := JsonLoader.resolve_data_path("rooms_v2.json")
+	var exists := FileAccess.file_exists(path)
+	var size := 0
+	if exists:
+		var f := FileAccess.open(path, FileAccess.READ)
+		if f != null:
+			size = f.get_length()
+			f.close()
+	print("[ROOM_TEMPLATES] path=%s exists=%s file_bytes=%d templates_loaded=%d" % [
+		path, str(exists), size, rooms_db.size()])
+	if rooms_db.is_empty():
+		push_warning("ExplorationEngine: rooms_db is EMPTY — room templates failed to load")
 
 
 # ------------------------------------------------------------------

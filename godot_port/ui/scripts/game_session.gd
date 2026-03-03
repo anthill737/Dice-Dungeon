@@ -51,6 +51,7 @@ func _load_data() -> void:
 	var rd := RoomsData.new()
 	if rd.load():
 		rooms_db = rd.rooms
+	trace.record("room_template_pool_size", {"count": rooms_db.size()})
 	var id := ItemsData.new()
 	if id.load():
 		items_db = id.items

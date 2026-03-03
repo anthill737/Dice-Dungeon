@@ -1,0 +1,92 @@
+{
+  "_meta": {
+    "note": "Deep lore for Dice Dungeon world. Never stated directly - only hinted through flavor text, items, and environmental details."
+  },
+  
+  "world_concept": {
+    "the_place": "A structure that's been here longer than records. Keeps getting rediscovered. People keep coming down.",
+    "the_pattern": "Things that work stay. Things that don't get smoothed over. Like the dungeon is editing itself toward something stable.",
+    "the_dungeon": "Not really designed. More like worn smooth by use. Rooms rearrange based on what people do in them.",
+    "the_descent": "Deeper floors feel older, but also newer. Like the dungeon is trying different versions of itself down there.",
+    "dice_magic": "Dice work better here than they should. Feel right in your hand. People say it's luck. Might be the building.",
+    "the_pattern_seekers": "Some people noticed how things repeat. Started writing it down. Most of them are still here somewhere, writing."
+  },
+  
+  "starting_area": {
+    "name": "The Threshold Chamber",
+    "description": "A circular stone chamber with smooth walls. Old markings on every surface, some crossed out. The air is still.",
+    "lore_hints": [
+      "The walls show tally marks in different handwriting",
+      "Someone carved 'works better if you don't think too hard' near the entrance",
+      "Multiple paths forward, but they all look similar",
+      "Dice carved into the door ahead, painted over many times"
+    ],
+    
+    "signs": [
+      {
+        "title": "Ancient Advice - Pace Yourself",
+        "text": "An old message, carved deep into stone:\n\n'...whatever you're here for, pace yourself... people who rush don't come back up... people who wait too long don't either... find the middle and stick to it...'"
+      },
+      {
+        "title": "Explorer's Graffiti - The Pattern",
+        "text": "Messages scratched into the wall's surface, difficult to read:\n\n'Day 14 - mapped first 3 floors'\n'Day 47 - same 3 floors, different rooms?'\n'Day unknown - it keeps what works'\n'If reading this: bring dice. Feels right to have them.'\n\n[The rest is scratched over]"
+      },
+      {
+        "title": "Warning Notice - Adaptation",
+        "text": "NOTICE TO THOSE WHO ENTER\n\nThe layout changes. Not random - it changes based on something. People who adapt do fine. People who fight it don't.\n\nSome folks been down here years. They're doing okay. They found a rhythm.\n\nYou'll know you're in trouble when things feel wrong. Trust that feeling.\n\n- Posted by whoever updates this board"
+      },
+      {
+        "title": "Compiled Observations - The Dungeon",
+        "text": "A disheveled notebook, pages worn and dog-eared:\n\nOBSERVATIONS COMPILED:\n\n• Same rooms appear in different orders\n• Danger level stays consistent within runs\n• Items appear when needed, usually\n• Exits appear when you're ready for them\n• People report feeling 'guided' toward stable patterns\n\nNot dangerous if you don't fight it.\nDangerous if you try to break it.\n\n[Below in different handwriting:]\n'I thought I was done. I'm not done.'"
+      }
+    ],
+    
+    "starter_chests": [
+      {
+        "id": 1,
+        "description": "Carved wooden chest",
+        "items": ["Healing Poultice", "Lucky Chip"],
+        "gold": 15,
+        "lore": "Someone left supplies here. Practical. They probably came through and made it work."
+      },
+      {
+        "id": 2,
+        "description": "Sealed stone coffer",
+        "items": ["Healing Poultice", "Hourglass Shard"],
+        "gold": 15,
+        "lore": "Standard starter pack. Gets refilled somehow. Nobody knows who maintains it. Doesn't matter."
+      }
+    ],
+    
+    "ambient_details": [
+      "The walls are worn smooth in places, rough in others, like paths forming",
+      "Footprints in the dust, old and new, all heading the same direction",
+      "The silence feels expectant, like the dungeon is waiting to see what you do",
+      "Everything here feels used but maintained. Purposeful."
+    ]
+  },
+  
+  "flavor_text_database": {
+    "dice_quotes": [
+      "The dice feel right in your hand. Weighted correctly. Familiar somehow.",
+      "Rolling feels natural here. More natural than it should.",
+      "The dice land clean. Decisive. Like they know what they're doing.",
+      "Sometimes you roll without thinking. It works out anyway.",
+      "Your dice have wear patterns you don't remember making."
+    ],
+    "floor_transition": [
+      "The stairs feel well-traveled despite the dust.",
+      "Deeper. The air gets stiller. More patient.",
+      "This floor has that same feeling. Different layout, same purpose.",
+      "You've been here before. Or someone has. The path is clear.",
+      "The dungeon feels lived-in. Stable. It knows what it's doing."
+    ],
+    "item_implications": [
+      "Items here are practical. Well-maintained. Like someone curates them.",
+      "Everything has wear marks. Everything gets used eventually.",
+      "The supplies appear when you need them, not before.",
+      "It's not random. It's responsive. The dungeon provides."
+    ]
+  }
+}
+
