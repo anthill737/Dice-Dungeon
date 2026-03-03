@@ -23,6 +23,15 @@ func start_run() -> void:
 	run_started.emit()
 
 
+## Canonical entry point for starting a new run with options.
+## options may contain:
+##   rng_mode: "default" | "deterministic"
+##   seed:     int (used when rng_mode == "deterministic")
+func start_new_run(options: Dictionary = {}) -> void:
+	_game_session.start_new_run(options)
+	run_started.emit()
+
+
 ## Canonical entry point for loading a saved run from the Main Menu.
 ## Loads the save data, rebuilds all engines, stores a handoff dict in
 ## GameSession.pending_run_state so Explorer can consume it, and emits

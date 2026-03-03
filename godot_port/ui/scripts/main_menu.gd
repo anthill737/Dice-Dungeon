@@ -12,10 +12,12 @@ var _btn_quit: Button
 var _overlay_manager  # MenuOverlayManager
 var _settings_panel: Control
 var _save_load_panel: Control
+var _start_adventure_panel: Control
 var _context: GameContext
 
 var _settings_scene := preload("res://ui/scenes/SettingsPanel.tscn")
 var _save_load_scene := preload("res://ui/scenes/SaveLoadPanel.tscn")
+var _start_adventure_scene := preload("res://ui/scenes/StartAdventurePanel.tscn")
 
 
 func _ready() -> void:
@@ -106,9 +108,11 @@ func _setup_overlay_manager() -> void:
 	_settings_panel = _settings_scene.instantiate()
 	_save_load_panel = _save_load_scene.instantiate()
 	_save_load_panel.panel_context = _save_load_panel.PanelContext.MAIN_MENU
+	_start_adventure_panel = _start_adventure_scene.instantiate()
 
 	_overlay_manager.register_menu("settings", "⚙ SETTINGS", _settings_panel, "settings")
 	_overlay_manager.register_menu("save_load", "💾 SAVE / LOAD", _save_load_panel, "save_load")
+	_overlay_manager.register_menu("start_adventure", "⚔ START ADVENTURE", _start_adventure_panel, "start_adventure")
 
 	if _settings_panel.has_signal("close_requested"):
 		_settings_panel.close_requested.connect(func(): _overlay_manager.close_menu("settings"))
@@ -116,6 +120,10 @@ func _setup_overlay_manager() -> void:
 		_save_load_panel.close_requested.connect(func(): _overlay_manager.close_menu("save_load"))
 	if _save_load_panel.has_signal("load_into_game_requested"):
 		_save_load_panel.load_into_game_requested.connect(_on_load_save)
+	if _start_adventure_panel.has_signal("close_requested"):
+		_start_adventure_panel.close_requested.connect(func(): _overlay_manager.close_menu("start_adventure"))
+	if _start_adventure_panel.has_signal("start_run_requested"):
+		_start_adventure_panel.start_run_requested.connect(_on_start_run)
 
 
 func _connect_signals() -> void:
@@ -126,7 +134,15 @@ func _connect_signals() -> void:
 
 
 func _on_start() -> void:
-	GameSession.start_new_game()
+	_overlay_manager.open_menu("start_adventure")
+
+
+func _on_start_run(options: Dictionary) -> void:
+	_overlay_manager.close_all_menus()
+	if _context.session:
+		_context.session.start_new_run(options)
+	else:
+		GameSession.start_new_run(options)
 	get_tree().change_scene_to_file("res://ui/scenes/Explorer.tscn")
 
 
