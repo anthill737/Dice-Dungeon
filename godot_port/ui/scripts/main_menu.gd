@@ -103,10 +103,8 @@ func _setup_overlay_manager() -> void:
 	_settings_panel = _settings_scene.instantiate()
 	_save_load_panel = _save_load_scene.instantiate()
 
-	_overlay_manager.register_menu("settings", "⚙ SETTINGS", _settings_panel,
-		Callable(), 500, 500, 0.45, 0.70)
-	_overlay_manager.register_menu("save_load", "💾 SAVE / LOAD", _save_load_panel,
-		Callable(), 700, 550, 0.70, 0.80)
+	_overlay_manager.register_menu("settings", "⚙ SETTINGS", _settings_panel, "settings")
+	_overlay_manager.register_menu("save_load", "💾 SAVE / LOAD", _save_load_panel, "save_load")
 
 	if _settings_panel.has_signal("close_requested"):
 		_settings_panel.close_requested.connect(func(): _overlay_manager.close_menu("settings"))

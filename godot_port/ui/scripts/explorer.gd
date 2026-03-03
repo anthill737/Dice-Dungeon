@@ -424,26 +424,16 @@ func _setup_overlay_manager() -> void:
 	_lore_codex_panel = _lore_codex_scene.instantiate()
 	_pause_menu = _pause_menu_scene.instantiate()
 
-	# Register menus with Python-matching sizes:
-	#   Python: get_responsive_dialog_size(base_w, base_h, width_pct, height_pct)
-	#   Result: max(base, min(base*1.5, window*pct))
+	# Register menus — size profiles defined in MenuOverlayManager.SIZE_PROFILES
 	_overlay_manager.register_menu("combat", "⚔ COMBAT ⚔", _combat_panel,
-		func() -> bool: return not _is_combat_locking(),
-		700, 600, 0.65, 0.85)
-	_overlay_manager.register_menu("inventory", "🎒 INVENTORY", _inventory_panel,
-		Callable(), 450, 500, 0.45, 0.75)
-	_overlay_manager.register_menu("store", "🏪 STORE", _store_panel,
-		Callable(), 500, 500, 0.50, 0.75)
-	_overlay_manager.register_menu("save_load", "💾 SAVE / LOAD", _save_load_panel,
-		Callable(), 700, 550, 0.70, 0.80)
-	_overlay_manager.register_menu("character_status", "⚙ CHARACTER STATUS", _character_status_panel,
-		Callable(), 650, 600, 0.65, 0.85)
-	_overlay_manager.register_menu("settings", "⚙ SETTINGS", _settings_panel,
-		Callable(), 500, 500, 0.45, 0.70)
-	_overlay_manager.register_menu("lore_codex", "📜 LORE CODEX", _lore_codex_panel,
-		Callable(), 650, 600, 0.65, 0.85)
-	_overlay_manager.register_menu("pause", "☰ PAUSED", _pause_menu,
-		Callable(), 350, 300, 0.35, 0.45)
+		"combat", func() -> bool: return not _is_combat_locking())
+	_overlay_manager.register_menu("inventory", "🎒 INVENTORY", _inventory_panel, "inventory")
+	_overlay_manager.register_menu("store", "🏪 STORE", _store_panel, "store")
+	_overlay_manager.register_menu("save_load", "💾 SAVE / LOAD", _save_load_panel, "save_load")
+	_overlay_manager.register_menu("character_status", "⚙ CHARACTER STATUS", _character_status_panel, "status")
+	_overlay_manager.register_menu("settings", "⚙ SETTINGS", _settings_panel, "settings")
+	_overlay_manager.register_menu("lore_codex", "📜 LORE CODEX", _lore_codex_panel, "lore")
+	_overlay_manager.register_menu("pause", "☰ PAUSED", _pause_menu, "pause")
 
 	# Wire pause menu signals
 	_pause_menu.close_requested.connect(func(): _overlay_manager.close_menu("pause"))

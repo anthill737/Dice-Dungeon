@@ -1,12 +1,13 @@
 extends CanvasLayer
-## Centralized manager for modal popup menus in Explorer Mode.
-## Maintains a LIFO stack of open menus. Provides:
-##   - open_menu(menu_key) / close_top_menu()
-##   - ESC routing: close topmost, or toggle pause if nothing open
-##   - Modal input blocking via the PopupFrame dim background
+## Centralized modal popup manager. Single authority for popup sizing,
+## registration, stacking (LIFO), and close-gating.
 ##
-## Menu keys: "combat", "inventory", "character_status", "save_load",
-##            "lore_codex", "store", "settings", "pause"
+## Size profiles mirror Python get_responsive_dialog_size():
+##   size = max(base, min(base * 1.5, viewport * pct))
+##
+## Usage:
+##   manager.register_menu("inventory", "🎒 INVENTORY", panel, "inventory")
+##   manager.open_menu("inventory")
 
 signal menu_opened(menu_key: String)
 signal menu_closed(menu_key: String)
@@ -14,12 +15,25 @@ signal menu_closed(menu_key: String)
 var PopupFrameScript := preload("res://ui/scripts/popup_frame.gd")
 
 var _popup_root: Control
-var _popups: Dictionary = {}        # menu_key -> PopupFrame instance
-var _contents: Dictionary = {}      # menu_key -> content Control
-var _stack: Array[String] = []      # LIFO stack of open menu keys
-var _can_close_overrides: Dictionary = {}  # menu_key -> Callable returning bool
+var _popups: Dictionary = {}
+var _contents: Dictionary = {}
+var _stack: Array[String] = []
+var _can_close_overrides: Dictionary = {}
 
 const FADE_DURATION := 0.12
+
+## Canonical size profiles — base_w, base_h, width_pct, height_pct
+## Mirrors Python get_responsive_dialog_size(base_w, base_h, w_pct, h_pct)
+const SIZE_PROFILES := {
+	"pause":     {"base_w": 350, "base_h": 300, "width_pct": 0.35, "height_pct": 0.45},
+	"inventory": {"base_w": 450, "base_h": 500, "width_pct": 0.45, "height_pct": 0.75},
+	"settings":  {"base_w": 500, "base_h": 500, "width_pct": 0.45, "height_pct": 0.70},
+	"store":     {"base_w": 500, "base_h": 500, "width_pct": 0.50, "height_pct": 0.75},
+	"combat":    {"base_w": 700, "base_h": 600, "width_pct": 0.65, "height_pct": 0.85},
+	"status":    {"base_w": 650, "base_h": 600, "width_pct": 0.65, "height_pct": 0.85},
+	"lore":      {"base_w": 650, "base_h": 600, "width_pct": 0.65, "height_pct": 0.85},
+	"save_load": {"base_w": 700, "base_h": 550, "width_pct": 0.70, "height_pct": 0.80},
+}
 
 
 func _ready() -> void:
@@ -33,13 +47,12 @@ func _ready() -> void:
 
 
 func register_menu(menu_key: String, title: String, content: Control,
-		can_close_fn: Callable = Callable(),
-		base_w: int = 450, base_h: int = 500,
-		width_pct: float = 0.45, height_pct: float = 0.75) -> void:
+		size_profile: String = "inventory",
+		can_close_fn: Callable = Callable()) -> void:
+	var profile: Dictionary = SIZE_PROFILES.get(size_profile, SIZE_PROFILES["inventory"])
 	var frame = PopupFrameScript.new()
 	frame.title_text = title
-	frame.size_config = {"base_w": base_w, "base_h": base_h,
-		"width_pct": width_pct, "height_pct": height_pct}
+	frame.size_config = profile.duplicate()
 	frame.visible = false
 	frame.modulate.a = 0.0
 	frame.set_content(content)
@@ -60,7 +73,6 @@ func open_menu(menu_key: String) -> void:
 	frame.visible = true
 	frame.modulate.a = 0.0
 
-	# Re-apply sizing each time the popup opens
 	if frame.has_method("_apply_sizing"):
 		frame._apply_sizing()
 
@@ -99,7 +111,7 @@ func close_top_menu() -> bool:
 			continue
 		if not can_close(key):
 			_stack.push_back(key)
-			return true  # blocked — stop processing
+			return true
 		close_menu(key)
 		return true
 	return false
