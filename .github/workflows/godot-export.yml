@@ -51,6 +51,21 @@ jobs:
           unzip -o /tmp/templates.tpz -d /tmp/templates
           mv /tmp/templates/templates/* "$TEMPLATES_DIR/"
 
+      - name: Write build_info.json
+        run: |
+          python3 -c "
+          import json, datetime
+          info = {
+              'git_sha': '${{ github.sha }}',
+              'build_time_utc': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+              'ref': '${{ github.ref }}',
+          }
+          with open('godot_port/build_info.json', 'w') as f:
+              json.dump(info, f, indent=2)
+          "
+          echo "build_info.json:"
+          cat godot_port/build_info.json
+
       - name: Import Godot resources
         run: |
           cd godot_port
