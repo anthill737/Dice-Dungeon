@@ -4,43 +4,6 @@ extends Control
 ## Hosts embedded overlay panels for Combat, Inventory, Store, SaveLoad,
 ## CharacterStatus, Settings.  Toggle debug overlay with F3.
 
-const FADE_DURATION := 0.15
-
-# --- Theme constants ---
-const FONT_HEADING_SIZE := 20
-const FONT_LABEL_SIZE := 14
-const FONT_BODY_SIZE := 13
-const FONT_SMALL_SIZE := 11
-const FONT_LOG_SIZE := 13
-const FONT_BUTTON_SIZE := 13
-
-const COLOR_BG_PRIMARY := Color(0.11, 0.07, 0.05)
-const COLOR_BG_SECONDARY := Color(0.14, 0.09, 0.06)
-const COLOR_BG_PANEL := Color(0.17, 0.11, 0.08)
-const COLOR_BG_HEADER := Color(0.09, 0.06, 0.04)
-const COLOR_BG_LOG := Color(0.08, 0.05, 0.03)
-
-const COLOR_GOLD := Color(0.83, 0.69, 0.22)
-const COLOR_BONE := Color(0.91, 0.86, 0.77)
-const COLOR_RED := Color(0.78, 0.33, 0.31)
-const COLOR_GREEN := Color(0.50, 0.68, 0.50)
-const COLOR_CYAN := Color(0.37, 0.65, 0.65)
-const COLOR_SECONDARY_TEXT := Color(0.66, 0.60, 0.52)
-
-const COLOR_BORDER := Color(0.55, 0.45, 0.33)
-const COLOR_BORDER_GOLD := Color(0.72, 0.58, 0.18)
-
-const HP_FULL := Color(0.50, 0.68, 0.50)
-const HP_MID := Color(0.83, 0.65, 0.22)
-const HP_LOW := Color(0.78, 0.33, 0.31)
-const HP_BG := Color(0.10, 0.06, 0.03)
-
-const COLOR_BTN_PRIMARY := Color(0.83, 0.69, 0.22)
-const COLOR_BTN_SECONDARY := Color(0.37, 0.65, 0.65)
-const COLOR_BTN_DISABLED := Color(0.29, 0.23, 0.17)
-const COLOR_BTN_HOVER := Color(0.94, 0.81, 0.35)
-const COLOR_BTN_PRESSED := Color(0.70, 0.55, 0.15)
-
 # --- Info widgets ---
 var _floor_label: Label
 var _room_pos_label: Label
@@ -116,13 +79,11 @@ func _ready() -> void:
 # ==================================================================
 
 func _build_ui() -> void:
-	# Full-rect background
 	var bg := ColorRect.new()
-	bg.color = COLOR_BG_PRIMARY
+	bg.color = DungeonTheme.BG_PRIMARY
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	# Root vertical: TopBar, then HBox(center+right), then Bottom log
 	var root_vbox := VBoxContainer.new()
 	root_vbox.name = "RootVBox"
 	root_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -130,10 +91,8 @@ func _build_ui() -> void:
 	root_vbox.add_theme_constant_override("separation", 0)
 	add_child(root_vbox)
 
-	# --- TOP BAR ---
 	_build_top_bar(root_vbox)
 
-	# --- MIDDLE: center + right sidebar ---
 	var middle_hbox := HBoxContainer.new()
 	middle_hbox.name = "MiddleHBox"
 	middle_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -143,7 +102,6 @@ func _build_ui() -> void:
 	_build_center_panel(middle_hbox)
 	_build_right_sidebar(middle_hbox)
 
-	# --- BOTTOM: Adventure log ---
 	_build_adventure_log(root_vbox)
 
 
@@ -151,8 +109,8 @@ func _build_top_bar(parent: Node) -> void:
 	var bar := PanelContainer.new()
 	bar.name = "TopBar"
 	var bar_style := StyleBoxFlat.new()
-	bar_style.bg_color = COLOR_BG_HEADER
-	bar_style.border_color = COLOR_BORDER_GOLD
+	bar_style.bg_color = DungeonTheme.BG_HEADER
+	bar_style.border_color = DungeonTheme.BORDER_GOLD
 	bar_style.set_border_width_all(0)
 	bar_style.border_width_bottom = 2
 	bar_style.set_content_margin_all(8)
@@ -163,31 +121,27 @@ func _build_top_bar(parent: Node) -> void:
 	hbox.add_theme_constant_override("separation", 16)
 	bar.add_child(hbox)
 
-	# Title
 	var title := Label.new()
 	title.text = "⚔ DICE DUNGEON ⚔"
-	title.add_theme_font_size_override("font_size", FONT_HEADING_SIZE)
-	title.add_theme_color_override("font_color", COLOR_GOLD)
+	title.add_theme_font_size_override("font_size", DungeonTheme.FONT_HEADING)
+	title.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	hbox.add_child(title)
 
-	# Separator
 	var sep := VSeparator.new()
 	hbox.add_child(sep)
 
-	# Floor label
 	_floor_label = Label.new()
 	_floor_label.text = "Floor 1"
-	_floor_label.add_theme_font_size_override("font_size", FONT_LABEL_SIZE)
-	_floor_label.add_theme_color_override("font_color", COLOR_CYAN)
+	_floor_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
+	_floor_label.add_theme_color_override("font_color", DungeonTheme.TEXT_CYAN)
 	hbox.add_child(_floor_label)
 
 	_room_pos_label = Label.new()
 	_room_pos_label.text = "(0,0)"
-	_room_pos_label.add_theme_font_size_override("font_size", FONT_SMALL_SIZE)
-	_room_pos_label.add_theme_color_override("font_color", COLOR_SECONDARY_TEXT)
+	_room_pos_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	_room_pos_label.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
 	hbox.add_child(_room_pos_label)
 
-	# Spacer
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hbox.add_child(spacer)
@@ -199,8 +153,8 @@ func _build_top_bar(parent: Node) -> void:
 
 	var hp_icon := Label.new()
 	hp_icon.text = "♥"
-	hp_icon.add_theme_font_size_override("font_size", FONT_LABEL_SIZE)
-	hp_icon.add_theme_color_override("font_color", COLOR_RED)
+	hp_icon.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
+	hp_icon.add_theme_color_override("font_color", DungeonTheme.TEXT_RED)
 	hp_box.add_child(hp_icon)
 
 	_hp_bar = ProgressBar.new()
@@ -208,13 +162,13 @@ func _build_top_bar(parent: Node) -> void:
 	_hp_bar.max_value = 50
 	_hp_bar.value = 50
 	_hp_bar.show_percentage = false
-	_style_hp_bar(_hp_bar, 1.0)
+	DungeonTheme.style_hp_bar(_hp_bar, 1.0)
 	hp_box.add_child(_hp_bar)
 
 	_hp_label = Label.new()
 	_hp_label.text = "50/50"
-	_hp_label.add_theme_font_size_override("font_size", FONT_LABEL_SIZE)
-	_hp_label.add_theme_color_override("font_color", COLOR_BONE)
+	_hp_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
+	_hp_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
 	hp_box.add_child(_hp_label)
 
 	# Gold section
@@ -224,14 +178,14 @@ func _build_top_bar(parent: Node) -> void:
 
 	var gold_icon := Label.new()
 	gold_icon.text = "◆"
-	gold_icon.add_theme_font_size_override("font_size", FONT_LABEL_SIZE)
-	gold_icon.add_theme_color_override("font_color", COLOR_GOLD)
+	gold_icon.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
+	gold_icon.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	gold_box.add_child(gold_icon)
 
 	_gold_label = Label.new()
 	_gold_label.text = "0"
-	_gold_label.add_theme_font_size_override("font_size", FONT_LABEL_SIZE)
-	_gold_label.add_theme_color_override("font_color", COLOR_GOLD)
+	_gold_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
+	_gold_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	gold_box.add_child(_gold_label)
 
 	# Top-right buttons
@@ -261,12 +215,11 @@ func _build_center_panel(parent: Node) -> void:
 	center.add_theme_constant_override("separation", 0)
 	parent.add_child(center)
 
-	# Room info panel
 	var room_panel := PanelContainer.new()
 	room_panel.name = "RoomPanel"
 	var room_style := StyleBoxFlat.new()
-	room_style.bg_color = COLOR_BG_SECONDARY
-	room_style.border_color = COLOR_BORDER_GOLD
+	room_style.bg_color = DungeonTheme.BG_SECONDARY
+	room_style.border_color = DungeonTheme.BORDER_GOLD
 	room_style.set_border_width_all(1)
 	room_style.set_content_margin_all(12)
 	room_style.content_margin_left = 16
@@ -275,33 +228,31 @@ func _build_center_panel(parent: Node) -> void:
 	center.add_child(room_panel)
 
 	var room_vbox := VBoxContainer.new()
-	room_vbox.add_theme_constant_override("separation", 4)
+	room_vbox.add_theme_constant_override("separation", 6)
 	room_panel.add_child(room_vbox)
 
 	_room_name_label = Label.new()
 	_room_name_label.text = "Room: ---"
-	_room_name_label.add_theme_font_size_override("font_size", 16)
-	_room_name_label.add_theme_color_override("font_color", COLOR_GOLD)
+	_room_name_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SUBHEADING)
+	_room_name_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	room_vbox.add_child(_room_name_label)
 
-	var room_sep := HSeparator.new()
-	room_sep.add_theme_stylebox_override("separator", _make_separator_style(COLOR_BORDER_GOLD))
+	var room_sep := DungeonTheme.make_separator(DungeonTheme.BORDER_GOLD)
 	room_vbox.add_child(room_sep)
 
 	_room_desc_label = Label.new()
 	_room_desc_label.text = ""
 	_room_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_room_desc_label.add_theme_font_size_override("font_size", FONT_BODY_SIZE)
-	_room_desc_label.add_theme_color_override("font_color", COLOR_BONE)
+	_room_desc_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
+	_room_desc_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
 	room_vbox.add_child(_room_desc_label)
 
 	_room_flags_label = Label.new()
 	_room_flags_label.text = ""
-	_room_flags_label.add_theme_font_size_override("font_size", FONT_SMALL_SIZE)
-	_room_flags_label.add_theme_color_override("font_color", COLOR_SECONDARY_TEXT)
+	_room_flags_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	_room_flags_label.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
 	room_vbox.add_child(_room_flags_label)
 
-	# Combat / action area (flexible space in center)
 	var action_spacer := Control.new()
 	action_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	center.add_child(action_spacer)
@@ -311,8 +262,8 @@ func _build_right_sidebar(parent: Node) -> void:
 	var sidebar := PanelContainer.new()
 	sidebar.name = "RightSidebar"
 	var sb_style := StyleBoxFlat.new()
-	sb_style.bg_color = COLOR_BG_PANEL
-	sb_style.border_color = COLOR_BORDER
+	sb_style.bg_color = DungeonTheme.BG_PANEL
+	sb_style.border_color = DungeonTheme.BORDER
 	sb_style.border_width_left = 2
 	sb_style.set_content_margin_all(8)
 	sidebar.add_theme_stylebox_override("panel", sb_style)
@@ -323,20 +274,17 @@ func _build_right_sidebar(parent: Node) -> void:
 	sidebar_vbox.add_theme_constant_override("separation", 8)
 	sidebar.add_child(sidebar_vbox)
 
-	# Minimap
 	_minimap_panel = _minimap_scene.instantiate()
 	_minimap_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	sidebar_vbox.add_child(_minimap_panel)
 
-	# Movement header
 	var move_header := Label.new()
 	move_header.text = "MOVEMENT"
 	move_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	move_header.add_theme_font_size_override("font_size", FONT_SMALL_SIZE)
-	move_header.add_theme_color_override("font_color", COLOR_GOLD)
+	move_header.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	move_header.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	sidebar_vbox.add_child(move_header)
 
-	# Movement grid
 	var grid := GridContainer.new()
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 2)
@@ -364,42 +312,40 @@ func _build_right_sidebar(parent: Node) -> void:
 	wasd_hint.text = "WASD / Arrows"
 	wasd_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	wasd_hint.add_theme_font_size_override("font_size", 10)
-	wasd_hint.add_theme_color_override("font_color", COLOR_SECONDARY_TEXT)
+	wasd_hint.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
 	sidebar_vbox.add_child(wasd_hint)
 
-	# Actions header
-	var action_sep := HSeparator.new()
-	action_sep.add_theme_stylebox_override("separator", _make_separator_style(COLOR_BORDER))
+	var action_sep := DungeonTheme.make_separator(DungeonTheme.BORDER)
 	sidebar_vbox.add_child(action_sep)
 
 	var action_header := Label.new()
 	action_header.text = "ACTIONS"
 	action_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	action_header.add_theme_font_size_override("font_size", FONT_SMALL_SIZE)
-	action_header.add_theme_color_override("font_color", COLOR_GOLD)
+	action_header.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	action_header.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	sidebar_vbox.add_child(action_header)
 
 	var actions := VBoxContainer.new()
 	actions.add_theme_constant_override("separation", 3)
 	sidebar_vbox.add_child(actions)
 
-	_btn_attack = _make_action_btn("⚔ Attack", COLOR_BTN_PRIMARY)
+	_btn_attack = _make_action_btn("⚔ Attack", DungeonTheme.BTN_PRIMARY)
 	actions.add_child(_btn_attack)
-	_btn_flee = _make_action_btn("🏃 Flee", COLOR_RED)
+	_btn_flee = _make_action_btn("🏃 Flee", DungeonTheme.TEXT_RED)
 	actions.add_child(_btn_flee)
-	_btn_chest = _make_action_btn("📦 Open Chest", COLOR_GOLD)
+	_btn_chest = _make_action_btn("📦 Open Chest", DungeonTheme.TEXT_GOLD)
 	actions.add_child(_btn_chest)
-	_btn_ground = _make_action_btn("🔍 Ground Items", COLOR_SECONDARY_TEXT)
+	_btn_ground = _make_action_btn("🔍 Ground Items", DungeonTheme.TEXT_SECONDARY)
 	actions.add_child(_btn_ground)
-	_btn_inventory = _make_action_btn("🎒 Inventory", COLOR_BTN_SECONDARY)
+	_btn_inventory = _make_action_btn("🎒 Inventory", DungeonTheme.BTN_SECONDARY)
 	actions.add_child(_btn_inventory)
-	_btn_store = _make_action_btn("🏪 Store", COLOR_BTN_SECONDARY)
+	_btn_store = _make_action_btn("🏪 Store", DungeonTheme.BTN_SECONDARY)
 	actions.add_child(_btn_store)
-	_btn_rest = _make_action_btn("💤 Rest", COLOR_GREEN)
+	_btn_rest = _make_action_btn("💤 Rest", DungeonTheme.TEXT_GREEN)
 	actions.add_child(_btn_rest)
-	_btn_save_load = _make_action_btn("💾 Save/Load", COLOR_BTN_SECONDARY)
+	_btn_save_load = _make_action_btn("💾 Save/Load", DungeonTheme.BTN_SECONDARY)
 	actions.add_child(_btn_save_load)
-	_btn_descend = _make_action_btn("⬇ Descend", COLOR_CYAN)
+	_btn_descend = _make_action_btn("⬇ Descend", DungeonTheme.TEXT_CYAN)
 	actions.add_child(_btn_descend)
 
 
@@ -407,8 +353,8 @@ func _build_adventure_log(parent: Node) -> void:
 	var log_panel := PanelContainer.new()
 	log_panel.name = "LogPanel"
 	var log_style := StyleBoxFlat.new()
-	log_style.bg_color = COLOR_BG_LOG
-	log_style.border_color = COLOR_BORDER
+	log_style.bg_color = DungeonTheme.BG_LOG
+	log_style.border_color = DungeonTheme.BORDER
 	log_style.border_width_top = 1
 	log_style.set_content_margin_all(6)
 	log_panel.add_theme_stylebox_override("panel", log_style)
@@ -421,16 +367,16 @@ func _build_adventure_log(parent: Node) -> void:
 
 	var log_header := Label.new()
 	log_header.text = "— Adventure Log —"
-	log_header.add_theme_font_size_override("font_size", FONT_SMALL_SIZE)
-	log_header.add_theme_color_override("font_color", COLOR_GOLD)
+	log_header.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	log_header.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	log_vbox.add_child(log_header)
 
 	_log_text = RichTextLabel.new()
 	_log_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_log_text.bbcode_enabled = true
 	_log_text.scroll_following = true
-	_log_text.add_theme_font_size_override("normal_font_size", FONT_LOG_SIZE)
-	_log_text.add_theme_color_override("default_color", COLOR_BONE)
+	_log_text.add_theme_font_size_override("normal_font_size", DungeonTheme.FONT_LOG)
+	_log_text.add_theme_color_override("default_color", DungeonTheme.TEXT_BONE)
 	log_vbox.add_child(_log_text)
 
 
@@ -546,7 +492,7 @@ func _show_panel(panel: Control) -> void:
 	panel.visible = true
 	panel.modulate.a = 0.0
 	var tween := create_tween()
-	tween.tween_property(panel, "modulate:a", 1.0, FADE_DURATION)
+	tween.tween_property(panel, "modulate:a", 1.0, DungeonTheme.FADE_DURATION)
 	_panel_stack.erase(panel)
 	_panel_stack.push_back(panel)
 
@@ -556,7 +502,7 @@ func _hide_panel(panel: Control) -> void:
 		return
 	_panel_stack.erase(panel)
 	var tween := create_tween()
-	tween.tween_property(panel, "modulate:a", 0.0, FADE_DURATION)
+	tween.tween_property(panel, "modulate:a", 0.0, DungeonTheme.FADE_DURATION)
 	tween.tween_callback(func(): panel.visible = false)
 
 
@@ -694,7 +640,6 @@ func _on_flee() -> void:
 	if GameSession.is_pending_choice():
 		GameSession.attempt_flee_pending()
 		return
-	# Flee from active combat is disabled by design (victory or defeat only)
 
 
 func _on_chest() -> void:
@@ -787,11 +732,10 @@ func _refresh_ui() -> void:
 	_hp_label.text = "%d / %d" % [gs.health, gs.max_health]
 	_gold_label.text = "%d" % gs.gold
 
-	# Update HP bar
 	_hp_bar.max_value = gs.max_health
 	_hp_bar.value = gs.health
 	var hp_ratio: float = float(gs.health) / float(gs.max_health) if gs.max_health > 0 else 0.0
-	_style_hp_bar(_hp_bar, hp_ratio)
+	DungeonTheme.style_hp_bar(_hp_bar, hp_ratio)
 
 	if room != null:
 		_room_name_label.text = room.data.get("name", "Unknown Room")
@@ -967,43 +911,27 @@ func _typewrite_chars(msg: String, idx: int) -> void:
 # Helpers
 # -------------------------------------------------------------------
 
-func _add_label(parent: Node, text: String) -> Label:
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.add_theme_font_size_override("font_size", FONT_BODY_SIZE)
-	lbl.add_theme_color_override("font_color", COLOR_BONE)
-	parent.add_child(lbl)
-	return lbl
-
-
-func _make_btn(text: String) -> Button:
-	var btn := Button.new()
-	btn.text = text
-	btn.custom_minimum_size = Vector2(100, 32)
-	return btn
-
-
 func _make_icon_btn(icon_text: String, tooltip: String) -> Button:
 	var btn := Button.new()
 	btn.text = icon_text
 	btn.tooltip_text = tooltip
 	btn.custom_minimum_size = Vector2(32, 28)
-	btn.add_theme_font_size_override("font_size", FONT_LABEL_SIZE)
+	btn.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
 
 	var normal := StyleBoxFlat.new()
-	normal.bg_color = COLOR_BG_PANEL
+	normal.bg_color = DungeonTheme.BG_PANEL
 	normal.set_corner_radius_all(4)
 	normal.set_content_margin_all(4)
 	btn.add_theme_stylebox_override("normal", normal)
 
 	var hover := StyleBoxFlat.new()
-	hover.bg_color = COLOR_BG_PANEL.lightened(0.15)
+	hover.bg_color = DungeonTheme.BG_PANEL.lightened(0.15)
 	hover.set_corner_radius_all(4)
 	hover.set_content_margin_all(4)
 	btn.add_theme_stylebox_override("hover", hover)
 
 	var pressed := StyleBoxFlat.new()
-	pressed.bg_color = COLOR_BG_PANEL.darkened(0.1)
+	pressed.bg_color = DungeonTheme.BG_PANEL.darkened(0.1)
 	pressed.set_corner_radius_all(4)
 	pressed.set_content_margin_all(4)
 	btn.add_theme_stylebox_override("pressed", pressed)
@@ -1015,33 +943,33 @@ func _make_move_btn(text: String) -> Button:
 	var btn := Button.new()
 	btn.text = text
 	btn.custom_minimum_size = Vector2(40, 32)
-	btn.add_theme_font_size_override("font_size", FONT_LABEL_SIZE)
+	btn.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
 
 	var normal := StyleBoxFlat.new()
-	normal.bg_color = COLOR_BTN_PRIMARY
+	normal.bg_color = DungeonTheme.BTN_PRIMARY
 	normal.set_corner_radius_all(4)
 	normal.set_content_margin_all(2)
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_color_override("font_color", Color.BLACK)
 
 	var hover := StyleBoxFlat.new()
-	hover.bg_color = COLOR_BTN_HOVER
+	hover.bg_color = DungeonTheme.BTN_HOVER
 	hover.set_corner_radius_all(4)
 	hover.set_content_margin_all(2)
 	btn.add_theme_stylebox_override("hover", hover)
 
 	var pressed := StyleBoxFlat.new()
-	pressed.bg_color = COLOR_BTN_PRESSED
+	pressed.bg_color = DungeonTheme.BTN_PRESSED
 	pressed.set_corner_radius_all(4)
 	pressed.set_content_margin_all(2)
 	btn.add_theme_stylebox_override("pressed", pressed)
 
 	var disabled := StyleBoxFlat.new()
-	disabled.bg_color = COLOR_BTN_DISABLED
+	disabled.bg_color = DungeonTheme.BTN_DISABLED_BG
 	disabled.set_corner_radius_all(4)
 	disabled.set_content_margin_all(2)
 	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_disabled_color", Color(0.4, 0.35, 0.3))
+	btn.add_theme_color_override("font_disabled_color", DungeonTheme.BTN_DISABLED_TEXT)
 
 	return btn
 
@@ -1051,7 +979,7 @@ func _make_action_btn(text: String, accent: Color) -> Button:
 	btn.text = text
 	btn.custom_minimum_size = Vector2(0, 28)
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn.add_theme_font_size_override("font_size", FONT_BUTTON_SIZE)
+	btn.add_theme_font_size_override("font_size", DungeonTheme.FONT_BUTTON)
 
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = accent.darkened(0.6)
@@ -1078,49 +1006,20 @@ func _make_action_btn(text: String, accent: Color) -> Button:
 	btn.add_theme_stylebox_override("pressed", pressed)
 
 	var disabled := StyleBoxFlat.new()
-	disabled.bg_color = COLOR_BTN_DISABLED
+	disabled.bg_color = DungeonTheme.BTN_DISABLED_BG
 	disabled.set_corner_radius_all(3)
 	disabled.set_content_margin_all(4)
 	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_disabled_color", Color(0.4, 0.35, 0.3))
+	btn.add_theme_color_override("font_disabled_color", DungeonTheme.BTN_DISABLED_TEXT)
 
 	return btn
 
 
 func _update_move_btn_style(btn: Button) -> void:
 	if btn.disabled:
-		btn.add_theme_color_override("font_color", Color(0.4, 0.35, 0.3))
+		btn.add_theme_color_override("font_color", DungeonTheme.BTN_DISABLED_TEXT)
 	else:
 		btn.add_theme_color_override("font_color", Color.BLACK)
-
-
-func _style_hp_bar(bar: ProgressBar, ratio: float) -> void:
-	var fill_color: Color
-	if ratio > 0.6:
-		fill_color = HP_FULL
-	elif ratio > 0.3:
-		fill_color = HP_MID
-	else:
-		fill_color = HP_LOW
-
-	var fill_style := StyleBoxFlat.new()
-	fill_style.bg_color = fill_color
-	fill_style.set_corner_radius_all(3)
-	bar.add_theme_stylebox_override("fill", fill_style)
-
-	var bg_style := StyleBoxFlat.new()
-	bg_style.bg_color = HP_BG
-	bg_style.set_corner_radius_all(3)
-	bg_style.border_color = COLOR_BORDER
-	bg_style.set_border_width_all(1)
-	bar.add_theme_stylebox_override("background", bg_style)
-
-
-func _make_separator_style(color: Color) -> StyleBoxLine:
-	var s := StyleBoxLine.new()
-	s.color = color
-	s.thickness = 1
-	return s
 
 
 func _spacer() -> Control:

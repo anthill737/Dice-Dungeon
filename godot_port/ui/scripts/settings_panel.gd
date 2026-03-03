@@ -10,7 +10,7 @@ var _text_speed_dropdown: OptionButton
 var _keybind_container: VBoxContainer
 var _waiting_action: String = ""
 var _waiting_button: Button = null
-var _keybind_buttons: Dictionary = {}  # action_name -> Button
+var _keybind_buttons: Dictionary = {}
 
 
 func _ready() -> void:
@@ -30,12 +30,8 @@ func _build_ui() -> void:
 	offset_right = 260
 	offset_bottom = 250
 
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.12, 0.10, 0.08, 0.97)
-	style.border_color = Color(0.6, 0.5, 0.3)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(6)
-	style.set_content_margin_all(16)
+	var style := DungeonTheme.make_panel_bg(
+		Color(0.12, 0.10, 0.08, 0.97), DungeonTheme.BORDER)
 	add_theme_stylebox_override("panel", style)
 
 	var scroll := ScrollContainer.new()
@@ -49,13 +45,11 @@ func _build_ui() -> void:
 	vbox.add_theme_constant_override("separation", 10)
 	scroll.add_child(vbox)
 
-	var title := Label.new()
-	title.text = "SETTINGS"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 24)
+	var title := DungeonTheme.make_header(
+		"⚙ SETTINGS", DungeonTheme.TEXT_BONE, DungeonTheme.FONT_TITLE)
 	vbox.add_child(title)
 
-	_add_separator(vbox)
+	vbox.add_child(DungeonTheme.make_separator())
 
 	# Difficulty
 	var diff_row := _make_row(vbox, "Difficulty")
@@ -84,20 +78,18 @@ func _build_ui() -> void:
 	_text_speed_dropdown.item_selected.connect(_on_text_speed_changed)
 	speed_row.add_child(_text_speed_dropdown)
 
-	_add_separator(vbox)
+	vbox.add_child(DungeonTheme.make_separator())
 
 	# Keybindings header
-	var kb_header := Label.new()
-	kb_header.text = "KEYBINDINGS"
-	kb_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	kb_header.add_theme_font_size_override("font_size", 18)
+	var kb_header := DungeonTheme.make_header(
+		"KEYBINDINGS", DungeonTheme.TEXT_BONE, DungeonTheme.FONT_SUBHEADING)
 	vbox.add_child(kb_header)
 
 	var kb_hint := Label.new()
 	kb_hint.text = "Click a key to rebind, then press the new key."
 	kb_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	kb_hint.add_theme_font_size_override("font_size", 12)
-	kb_hint.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	kb_hint.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	kb_hint.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
 	vbox.add_child(kb_hint)
 
 	_keybind_container = VBoxContainer.new()
@@ -106,19 +98,19 @@ func _build_ui() -> void:
 
 	_build_keybind_rows()
 
-	# Reset keybindings button
-	var reset_btn := Button.new()
-	reset_btn.text = "Reset Keybindings to Defaults"
-	reset_btn.custom_minimum_size = Vector2(0, 36)
+	var reset_btn := DungeonTheme.make_styled_btn(
+		"Reset Keybindings to Defaults", DungeonTheme.TEXT_RED, 200)
+	reset_btn.custom_minimum_size.y = 36
+	reset_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	reset_btn.pressed.connect(_on_reset_keybindings)
 	vbox.add_child(reset_btn)
 
-	_add_separator(vbox)
+	vbox.add_child(DungeonTheme.make_separator())
 
-	# Close button
-	var close_btn := Button.new()
-	close_btn.text = "Close"
-	close_btn.custom_minimum_size = Vector2(0, 40)
+	var close_btn := DungeonTheme.make_styled_btn(
+		"Close", DungeonTheme.TEXT_SECONDARY, 200)
+	close_btn.custom_minimum_size.y = 40
+	close_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	close_btn.pressed.connect(func(): close_requested.emit())
 	vbox.add_child(close_btn)
 
@@ -137,11 +129,11 @@ func _build_keybind_rows() -> void:
 		lbl.text = SettingsManager.ACTION_DISPLAY_NAMES.get(action, action)
 		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		lbl.custom_minimum_size = Vector2(180, 0)
+		lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
+		lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
 		row.add_child(lbl)
 
-		var btn := Button.new()
-		btn.custom_minimum_size = Vector2(120, 30)
-		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var btn := DungeonTheme.make_styled_btn("", DungeonTheme.TEXT_CYAN, 120)
 		var keycode: int = SettingsManager.get_key_for_action(action)
 		btn.text = SettingsManager.key_name(keycode)
 		btn.pressed.connect(_on_keybind_clicked.bind(action, btn))
@@ -160,10 +152,6 @@ func _populate_from_settings() -> void:
 func refresh() -> void:
 	_populate_from_settings()
 
-
-# ------------------------------------------------------------------
-# Callbacks
-# ------------------------------------------------------------------
 
 func _on_difficulty_changed(idx: int) -> void:
 	SettingsManager.set_difficulty(SettingsManager.DIFFICULTY_OPTIONS[idx])
@@ -214,10 +202,6 @@ func _refresh_keybind_labels() -> void:
 		btn.text = SettingsManager.key_name(SettingsManager.get_key_for_action(action))
 
 
-# ------------------------------------------------------------------
-# Helpers
-# ------------------------------------------------------------------
-
 func _make_row(parent: Node, label_text: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
@@ -226,14 +210,11 @@ func _make_row(parent: Node, label_text: String) -> HBoxContainer:
 	var lbl := Label.new()
 	lbl.text = label_text
 	lbl.custom_minimum_size = Vector2(140, 0)
+	lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
+	lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
 	row.add_child(lbl)
 
 	return row
-
-
-func _add_separator(parent: Node) -> void:
-	var sep := HSeparator.new()
-	parent.add_child(sep)
 
 
 static func _select_option(dropdown: OptionButton, options: Array, value: String) -> void:

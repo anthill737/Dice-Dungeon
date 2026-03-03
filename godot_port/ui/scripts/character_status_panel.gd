@@ -25,12 +25,8 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.06, 0.07, 0.10, 0.97)
-	bg.border_color = Color(0.55, 0.40, 0.65)
-	bg.set_border_width_all(2)
-	bg.set_corner_radius_all(6)
-	bg.set_content_margin_all(16)
+	var bg := DungeonTheme.make_panel_bg(
+		Color(0.06, 0.07, 0.10, 0.97), DungeonTheme.TEXT_PURPLE)
 	add_theme_stylebox_override("panel", bg)
 
 	var root := VBoxContainer.new()
@@ -41,17 +37,16 @@ func _build_ui() -> void:
 	var header := HBoxContainer.new()
 	root.add_child(header)
 
-	var title := Label.new()
-	title.text = "⚙ CHARACTER STATUS"
-	title.add_theme_font_size_override("font_size", 20)
-	title.add_theme_color_override("font_color", Color(0.55, 0.40, 0.65))
+	var title := DungeonTheme.make_header(
+		"⚙ CHARACTER STATUS", DungeonTheme.TEXT_PURPLE, DungeonTheme.FONT_HEADING)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 
-	_btn_close = Button.new()
-	_btn_close.text = "Close"
+	_btn_close = DungeonTheme.make_styled_btn("✕ Close", DungeonTheme.TEXT_SECONDARY, 80)
 	_btn_close.pressed.connect(func(): close_requested.emit())
 	header.add_child(_btn_close)
+
+	root.add_child(DungeonTheme.make_separator(DungeonTheme.TEXT_PURPLE))
 
 	# Tabs
 	_tab_container = TabContainer.new()
@@ -67,6 +62,8 @@ func _build_ui() -> void:
 	_char_info = RichTextLabel.new()
 	_char_info.bbcode_enabled = true
 	_char_info.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_char_info.add_theme_font_size_override("normal_font_size", DungeonTheme.FONT_BODY)
+	_char_info.add_theme_color_override("default_color", DungeonTheme.TEXT_BONE)
 	_character_tab.add_child(_char_info)
 
 	# Stats tab
@@ -77,9 +74,11 @@ func _build_ui() -> void:
 	_stats_info = RichTextLabel.new()
 	_stats_info.bbcode_enabled = true
 	_stats_info.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_stats_info.add_theme_font_size_override("normal_font_size", DungeonTheme.FONT_BODY)
+	_stats_info.add_theme_color_override("default_color", DungeonTheme.TEXT_BONE)
 	_stats_tab.add_child(_stats_info)
 
-	# Lore tab — embedded codex panel
+	# Lore tab
 	_lore_tab = VBoxContainer.new()
 	_lore_tab.name = "Lore"
 	_tab_container.add_child(_lore_tab)
@@ -105,9 +104,13 @@ func _refresh_character() -> void:
 		_char_info.text = "No active game."
 		return
 
+	var gold_hex := DungeonTheme.TEXT_GOLD.to_html(false)
+	var cyan_hex := DungeonTheme.TEXT_CYAN.to_html(false)
+	var dim_hex := DungeonTheme.TEXT_DIM.to_html(false)
+
 	var lines: PackedStringArray = []
 	lines.append("[b]Health:[/b] %d / %d" % [gs.health, gs.max_health])
-	lines.append("[b]Gold:[/b] %d" % gs.gold)
+	lines.append("[b]Gold:[/b] [color=#%s]%d[/color]" % [gold_hex, gs.gold])
 	lines.append("[b]Floor:[/b] %d" % gs.floor)
 	lines.append("[b]Dice:[/b] %d" % gs.num_dice)
 	lines.append("[b]Damage Bonus:[/b] %d" % gs.damage_bonus)
@@ -120,10 +123,10 @@ func _refresh_character() -> void:
 	for slot in gs.equipped_items:
 		var item: String = gs.equipped_items[slot]
 		if item.is_empty():
-			lines.append("  %s: (empty)" % slot)
+			lines.append("  %s: [color=#%s](empty)[/color]" % [slot, dim_hex])
 		else:
 			var dur := GameSession.inventory_engine.get_durability_percent(item) if GameSession.inventory_engine != null else 100
-			lines.append("  %s: %s [%d%%]" % [slot, item, dur])
+			lines.append("  %s: [color=#%s]%s[/color] [%d%%]" % [slot, cyan_hex, item, dur])
 
 	lines.append("")
 	lines.append("[b]Inventory:[/b] %d / %d" % [gs.inventory.size(), gs.max_inventory])

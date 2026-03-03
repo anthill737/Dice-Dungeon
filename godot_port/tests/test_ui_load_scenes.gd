@@ -14,6 +14,9 @@ func test_main_menu_loads() -> void:
 	var scene := _main_menu_scene.instantiate()
 	assert_not_null(scene, "MainMenu scene instantiated")
 
+	add_child(scene)
+	await get_tree().process_frame
+
 	assert_not_null(scene.find_child("BtnStart", true, false), "BtnStart exists")
 	assert_not_null(scene.find_child("BtnLoad", true, false), "BtnLoad exists")
 	assert_not_null(scene.find_child("BtnSettings", true, false), "BtnSettings exists")
@@ -21,6 +24,7 @@ func test_main_menu_loads() -> void:
 	assert_not_null(scene.find_child("Title", true, false), "Title label exists")
 
 	scene.queue_free()
+	await get_tree().process_frame
 
 
 func test_explorer_scene_loads() -> void:

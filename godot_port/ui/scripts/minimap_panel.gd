@@ -44,20 +44,17 @@ func _build_ui() -> void:
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.06, 0.04, 0.08, 0.9)
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
+	style.set_corner_radius_all(4)
+	style.border_color = DungeonTheme.BORDER.darkened(0.2)
+	style.set_border_width_all(1)
 	add_theme_stylebox_override("panel", style)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 2)
 	add_child(vbox)
 
-	var header := Label.new()
-	header.text = "Minimap"
-	header.add_theme_font_size_override("font_size", 14)
-	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var header := DungeonTheme.make_header(
+		"Minimap", DungeonTheme.TEXT_GOLD, DungeonTheme.FONT_LABEL)
 	vbox.add_child(header)
 
 	_canvas = Control.new()
@@ -74,20 +71,17 @@ func _build_ui() -> void:
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_child(btn_row)
 
-	_btn_zoom_out = Button.new()
-	_btn_zoom_out.text = "−"
+	_btn_zoom_out = DungeonTheme.make_styled_btn("−", DungeonTheme.TEXT_SECONDARY, 28)
 	_btn_zoom_out.custom_minimum_size = Vector2(28, 24)
 	_btn_zoom_out.pressed.connect(_zoom_out)
 	btn_row.add_child(_btn_zoom_out)
 
-	_btn_center = Button.new()
-	_btn_center.text = "◎"
+	_btn_center = DungeonTheme.make_styled_btn("◎", DungeonTheme.TEXT_GOLD, 28)
 	_btn_center.custom_minimum_size = Vector2(28, 24)
 	_btn_center.pressed.connect(_center_on_player)
 	btn_row.add_child(_btn_center)
 
-	_btn_zoom_in = Button.new()
-	_btn_zoom_in.text = "+"
+	_btn_zoom_in = DungeonTheme.make_styled_btn("+", DungeonTheme.TEXT_SECONDARY, 28)
 	_btn_zoom_in.custom_minimum_size = Vector2(28, 24)
 	_btn_zoom_in.pressed.connect(_zoom_in)
 	btn_row.add_child(_btn_zoom_in)
@@ -108,7 +102,6 @@ func rebuild_from_state() -> void:
 		_canvas.queue_redraw()
 
 
-## Returns the number of explored (visited) rooms currently displayed.
 func get_explored_room_count() -> int:
 	var fs := GameSession.get_floor_state()
 	if fs == null:
@@ -121,17 +114,12 @@ func get_explored_room_count() -> int:
 	return count
 
 
-## Returns the grid position of the currently highlighted room.
 func get_current_room_pos() -> Vector2i:
 	var fs := GameSession.get_floor_state()
 	if fs == null:
 		return Vector2i.ZERO
 	return fs.current_pos
 
-
-# ------------------------------------------------------------------
-# Zoom / pan
-# ------------------------------------------------------------------
 
 func _zoom_in() -> void:
 	_zoom = minf(_zoom + ZOOM_STEP, MAX_ZOOM)
@@ -174,10 +162,6 @@ func _on_canvas_input(event: InputEvent) -> void:
 		_canvas.queue_redraw()
 
 
-# ------------------------------------------------------------------
-# Rendering
-# ------------------------------------------------------------------
-
 func _draw_minimap() -> void:
 	var fs := GameSession.get_floor_state()
 	if fs == null:
@@ -188,7 +172,6 @@ func _draw_minimap() -> void:
 	var gap := CELL_GAP * _zoom
 	var stride := cell + gap
 
-	## If pan has never been set, auto-center on player
 	if _pan_offset == Vector2.ZERO:
 		var center := _canvas.size / 2.0
 		_pan_offset = center - Vector2(fs.current_pos.x, -fs.current_pos.y) * stride
@@ -280,10 +263,6 @@ func _draw_exits(room: RoomState, pos: Vector2i, sx: float, sy: float,
 			Vector2(cx + dx + delta.x * line_len, cy + dy - delta.y * line_len),
 			COLOR_EXIT_LINE, 1.0 * _zoom)
 
-
-# ------------------------------------------------------------------
-# Simple glyph drawing helpers (no textures needed)
-# ------------------------------------------------------------------
 
 func _draw_skull(center: Vector2, s: float) -> void:
 	_canvas.draw_circle(center - Vector2(0, s * 0.15), s * 0.5, Color.WHITE)
