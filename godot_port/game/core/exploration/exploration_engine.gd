@@ -53,6 +53,7 @@ func _log_room_template_diagnostics() -> void:
 func start_floor(floor_index: int) -> RoomState:
 	floor = FloorState.new()
 	floor.floor_index = floor_index
+	state.floor = floor_index
 
 	## Python RNG call #1: rng.randint(6, 10)
 	floor.next_mini_boss_at = rng.rand_int(6, 10)
@@ -110,6 +111,8 @@ func descend_floor() -> RoomState:
 		logs.append("Cannot descend: boss not defeated or no stairs here.")
 		return null
 	floor.floor_index += 1
+	state.floor = floor.floor_index
+	state.purchased_upgrades_this_floor = {}
 	return start_floor(floor.floor_index)
 
 
