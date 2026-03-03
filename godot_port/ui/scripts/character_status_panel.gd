@@ -26,11 +26,15 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.07, 0.09, 0.11, 0.97)
+	bg.bg_color = Color(0.06, 0.07, 0.10, 0.97)
+	bg.border_color = Color(0.55, 0.40, 0.65)
+	bg.set_border_width_all(2)
+	bg.set_corner_radius_all(6)
+	bg.set_content_margin_all(16)
 	add_theme_stylebox_override("panel", bg)
 
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 6)
+	root.add_theme_constant_override("separation", 8)
 	add_child(root)
 
 	# Header
@@ -38,14 +42,15 @@ func _build_ui() -> void:
 	root.add_child(header)
 
 	var title := Label.new()
-	title.text = "=== CHARACTER STATUS ==="
+	title.text = "⚙ CHARACTER STATUS"
 	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(0.55, 0.40, 0.65))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 
 	_btn_close = Button.new()
 	_btn_close.text = "Close"
-	_btn_close.pressed.connect(func(): close_requested.emit(); visible = false)
+	_btn_close.pressed.connect(func(): close_requested.emit())
 	header.add_child(_btn_close)
 
 	# Tabs
@@ -83,7 +88,7 @@ func _build_ui() -> void:
 	_lore_codex_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_lore_codex_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if _lore_codex_panel.has_signal("close_requested"):
-		_lore_codex_panel.close_requested.connect(func(): close_requested.emit(); visible = false)
+		_lore_codex_panel.close_requested.connect(func(): close_requested.emit())
 	_lore_tab.add_child(_lore_codex_panel)
 
 

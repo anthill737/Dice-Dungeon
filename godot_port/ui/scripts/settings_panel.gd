@@ -119,7 +119,7 @@ func _build_ui() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.custom_minimum_size = Vector2(0, 40)
-	close_btn.pressed.connect(func(): close_requested.emit(); visible = false)
+	close_btn.pressed.connect(func(): close_requested.emit())
 	vbox.add_child(close_btn)
 
 

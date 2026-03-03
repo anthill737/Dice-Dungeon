@@ -1,18 +1,60 @@
 extends Control
-## Explorer Scene — core gameplay screen.
-## Displays room info, player stats, movement, action buttons, and adventure log.
-## Hosts embedded overlay panels for Combat, Inventory, Store, SaveLoad.
-## Toggle debug overlay with F3.
+## Explorer Scene — core gameplay screen (polished UI).
+## Layout: TopBar | Center (room+combat) | Right Sidebar (minimap+actions) | Bottom (log).
+## Hosts embedded overlay panels for Combat, Inventory, Store, SaveLoad,
+## CharacterStatus, Settings.  Toggle debug overlay with F3.
 
-# --- Info labels ---
+const FADE_DURATION := 0.15
+
+# --- Theme constants ---
+const FONT_HEADING_SIZE := 20
+const FONT_LABEL_SIZE := 14
+const FONT_BODY_SIZE := 13
+const FONT_SMALL_SIZE := 11
+const FONT_LOG_SIZE := 13
+const FONT_BUTTON_SIZE := 13
+
+const COLOR_BG_PRIMARY := Color(0.11, 0.07, 0.05)
+const COLOR_BG_SECONDARY := Color(0.14, 0.09, 0.06)
+const COLOR_BG_PANEL := Color(0.17, 0.11, 0.08)
+const COLOR_BG_HEADER := Color(0.09, 0.06, 0.04)
+const COLOR_BG_LOG := Color(0.08, 0.05, 0.03)
+
+const COLOR_GOLD := Color(0.83, 0.69, 0.22)
+const COLOR_BONE := Color(0.91, 0.86, 0.77)
+const COLOR_RED := Color(0.78, 0.33, 0.31)
+const COLOR_GREEN := Color(0.50, 0.68, 0.50)
+const COLOR_CYAN := Color(0.37, 0.65, 0.65)
+const COLOR_SECONDARY_TEXT := Color(0.66, 0.60, 0.52)
+
+const COLOR_BORDER := Color(0.55, 0.45, 0.33)
+const COLOR_BORDER_GOLD := Color(0.72, 0.58, 0.18)
+
+const HP_FULL := Color(0.50, 0.68, 0.50)
+const HP_MID := Color(0.83, 0.65, 0.22)
+const HP_LOW := Color(0.78, 0.33, 0.31)
+const HP_BG := Color(0.10, 0.06, 0.03)
+
+const COLOR_BTN_PRIMARY := Color(0.83, 0.69, 0.22)
+const COLOR_BTN_SECONDARY := Color(0.37, 0.65, 0.65)
+const COLOR_BTN_DISABLED := Color(0.29, 0.23, 0.17)
+const COLOR_BTN_HOVER := Color(0.94, 0.81, 0.35)
+const COLOR_BTN_PRESSED := Color(0.70, 0.55, 0.15)
+
+# --- Info widgets ---
 var _floor_label: Label
+var _room_pos_label: Label
 var _hp_label: Label
+var _hp_bar: ProgressBar
 var _gold_label: Label
 var _room_name_label: Label
+var _room_desc_label: Label
 var _room_flags_label: Label
 
 # --- Adventure log ---
 var _log_text: RichTextLabel
+var _typewriter_queue: Array = []
+var _typewriter_active: bool = false
 
 # --- Movement buttons ---
 var _btn_north: Button
@@ -30,6 +72,9 @@ var _btn_store: Button
 var _btn_rest: Button
 var _btn_save_load: Button
 var _btn_descend: Button
+var _btn_settings: Button
+var _btn_character: Button
+var _btn_pause: Button
 
 # --- Overlay panels ---
 var _combat_panel: Control
@@ -38,6 +83,9 @@ var _store_panel: Control
 var _save_load_panel: Control
 var _character_status_panel: Control
 var _settings_panel: Control
+
+# --- Overlay panel stack for Escape ordering ---
+var _panel_stack: Array[Control] = []
 
 # --- Debug overlay ---
 var _debug_panel: PanelContainer
@@ -63,105 +111,332 @@ func _ready() -> void:
 	_refresh_ui()
 
 
+# ==================================================================
+# UI CONSTRUCTION
+# ==================================================================
+
 func _build_ui() -> void:
+	# Full-rect background
 	var bg := ColorRect.new()
-	bg.color = Color(0.12, 0.08, 0.06)
+	bg.color = COLOR_BG_PRIMARY
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	var main_hbox := HBoxContainer.new()
-	main_hbox.name = "MainHBox"
-	main_hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	main_hbox.add_theme_constant_override("separation", 12)
-	add_child(main_hbox)
+	# Root vertical: TopBar, then HBox(center+right), then Bottom log
+	var root_vbox := VBoxContainer.new()
+	root_vbox.name = "RootVBox"
+	root_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root_vbox.set_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 0)
+	root_vbox.add_theme_constant_override("separation", 0)
+	add_child(root_vbox)
 
-	var left := VBoxContainer.new()
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.size_flags_stretch_ratio = 2.0
-	left.add_theme_constant_override("separation", 6)
-	main_hbox.add_child(left)
+	# --- TOP BAR ---
+	_build_top_bar(root_vbox)
 
+	# --- MIDDLE: center + right sidebar ---
+	var middle_hbox := HBoxContainer.new()
+	middle_hbox.name = "MiddleHBox"
+	middle_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	middle_hbox.add_theme_constant_override("separation", 0)
+	root_vbox.add_child(middle_hbox)
+
+	_build_center_panel(middle_hbox)
+	_build_right_sidebar(middle_hbox)
+
+	# --- BOTTOM: Adventure log ---
+	_build_adventure_log(root_vbox)
+
+
+func _build_top_bar(parent: Node) -> void:
+	var bar := PanelContainer.new()
+	bar.name = "TopBar"
+	var bar_style := StyleBoxFlat.new()
+	bar_style.bg_color = COLOR_BG_HEADER
+	bar_style.border_color = COLOR_BORDER_GOLD
+	bar_style.set_border_width_all(0)
+	bar_style.border_width_bottom = 2
+	bar_style.set_content_margin_all(8)
+	bar.add_theme_stylebox_override("panel", bar_style)
+	parent.add_child(bar)
+
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 16)
+	bar.add_child(hbox)
+
+	# Title
 	var title := Label.new()
-	title.text = "DICE DUNGEON — Explorer"
-	title.add_theme_font_size_override("font_size", 22)
-	left.add_child(title)
+	title.text = "⚔ DICE DUNGEON ⚔"
+	title.add_theme_font_size_override("font_size", FONT_HEADING_SIZE)
+	title.add_theme_color_override("font_color", COLOR_GOLD)
+	hbox.add_child(title)
 
-	_floor_label = _add_label(left, "Floor: 1 | Pos: (0,0)")
-	_hp_label = _add_label(left, "HP: 50/50")
-	_gold_label = _add_label(left, "Gold: 0")
-	_room_name_label = _add_label(left, "Room: ---")
-	_room_flags_label = _add_label(left, "")
+	# Separator
+	var sep := VSeparator.new()
+	hbox.add_child(sep)
+
+	# Floor label
+	_floor_label = Label.new()
+	_floor_label.text = "Floor 1"
+	_floor_label.add_theme_font_size_override("font_size", FONT_LABEL_SIZE)
+	_floor_label.add_theme_color_override("font_color", COLOR_CYAN)
+	hbox.add_child(_floor_label)
+
+	_room_pos_label = Label.new()
+	_room_pos_label.text = "(0,0)"
+	_room_pos_label.add_theme_font_size_override("font_size", FONT_SMALL_SIZE)
+	_room_pos_label.add_theme_color_override("font_color", COLOR_SECONDARY_TEXT)
+	hbox.add_child(_room_pos_label)
+
+	# Spacer
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(spacer)
+
+	# HP section
+	var hp_box := HBoxContainer.new()
+	hp_box.add_theme_constant_override("separation", 6)
+	hbox.add_child(hp_box)
+
+	var hp_icon := Label.new()
+	hp_icon.text = "♥"
+	hp_icon.add_theme_font_size_override("font_size", FONT_LABEL_SIZE)
+	hp_icon.add_theme_color_override("font_color", COLOR_RED)
+	hp_box.add_child(hp_icon)
+
+	_hp_bar = ProgressBar.new()
+	_hp_bar.custom_minimum_size = Vector2(140, 20)
+	_hp_bar.max_value = 50
+	_hp_bar.value = 50
+	_hp_bar.show_percentage = false
+	_style_hp_bar(_hp_bar, 1.0)
+	hp_box.add_child(_hp_bar)
+
+	_hp_label = Label.new()
+	_hp_label.text = "50/50"
+	_hp_label.add_theme_font_size_override("font_size", FONT_LABEL_SIZE)
+	_hp_label.add_theme_color_override("font_color", COLOR_BONE)
+	hp_box.add_child(_hp_label)
+
+	# Gold section
+	var gold_box := HBoxContainer.new()
+	gold_box.add_theme_constant_override("separation", 4)
+	hbox.add_child(gold_box)
+
+	var gold_icon := Label.new()
+	gold_icon.text = "◆"
+	gold_icon.add_theme_font_size_override("font_size", FONT_LABEL_SIZE)
+	gold_icon.add_theme_color_override("font_color", COLOR_GOLD)
+	gold_box.add_child(gold_icon)
+
+	_gold_label = Label.new()
+	_gold_label.text = "0"
+	_gold_label.add_theme_font_size_override("font_size", FONT_LABEL_SIZE)
+	_gold_label.add_theme_color_override("font_color", COLOR_GOLD)
+	gold_box.add_child(_gold_label)
+
+	# Top-right buttons
+	var btn_box := HBoxContainer.new()
+	btn_box.add_theme_constant_override("separation", 4)
+	hbox.add_child(btn_box)
+
+	_btn_character = _make_icon_btn("⚙", "Character")
+	_btn_character.pressed.connect(_on_character_status)
+	btn_box.add_child(_btn_character)
+
+	_btn_pause = _make_icon_btn("☰", "Menu")
+	_btn_pause.pressed.connect(_on_save_load)
+	btn_box.add_child(_btn_pause)
+
+	_btn_settings = _make_icon_btn("⚙", "Settings")
+	_btn_settings.modulate = Color(0.7, 0.7, 0.8)
+	_btn_settings.pressed.connect(_on_settings)
+	btn_box.add_child(_btn_settings)
+
+
+func _build_center_panel(parent: Node) -> void:
+	var center := VBoxContainer.new()
+	center.name = "CenterPanel"
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	center.size_flags_stretch_ratio = 3.0
+	center.add_theme_constant_override("separation", 0)
+	parent.add_child(center)
+
+	# Room info panel
+	var room_panel := PanelContainer.new()
+	room_panel.name = "RoomPanel"
+	var room_style := StyleBoxFlat.new()
+	room_style.bg_color = COLOR_BG_SECONDARY
+	room_style.border_color = COLOR_BORDER_GOLD
+	room_style.set_border_width_all(1)
+	room_style.set_content_margin_all(12)
+	room_style.content_margin_left = 16
+	room_style.content_margin_right = 16
+	room_panel.add_theme_stylebox_override("panel", room_style)
+	center.add_child(room_panel)
+
+	var room_vbox := VBoxContainer.new()
+	room_vbox.add_theme_constant_override("separation", 4)
+	room_panel.add_child(room_vbox)
+
+	_room_name_label = Label.new()
+	_room_name_label.text = "Room: ---"
+	_room_name_label.add_theme_font_size_override("font_size", 16)
+	_room_name_label.add_theme_color_override("font_color", COLOR_GOLD)
+	room_vbox.add_child(_room_name_label)
+
+	var room_sep := HSeparator.new()
+	room_sep.add_theme_stylebox_override("separator", _make_separator_style(COLOR_BORDER_GOLD))
+	room_vbox.add_child(room_sep)
+
+	_room_desc_label = Label.new()
+	_room_desc_label.text = ""
+	_room_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_room_desc_label.add_theme_font_size_override("font_size", FONT_BODY_SIZE)
+	_room_desc_label.add_theme_color_override("font_color", COLOR_BONE)
+	room_vbox.add_child(_room_desc_label)
+
+	_room_flags_label = Label.new()
+	_room_flags_label.text = ""
+	_room_flags_label.add_theme_font_size_override("font_size", FONT_SMALL_SIZE)
+	_room_flags_label.add_theme_color_override("font_color", COLOR_SECONDARY_TEXT)
+	room_vbox.add_child(_room_flags_label)
+
+	# Combat / action area (flexible space in center)
+	var action_spacer := Control.new()
+	action_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	center.add_child(action_spacer)
+
+
+func _build_right_sidebar(parent: Node) -> void:
+	var sidebar := PanelContainer.new()
+	sidebar.name = "RightSidebar"
+	var sb_style := StyleBoxFlat.new()
+	sb_style.bg_color = COLOR_BG_PANEL
+	sb_style.border_color = COLOR_BORDER
+	sb_style.border_width_left = 2
+	sb_style.set_content_margin_all(8)
+	sidebar.add_theme_stylebox_override("panel", sb_style)
+	sidebar.custom_minimum_size = Vector2(220, 0)
+	parent.add_child(sidebar)
+
+	var sidebar_vbox := VBoxContainer.new()
+	sidebar_vbox.add_theme_constant_override("separation", 8)
+	sidebar.add_child(sidebar_vbox)
+
+	# Minimap
+	_minimap_panel = _minimap_scene.instantiate()
+	_minimap_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sidebar_vbox.add_child(_minimap_panel)
+
+	# Movement header
+	var move_header := Label.new()
+	move_header.text = "MOVEMENT"
+	move_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	move_header.add_theme_font_size_override("font_size", FONT_SMALL_SIZE)
+	move_header.add_theme_color_override("font_color", COLOR_GOLD)
+	sidebar_vbox.add_child(move_header)
+
+	# Movement grid
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 2)
+	grid.add_theme_constant_override("v_separation", 2)
+	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	sidebar_vbox.add_child(grid)
+
+	grid.add_child(_spacer())
+	_btn_north = _make_move_btn("↑")
+	grid.add_child(_btn_north)
+	grid.add_child(_spacer())
+
+	_btn_west = _make_move_btn("←")
+	grid.add_child(_btn_west)
+	grid.add_child(_spacer())
+	_btn_east = _make_move_btn("→")
+	grid.add_child(_btn_east)
+
+	grid.add_child(_spacer())
+	_btn_south = _make_move_btn("↓")
+	grid.add_child(_btn_south)
+	grid.add_child(_spacer())
+
+	var wasd_hint := Label.new()
+	wasd_hint.text = "WASD / Arrows"
+	wasd_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	wasd_hint.add_theme_font_size_override("font_size", 10)
+	wasd_hint.add_theme_color_override("font_color", COLOR_SECONDARY_TEXT)
+	sidebar_vbox.add_child(wasd_hint)
+
+	# Actions header
+	var action_sep := HSeparator.new()
+	action_sep.add_theme_stylebox_override("separator", _make_separator_style(COLOR_BORDER))
+	sidebar_vbox.add_child(action_sep)
+
+	var action_header := Label.new()
+	action_header.text = "ACTIONS"
+	action_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	action_header.add_theme_font_size_override("font_size", FONT_SMALL_SIZE)
+	action_header.add_theme_color_override("font_color", COLOR_GOLD)
+	sidebar_vbox.add_child(action_header)
+
+	var actions := VBoxContainer.new()
+	actions.add_theme_constant_override("separation", 3)
+	sidebar_vbox.add_child(actions)
+
+	_btn_attack = _make_action_btn("⚔ Attack", COLOR_BTN_PRIMARY)
+	actions.add_child(_btn_attack)
+	_btn_flee = _make_action_btn("🏃 Flee", COLOR_RED)
+	actions.add_child(_btn_flee)
+	_btn_chest = _make_action_btn("📦 Open Chest", COLOR_GOLD)
+	actions.add_child(_btn_chest)
+	_btn_ground = _make_action_btn("🔍 Ground Items", COLOR_SECONDARY_TEXT)
+	actions.add_child(_btn_ground)
+	_btn_inventory = _make_action_btn("🎒 Inventory", COLOR_BTN_SECONDARY)
+	actions.add_child(_btn_inventory)
+	_btn_store = _make_action_btn("🏪 Store", COLOR_BTN_SECONDARY)
+	actions.add_child(_btn_store)
+	_btn_rest = _make_action_btn("💤 Rest", COLOR_GREEN)
+	actions.add_child(_btn_rest)
+	_btn_save_load = _make_action_btn("💾 Save/Load", COLOR_BTN_SECONDARY)
+	actions.add_child(_btn_save_load)
+	_btn_descend = _make_action_btn("⬇ Descend", COLOR_CYAN)
+	actions.add_child(_btn_descend)
+
+
+func _build_adventure_log(parent: Node) -> void:
+	var log_panel := PanelContainer.new()
+	log_panel.name = "LogPanel"
+	var log_style := StyleBoxFlat.new()
+	log_style.bg_color = COLOR_BG_LOG
+	log_style.border_color = COLOR_BORDER
+	log_style.border_width_top = 1
+	log_style.set_content_margin_all(6)
+	log_panel.add_theme_stylebox_override("panel", log_style)
+	log_panel.custom_minimum_size = Vector2(0, 160)
+	parent.add_child(log_panel)
+
+	var log_vbox := VBoxContainer.new()
+	log_vbox.add_theme_constant_override("separation", 2)
+	log_panel.add_child(log_vbox)
 
 	var log_header := Label.new()
 	log_header.text = "— Adventure Log —"
-	left.add_child(log_header)
+	log_header.add_theme_font_size_override("font_size", FONT_SMALL_SIZE)
+	log_header.add_theme_color_override("font_color", COLOR_GOLD)
+	log_vbox.add_child(log_header)
 
 	_log_text = RichTextLabel.new()
 	_log_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_log_text.bbcode_enabled = true
 	_log_text.scroll_following = true
-	left.add_child(_log_text)
+	_log_text.add_theme_font_size_override("normal_font_size", FONT_LOG_SIZE)
+	_log_text.add_theme_color_override("default_color", COLOR_BONE)
+	log_vbox.add_child(_log_text)
 
-	var right := VBoxContainer.new()
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.add_theme_constant_override("separation", 6)
-	main_hbox.add_child(right)
 
-	var move_header := Label.new()
-	move_header.text = "Movement"
-	right.add_child(move_header)
-
-	var grid := GridContainer.new()
-	grid.columns = 3
-	right.add_child(grid)
-
-	grid.add_child(_spacer())
-	_btn_north = _make_btn("N")
-	grid.add_child(_btn_north)
-	grid.add_child(_spacer())
-
-	_btn_west = _make_btn("W")
-	grid.add_child(_btn_west)
-	grid.add_child(_spacer())
-	_btn_east = _make_btn("E")
-	grid.add_child(_btn_east)
-
-	grid.add_child(_spacer())
-	_btn_south = _make_btn("S")
-	grid.add_child(_btn_south)
-	grid.add_child(_spacer())
-
-	var action_header := Label.new()
-	action_header.text = "Actions"
-	right.add_child(action_header)
-
-	var actions := VBoxContainer.new()
-	actions.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right.add_child(actions)
-
-	_btn_attack = _make_btn("Attack")
-	actions.add_child(_btn_attack)
-	_btn_flee = _make_btn("Flee")
-	actions.add_child(_btn_flee)
-	_btn_chest = _make_btn("Open Chest")
-	actions.add_child(_btn_chest)
-	_btn_ground = _make_btn("Ground Items")
-	actions.add_child(_btn_ground)
-	_btn_inventory = _make_btn("Inventory")
-	actions.add_child(_btn_inventory)
-	_btn_store = _make_btn("Store")
-	actions.add_child(_btn_store)
-	_btn_rest = _make_btn("Rest")
-	actions.add_child(_btn_rest)
-	_btn_save_load = _make_btn("Save/Load")
-	actions.add_child(_btn_save_load)
-	_btn_descend = _make_btn("Descend Stairs")
-	actions.add_child(_btn_descend)
-
-	_minimap_panel = _minimap_scene.instantiate()
-	_minimap_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right.add_child(_minimap_panel)
-
+# ==================================================================
+# DEBUG OVERLAY
+# ==================================================================
 
 func _build_debug_overlay() -> void:
 	_debug_panel = PanelContainer.new()
@@ -185,31 +460,45 @@ func _build_debug_overlay() -> void:
 	_debug_panel.add_child(_debug_label)
 
 
+# ==================================================================
+# PANEL INSTANTIATION
+# ==================================================================
+
 func _instantiate_panels() -> void:
 	_combat_panel = _combat_scene.instantiate()
 	_combat_panel.visible = false
+	_combat_panel.modulate.a = 0.0
 	add_child(_combat_panel)
 
 	_inventory_panel = _inventory_scene.instantiate()
 	_inventory_panel.visible = false
+	_inventory_panel.modulate.a = 0.0
 	add_child(_inventory_panel)
 
 	_store_panel = _store_scene.instantiate()
 	_store_panel.visible = false
+	_store_panel.modulate.a = 0.0
 	add_child(_store_panel)
 
 	_save_load_panel = _save_load_scene.instantiate()
 	_save_load_panel.visible = false
+	_save_load_panel.modulate.a = 0.0
 	add_child(_save_load_panel)
 
 	_character_status_panel = _character_status_scene.instantiate()
 	_character_status_panel.visible = false
+	_character_status_panel.modulate.a = 0.0
 	add_child(_character_status_panel)
 
 	_settings_panel = _settings_scene.instantiate()
 	_settings_panel.visible = false
+	_settings_panel.modulate.a = 0.0
 	add_child(_settings_panel)
 
+
+# ==================================================================
+# SIGNAL WIRING
+# ==================================================================
 
 func _connect_signals() -> void:
 	_btn_north.pressed.connect(_move.bind("N"))
@@ -234,32 +523,95 @@ func _connect_signals() -> void:
 	GameSession.combat_pending_changed.connect(_refresh_ui)
 
 	if _combat_panel.has_signal("close_requested"):
-		_combat_panel.close_requested.connect(func(): _combat_panel.visible = false)
+		_combat_panel.close_requested.connect(_on_combat_close_requested)
 	if _inventory_panel.has_signal("close_requested"):
-		_inventory_panel.close_requested.connect(func(): _inventory_panel.visible = false)
+		_inventory_panel.close_requested.connect(func(): _hide_panel(_inventory_panel))
 	if _store_panel.has_signal("close_requested"):
-		_store_panel.close_requested.connect(func(): _store_panel.visible = false)
+		_store_panel.close_requested.connect(func(): _hide_panel(_store_panel))
 	if _save_load_panel.has_signal("close_requested"):
-		_save_load_panel.close_requested.connect(func(): _save_load_panel.visible = false)
+		_save_load_panel.close_requested.connect(func(): _hide_panel(_save_load_panel))
 	if _character_status_panel.has_signal("close_requested"):
-		_character_status_panel.close_requested.connect(func(): _character_status_panel.visible = false)
+		_character_status_panel.close_requested.connect(func(): _hide_panel(_character_status_panel))
 	if _settings_panel.has_signal("close_requested"):
-		_settings_panel.close_requested.connect(func(): _settings_panel.visible = false)
+		_settings_panel.close_requested.connect(func(): _hide_panel(_settings_panel))
+
+
+# ==================================================================
+# PANEL SHOW / HIDE WITH FADE
+# ==================================================================
+
+func _show_panel(panel: Control) -> void:
+	if panel.visible:
+		return
+	panel.visible = true
+	panel.modulate.a = 0.0
+	var tween := create_tween()
+	tween.tween_property(panel, "modulate:a", 1.0, FADE_DURATION)
+	_panel_stack.erase(panel)
+	_panel_stack.push_back(panel)
+
+
+func _hide_panel(panel: Control) -> void:
+	if not panel.visible:
+		return
+	_panel_stack.erase(panel)
+	var tween := create_tween()
+	tween.tween_property(panel, "modulate:a", 0.0, FADE_DURATION)
+	tween.tween_callback(func(): panel.visible = false)
+
+
+func _close_topmost_panel() -> bool:
+	while not _panel_stack.is_empty():
+		var panel: Control = _panel_stack.pop_back()
+		if panel.visible:
+			if panel == _combat_panel and _is_combat_locking():
+				_panel_stack.push_back(panel)
+				return true
+			_hide_panel(panel)
+			return true
+	return false
+
+
+func _is_combat_locking() -> bool:
+	return GameSession.is_pending_choice() or GameSession.is_combat_active()
+
+
+# ==================================================================
+# COMBAT LIFECYCLE
+# ==================================================================
+
+func _on_combat_close_requested() -> void:
+	if _is_combat_locking():
+		return
+	_hide_panel(_combat_panel)
 
 
 func _on_combat_started() -> void:
-	_combat_panel.visible = true
+	_show_panel(_combat_panel)
 	if _combat_panel.has_method("refresh"):
 		_combat_panel.refresh()
 
 
 func _on_combat_ended() -> void:
-	_combat_panel.visible = false
+	_hide_panel(_combat_panel)
 	_refresh_ui()
 
 
+# ==================================================================
+# INPUT
+# ==================================================================
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+
+	if event.is_action_pressed("ui_cancel"):
+		if not _close_topmost_panel():
+			pass
+		get_viewport().set_input_as_handled()
+		return
+
+	if _any_panel_open():
 		return
 
 	if event.is_action_pressed("move_north"):
@@ -278,8 +630,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		_on_save_load()
 	elif event.is_action_pressed("rest"):
 		_on_rest()
-	elif event.is_action_pressed("ui_cancel"):
-		_close_all_panels()
 	elif event.keycode == KEY_F3:
 		_debug_visible = not _debug_visible
 		_debug_panel.visible = _debug_visible
@@ -288,24 +638,24 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_settings() -> void:
-	_settings_panel.visible = true
+	_show_panel(_settings_panel)
 	if _settings_panel.has_method("refresh"):
 		_settings_panel.refresh()
 
 
 func _close_all_panels() -> void:
-	if _combat_panel != null:
-		_combat_panel.visible = false
-	if _inventory_panel != null:
-		_inventory_panel.visible = false
-	if _store_panel != null:
-		_store_panel.visible = false
-	if _save_load_panel != null:
-		_save_load_panel.visible = false
-	if _character_status_panel != null:
-		_character_status_panel.visible = false
-	if _settings_panel != null:
-		_settings_panel.visible = false
+	var combat_locked := _is_combat_locking()
+	for panel in [_combat_panel, _inventory_panel, _store_panel,
+				  _save_load_panel, _character_status_panel, _settings_panel]:
+		if panel == null:
+			continue
+		if panel == _combat_panel and combat_locked:
+			continue
+		panel.visible = false
+		panel.modulate.a = 0.0
+	_panel_stack.clear()
+	if combat_locked and _combat_panel != null and _combat_panel.visible:
+		_panel_stack.push_back(_combat_panel)
 
 
 # -------------------------------------------------------------------
@@ -335,7 +685,7 @@ func _on_attack() -> void:
 	if room.has_combat and not room.enemies_defeated:
 		if GameSession.combat == null:
 			GameSession.start_combat_for_room(room)
-		_combat_panel.visible = true
+		_show_panel(_combat_panel)
 		if _combat_panel.has_method("refresh"):
 			_combat_panel.refresh()
 
@@ -344,9 +694,7 @@ func _on_flee() -> void:
 	if GameSession.is_pending_choice():
 		GameSession.attempt_flee_pending()
 		return
-
-	if GameSession.combat != null:
-		GameSession.flee_from_combat()
+	# Flee from active combat is disabled by design (victory or defeat only)
 
 
 func _on_chest() -> void:
@@ -384,7 +732,7 @@ func _on_ground_items() -> void:
 
 
 func _on_inventory() -> void:
-	_inventory_panel.visible = true
+	_show_panel(_inventory_panel)
 	if _inventory_panel.has_method("refresh"):
 		_inventory_panel.refresh()
 
@@ -394,7 +742,7 @@ func _on_store() -> void:
 	if room == null or not room.has_store:
 		_append_log("No store here.")
 		return
-	_store_panel.visible = true
+	_show_panel(_store_panel)
 	if _store_panel.has_method("refresh"):
 		_store_panel.refresh()
 
@@ -404,13 +752,13 @@ func _on_rest() -> void:
 
 
 func _on_character_status() -> void:
-	_character_status_panel.visible = true
+	_show_panel(_character_status_panel)
 	if _character_status_panel.has_method("refresh"):
 		_character_status_panel.refresh()
 
 
 func _on_save_load() -> void:
-	_save_load_panel.visible = true
+	_show_panel(_save_load_panel)
 	if _save_load_panel.has_method("refresh"):
 		_save_load_panel.refresh()
 
@@ -434,30 +782,42 @@ func _refresh_ui() -> void:
 		return
 
 	var pos := fs.current_pos if fs != null else Vector2i.ZERO
-	_floor_label.text = "Floor: %d | Pos: (%d, %d)" % [gs.floor, pos.x, pos.y]
-	_hp_label.text = "HP: %d / %d" % [gs.health, gs.max_health]
-	_gold_label.text = "Gold: %d" % gs.gold
+	_floor_label.text = "Floor %d" % gs.floor
+	_room_pos_label.text = "(%d, %d)" % [pos.x, pos.y]
+	_hp_label.text = "%d / %d" % [gs.health, gs.max_health]
+	_gold_label.text = "%d" % gs.gold
+
+	# Update HP bar
+	_hp_bar.max_value = gs.max_health
+	_hp_bar.value = gs.health
+	var hp_ratio: float = float(gs.health) / float(gs.max_health) if gs.max_health > 0 else 0.0
+	_style_hp_bar(_hp_bar, hp_ratio)
 
 	if room != null:
-		_room_name_label.text = "Room: %s" % room.data.get("name", "Unknown")
+		_room_name_label.text = room.data.get("name", "Unknown Room")
+		var desc: String = room.data.get("description", "")
+		if desc.is_empty():
+			desc = room.data.get("flavor", "")
+		_room_desc_label.text = desc
 		var flags: PackedStringArray = []
 		if room.has_combat and not room.enemies_defeated and not room.combat_escaped:
-			flags.append("COMBAT")
+			flags.append("⚔ COMBAT")
 		if room.has_chest and not room.chest_looted:
-			flags.append("CHEST")
+			flags.append("📦 CHEST")
 		if room.ground_items.size() > 0 or room.ground_gold > 0:
-			flags.append("GROUND ITEMS")
+			flags.append("🔍 GROUND ITEMS")
 		if room.has_store:
-			flags.append("STORE")
+			flags.append("🏪 STORE")
 		if room.has_stairs:
-			flags.append("STAIRS")
+			flags.append("⬇ STAIRS")
 		if room.is_mini_boss_room:
-			flags.append("MINI-BOSS")
+			flags.append("⚠ MINI-BOSS")
 		if room.is_boss_room:
-			flags.append("BOSS")
-		_room_flags_label.text = " | ".join(flags) if not flags.is_empty() else "(safe)"
+			flags.append("☠ BOSS")
+		_room_flags_label.text = "  ".join(flags) if not flags.is_empty() else "✓ Safe"
 	else:
-		_room_name_label.text = "Room: ---"
+		_room_name_label.text = "---"
+		_room_desc_label.text = ""
 		_room_flags_label.text = ""
 
 	_update_button_visibility(room)
@@ -476,9 +836,13 @@ func _update_button_visibility(room: RoomState) -> void:
 	_btn_south.disabled = blocking
 	_btn_east.disabled = blocking
 	_btn_west.disabled = blocking
+	_update_move_btn_style(_btn_north)
+	_update_move_btn_style(_btn_south)
+	_update_move_btn_style(_btn_east)
+	_update_move_btn_style(_btn_west)
 
 	_btn_attack.visible = show_combat_buttons
-	_btn_flee.visible = show_combat_buttons
+	_btn_flee.visible = pending and not active
 	_btn_chest.visible = room != null and room.has_chest and not room.chest_looted and not blocking
 	_btn_ground.visible = room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 or (not room.ground_container.is_empty() and not room.container_searched)) and not blocking
 	_btn_store.visible = room != null and room.has_store and not blocking
@@ -545,12 +909,58 @@ func _refresh_debug() -> void:
 
 
 # -------------------------------------------------------------------
-# Log
+# Log (with optional typewriter effect)
 # -------------------------------------------------------------------
 
 func _append_log(msg: String) -> void:
-	if _log_text != null:
+	if _log_text == null:
+		return
+
+	var sm = get_node_or_null("/root/SettingsManager")
+	var delay_ms: int = 0
+	if sm != null and sm.has_method("get_text_speed_delay"):
+		delay_ms = sm.get_text_speed_delay()
+
+	if delay_ms <= 0:
 		_log_text.append_text(msg + "\n")
+		return
+
+	_typewriter_queue.append(msg)
+	if not _typewriter_active:
+		_process_typewriter()
+
+
+func _process_typewriter() -> void:
+	if _typewriter_queue.is_empty():
+		_typewriter_active = false
+		return
+	_typewriter_active = true
+	var msg: String = _typewriter_queue.pop_front()
+	_typewrite_chars(msg, 0)
+
+
+func _typewrite_chars(msg: String, idx: int) -> void:
+	if _log_text == null:
+		_typewriter_active = false
+		return
+	if idx >= msg.length():
+		_log_text.append_text("\n")
+		_process_typewriter()
+		return
+
+	_log_text.append_text(msg[idx])
+
+	var sm = get_node_or_null("/root/SettingsManager")
+	var delay_ms: int = 13
+	if sm != null and sm.has_method("get_text_speed_delay"):
+		delay_ms = sm.get_text_speed_delay()
+	if delay_ms <= 0:
+		_log_text.append_text(msg.substr(idx + 1) + "\n")
+		_process_typewriter()
+		return
+
+	get_tree().create_timer(float(delay_ms) / 1000.0).timeout.connect(
+		_typewrite_chars.bind(msg, idx + 1))
 
 
 # -------------------------------------------------------------------
@@ -560,6 +970,8 @@ func _append_log(msg: String) -> void:
 func _add_label(parent: Node, text: String) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", FONT_BODY_SIZE)
+	lbl.add_theme_color_override("font_color", COLOR_BONE)
 	parent.add_child(lbl)
 	return lbl
 
@@ -571,7 +983,147 @@ func _make_btn(text: String) -> Button:
 	return btn
 
 
+func _make_icon_btn(icon_text: String, tooltip: String) -> Button:
+	var btn := Button.new()
+	btn.text = icon_text
+	btn.tooltip_text = tooltip
+	btn.custom_minimum_size = Vector2(32, 28)
+	btn.add_theme_font_size_override("font_size", FONT_LABEL_SIZE)
+
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = COLOR_BG_PANEL
+	normal.set_corner_radius_all(4)
+	normal.set_content_margin_all(4)
+	btn.add_theme_stylebox_override("normal", normal)
+
+	var hover := StyleBoxFlat.new()
+	hover.bg_color = COLOR_BG_PANEL.lightened(0.15)
+	hover.set_corner_radius_all(4)
+	hover.set_content_margin_all(4)
+	btn.add_theme_stylebox_override("hover", hover)
+
+	var pressed := StyleBoxFlat.new()
+	pressed.bg_color = COLOR_BG_PANEL.darkened(0.1)
+	pressed.set_corner_radius_all(4)
+	pressed.set_content_margin_all(4)
+	btn.add_theme_stylebox_override("pressed", pressed)
+
+	return btn
+
+
+func _make_move_btn(text: String) -> Button:
+	var btn := Button.new()
+	btn.text = text
+	btn.custom_minimum_size = Vector2(40, 32)
+	btn.add_theme_font_size_override("font_size", FONT_LABEL_SIZE)
+
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = COLOR_BTN_PRIMARY
+	normal.set_corner_radius_all(4)
+	normal.set_content_margin_all(2)
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_color_override("font_color", Color.BLACK)
+
+	var hover := StyleBoxFlat.new()
+	hover.bg_color = COLOR_BTN_HOVER
+	hover.set_corner_radius_all(4)
+	hover.set_content_margin_all(2)
+	btn.add_theme_stylebox_override("hover", hover)
+
+	var pressed := StyleBoxFlat.new()
+	pressed.bg_color = COLOR_BTN_PRESSED
+	pressed.set_corner_radius_all(4)
+	pressed.set_content_margin_all(2)
+	btn.add_theme_stylebox_override("pressed", pressed)
+
+	var disabled := StyleBoxFlat.new()
+	disabled.bg_color = COLOR_BTN_DISABLED
+	disabled.set_corner_radius_all(4)
+	disabled.set_content_margin_all(2)
+	btn.add_theme_stylebox_override("disabled", disabled)
+	btn.add_theme_color_override("font_disabled_color", Color(0.4, 0.35, 0.3))
+
+	return btn
+
+
+func _make_action_btn(text: String, accent: Color) -> Button:
+	var btn := Button.new()
+	btn.text = text
+	btn.custom_minimum_size = Vector2(0, 28)
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.add_theme_font_size_override("font_size", FONT_BUTTON_SIZE)
+
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = accent.darkened(0.6)
+	normal.set_corner_radius_all(3)
+	normal.border_color = accent.darkened(0.2)
+	normal.set_border_width_all(1)
+	normal.set_content_margin_all(4)
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_color_override("font_color", accent.lightened(0.3))
+
+	var hover := StyleBoxFlat.new()
+	hover.bg_color = accent.darkened(0.4)
+	hover.set_corner_radius_all(3)
+	hover.border_color = accent
+	hover.set_border_width_all(1)
+	hover.set_content_margin_all(4)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_color_override("font_hover_color", Color.WHITE)
+
+	var pressed := StyleBoxFlat.new()
+	pressed.bg_color = accent.darkened(0.5)
+	pressed.set_corner_radius_all(3)
+	pressed.set_content_margin_all(4)
+	btn.add_theme_stylebox_override("pressed", pressed)
+
+	var disabled := StyleBoxFlat.new()
+	disabled.bg_color = COLOR_BTN_DISABLED
+	disabled.set_corner_radius_all(3)
+	disabled.set_content_margin_all(4)
+	btn.add_theme_stylebox_override("disabled", disabled)
+	btn.add_theme_color_override("font_disabled_color", Color(0.4, 0.35, 0.3))
+
+	return btn
+
+
+func _update_move_btn_style(btn: Button) -> void:
+	if btn.disabled:
+		btn.add_theme_color_override("font_color", Color(0.4, 0.35, 0.3))
+	else:
+		btn.add_theme_color_override("font_color", Color.BLACK)
+
+
+func _style_hp_bar(bar: ProgressBar, ratio: float) -> void:
+	var fill_color: Color
+	if ratio > 0.6:
+		fill_color = HP_FULL
+	elif ratio > 0.3:
+		fill_color = HP_MID
+	else:
+		fill_color = HP_LOW
+
+	var fill_style := StyleBoxFlat.new()
+	fill_style.bg_color = fill_color
+	fill_style.set_corner_radius_all(3)
+	bar.add_theme_stylebox_override("fill", fill_style)
+
+	var bg_style := StyleBoxFlat.new()
+	bg_style.bg_color = HP_BG
+	bg_style.set_corner_radius_all(3)
+	bg_style.border_color = COLOR_BORDER
+	bg_style.set_border_width_all(1)
+	bar.add_theme_stylebox_override("background", bg_style)
+
+
+func _make_separator_style(color: Color) -> StyleBoxLine:
+	var s := StyleBoxLine.new()
+	s.color = color
+	s.thickness = 1
+	return s
+
+
 func _spacer() -> Control:
 	var c := Control.new()
-	c.custom_minimum_size = Vector2(100, 32)
+	c.custom_minimum_size = Vector2(40, 32)
 	return c
