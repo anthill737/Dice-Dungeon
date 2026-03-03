@@ -1,5 +1,6 @@
 extends PanelContainer
-## Combat Panel — shows dice, enemy list, and combat actions.
+## Combat Panel — shows dice, enemy list, HP bars, and combat actions.
+## Mirrors Python adventure mode combat layout.
 ## All dice/combat logic delegated to CombatEngine via GameSession.
 
 signal close_requested()
@@ -10,12 +11,23 @@ var _lock_buttons: Array[Button] = []
 var _enemy_list: ItemList
 var _status_label: Label
 var _rolls_label: Label
+var _damage_preview_label: Label
 var _result_label: Label
+var _player_hp_bar: ProgressBar
+var _player_hp_label: Label
+var _enemy_hp_bar: ProgressBar
+var _enemy_hp_label: Label
 var _btn_roll: Button
 var _btn_attack: Button
 var _btn_flee: Button
 var _btn_close: Button
 var _log_text: RichTextLabel
+var _dice_container: HBoxContainer
+var _target_label: Label
+
+const COMBAT_ROLL_COLOR := Color(0.31, 0.80, 0.77)  # #4ecdc4
+const COMBAT_FLEE_COLOR := Color(0.95, 0.61, 0.07)   # #f39c12
+const COMBAT_ATTACK_COLOR := Color(0.91, 0.30, 0.24)  # #e74c3c
 
 
 func _ready() -> void:
@@ -31,7 +43,7 @@ func _build_ui() -> void:
 	add_theme_stylebox_override("panel", bg)
 
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 10)
+	root.add_theme_constant_override("separation", 8)
 	add_child(root)
 
 	# Title
@@ -41,14 +53,72 @@ func _build_ui() -> void:
 
 	root.add_child(DungeonTheme.make_separator(DungeonTheme.COMBAT_ACCENT))
 
-	# Enemy section
+	# --- Player HP section ---
+	var player_section := HBoxContainer.new()
+	player_section.add_theme_constant_override("separation", 8)
+	root.add_child(player_section)
+
+	var player_lbl := Label.new()
+	player_lbl.text = "Player HP:"
+	player_lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
+	player_lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_CYAN)
+	player_section.add_child(player_lbl)
+
+	_player_hp_bar = ProgressBar.new()
+	_player_hp_bar.name = "PlayerHPBar"
+	_player_hp_bar.custom_minimum_size = Vector2(200, 20)
+	_player_hp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_player_hp_bar.max_value = 100
+	_player_hp_bar.value = 100
+	_player_hp_bar.show_percentage = false
+	DungeonTheme.style_hp_bar(_player_hp_bar, 1.0)
+	player_section.add_child(_player_hp_bar)
+
+	_player_hp_label = Label.new()
+	_player_hp_label.text = "50/50"
+	_player_hp_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
+	_player_hp_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
+	player_section.add_child(_player_hp_label)
+
+	root.add_child(DungeonTheme.make_separator(DungeonTheme.BORDER))
+
+	# Enemy section header
 	var enemy_header := DungeonTheme.make_header(
 		"Enemies", DungeonTheme.TEXT_GOLD, DungeonTheme.FONT_LABEL)
 	enemy_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	root.add_child(enemy_header)
 
 	_enemy_list = DungeonTheme.make_item_list(90)
+	_enemy_list.name = "EnemyList"
+	_enemy_list.item_selected.connect(_on_enemy_selected)
 	root.add_child(_enemy_list)
+
+	# Enemy HP bar for selected enemy
+	var enemy_hp_section := HBoxContainer.new()
+	enemy_hp_section.add_theme_constant_override("separation", 8)
+	root.add_child(enemy_hp_section)
+
+	var enemy_hp_lbl := Label.new()
+	enemy_hp_lbl.text = "Enemy HP:"
+	enemy_hp_lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	enemy_hp_lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_RED)
+	enemy_hp_section.add_child(enemy_hp_lbl)
+
+	_enemy_hp_bar = ProgressBar.new()
+	_enemy_hp_bar.name = "EnemyHPBar"
+	_enemy_hp_bar.custom_minimum_size = Vector2(180, 16)
+	_enemy_hp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_enemy_hp_bar.max_value = 100
+	_enemy_hp_bar.value = 100
+	_enemy_hp_bar.show_percentage = false
+	DungeonTheme.style_hp_bar(_enemy_hp_bar, 1.0)
+	enemy_hp_section.add_child(_enemy_hp_bar)
+
+	_enemy_hp_label = Label.new()
+	_enemy_hp_label.text = ""
+	_enemy_hp_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	_enemy_hp_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
+	enemy_hp_section.add_child(_enemy_hp_label)
 
 	_status_label = Label.new()
 	_status_label.text = "Statuses: none"
@@ -63,19 +133,37 @@ func _build_ui() -> void:
 		"Your Dice", DungeonTheme.TEXT_GOLD, DungeonTheme.FONT_LABEL)
 	root.add_child(dice_header)
 
-	# Dice display — larger cells
-	var dice_hbox := HBoxContainer.new()
-	dice_hbox.add_theme_constant_override("separation", 12)
-	dice_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	root.add_child(dice_hbox)
+	# Rolls remaining (above dice, matching Python)
+	_rolls_label = Label.new()
+	_rolls_label.name = "RollsLabel"
+	_rolls_label.text = "Rolls Remaining: 3/3"
+	_rolls_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_rolls_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
+	_rolls_label.add_theme_color_override("font_color", DungeonTheme.TEXT_CYAN)
+	root.add_child(_rolls_label)
+
+	# Damage preview (gold, matching Python)
+	_damage_preview_label = Label.new()
+	_damage_preview_label.name = "DamagePreviewLabel"
+	_damage_preview_label.text = ""
+	_damage_preview_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_damage_preview_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
+	_damage_preview_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
+	root.add_child(_damage_preview_label)
+
+	# Dice display — 72×72 cells matching Python
+	_dice_container = HBoxContainer.new()
+	_dice_container.name = "DiceContainer"
+	_dice_container.add_theme_constant_override("separation", 12)
+	_dice_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	root.add_child(_dice_container)
 
 	for i in 5:
 		var vbox := VBoxContainer.new()
 		vbox.add_theme_constant_override("separation", 4)
 
 		var die_panel := PanelContainer.new()
-		die_panel.custom_minimum_size = Vector2(
-			DungeonTheme.DICE_CELL_SIZE, DungeonTheme.DICE_CELL_SIZE)
+		die_panel.custom_minimum_size = Vector2(72, 72)
 		var die_style := StyleBoxFlat.new()
 		die_style.bg_color = DungeonTheme.DICE_BG
 		die_style.border_color = DungeonTheme.DICE_UNLOCKED_BORDER
@@ -105,30 +193,31 @@ func _build_ui() -> void:
 		_lock_buttons.append(lock_btn)
 		vbox.add_child(lock_btn)
 
-		dice_hbox.add_child(vbox)
+		_dice_container.add_child(vbox)
 
-	_rolls_label = Label.new()
-	_rolls_label.text = "Rolls left: 3"
-	_rolls_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_rolls_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
-	_rolls_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
-	root.add_child(_rolls_label)
+	# Target selection label (for multi-enemy)
+	_target_label = Label.new()
+	_target_label.text = ""
+	_target_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_target_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	_target_label.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
+	root.add_child(_target_label)
 
-	# Action buttons
+	# Action buttons — colors matching Python
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 10)
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	root.add_child(btn_row)
 
-	_btn_roll = DungeonTheme.make_styled_btn("Roll Dice", DungeonTheme.TEXT_GOLD)
+	_btn_roll = DungeonTheme.make_styled_btn("Roll Dice", COMBAT_ROLL_COLOR)
 	_btn_roll.pressed.connect(_on_roll)
 	btn_row.add_child(_btn_roll)
 
-	_btn_attack = DungeonTheme.make_styled_btn("Attack", DungeonTheme.COMBAT_ACCENT)
+	_btn_attack = DungeonTheme.make_styled_btn("ATTACK!", COMBAT_ATTACK_COLOR)
 	_btn_attack.pressed.connect(_on_attack)
 	btn_row.add_child(_btn_attack)
 
-	_btn_flee = DungeonTheme.make_styled_btn("Flee", DungeonTheme.TEXT_CYAN)
+	_btn_flee = DungeonTheme.make_styled_btn("Flee", COMBAT_FLEE_COLOR)
 	_btn_flee.pressed.connect(_on_flee)
 	btn_row.add_child(_btn_flee)
 
@@ -146,6 +235,7 @@ func _build_ui() -> void:
 
 	# Combat log
 	_log_text = RichTextLabel.new()
+	_log_text.name = "CombatLog"
 	_log_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_log_text.bbcode_enabled = true
 	_log_text.scroll_following = true
@@ -160,6 +250,30 @@ func _on_state_changed() -> void:
 	refresh()
 
 
+func _on_enemy_selected(_index: int) -> void:
+	_refresh_enemy_hp_bar()
+
+
+func _refresh_enemy_hp_bar() -> void:
+	var ce := GameSession.combat
+	if ce == null:
+		_enemy_hp_bar.value = 0
+		_enemy_hp_label.text = ""
+		return
+	var alive := ce.get_alive_enemies()
+	var selected := _enemy_list.get_selected_items()
+	if selected.is_empty() or selected[0] >= alive.size():
+		_enemy_hp_bar.value = 0
+		_enemy_hp_label.text = ""
+		return
+	var enemy = alive[selected[0]]
+	var ratio: float = enemy.hp_fraction()
+	_enemy_hp_bar.max_value = enemy.max_health
+	_enemy_hp_bar.value = enemy.health
+	_enemy_hp_label.text = "%d/%d (%d%%)" % [enemy.health, enemy.max_health, int(ratio * 100)]
+	DungeonTheme.style_hp_bar(_enemy_hp_bar, ratio)
+
+
 func refresh() -> void:
 	var ce := GameSession.combat
 	if ce == null:
@@ -167,6 +281,15 @@ func refresh() -> void:
 		return
 
 	_result_label.text = ""
+
+	# Player HP
+	var gs := GameSession.game_state
+	if gs != null:
+		var hp_ratio: float = float(gs.health) / float(gs.max_health) if gs.max_health > 0 else 0.0
+		_player_hp_bar.max_value = gs.max_health
+		_player_hp_bar.value = gs.health
+		_player_hp_label.text = "%d/%d" % [gs.health, gs.max_health]
+		DungeonTheme.style_hp_bar(_player_hp_bar, hp_ratio)
 
 	var dice := ce.dice
 	for i in 5:
@@ -197,7 +320,20 @@ func refresh() -> void:
 			_lock_buttons[i].visible = false
 			_dice_panels[i].visible = false
 
-	_rolls_label.text = "Rolls left: %d" % dice.rolls_left
+	_rolls_label.text = "Rolls Remaining: %d/%d" % [dice.rolls_left, dice.max_rolls]
+
+	# Damage preview (matching Python)
+	if dice.has_rolled():
+		var base := dice.calc_base_damage()
+		var combo := dice.calc_combo_bonus()
+		var total := dice.calc_total_damage(gs.multiplier if gs != null else 1.0,
+			gs.damage_bonus if gs != null else 0)
+		if combo > 0:
+			_damage_preview_label.text = "Damage Preview: %d (base %d + combo %d)" % [total, base, combo]
+		else:
+			_damage_preview_label.text = "Damage Preview: %d" % total
+	else:
+		_damage_preview_label.text = ""
 
 	# Enemy list
 	_enemy_list.clear()
@@ -208,6 +344,14 @@ func refresh() -> void:
 			enemy.name, enemy.health, enemy.max_health, hp_pct])
 	if not alive.is_empty() and _enemy_list.is_anything_selected() == false:
 		_enemy_list.select(0)
+
+	# Target selection label for multi-enemy
+	if alive.size() > 1:
+		_target_label.text = "Select Target (click enemy above)"
+	else:
+		_target_label.text = ""
+
+	_refresh_enemy_hp_bar()
 
 	# Status effects
 	var statuses: Array = GameSession.game_state.flags.get("statuses", [])
