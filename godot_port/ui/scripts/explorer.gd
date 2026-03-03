@@ -1,8 +1,8 @@
 extends Control
 ## Explorer Scene — core gameplay screen (polished UI).
 ## Layout: TopBar | Center (room+combat) | Right Sidebar (minimap+actions) | Bottom (log).
-## Hosts embedded overlay panels for Combat, Inventory, Store, SaveLoad,
-## CharacterStatus, Settings.  Toggle debug overlay with F3.
+## Hosts embedded overlay panels via MenuOverlayManager for Combat, Inventory,
+## Store, SaveLoad, CharacterStatus, LoreCodex, Settings, Pause.
 
 # --- Info widgets ---
 var _floor_label: Label
@@ -33,22 +33,23 @@ var _btn_ground: Button
 var _btn_inventory: Button
 var _btn_store: Button
 var _btn_rest: Button
-var _btn_save_load: Button
 var _btn_descend: Button
 var _btn_settings: Button
 var _btn_character: Button
 var _btn_pause: Button
 
-# --- Overlay panels ---
+# --- Overlay panels (kept as refs for refresh/gating) ---
 var _combat_panel: Control
 var _inventory_panel: Control
 var _store_panel: Control
 var _save_load_panel: Control
 var _character_status_panel: Control
 var _settings_panel: Control
+var _lore_codex_panel: Control
+var _pause_menu: Control
 
-# --- Overlay panel stack for Escape ordering ---
-var _panel_stack: Array[Control] = []
+# --- Overlay manager ---
+var _overlay_manager  # MenuOverlayManager
 
 # --- Debug overlay ---
 var _debug_panel: PanelContainer
@@ -64,12 +65,14 @@ var _save_load_scene := preload("res://ui/scenes/SaveLoadPanel.tscn")
 var _minimap_scene := preload("res://ui/scenes/MinimapPanel.tscn")
 var _character_status_scene := preload("res://ui/scenes/CharacterStatusPanel.tscn")
 var _settings_scene := preload("res://ui/scenes/SettingsPanel.tscn")
+var _lore_codex_scene := preload("res://ui/scenes/LoreCodexPanel.tscn")
+var _pause_menu_scene := preload("res://ui/scenes/PauseMenu.tscn")
 
 
 func _ready() -> void:
 	_build_ui()
 	_build_debug_overlay()
-	_instantiate_panels()
+	_setup_overlay_manager()
 	_connect_signals()
 	_refresh_ui()
 
@@ -146,7 +149,6 @@ func _build_top_bar(parent: Node) -> void:
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hbox.add_child(spacer)
 
-	# HP section
 	var hp_box := HBoxContainer.new()
 	hp_box.add_theme_constant_override("separation", 6)
 	hbox.add_child(hp_box)
@@ -171,7 +173,6 @@ func _build_top_bar(parent: Node) -> void:
 	_hp_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
 	hp_box.add_child(_hp_label)
 
-	# Gold section
 	var gold_box := HBoxContainer.new()
 	gold_box.add_theme_constant_override("separation", 4)
 	hbox.add_child(gold_box)
@@ -188,7 +189,6 @@ func _build_top_bar(parent: Node) -> void:
 	_gold_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	gold_box.add_child(_gold_label)
 
-	# Top-right buttons
 	var btn_box := HBoxContainer.new()
 	btn_box.add_theme_constant_override("separation", 4)
 	hbox.add_child(btn_box)
@@ -198,7 +198,7 @@ func _build_top_bar(parent: Node) -> void:
 	btn_box.add_child(_btn_character)
 
 	_btn_pause = _make_icon_btn("☰", "Menu")
-	_btn_pause.pressed.connect(_on_save_load)
+	_btn_pause.pressed.connect(_on_pause)
 	btn_box.add_child(_btn_pause)
 
 	_btn_settings = _make_icon_btn("⚙", "Settings")
@@ -343,8 +343,6 @@ func _build_right_sidebar(parent: Node) -> void:
 	actions.add_child(_btn_store)
 	_btn_rest = _make_action_btn("💤 Rest", DungeonTheme.TEXT_GREEN)
 	actions.add_child(_btn_rest)
-	_btn_save_load = _make_action_btn("💾 Save/Load", DungeonTheme.BTN_SECONDARY)
-	actions.add_child(_btn_save_load)
 	_btn_descend = _make_action_btn("⬇ Descend", DungeonTheme.TEXT_CYAN)
 	actions.add_child(_btn_descend)
 
@@ -407,39 +405,47 @@ func _build_debug_overlay() -> void:
 
 
 # ==================================================================
-# PANEL INSTANTIATION
+# OVERLAY MANAGER SETUP
 # ==================================================================
 
-func _instantiate_panels() -> void:
+func _setup_overlay_manager() -> void:
+	var ManagerScript := preload("res://ui/scripts/menu_overlay_manager.gd")
+	_overlay_manager = ManagerScript.new()
+	_overlay_manager.name = "MenuOverlayManager"
+	add_child(_overlay_manager)
+
+	# Instantiate content panels
 	_combat_panel = _combat_scene.instantiate()
-	_combat_panel.visible = false
-	_combat_panel.modulate.a = 0.0
-	add_child(_combat_panel)
-
 	_inventory_panel = _inventory_scene.instantiate()
-	_inventory_panel.visible = false
-	_inventory_panel.modulate.a = 0.0
-	add_child(_inventory_panel)
-
 	_store_panel = _store_scene.instantiate()
-	_store_panel.visible = false
-	_store_panel.modulate.a = 0.0
-	add_child(_store_panel)
-
 	_save_load_panel = _save_load_scene.instantiate()
-	_save_load_panel.visible = false
-	_save_load_panel.modulate.a = 0.0
-	add_child(_save_load_panel)
-
 	_character_status_panel = _character_status_scene.instantiate()
-	_character_status_panel.visible = false
-	_character_status_panel.modulate.a = 0.0
-	add_child(_character_status_panel)
-
 	_settings_panel = _settings_scene.instantiate()
-	_settings_panel.visible = false
-	_settings_panel.modulate.a = 0.0
-	add_child(_settings_panel)
+	_lore_codex_panel = _lore_codex_scene.instantiate()
+	_pause_menu = _pause_menu_scene.instantiate()
+
+	# Register menus — size profiles defined in MenuOverlayManager.SIZE_PROFILES
+	_overlay_manager.register_menu("combat", "⚔ COMBAT ⚔", _combat_panel,
+		"combat", func() -> bool: return not _is_combat_locking())
+	_overlay_manager.register_menu("inventory", "🎒 INVENTORY", _inventory_panel, "inventory")
+	_overlay_manager.register_menu("store", "🏪 STORE", _store_panel, "store")
+	_overlay_manager.register_menu("save_load", "💾 SAVE / LOAD", _save_load_panel, "save_load")
+	_overlay_manager.register_menu("character_status", "⚙ CHARACTER STATUS", _character_status_panel, "status")
+	_overlay_manager.register_menu("settings", "⚙ SETTINGS", _settings_panel, "settings")
+	_overlay_manager.register_menu("lore_codex", "📜 LORE CODEX", _lore_codex_panel, "lore")
+	_overlay_manager.register_menu("pause", "☰ PAUSED", _pause_menu, "pause")
+
+	# Wire pause menu signals
+	_pause_menu.close_requested.connect(func(): _overlay_manager.close_menu("pause"))
+	_pause_menu.open_settings_requested.connect(func():
+		_overlay_manager.close_menu("pause")
+		_overlay_manager.open_menu("settings")
+	)
+	_pause_menu.open_save_load_requested.connect(func():
+		_overlay_manager.close_menu("pause")
+		_overlay_manager.open_menu("save_load")
+	)
+	_pause_menu.quit_to_menu_requested.connect(_quit_to_main_menu)
 
 
 # ==================================================================
@@ -459,7 +465,6 @@ func _connect_signals() -> void:
 	_btn_inventory.pressed.connect(_on_inventory)
 	_btn_store.pressed.connect(_on_store)
 	_btn_rest.pressed.connect(_on_rest)
-	_btn_save_load.pressed.connect(_on_save_load)
 	_btn_descend.pressed.connect(_on_descend)
 
 	GameSession.state_changed.connect(_refresh_ui)
@@ -468,58 +473,21 @@ func _connect_signals() -> void:
 	GameSession.combat_ended.connect(_on_combat_ended)
 	GameSession.combat_pending_changed.connect(_refresh_ui)
 
+	# Panel close_requested signals → close via overlay manager
 	if _combat_panel.has_signal("close_requested"):
 		_combat_panel.close_requested.connect(_on_combat_close_requested)
 	if _inventory_panel.has_signal("close_requested"):
-		_inventory_panel.close_requested.connect(func(): _hide_panel(_inventory_panel))
+		_inventory_panel.close_requested.connect(func(): _overlay_manager.close_menu("inventory"))
 	if _store_panel.has_signal("close_requested"):
-		_store_panel.close_requested.connect(func(): _hide_panel(_store_panel))
+		_store_panel.close_requested.connect(func(): _overlay_manager.close_menu("store"))
 	if _save_load_panel.has_signal("close_requested"):
-		_save_load_panel.close_requested.connect(func(): _hide_panel(_save_load_panel))
+		_save_load_panel.close_requested.connect(func(): _overlay_manager.close_menu("save_load"))
 	if _character_status_panel.has_signal("close_requested"):
-		_character_status_panel.close_requested.connect(func(): _hide_panel(_character_status_panel))
+		_character_status_panel.close_requested.connect(func(): _overlay_manager.close_menu("character_status"))
 	if _settings_panel.has_signal("close_requested"):
-		_settings_panel.close_requested.connect(func(): _hide_panel(_settings_panel))
-
-
-# ==================================================================
-# PANEL SHOW / HIDE WITH FADE
-# ==================================================================
-
-func _show_panel(panel: Control) -> void:
-	if panel.visible:
-		return
-	panel.visible = true
-	panel.modulate.a = 0.0
-	var tween := create_tween()
-	tween.tween_property(panel, "modulate:a", 1.0, DungeonTheme.FADE_DURATION)
-	_panel_stack.erase(panel)
-	_panel_stack.push_back(panel)
-
-
-func _hide_panel(panel: Control) -> void:
-	if not panel.visible:
-		return
-	_panel_stack.erase(panel)
-	var tween := create_tween()
-	tween.tween_property(panel, "modulate:a", 0.0, DungeonTheme.FADE_DURATION)
-	tween.tween_callback(func(): panel.visible = false)
-
-
-func _close_topmost_panel() -> bool:
-	while not _panel_stack.is_empty():
-		var panel: Control = _panel_stack.pop_back()
-		if panel.visible:
-			if panel == _combat_panel and _is_combat_locking():
-				_panel_stack.push_back(panel)
-				return true
-			_hide_panel(panel)
-			return true
-	return false
-
-
-func _is_combat_locking() -> bool:
-	return GameSession.is_pending_choice() or GameSession.is_combat_active()
+		_settings_panel.close_requested.connect(func(): _overlay_manager.close_menu("settings"))
+	if _lore_codex_panel.has_signal("close_requested"):
+		_lore_codex_panel.close_requested.connect(func(): _overlay_manager.close_menu("lore_codex"))
 
 
 # ==================================================================
@@ -529,18 +497,20 @@ func _is_combat_locking() -> bool:
 func _on_combat_close_requested() -> void:
 	if _is_combat_locking():
 		return
-	_hide_panel(_combat_panel)
+	_overlay_manager.close_menu("combat")
 
 
 func _on_combat_started() -> void:
-	_show_panel(_combat_panel)
-	if _combat_panel.has_method("refresh"):
-		_combat_panel.refresh()
+	_overlay_manager.open_menu("combat")
 
 
 func _on_combat_ended() -> void:
-	_hide_panel(_combat_panel)
+	_overlay_manager.close_menu("combat")
 	_refresh_ui()
+
+
+func _is_combat_locking() -> bool:
+	return GameSession.is_pending_choice() or GameSession.is_combat_active()
 
 
 # ==================================================================
@@ -551,12 +521,16 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
 
-	if event.is_action_pressed("ui_cancel"):
-		if not _close_topmost_panel():
-			pass
+	# ESC / ui_cancel: close topmost popup, or toggle pause menu
+	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("open_menu"):
+		if _overlay_manager.is_any_open():
+			_overlay_manager.close_top_menu()
+		else:
+			_on_pause()
 		get_viewport().set_input_as_handled()
 		return
 
+	# Block game inputs when any popup is open
 	if _any_panel_open():
 		return
 
@@ -572,8 +546,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		_on_character_status()
 	elif event.is_action_pressed("open_inventory"):
 		_on_inventory()
-	elif event.is_action_pressed("open_menu"):
-		_on_save_load()
 	elif event.is_action_pressed("rest"):
 		_on_rest()
 	elif event.keycode == KEY_F3:
@@ -585,29 +557,104 @@ func _unhandled_input(event: InputEvent) -> void:
 		_export_session_trace()
 
 
+# -------------------------------------------------------------------
+# Menu open actions
+# -------------------------------------------------------------------
+
 func _on_settings() -> void:
-	_show_panel(_settings_panel)
-	if _settings_panel.has_method("refresh"):
-		_settings_panel.refresh()
+	_overlay_manager.open_menu("settings")
 
+func _on_pause() -> void:
+	_overlay_manager.open_menu("pause")
 
-func _close_all_panels() -> void:
-	var combat_locked := _is_combat_locking()
-	for panel in [_combat_panel, _inventory_panel, _store_panel,
-				  _save_load_panel, _character_status_panel, _settings_panel]:
-		if panel == null:
-			continue
-		if panel == _combat_panel and combat_locked:
-			continue
-		panel.visible = false
-		panel.modulate.a = 0.0
-	_panel_stack.clear()
-	if combat_locked and _combat_panel != null and _combat_panel.visible:
-		_panel_stack.push_back(_combat_panel)
+func _on_inventory() -> void:
+	_overlay_manager.open_menu("inventory")
+
+func _on_store() -> void:
+	var room := GameSession.get_current_room()
+	if room == null or not room.has_store:
+		_append_log("No store here.")
+		return
+	_overlay_manager.open_menu("store")
+
+func _on_character_status() -> void:
+	_overlay_manager.open_menu("character_status")
+
+func _on_save_load() -> void:
+	_overlay_manager.open_menu("save_load")
 
 
 # -------------------------------------------------------------------
-# Actions
+# Panel query helpers
+# -------------------------------------------------------------------
+
+func _any_panel_open() -> bool:
+	return _overlay_manager.is_any_open()
+
+
+func _close_topmost_panel() -> bool:
+	return _overlay_manager.close_top_menu()
+
+
+func _close_all_panels() -> void:
+	_overlay_manager.close_all_menus()
+	# Re-show combat if it was locking
+	if _is_combat_locking() and _combat_panel != null:
+		_overlay_manager.open_menu("combat")
+
+
+func _show_panel(panel: Control) -> void:
+	# Legacy helper for tests that call _show_panel/_hide_panel directly
+	if panel == _combat_panel:
+		_overlay_manager.open_menu("combat")
+	elif panel == _inventory_panel:
+		_overlay_manager.open_menu("inventory")
+	elif panel == _store_panel:
+		_overlay_manager.open_menu("store")
+	elif panel == _save_load_panel:
+		_overlay_manager.open_menu("save_load")
+	elif panel == _character_status_panel:
+		_overlay_manager.open_menu("character_status")
+	elif panel == _settings_panel:
+		_overlay_manager.open_menu("settings")
+	elif panel == _lore_codex_panel:
+		_overlay_manager.open_menu("lore_codex")
+	elif panel == _pause_menu:
+		_overlay_manager.open_menu("pause")
+
+
+func _hide_panel(panel: Control) -> void:
+	if panel == _combat_panel:
+		_overlay_manager.close_menu("combat")
+	elif panel == _inventory_panel:
+		_overlay_manager.close_menu("inventory")
+	elif panel == _store_panel:
+		_overlay_manager.close_menu("store")
+	elif panel == _save_load_panel:
+		_overlay_manager.close_menu("save_load")
+	elif panel == _character_status_panel:
+		_overlay_manager.close_menu("character_status")
+	elif panel == _settings_panel:
+		_overlay_manager.close_menu("settings")
+	elif panel == _lore_codex_panel:
+		_overlay_manager.close_menu("lore_codex")
+	elif panel == _pause_menu:
+		_overlay_manager.close_menu("pause")
+
+
+# -------------------------------------------------------------------
+# Quit to Main Menu
+# -------------------------------------------------------------------
+
+func _quit_to_main_menu() -> void:
+	_overlay_manager.close_all_menus()
+	GameSession.combat = null
+	GameSession.combat_pending = false
+	get_tree().change_scene_to_file("res://ui/scenes/MainMenu.tscn")
+
+
+# -------------------------------------------------------------------
+# Game actions
 # -------------------------------------------------------------------
 
 func _move(direction: String) -> void:
@@ -633,9 +680,7 @@ func _on_attack() -> void:
 	if room.has_combat and not room.enemies_defeated:
 		if GameSession.combat == null:
 			GameSession.start_combat_for_room(room)
-		_show_panel(_combat_panel)
-		if _combat_panel.has_method("refresh"):
-			_combat_panel.refresh()
+		_overlay_manager.open_menu("combat")
 
 
 func _on_flee() -> void:
@@ -678,36 +723,8 @@ func _on_ground_items() -> void:
 	GameSession.state_changed.emit()
 
 
-func _on_inventory() -> void:
-	_show_panel(_inventory_panel)
-	if _inventory_panel.has_method("refresh"):
-		_inventory_panel.refresh()
-
-
-func _on_store() -> void:
-	var room := GameSession.get_current_room()
-	if room == null or not room.has_store:
-		_append_log("No store here.")
-		return
-	_show_panel(_store_panel)
-	if _store_panel.has_method("refresh"):
-		_store_panel.refresh()
-
-
 func _on_rest() -> void:
 	GameSession.attempt_rest()
-
-
-func _on_character_status() -> void:
-	_show_panel(_character_status_panel)
-	if _character_status_panel.has_method("refresh"):
-		_character_status_panel.refresh()
-
-
-func _on_save_load() -> void:
-	_show_panel(_save_load_panel)
-	if _save_load_panel.has_method("refresh"):
-		_save_load_panel.refresh()
 
 
 func _on_descend() -> void:
@@ -768,6 +785,11 @@ func _refresh_ui() -> void:
 
 	_update_button_visibility(room)
 
+	# Update combat popup closable state dynamically
+	var combat_frame = _overlay_manager.get_frame("combat")
+	if combat_frame != null:
+		combat_frame.closable = not _is_combat_locking()
+
 	if _debug_visible:
 		_refresh_debug()
 
@@ -793,15 +815,6 @@ func _update_button_visibility(room: RoomState) -> void:
 	_btn_ground.visible = room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 or (not room.ground_container.is_empty() and not room.container_searched)) and not blocking
 	_btn_store.visible = room != null and room.has_store and not blocking
 	_btn_descend.visible = room != null and room.has_stairs and not blocking
-
-
-func _any_panel_open() -> bool:
-	return (_combat_panel != null and _combat_panel.visible) or \
-		   (_inventory_panel != null and _inventory_panel.visible) or \
-		   (_store_panel != null and _store_panel.visible) or \
-		   (_save_load_panel != null and _save_load_panel.visible) or \
-		   (_character_status_panel != null and _character_status_panel.visible) or \
-		   (_settings_panel != null and _settings_panel.visible)
 
 
 # -------------------------------------------------------------------

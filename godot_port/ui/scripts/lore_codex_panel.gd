@@ -1,7 +1,8 @@
 extends PanelContainer
 ## Lore Codex Panel — browse discovered lore entries.
-## Left pane: list of entries (title / date / category) with filter + search.
+## Left pane: list of entries with filter + search.
 ## Right pane: full lore text for the selected entry.
+## Hosted inside PopupFrame (when standalone) or embedded in CharacterStatus tab.
 
 signal close_requested()
 
@@ -12,7 +13,6 @@ var _detail_floor: Label
 var _detail_text: RichTextLabel
 var _filter_option: OptionButton
 var _search_edit: LineEdit
-var _btn_close: Button
 var _no_entries_label: Label
 
 var _filtered_entries: Array = []
@@ -25,41 +25,32 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var bg := DungeonTheme.make_panel_bg(
-		Color(0.06, 0.08, 0.12, 0.97), DungeonTheme.TEXT_GOLD)
-	bg.set_border_width_all(0)
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+	bg.set_content_margin_all(0)
 	add_theme_stylebox_override("panel", bg)
 
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 6)
 	add_child(root)
 
-	# Header row
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
-	root.add_child(header)
-
-	var title := DungeonTheme.make_header(
-		"=== LORE CODEX ===", DungeonTheme.TEXT_GOLD, DungeonTheme.FONT_HEADING)
-	header.add_child(title)
-
-	header.add_child(Control.new())
+	# Filter/search bar
+	var toolbar := HBoxContainer.new()
+	toolbar.add_theme_constant_override("separation", 8)
+	root.add_child(toolbar)
 
 	_filter_option = OptionButton.new()
 	_filter_option.add_item("All Categories", 0)
 	_filter_option.item_selected.connect(_on_filter_changed)
 	_filter_option.custom_minimum_size = Vector2(180, 0)
-	header.add_child(_filter_option)
+	toolbar.add_child(_filter_option)
 
 	_search_edit = LineEdit.new()
 	_search_edit.placeholder_text = "Search..."
-	_search_edit.custom_minimum_size = Vector2(160, 0)
+	_search_edit.custom_minimum_size = Vector2(200, 0)
+	_search_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_search_edit.text_changed.connect(_on_search_changed)
-	header.add_child(_search_edit)
-
-	_btn_close = DungeonTheme.make_styled_btn("Close", DungeonTheme.TEXT_SECONDARY, 70)
-	_btn_close.pressed.connect(func(): close_requested.emit())
-	header.add_child(_btn_close)
+	toolbar.add_child(_search_edit)
 
 	root.add_child(DungeonTheme.make_separator(DungeonTheme.BORDER))
 
@@ -69,7 +60,7 @@ func _build_ui() -> void:
 	split.split_offset = 320
 	root.add_child(split)
 
-	# Left pane
+	# Left pane — entry list
 	var left_box := VBoxContainer.new()
 	left_box.custom_minimum_size = Vector2(280, 0)
 	left_box.add_theme_constant_override("separation", 4)
@@ -93,7 +84,7 @@ func _build_ui() -> void:
 	_no_entries_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
 	left_box.add_child(_no_entries_label)
 
-	# Right pane
+	# Right pane — detail view
 	var right_box := VBoxContainer.new()
 	right_box.name = "CodexDetailPane"
 	right_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -102,7 +93,7 @@ func _build_ui() -> void:
 
 	_detail_title = Label.new()
 	_detail_title.name = "DetailTitle"
-	_detail_title.text = ""
+	_detail_title.text = "Select an entry"
 	_detail_title.add_theme_font_size_override("font_size", DungeonTheme.FONT_SUBHEADING)
 	_detail_title.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	right_box.add_child(_detail_title)

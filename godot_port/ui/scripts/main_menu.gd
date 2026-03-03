@@ -1,17 +1,25 @@
 extends Control
 ## Main Menu — entry point for the game. Built entirely in code.
-## Buttons: Start Adventure, Load Game, Settings, Quit.
+## Buttons: Start Adventure, Save/Load, Settings, Quit.
+## Settings and Save/Load open as proper modal popups using the same
+## MenuOverlayManager + PopupFrame system as the Explorer scene.
 
 var _btn_start: Button
-var _btn_load: Button
+var _btn_save_load: Button
 var _btn_settings: Button
 var _btn_quit: Button
+
+var _overlay_manager  # MenuOverlayManager
 var _settings_panel: Control
+var _save_load_panel: Control
+
 var _settings_scene := preload("res://ui/scenes/SettingsPanel.tscn")
+var _save_load_scene := preload("res://ui/scenes/SaveLoadPanel.tscn")
 
 
 func _ready() -> void:
 	_build_ui()
+	_setup_overlay_manager()
 	_connect_signals()
 
 
@@ -63,10 +71,10 @@ func _build_ui() -> void:
 	_btn_start.custom_minimum_size.y = 44
 	center.add_child(_btn_start)
 
-	_btn_load = DungeonTheme.make_styled_btn("📂  Load Game", DungeonTheme.BTN_SECONDARY, 260)
-	_btn_load.name = "BtnLoad"
-	_btn_load.custom_minimum_size.y = 44
-	center.add_child(_btn_load)
+	_btn_save_load = DungeonTheme.make_styled_btn("💾  Save / Load", DungeonTheme.BTN_SECONDARY, 260)
+	_btn_save_load.name = "BtnLoad"
+	_btn_save_load.custom_minimum_size.y = 44
+	center.add_child(_btn_save_load)
 
 	_btn_settings = DungeonTheme.make_styled_btn("⚙  Settings", DungeonTheme.TEXT_SECONDARY, 260)
 	_btn_settings.name = "BtnSettings"
@@ -85,17 +93,28 @@ func _build_ui() -> void:
 	footer.add_theme_color_override("font_color", DungeonTheme.TEXT_DIM)
 	center.add_child(footer)
 
+
+func _setup_overlay_manager() -> void:
+	var ManagerScript := preload("res://ui/scripts/menu_overlay_manager.gd")
+	_overlay_manager = ManagerScript.new()
+	_overlay_manager.name = "MenuOverlayManager"
+	add_child(_overlay_manager)
+
 	_settings_panel = _settings_scene.instantiate()
-	_settings_panel.visible = false
-	_settings_panel.modulate.a = 0.0
-	add_child(_settings_panel)
+	_save_load_panel = _save_load_scene.instantiate()
+
+	_overlay_manager.register_menu("settings", "⚙ SETTINGS", _settings_panel, "settings")
+	_overlay_manager.register_menu("save_load", "💾 SAVE / LOAD", _save_load_panel, "save_load")
+
 	if _settings_panel.has_signal("close_requested"):
-		_settings_panel.close_requested.connect(_close_settings)
+		_settings_panel.close_requested.connect(func(): _overlay_manager.close_menu("settings"))
+	if _save_load_panel.has_signal("close_requested"):
+		_save_load_panel.close_requested.connect(func(): _overlay_manager.close_menu("save_load"))
 
 
 func _connect_signals() -> void:
 	_btn_start.pressed.connect(_on_start)
-	_btn_load.pressed.connect(_on_load)
+	_btn_save_load.pressed.connect(_on_save_load)
 	_btn_settings.pressed.connect(_on_settings)
 	_btn_quit.pressed.connect(_on_quit)
 
@@ -105,24 +124,12 @@ func _on_start() -> void:
 	get_tree().change_scene_to_file("res://ui/scenes/Explorer.tscn")
 
 
-func _on_load() -> void:
-	GameSession.start_new_game()
-	get_tree().change_scene_to_file("res://ui/scenes/Explorer.tscn")
-	GameSession.log_message.emit("Load panel opened — select a slot.")
+func _on_save_load() -> void:
+	_overlay_manager.open_menu("save_load")
 
 
 func _on_settings() -> void:
-	_settings_panel.visible = true
-	var tw := create_tween()
-	tw.tween_property(_settings_panel, "modulate:a", 1.0, DungeonTheme.FADE_DURATION)
-	if _settings_panel.has_method("refresh"):
-		_settings_panel.refresh()
-
-
-func _close_settings() -> void:
-	var tw := create_tween()
-	tw.tween_property(_settings_panel, "modulate:a", 0.0, DungeonTheme.FADE_DURATION)
-	tw.tween_callback(func(): _settings_panel.visible = false)
+	_overlay_manager.open_menu("settings")
 
 
 func _on_quit() -> void:
@@ -131,6 +138,7 @@ func _on_quit() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.is_action_pressed("ui_cancel") and _settings_panel.visible:
-			_close_settings()
-			get_viewport().set_input_as_handled()
+		if event.is_action_pressed("ui_cancel") or event.is_action_pressed("open_menu"):
+			if _overlay_manager.is_any_open():
+				_overlay_manager.close_top_menu()
+				get_viewport().set_input_as_handled()
