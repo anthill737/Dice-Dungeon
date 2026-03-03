@@ -108,6 +108,7 @@ func refresh() -> void:
 	var gs := GameSession.game_state
 	if gs == null:
 		return
+	GameSession.trace_store_entered()
 
 	_gold_label.text = "◆ Gold: %d" % gs.gold
 
@@ -137,6 +138,12 @@ func _on_buy() -> void:
 	GameSession._emit_logs(GameSession.store_engine.logs)
 	if result.get("ok", false):
 		_info_label.text = "Purchased %s!" % item_name
+		var rtype: String = str(result.get("type", ""))
+		if rtype == "upgrade":
+			GameSession.trace_upgrade_bought(item_name, price,
+				result.get("max_hp_bonus", result.get("damage_bonus", result.get("crit_bonus", ""))))
+		else:
+			GameSession.trace_store_bought(item_name, price)
 	else:
 		_info_label.text = "Cannot buy: %s" % result.get("reason", "unknown")
 	GameSession.state_changed.emit()
@@ -157,6 +164,7 @@ func _on_sell() -> void:
 	GameSession._emit_logs(GameSession.store_engine.logs)
 	if result.get("ok", false):
 		_info_label.text = "Sold %s for %d gold!" % [item_name, result.get("gold_gained", 0)]
+		GameSession.trace_store_sold(item_name, int(result.get("gold_gained", 0)))
 	else:
 		_info_label.text = "Cannot sell: %s" % result.get("reason", "unknown")
 	GameSession.state_changed.emit()

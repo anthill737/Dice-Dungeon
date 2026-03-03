@@ -134,6 +134,8 @@ func _on_save() -> void:
 	var ok := SaveEngine.save_to_slot(gs, fs, GameSession.get_saves_dir(), slot, save_name)
 	_info_label.text = "Saved to slot %d!" % slot if ok else "Save failed!"
 	GameSession.log_message.emit(_info_label.text)
+	if ok:
+		GameSession.trace_saved(slot, save_name)
 	refresh()
 
 
@@ -157,6 +159,11 @@ func _on_load() -> void:
 		GameSession.store_engine = StoreEngine.new(gs, GameSession.items_db)
 		GameSession.lore_engine = LoreEngine.new(GameSession.rng, gs, GameSession.lore_db)
 		GameSession.combat = null
+		GameSession.trace.reset(-1, "DefaultRNG")
+		GameSession.trace.difficulty = gs.difficulty
+		GameSession.trace.record("loaded", {"slot": slot, "name": ""})
+		GameSession.trace.set_floor(fs.floor_index)
+		GameSession.trace.set_coord(fs.current_pos)
 		_info_label.text = "Loaded slot %d!" % slot
 		GameSession.log_message.emit(_info_label.text)
 		GameSession.state_changed.emit()
@@ -172,6 +179,8 @@ func _on_delete() -> void:
 		return
 	var ok := SaveEngine.delete_slot(GameSession.get_saves_dir(), slot)
 	_info_label.text = "Deleted slot %d." % slot if ok else "Nothing to delete."
+	if ok:
+		GameSession.trace_deleted_slot(slot)
 	refresh()
 
 
@@ -186,4 +195,6 @@ func _on_rename() -> void:
 		return
 	var ok := SaveEngine.rename_slot(GameSession.get_saves_dir(), slot, new_name)
 	_info_label.text = "Renamed slot %d to '%s'." % [slot, new_name] if ok else "Rename failed."
+	if ok:
+		GameSession.trace_renamed_slot(slot, new_name)
 	refresh()

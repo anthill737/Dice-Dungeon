@@ -136,7 +136,11 @@ func _on_use() -> void:
 	var idx := _get_selected_index()
 	if idx < 0:
 		return
+	var gs := GameSession.game_state
+	var used_name: String = gs.inventory[idx] if idx < gs.inventory.size() else ""
 	var result := GameSession.inventory_engine.use_item(idx)
+	if result.get("ok", false) and not used_name.is_empty():
+		GameSession.trace_item_used(used_name, str(result.get("type", "")))
 	if result.get("type", "") == "readable_lore":
 		_handle_readable_lore(result)
 	GameSession._emit_logs(GameSession.inventory_engine.logs)
@@ -244,6 +248,8 @@ func _on_equip() -> void:
 		GameSession.log_message.emit("%s is not equippable." % item_name)
 		return
 	var result := GameSession.inventory_engine.equip_item(item_name, slot)
+	if result.get("ok", false):
+		GameSession.trace_item_equipped(item_name, slot)
 	GameSession._emit_logs(GameSession.inventory_engine.logs)
 	GameSession.state_changed.emit()
 	refresh()
@@ -258,6 +264,7 @@ func _on_unequip() -> void:
 		var sel := _get_selected_index()
 		if sel >= 0 and sel < gs.inventory.size() and gs.inventory[sel] == item_name:
 			GameSession.inventory_engine.unequip_item(slot)
+			GameSession.trace_item_unequipped(item_name, slot)
 			GameSession._emit_logs(GameSession.inventory_engine.logs)
 			GameSession.state_changed.emit()
 			refresh()
@@ -271,6 +278,7 @@ func _on_drop() -> void:
 		return
 	var dropped := GameSession.inventory_engine.remove_item_at(idx)
 	if not dropped.is_empty():
+		GameSession.trace_item_dropped(dropped)
 		GameSession.log_message.emit("Dropped %s." % dropped)
 	GameSession.state_changed.emit()
 	refresh()
