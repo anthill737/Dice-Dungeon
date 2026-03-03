@@ -72,6 +72,9 @@ build/
 dist/
 DiceDungeon_Portable/
 
+# Godot export builds
+godot_port/exports/
+
 # Icon generation pipeline (dev-only tooling, not needed for the game)
 tools/
 outputs/
