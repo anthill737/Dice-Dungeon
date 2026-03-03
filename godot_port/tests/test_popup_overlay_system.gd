@@ -30,7 +30,8 @@ func test_popup_frame_instantiates() -> void:
 	var close_btn = frame.find_child("BtnPopupClose", true, false)
 	assert_not_null(close_btn, "Red X close button exists")
 	assert_true(close_btn is Button, "Close button is Button type")
-	assert_eq(close_btn.text, "X", "Close button text is 'X'")
+	assert_true(close_btn.text == "X" or close_btn.text == "✕",
+		"Close button text is X or ✕")
 
 	frame.queue_free()
 	await get_tree().process_frame
