@@ -32,6 +32,7 @@ var lore_db: Dictionary = {}
 var combat_pending: bool = false
 
 var _data_loaded: bool = false
+var _content_manager: ContentManager
 
 ## Session trace — persists across scene transitions, reset on new/load game.
 var trace: SessionTrace = SessionTrace.new()
@@ -48,19 +49,14 @@ func _ready() -> void:
 
 
 func _load_data() -> void:
-	var rd := RoomsData.new()
-	if rd.load():
-		rooms_db = rd.rooms
+	if _content_manager == null:
+		_content_manager = ContentManager.new()
+	_content_manager.load_all()
+	rooms_db = _content_manager.get_room_templates()
 	trace.record("room_template_pool_size", {"count": rooms_db.size()})
-	var id := ItemsData.new()
-	if id.load():
-		items_db = id.items
-	var ed := EnemyTypesData.new()
-	if ed.load():
-		enemy_types_db = ed.enemies
-	var ld := LoreData.new()
-	if ld.load():
-		lore_db = ld.lore
+	items_db = _content_manager.get_items_db()
+	enemy_types_db = _content_manager.get_enemy_types_db()
+	lore_db = _content_manager.get_lore_db()
 	_data_loaded = true
 
 

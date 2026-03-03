@@ -57,6 +57,7 @@ var _debug_label: RichTextLabel
 var _debug_visible: bool = false
 
 var _minimap_panel: PanelContainer
+var _context: GameContext
 
 var _combat_scene := preload("res://ui/scenes/CombatPanel.tscn")
 var _inventory_scene := preload("res://ui/scenes/InventoryPanel.tscn")
@@ -70,10 +71,15 @@ var _pause_menu_scene := preload("res://ui/scenes/PauseMenu.tscn")
 
 
 func _ready() -> void:
+	_context = GameContext.new()
 	_build_ui()
 	_build_debug_overlay()
 	_setup_overlay_manager()
+	_context.set_menus(_overlay_manager)
+	if _context.session:
+		_context.session.quit_requested.connect(_on_quit_requested)
 	_connect_signals()
+	_connect_log_bridge()
 	_refresh_ui()
 
 
@@ -648,9 +654,22 @@ func _hide_panel(panel: Control) -> void:
 
 func _quit_to_main_menu() -> void:
 	_overlay_manager.close_all_menus()
-	GameSession.combat = null
-	GameSession.combat_pending = false
+	if _context and _context.session:
+		_context.session.quit_to_main_menu()
+	else:
+		GameSession.combat = null
+		GameSession.combat_pending = false
 	get_tree().change_scene_to_file("res://ui/scenes/MainMenu.tscn")
+
+
+func _on_quit_requested() -> void:
+	_overlay_manager.close_all_menus()
+	get_tree().change_scene_to_file("res://ui/scenes/MainMenu.tscn")
+
+
+func _connect_log_bridge() -> void:
+	if _context and _context.log:
+		GameSession.log_message.connect(func(msg: String): _context.log.append(msg))
 
 
 # -------------------------------------------------------------------
