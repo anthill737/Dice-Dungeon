@@ -57,7 +57,7 @@ func start_run_from_save(slot_id: int) -> bool:
 	_game_session.combat = null
 	_game_session.combat_pending = false
 
-	_game_session.trace.reset(-1, "DefaultRNG")
+	_game_session.trace.reset(-1, "DefaultRNG", "default")
 	_game_session.trace.difficulty = gs.difficulty
 	_game_session.trace.record("loaded", {"slot": slot_id, "name": ""})
 	_game_session.trace.set_floor(fs.floor_index)

@@ -103,7 +103,7 @@ func start_new_run(options: Dictionary = {}) -> void:
 	combat = null
 	combat_pending = false
 
-	trace.reset(run_seed, trace_rng_type)
+	trace.reset(run_seed, trace_rng_type, run_rng_mode)
 	trace.difficulty = game_state.difficulty
 	trace.record("run_started", {
 		"difficulty": game_state.difficulty,

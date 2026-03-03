@@ -408,7 +408,7 @@ func _on_load() -> void:
 		GameSession.store_engine = StoreEngine.new(gs, GameSession.items_db)
 		GameSession.lore_engine = LoreEngine.new(GameSession.rng, gs, GameSession.lore_db)
 		GameSession.combat = null
-		GameSession.trace.reset(-1, "DefaultRNG")
+		GameSession.trace.reset(-1, "DefaultRNG", "default")
 		GameSession.trace.difficulty = gs.difficulty
 		GameSession.trace.record("loaded", {"slot": slot, "name": ""})
 		GameSession.trace.set_floor(fs.floor_index)
