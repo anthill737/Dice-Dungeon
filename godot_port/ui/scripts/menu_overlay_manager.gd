@@ -27,6 +27,7 @@ func _ready() -> void:
 	_popup_root = Control.new()
 	_popup_root.name = "PopupRoot"
 	_popup_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_popup_root.set_offsets_preset(Control.PRESET_FULL_RECT)
 	_popup_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_popup_root)
 
