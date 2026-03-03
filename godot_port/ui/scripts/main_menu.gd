@@ -12,14 +12,17 @@ var _btn_quit: Button
 var _overlay_manager  # MenuOverlayManager
 var _settings_panel: Control
 var _save_load_panel: Control
+var _context: GameContext
 
 var _settings_scene := preload("res://ui/scenes/SettingsPanel.tscn")
 var _save_load_scene := preload("res://ui/scenes/SaveLoadPanel.tscn")
 
 
 func _ready() -> void:
+	_context = GameContext.new()
 	_build_ui()
 	_setup_overlay_manager()
+	_context.set_menus(_overlay_manager)
 	_connect_signals()
 
 
