@@ -19,7 +19,7 @@ const TEXT_SPEED_DELAYS := {"Slow": 15, "Normal": 13, "Fast": 7, "Instant": 0}
 
 const BINDABLE_ACTIONS := [
 	"move_north", "move_south", "move_east", "move_west",
-	"open_inventory", "open_menu", "rest", "character_status", "ui_cancel",
+	"open_inventory", "open_menu", "rest", "character_status",
 ]
 
 const ACTION_DISPLAY_NAMES := {
@@ -31,7 +31,6 @@ const ACTION_DISPLAY_NAMES := {
 	"open_menu": "Menu / Save-Load",
 	"rest": "Rest",
 	"character_status": "Character Status",
-	"ui_cancel": "Escape / Close",
 }
 
 const DEFAULT_KEYBINDINGS := {
@@ -39,11 +38,10 @@ const DEFAULT_KEYBINDINGS := {
 	"move_south": KEY_S,
 	"move_east": KEY_D,
 	"move_west": KEY_A,
-	"open_inventory": KEY_I,
+	"open_inventory": KEY_TAB,
 	"open_menu": KEY_ESCAPE,
 	"rest": KEY_R,
 	"character_status": KEY_G,
-	"ui_cancel": KEY_Q,
 }
 
 ## Matches Python dice_dungeon_explorer.py difficulty_multipliers.

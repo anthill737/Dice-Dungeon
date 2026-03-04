@@ -663,7 +663,7 @@ func test_special_room_gating_miniboss():
 
 	engine.state.inventory.append("Old Key")
 	gate = engine.check_room_gating(mb_pos)
-	assert_eq(gate, "", "miniboss accessible with Old Key")
+	assert_eq(gate, "has_key_mini_boss", "miniboss accessible with Old Key (prompt needed)")
 
 
 func test_special_room_gating_boss():
@@ -678,7 +678,7 @@ func test_special_room_gating_boss():
 
 	engine.floor.key_fragments = 3
 	gate = engine.check_room_gating(boss_pos)
-	assert_eq(gate, "", "boss accessible with 3 fragments")
+	assert_eq(gate, "has_key_boss", "boss accessible with 3 fragments (prompt needed)")
 
 
 func test_unlock_miniboss_room():

@@ -147,6 +147,8 @@ func can_move(direction: String) -> bool:
 
 ## Check whether a locked special room at pos can be entered.
 ## Returns "" if entry is allowed, otherwise a reason string.
+## "has_key_mini_boss" means the player has an Old Key and can choose to use it.
+## "has_key_boss" means the player has 3 fragments and can choose to use them.
 func check_room_gating(pos: Vector2i) -> String:
 	if not floor.special_rooms.has(pos):
 		return ""
@@ -154,12 +156,38 @@ func check_room_gating(pos: Vector2i) -> String:
 		return ""
 	var room_type: String = floor.special_rooms[pos]
 	if room_type == "mini_boss":
-		if not state.inventory.has("Old Key"):
+		if state.inventory.has("Old Key"):
+			return "has_key_mini_boss"
+		else:
 			return "locked_mini_boss"
 	elif room_type == "boss":
-		if floor.key_fragments < 3:
+		if floor.key_fragments >= 3:
+			return "has_key_boss"
+		else:
 			return "locked_boss"
 	return ""
+
+
+## Unlock a mini-boss room by consuming an Old Key. Returns true on success.
+func use_old_key(pos: Vector2i) -> bool:
+	if not state.inventory.has("Old Key"):
+		return false
+	state.inventory.erase("Old Key")
+	floor.unlocked_rooms[pos] = true
+	logs.append("The Old Key turns in the lock...")
+	logs.append("The elite room door swings open!")
+	return true
+
+
+## Unlock a boss room by consuming 3 key fragments. Returns true on success.
+func use_boss_key(pos: Vector2i) -> bool:
+	if floor.key_fragments < 3:
+		return false
+	floor.key_fragments = 0
+	floor.unlocked_rooms[pos] = true
+	logs.append("The 3 fragments merge into a complete key!")
+	logs.append("The massive boss door grinds open!")
+	return true
 
 
 func move(direction: String) -> RoomState:
@@ -171,8 +199,16 @@ func move(direction: String) -> RoomState:
 
 	## Python: check special room gating BEFORE allowing entry
 	var gate := check_room_gating(new_pos)
-	if not gate.is_empty():
-		logs.append("Path blocked: %s" % gate)
+	if gate == "locked_mini_boss":
+		logs.append("⚡ A locked door blocks your path!")
+		logs.append("You need an Old Key to proceed.")
+		return null
+	elif gate == "locked_boss":
+		logs.append("☠ A sealed boss door blocks your path!")
+		logs.append("You need 3 key fragments. You have %d." % floor.key_fragments)
+		return null
+	elif gate == "has_key_mini_boss" or gate == "has_key_boss":
+		# Caller (GameSession) must handle the dialog
 		return null
 
 	# Revisiting existing room — Python handles this in explore_direction
@@ -199,6 +235,10 @@ func move(direction: String) -> RoomState:
 	# Then room.visited = True
 	# Then rooms_explored += 1 (for non-entrance rooms)
 	floor.rooms_explored += 1
+
+	# Python: decrement rest cooldown on first visit
+	if state.rest_cooldown > 0:
+		state.rest_cooldown -= 1
 
 	## Python: first 3 rooms on floor 1 are starter rooms (never combat)
 	if floor.floor_index == 1 and floor.rooms_explored <= 3:

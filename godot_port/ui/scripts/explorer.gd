@@ -577,6 +577,7 @@ func _connect_signals() -> void:
 	GameSession.combat_started.connect(_on_combat_started)
 	GameSession.combat_ended.connect(_on_combat_ended)
 	GameSession.combat_pending_changed.connect(_refresh_ui)
+	GameSession.locked_room_prompt.connect(_on_locked_room_prompt)
 
 	# Panel close_requested signals → close via overlay manager
 	if _combat_panel.has_signal("close_requested"):
@@ -626,12 +627,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
 
-	# ESC / ui_cancel: close topmost popup, or toggle pause menu
+	# ESC: close topmost popup, or toggle pause menu
 	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("open_menu"):
 		if _overlay_manager.is_any_open():
 			_overlay_manager.close_top_menu()
 		else:
 			_on_pause()
+		get_viewport().set_input_as_handled()
+		return
+
+	# Tab always opens inventory (even over other panels)
+	if event.keycode == KEY_TAB or event.is_action_pressed("open_inventory"):
+		_on_inventory()
 		get_viewport().set_input_as_handled()
 		return
 
@@ -649,8 +656,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		_move("E")
 	elif event.is_action_pressed("character_status"):
 		_on_character_status()
-	elif event.is_action_pressed("open_inventory"):
-		_on_inventory()
 	elif event.is_action_pressed("rest"):
 		_on_rest()
 	elif event.keycode == KEY_F3:
@@ -900,6 +905,42 @@ func _on_descend() -> void:
 	var result := GameSession.descend_stairs()
 	if result == null:
 		_append_log("Cannot descend. Defeat the boss first or find stairs.")
+
+
+var _pending_gate_type: String = ""
+var _pending_gate_direction: String = ""
+
+func _on_locked_room_prompt(gate_type: String, direction: String) -> void:
+	_pending_gate_type = gate_type
+	_pending_gate_direction = direction
+	var title := ""
+	var message := ""
+	if gate_type == "has_key_mini_boss":
+		title = "LOCKED ELITE ROOM"
+		message = "The door is sealed with an ancient lock.\nYou have an Old Key that fits!\n\nUse the key to unlock and enter,\nor turn back and save it for later?"
+	else:
+		title = "LOCKED BOSS ROOM"
+		message = "The boss chamber door is sealed shut.\nYou have all 3 Boss Key Fragments!\n\nForge them to unlock the door and\nface the floor boss, or turn back?"
+	_show_locked_room_dialog(title, message)
+
+
+func _show_locked_room_dialog(title: String, message: String) -> void:
+	var dialog := AcceptDialog.new()
+	dialog.title = title
+	dialog.dialog_text = message
+	dialog.ok_button_text = "Unlock & Enter"
+	dialog.add_cancel_button("Turn Back")
+	dialog.confirmed.connect(func():
+		GameSession.confirm_locked_room_entry(_pending_gate_direction)
+		_refresh_ui()
+		dialog.queue_free()
+	)
+	dialog.canceled.connect(func():
+		GameSession.decline_locked_room_entry(_pending_gate_type)
+		dialog.queue_free()
+	)
+	add_child(dialog)
+	dialog.popup_centered()
 
 
 # -------------------------------------------------------------------
