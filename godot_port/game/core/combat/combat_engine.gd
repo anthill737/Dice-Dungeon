@@ -4,6 +4,13 @@ extends RefCounted
 ##
 ## Manages: player dice, multi-enemy targeting, enemy attacks, status ticks,
 ## splitting/spawning behaviors, crit/fumble, flee.
+##
+## Delegates to modular sub-systems:
+##   AbilitySystem  — ability trigger evaluation + event generation
+##   EffectSystem   — curse/status/burn tick logic
+##   RewardResolver — gold/item/score calculation
+##   EnemySpawnResolver — config-based spawn/split checks
+##   CombatLogFormatter — all log text (Python-parity)
 
 # ------------------------------------------------------------------
 # Types
@@ -18,6 +25,9 @@ class Enemy extends RefCounted:
 	var type_data: Dictionary  ## from enemy_types.json (may be empty)
 	var turn_spawned: int = 0  ## combat turn on which this enemy appeared
 	var spawns_done: int = 0   ## how many times periodic spawn has fired
+	var damage_reduction: int = 0  ## flat damage reduction from abilities
+	var is_boss: bool = false
+	var is_mini_boss: bool = false
 
 	func _init(p_name: String, p_hp: int, p_dice: int, p_type: Dictionary = {}) -> void:
 		name = p_name
@@ -49,6 +59,7 @@ class TurnResult extends RefCounted:
 	var split_into: Array = []     ## names of enemies created from splitting
 	var player_hp_after: int = 0
 	var logs: Array = []
+	var trace_events: Array = []   ## structured trace events
 
 
 ## Full combat outcome.
@@ -73,6 +84,13 @@ var dice: DiceRoller
 var turn_count: int = 0
 var enemy_types_db: Dictionary = {}  ## full enemy_types.json
 var statuses_db: Dictionary = {}     ## full statuses_catalog.json
+
+var active_curses: Array = []        ## Array[Dictionary]
+var boss_ability_cooldowns: Dictionary = {}
+var dice_obscured: bool = false
+var dice_restricted_values: Array = []
+var forced_dice_locks: Array = []    ## indices that are force-locked
+var enemy_burn_status: Dictionary = {}  ## int(index) -> {initial_damage, turns_remaining}
 
 var _logs: Array = []
 
@@ -106,12 +124,38 @@ func get_alive_enemies() -> Array:
 	return alive
 
 
+## Trigger combat_start abilities for all enemies.
+func trigger_combat_start_abilities() -> Array:
+	var all_logs: Array = []
+	for enemy in enemies:
+		var events := _evaluate_abilities(enemy, "combat_start")
+		for ev in events:
+			var logs := _apply_ability_event(ev, enemy)
+			all_logs.append_array(logs)
+	return all_logs
+
+
 # ------------------------------------------------------------------
 # Player turn
 # ------------------------------------------------------------------
 
 func player_roll() -> bool:
+	if not dice_restricted_values.is_empty():
+		return _roll_restricted()
 	return dice.roll()
+
+
+func _roll_restricted() -> bool:
+	if dice.rolls_left <= 0:
+		return false
+	var rolled_any := false
+	for i in dice.num_dice:
+		if not dice.locked[i]:
+			dice.values[i] = rng.choice(dice_restricted_values)
+			rolled_any = true
+	if rolled_any:
+		dice.rolls_left -= 1
+	return rolled_any
 
 
 func player_lock(index: int) -> void:
@@ -119,10 +163,30 @@ func player_lock(index: int) -> void:
 
 
 func player_attack(target_index: int = 0) -> TurnResult:
-	## Execute a full turn: player attacks target, enemies retaliate, status ticks.
 	var result := TurnResult.new()
 	result.player_dice = dice.values.duplicate()
 	turn_count += 1
+
+	# --- Process boss curses at start of turn ---
+	var curse_result := EffectSystem.tick_curses(active_curses, enemies, state.health)
+	if curse_result.curse_damage_total > 0:
+		state.health -= curse_result.curse_damage_total
+	for heal_info in curse_result.heals:
+		_apply_heal_to_enemy(heal_info["enemy_name"], heal_info["amount"])
+	_remove_curse_indices(curse_result.removed_indices)
+	_process_curse_expiry_side_effects(curse_result.expired)
+	result.logs.append_array(curse_result.logs)
+	if state.health <= 0:
+		result.player_hp_after = state.health
+		_logs.append_array(result.logs)
+		return result
+
+	# --- Reroll curse check ---
+	var has_reroll_curse := false
+	for c in active_curses:
+		if c.get("type") == "curse_reroll":
+			has_reroll_curse = true
+			break
 
 	# --- Fumble check ---
 	var fumble_chance := _get_status_modifier("skip_chance")
@@ -142,51 +206,110 @@ func player_attack(target_index: int = 0) -> TurnResult:
 		damage = int(float(damage) * state.difficulty_mults.get("player_damage_mult", 1.0))
 		if result.was_crit:
 			damage = int(float(damage) * 1.5)
+
+		# --- Damage reduction from boss abilities ---
+		var alive := get_alive_enemies()
+		if target_index >= 0 and target_index < alive.size():
+			var target: Enemy = alive[target_index]
+			if target.damage_reduction > 0:
+				var original_damage := damage
+				damage = maxi(1, damage - target.damage_reduction)
+				if damage < original_damage:
+					result.logs.append(CombatLogFormatter.damage_reduction_applied(
+						target.damage_reduction, original_damage, damage))
+
 		result.player_damage = damage
 
 		# --- Apply to target ---
-		var alive := get_alive_enemies()
 		if target_index >= 0 and target_index < alive.size():
 			var target: Enemy = alive[target_index]
 			target.health -= damage
 			result.target_name = target.name
 			result.target_killed = not target.is_alive()
-			result.logs.append("Hit %s for %d damage%s" % [target.name, damage, " (CRIT!)" if result.was_crit else ""])
+			result.logs.append(CombatLogFormatter.player_hit(target.name, damage, result.was_crit))
+
+			# --- HP threshold abilities AFTER damage ---
+			var hp_events := _evaluate_abilities(target, "hp_threshold")
+			for ev in hp_events:
+				var logs := _apply_ability_event(ev, target)
+				result.logs.append_array(logs)
+				for sp in ev.spawns:
+					result.spawned.append(sp["type"])
 
 			# --- Splitting on death ---
 			if result.target_killed:
-				_handle_split(target, result)
+				var split := EnemySpawnResolver.check_split_on_death(target)
+				if split != null:
+					_apply_split(target, split, result)
+				else:
+					# on_death abilities (spawn_on_death, transform_on_death)
+					var death_events := _evaluate_abilities(target, "on_death")
+					for ev in death_events:
+						var logs := _apply_ability_event(ev, target)
+						result.logs.append_array(logs)
+						for sp in ev.spawns:
+							result.spawned.append(sp["type"])
 
-			# --- Spawn on HP threshold ---
-			_handle_hp_spawns(result)
+			# --- Split on HP threshold (alive) ---
+			if not result.target_killed and target.is_alive():
+				var split := EnemySpawnResolver.check_split_on_hp(target)
+				if split != null:
+					_apply_split(target, split, result)
+
+			# --- Config-based HP spawns ---
+			var spawn_events := EnemySpawnResolver.check_spawn_conditions(
+				enemies, turn_count, state.difficulty_mults.get("enemy_health_mult", 1.0))
+			for sev in spawn_events:
+				var child := add_enemy(sev.spawn_type, sev.hp, sev.dice)
+				child.turn_spawned = turn_count
+				result.spawned.append(sev.spawn_type)
+				result.logs.append_array(sev.logs)
 
 	# --- Status tick damage ---
-	result.status_tick_damage = _tick_statuses()
-	state.health -= result.status_tick_damage
-	if result.status_tick_damage > 0:
-		result.logs.append("Status effects deal %d damage" % result.status_tick_damage)
+	# If statuses_db has entries, use the catalog-based system (Godot-specific).
+	# Otherwise, use Python-style name-based matching (5 dmg per DoT).
+	if not statuses_db.is_empty():
+		result.status_tick_damage = _tick_statuses()
+		state.health -= result.status_tick_damage
+		if result.status_tick_damage > 0:
+			result.logs.append("Status effects deal %d damage" % result.status_tick_damage)
+	else:
+		var py_statuses: Array = state.flags.get("statuses", [])
+		if not py_statuses.is_empty():
+			var py_result := EffectSystem.tick_statuses(py_statuses)
+			if py_result.damage > 0:
+				state.health -= py_result.damage
+				result.status_tick_damage += py_result.damage
+				result.logs.append_array(py_result.logs)
+
+	# --- Enemy burn ticks ---
+	if not enemy_burn_status.is_empty():
+		var burn_result := EffectSystem.tick_enemy_burns(enemy_burn_status, enemies)
+		for tick_info in burn_result.ticks:
+			var idx: int = tick_info["enemy_index"]
+			if idx < enemies.size():
+				enemies[idx].health -= tick_info["damage"]
+		result.logs.append_array(burn_result.logs)
 
 	# --- Enemy attacks ---
 	var alive_after := get_alive_enemies()
 	for enemy in alive_after:
 		if enemy.turn_spawned == turn_count:
-			continue  # just spawned, skip attack
+			result.logs.append(CombatLogFormatter.enemy_just_spawned(enemy.name))
+			continue
 		var enemy_dice: Array[int] = []
-		for d in enemy.num_dice:
+		for _d in enemy.num_dice:
 			enemy_dice.append(rng.rand_int(1, 6))
 		var enemy_dmg: int = 0
 		for d in enemy_dice:
 			enemy_dmg += d
 
-		# Enemy damage multiplier from status effects
 		var enemy_mult := _get_status_modifier("enemy_damage_mult")
 		if enemy_mult > 0.0:
 			enemy_dmg = int(float(enemy_dmg) * enemy_mult)
 
-		# Difficulty enemy damage multiplier
 		enemy_dmg = int(float(enemy_dmg) * state.difficulty_mults.get("enemy_damage_mult", 1.0))
 
-		# Shield absorb
 		if state.temp_shield > 0:
 			var absorbed := mini(state.temp_shield, enemy_dmg)
 			state.temp_shield -= absorbed
@@ -196,17 +319,25 @@ func player_attack(target_index: int = 0) -> TurnResult:
 		result.enemy_rolls.append({"name": enemy.name, "dice": enemy_dice, "damage": enemy_dmg})
 		result.logs.append("%s rolls %s for %d damage" % [enemy.name, str(enemy_dice), enemy_dmg])
 
-	# --- Periodic spawns ---
+	# --- Periodic spawns (ability-driven) ---
 	_handle_periodic_spawns(result)
 
-	# --- Inflict-status abilities ---
+	# --- Inflict-status abilities (enemy_turn trigger) ---
 	_handle_inflict_status(result)
 
 	result.player_hp_after = state.health
 
 	# Reset dice for next turn
 	var extra_rolls: int = state.reroll_bonus + _get_temp_int("extra_rolls") + int(_get_status_modifier("extra_rolls"))
-	dice.reset_turn(extra_rolls)
+	if has_reroll_curse:
+		dice.rolls_left = 1
+	else:
+		dice.reset_turn(extra_rolls)
+
+	# Preserve forced dice locks across turns
+	for idx in forced_dice_locks:
+		if idx < dice.num_dice:
+			dice.locked[idx] = true
 
 	_logs.append_array(result.logs)
 	return result
@@ -217,7 +348,6 @@ func player_attack(target_index: int = 0) -> TurnResult:
 # ------------------------------------------------------------------
 
 func attempt_flee() -> bool:
-	## 50% chance to flee. Returns true if successful.
 	return rng.randf() < 0.5
 
 
@@ -226,19 +356,15 @@ func attempt_flee() -> bool:
 # ------------------------------------------------------------------
 
 func run_auto_combat(lock_strategy: Callable = Callable()) -> CombatResult:
-	## Run combat to completion. lock_strategy(dice: DiceRoller) is called
-	## after each roll so the caller can lock dice.
 	var result := CombatResult.new()
 
 	while state.health > 0 and not get_alive_enemies().is_empty():
 		dice.reset_turn(state.reroll_bonus + _get_temp_int("extra_rolls"))
 		dice.roll()
 
-		# Apply locking strategy
 		if lock_strategy.is_valid():
 			lock_strategy.call(dice)
 
-		# Reroll unlocked dice
 		while dice.rolls_left > 0:
 			var unlocked := false
 			for i in dice.num_dice:
@@ -269,28 +395,109 @@ func run_auto_combat(lock_strategy: Callable = Callable()) -> CombatResult:
 
 
 # ------------------------------------------------------------------
-# Splitting / Spawning
+# Ability system integration
 # ------------------------------------------------------------------
 
-func _handle_split(dead_enemy: Enemy, result: TurnResult) -> void:
-	var td := dead_enemy.type_data
-	if not td.get("splits_on_death", false):
-		return
-	var split_type: String = td.get("split_into_type", "")
-	var split_count: int = int(td.get("split_count", 2))
-	var hp_pct: float = float(td.get("split_hp_percent", 0.4))
-	var dice_delta: int = int(td.get("split_dice", -1))
-	if split_type.is_empty():
-		return
+func _evaluate_abilities(enemy: Enemy, trigger: String) -> Array:
+	var cs := _build_combat_state(enemy)
+	return AbilitySystem.evaluate_abilities(enemy.name, enemy.type_data, trigger, cs, rng)
 
-	var child_hp := maxi(1, int(float(dead_enemy.max_health) * hp_pct))
-	var child_dice := maxi(1, dead_enemy.num_dice + dice_delta)
 
-	for i in split_count:
-		var child := add_enemy(split_type, child_hp, child_dice)
+func _build_combat_state(enemy: Enemy) -> Dictionary:
+	return {
+		"combat_turn_count": turn_count,
+		"boss_ability_cooldowns": boss_ability_cooldowns,
+		"enemy_hp_fraction": enemy.hp_fraction(),
+		"enemy_max_health": enemy.max_health,
+		"enemy_health_mult": state.difficulty_mults.get("enemy_health_mult", 1.0),
+		"floor": state.floor,
+		"num_dice": dice.num_dice,
+		"dice_locked": dice.locked.duplicate(),
+		"statuses": state.flags.get("statuses", []).duplicate(),
+	}
+
+
+func _apply_ability_event(ev: AbilitySystem.AbilityEvent, source_enemy: Enemy) -> Array:
+	var logs: Array = []
+
+	if not ev.message.is_empty():
+		logs.append(CombatLogFormatter.ability_triggered(ev.message))
+
+	if not ev.curse.is_empty():
+		if ev.curse.has("target_enemy_name"):
+			ev.curse["_source_enemy"] = source_enemy
+		active_curses.append(ev.curse)
+
+	if ev.obscure_dice:
+		dice_obscured = true
+
+	if not ev.restrict_values.is_empty():
+		dice_restricted_values = ev.restrict_values
+
+	if not ev.dice_locks.is_empty():
+		forced_dice_locks = ev.dice_locks
+		for idx in ev.dice_locks:
+			if idx < dice.num_dice:
+				dice.locked[idx] = true
+		for idx in ev.dice_values:
+			if idx < dice.num_dice:
+				dice.values[idx] = ev.dice_values[idx]
+
+	if ev.rolls_override >= 0:
+		dice.rolls_left = mini(dice.rolls_left, ev.rolls_override)
+
+	if not ev.status_inflicted.is_empty():
+		var statuses: Array = state.flags.get("statuses", [])
+		if not statuses.has(ev.status_inflicted):
+			statuses.append(ev.status_inflicted)
+			state.flags["statuses"] = statuses
+
+	for sp in ev.spawns:
+		var child := add_enemy(sp["type"], sp["hp"], sp["dice"])
 		child.turn_spawned = turn_count
-		result.split_into.append(split_type)
-		result.logs.append("%s splits into %s (%d HP)" % [dead_enemy.name, split_type, child_hp])
+		logs.append(CombatLogFormatter.enemy_spawned(ev.enemy_name, sp["type"]))
+		logs.append(CombatLogFormatter.spawned_stats(sp["type"], sp["hp"], sp["dice"]))
+
+	if not ev.transform.is_empty():
+		var into: String = ev.transform["into"]
+		var t_hp: int = ev.transform["hp"]
+		var t_dice: int = ev.transform["dice"]
+		var new_enemy := Enemy.new(into, t_hp, t_dice, enemy_types_db.get(into, {}))
+		new_enemy.turn_spawned = turn_count
+		new_enemy.is_boss = source_enemy.is_boss
+		new_enemy.is_mini_boss = source_enemy.is_mini_boss
+		var idx := enemies.find(source_enemy)
+		if idx >= 0:
+			enemies[idx] = new_enemy
+		else:
+			enemies.append(new_enemy)
+		logs.append(CombatLogFormatter.transformed_stats(into, t_hp, t_dice))
+		# Trigger combat_start for new form
+		var start_events := _evaluate_abilities(new_enemy, "combat_start")
+		for sev in start_events:
+			logs.append_array(_apply_ability_event(sev, new_enemy))
+
+	if source_enemy != null and ev.ability_type == "damage_reduction":
+		source_enemy.damage_reduction = int(ev.curse.get("reduction_amount", 0))
+
+	return logs
+
+
+# ------------------------------------------------------------------
+# Splitting / Spawning (legacy compat + new modular)
+# ------------------------------------------------------------------
+
+func _apply_split(dead_enemy: Enemy, split: EnemySpawnResolver.SplitEvent, result: TurnResult) -> void:
+	var idx := enemies.find(dead_enemy)
+	result.logs.append_array(split.logs)
+	for i in split.count:
+		var child := Enemy.new(split.split_type, split.hp, split.dice, enemy_types_db.get(split.split_type, {}))
+		child.turn_spawned = turn_count
+		if idx >= 0:
+			enemies.insert(idx + 1 + i, child)
+		else:
+			enemies.append(child)
+		result.split_into.append(split.split_type)
 
 
 func _handle_hp_spawns(result: TurnResult) -> void:
@@ -306,7 +513,7 @@ func _handle_hp_spawns(result: TurnResult) -> void:
 			if enemy.hp_fraction() > threshold:
 				continue
 			if enemy.spawns_done > 0:
-				continue  # only once per threshold ability
+				continue
 			enemy.spawns_done += 1
 
 			var spawn_type: String = ability.get("spawn_type", "Minion")
@@ -315,7 +522,7 @@ func _handle_hp_spawns(result: TurnResult) -> void:
 			var spawn_dice: int = int(ability.get("spawn_dice", 2))
 			var child_hp := maxi(1, int(float(enemy.max_health) * hp_mult))
 
-			for i in spawn_count:
+			for _i in spawn_count:
 				var child := add_enemy(spawn_type, child_hp, spawn_dice)
 				child.turn_spawned = turn_count
 				result.spawned.append(spawn_type)
@@ -342,7 +549,7 @@ func _handle_periodic_spawns(result: TurnResult) -> void:
 			var spawn_dice: int = int(ability.get("spawn_dice", 2))
 			var child_hp := maxi(1, int(float(enemy.max_health) * hp_mult))
 
-			for i in spawn_count:
+			for _i in spawn_count:
 				enemy.spawns_done += 1
 				var child := add_enemy(spawn_type, child_hp, spawn_dice)
 				child.turn_spawned = turn_count
@@ -371,11 +578,45 @@ func _handle_inflict_status(result: TurnResult) -> void:
 
 
 # ------------------------------------------------------------------
+# Curse helpers
+# ------------------------------------------------------------------
+
+func _apply_heal_to_enemy(enemy_name: String, amount: int) -> void:
+	for e in enemies:
+		if e.name == enemy_name and e.is_alive():
+			e.health = mini(e.health + amount, e.max_health)
+			break
+
+
+func _remove_curse_indices(indices: Array) -> void:
+	for i in indices:
+		if i < active_curses.size():
+			active_curses.remove_at(i)
+
+
+func _process_curse_expiry_side_effects(expired: Array) -> void:
+	for info in expired:
+		var ctype: String = info.get("type", "")
+		match ctype:
+			"dice_obscure":
+				dice_obscured = false
+			"dice_restrict":
+				dice_restricted_values = []
+			"dice_lock_random":
+				for idx in forced_dice_locks:
+					if idx < dice.num_dice:
+						dice.locked[idx] = false
+				forced_dice_locks = []
+			"damage_reduction":
+				for e in enemies:
+					e.damage_reduction = 0
+
+
+# ------------------------------------------------------------------
 # Status effects
 # ------------------------------------------------------------------
 
 func _tick_statuses() -> int:
-	## Process status ticks. Returns total tick damage dealt.
 	var total_damage := 0
 	var statuses: Array = state.flags.get("statuses", [])
 	var to_remove: Array = []
@@ -384,13 +625,11 @@ func _tick_statuses() -> int:
 		var sdata: Dictionary = statuses_db.get(status_name, {})
 		var tick_dmg: int = int(sdata.get("tick_damage", 0))
 
-		# Poison null check
 		if tick_dmg > 0 and sdata.get("poison_null", false):
 			tick_dmg = 0
 
 		total_damage += tick_dmg
 
-		# Decrement turns
 		var turns: int = int(sdata.get("turns", 1))
 		if turns <= 1:
 			to_remove.append(status_name)
