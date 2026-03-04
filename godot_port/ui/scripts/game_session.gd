@@ -103,7 +103,7 @@ func start_new_run(options: Dictionary = {}) -> void:
 	combat = null
 	combat_pending = false
 
-	trace.reset(run_seed, trace_rng_type)
+	trace.reset(run_seed, trace_rng_type, run_rng_mode)
 	trace.difficulty = game_state.difficulty
 	trace.record("run_started", {
 		"difficulty": game_state.difficulty,
@@ -454,6 +454,11 @@ func trace_item_unequipped(item_name: String, slot: String) -> void:
 
 func trace_item_dropped(item_name: String) -> void:
 	trace.record("item_dropped", {"name": item_name})
+
+
+func trace_inventory_qty_changed(item_name: String, before: int, after: int, reason: String) -> void:
+	trace.record("inventory_item_qty_changed", {
+		"item_id": item_name, "before": before, "after": after, "reason": reason})
 
 
 func trace_durability_changed(item_name: String, new_dur: int, broken: bool) -> void:

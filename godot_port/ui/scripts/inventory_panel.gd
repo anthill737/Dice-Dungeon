@@ -17,6 +17,7 @@ var _btn_drop: Button
 var _info_label: Label
 
 var _lore_popup: PanelContainer
+var _inv_index_map: Array[int] = []
 
 const UNEQUIP_COLOR := Color(0.95, 0.61, 0.07)  # #f39c12
 
@@ -131,11 +132,18 @@ func refresh() -> void:
 	_equip_label.text = "\n".join(eq_lines)
 
 	_item_list.clear()
+	_inv_index_map.clear()
+	var seen: Dictionary = {}
 	for i in gs.inventory.size():
 		var item_name: String = gs.inventory[i]
-		var display_text := item_name
+		var normalized: String = item_name.split(" #")[0] if " #" in item_name else item_name
+		if seen.has(normalized):
+			continue
+		seen[normalized] = true
+		_inv_index_map.append(i)
 
 		var count := gs.inventory.count(item_name)
+		var display_text := item_name
 		if count > 1:
 			display_text += " ×%d" % count
 
@@ -150,6 +158,7 @@ func refresh() -> void:
 				var dur := GameSession.inventory_engine.get_durability_percent(item_name)
 				display_text += " [%d%%]" % dur
 
+		var row_idx := _item_list.item_count
 		_item_list.add_item(display_text)
 
 		if GameSession.inventory_engine != null:
@@ -161,7 +170,7 @@ func refresh() -> void:
 			var desc: String = item_def.get("desc", "")
 			if not desc.is_empty():
 				tooltip_lines.append(desc)
-			_item_list.set_item_tooltip(i, "\n".join(tooltip_lines))
+			_item_list.set_item_tooltip(row_idx, "\n".join(tooltip_lines))
 
 	var statuses: Array = gs.flags.get("statuses", [])
 	if not statuses.is_empty():
@@ -214,7 +223,10 @@ func _get_selected_index() -> int:
 	var sel := _item_list.get_selected_items()
 	if sel.is_empty():
 		return -1
-	return sel[0]
+	var display_idx: int = sel[0]
+	if display_idx < 0 or display_idx >= _inv_index_map.size():
+		return -1
+	return _inv_index_map[display_idx]
 
 
 func _on_use() -> void:
@@ -223,9 +235,13 @@ func _on_use() -> void:
 		return
 	var gs := GameSession.game_state
 	var used_name: String = gs.inventory[idx] if idx < gs.inventory.size() else ""
+	var before_count: int = gs.inventory.count(used_name) if not used_name.is_empty() else 0
 	var result := GameSession.inventory_engine.use_item(idx)
 	if result.get("ok", false) and not used_name.is_empty():
 		GameSession.trace_item_used(used_name, str(result.get("type", "")))
+		var after_count: int = gs.inventory.count(used_name)
+		if after_count != before_count:
+			GameSession.trace_inventory_qty_changed(used_name, before_count, after_count, "use")
 	if result.get("type", "") == "readable_lore":
 		_handle_readable_lore(result)
 	GameSession._emit_logs(GameSession.inventory_engine.logs)
@@ -361,9 +377,14 @@ func _on_drop() -> void:
 	var idx := _get_selected_index()
 	if idx < 0:
 		return
+	var gs := GameSession.game_state
+	var drop_name: String = gs.inventory[idx] if idx < gs.inventory.size() else ""
+	var before_count: int = gs.inventory.count(drop_name) if not drop_name.is_empty() else 0
 	var dropped := GameSession.inventory_engine.remove_item_at(idx)
 	if not dropped.is_empty():
 		GameSession.trace_item_dropped(dropped)
+		var after_count: int = gs.inventory.count(dropped)
+		GameSession.trace_inventory_qty_changed(dropped, before_count, after_count, "drop")
 		GameSession.log_message.emit("Dropped %s." % dropped)
 	GameSession.state_changed.emit()
 	refresh()

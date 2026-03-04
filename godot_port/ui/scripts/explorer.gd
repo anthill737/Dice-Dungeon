@@ -687,6 +687,7 @@ func _on_quit_requested() -> void:
 func _connect_log_bridge() -> void:
 	if _context and _context.log:
 		GameSession.log_message.connect(func(msg: String): _context.log.append(msg))
+		GameSession.trace.set_adventure_log(_context.log)
 
 
 # -------------------------------------------------------------------

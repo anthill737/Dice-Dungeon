@@ -267,6 +267,11 @@ static func deserialize(save_data: Dictionary, game: GameState, floor_st: FloorS
 		var rd: Dictionary = rooms_dict[pos_key]
 		floor_st.rooms[pos] = _deserialize_room(rd)
 
+	# Reconstruct has_store from store_pos for backward compat with old saves
+	if floor_st.store_found and floor_st.store_pos != Vector2i(-999, -999):
+		if floor_st.rooms.has(floor_st.store_pos):
+			floor_st.rooms[floor_st.store_pos].has_store = true
+
 
 # ------------------------------------------------------------------
 # save_to_string / load_from_string — API for deterministic tests
@@ -408,6 +413,7 @@ static func _serialize_room(room: RoomState) -> Dictionary:
 		"chest_looted": room.chest_looted,
 		"enemies_defeated": room.enemies_defeated,
 		"has_combat": room.has_combat,
+		"has_store": room.has_store,
 		"exits": room.exits.duplicate(true),
 		"blocked_exits": Array(room.blocked_exits).duplicate(),
 		"collected_discoverables": [],
@@ -444,6 +450,8 @@ static func _deserialize_room(rd: Dictionary) -> RoomState:
 			room.has_combat = not threats.is_empty() or has_combat_tag
 	else:
 		room.has_combat = bool(hc)
+
+	room.has_store = bool(rd.get("has_store", false))
 
 	room.exits = _dict_deep_copy(rd.get("exits", {"N": true, "S": true, "E": true, "W": true}))
 
