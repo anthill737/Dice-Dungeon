@@ -19,6 +19,9 @@ var _room_flags_label: Label
 var _log_text: RichTextLabel
 var _typewriter_queue: Array = []
 var _typewriter_active: bool = false
+var _log_scroll_sticky: bool = true
+var _log_unread_count: int = 0
+var _log_new_msg_btn: Button
 
 # --- Movement buttons ---
 var _btn_north: Button
@@ -83,6 +86,10 @@ func _ready() -> void:
 	_connect_log_bridge()
 	_consume_pending_run_state()
 	_refresh_ui()
+
+
+func _process(_delta: float) -> void:
+	_check_log_scroll()
 
 
 func _consume_pending_run_state() -> void:
@@ -374,31 +381,76 @@ func _build_adventure_log(parent: Node) -> void:
 	var log_panel := PanelContainer.new()
 	log_panel.name = "LogPanel"
 	var log_style := StyleBoxFlat.new()
-	log_style.bg_color = DungeonTheme.BG_LOG
-	log_style.border_color = DungeonTheme.BORDER
-	log_style.border_width_top = 1
-	log_style.set_content_margin_all(6)
+	log_style.bg_color = Color(0.10, 0.07, 0.05)
+	log_style.border_color = DungeonTheme.BORDER_GOLD
+	log_style.border_width_top = 2
+	log_style.set_content_margin_all(10)
+	log_style.content_margin_left = 12
+	log_style.content_margin_right = 12
 	log_panel.add_theme_stylebox_override("panel", log_style)
-	log_panel.custom_minimum_size = Vector2(0, 160)
+	log_panel.custom_minimum_size = Vector2(0, 180)
 	parent.add_child(log_panel)
 
 	var log_vbox := VBoxContainer.new()
-	log_vbox.add_theme_constant_override("separation", 2)
+	log_vbox.add_theme_constant_override("separation", 4)
 	log_panel.add_child(log_vbox)
+
+	var header_hbox := HBoxContainer.new()
+	header_hbox.add_theme_constant_override("separation", 8)
+	log_vbox.add_child(header_hbox)
 
 	var log_header := Label.new()
 	log_header.text = "— Adventure Log —"
 	log_header.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
 	log_header.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
-	log_vbox.add_child(log_header)
+	header_hbox.add_child(log_header)
+
+	var header_spacer := Control.new()
+	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_hbox.add_child(header_spacer)
+
+	var copy_btn := Button.new()
+	copy_btn.text = "Copy Log"
+	copy_btn.custom_minimum_size = Vector2(70, 20)
+	copy_btn.add_theme_font_size_override("font_size", 10)
+	var copy_style := StyleBoxFlat.new()
+	copy_style.bg_color = DungeonTheme.BG_PANEL
+	copy_style.set_corner_radius_all(3)
+	copy_style.set_content_margin_all(2)
+	copy_btn.add_theme_stylebox_override("normal", copy_style)
+	copy_btn.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
+	var copy_hover := StyleBoxFlat.new()
+	copy_hover.bg_color = DungeonTheme.BG_PANEL.lightened(0.15)
+	copy_hover.set_corner_radius_all(3)
+	copy_hover.set_content_margin_all(2)
+	copy_btn.add_theme_stylebox_override("hover", copy_hover)
+	copy_btn.pressed.connect(_on_copy_log)
+	header_hbox.add_child(copy_btn)
 
 	_log_text = RichTextLabel.new()
 	_log_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_log_text.bbcode_enabled = true
 	_log_text.scroll_following = true
-	_log_text.add_theme_font_size_override("normal_font_size", DungeonTheme.FONT_LOG)
-	_log_text.add_theme_color_override("default_color", DungeonTheme.TEXT_BONE)
+	_log_text.scroll_active = true
+	_log_text.selection_enabled = true
+	_log_text.add_theme_font_size_override("normal_font_size", 14)
+	_log_text.add_theme_color_override("default_color", Color(0.93, 0.89, 0.80))
+	_log_text.add_theme_constant_override("line_separation", 3)
 	log_vbox.add_child(_log_text)
+
+	_log_new_msg_btn = Button.new()
+	_log_new_msg_btn.text = "New messages"
+	_log_new_msg_btn.visible = false
+	_log_new_msg_btn.custom_minimum_size = Vector2(120, 22)
+	_log_new_msg_btn.add_theme_font_size_override("font_size", 10)
+	var nmb_style := StyleBoxFlat.new()
+	nmb_style.bg_color = DungeonTheme.TEXT_GOLD.darkened(0.5)
+	nmb_style.set_corner_radius_all(3)
+	nmb_style.set_content_margin_all(2)
+	_log_new_msg_btn.add_theme_stylebox_override("normal", nmb_style)
+	_log_new_msg_btn.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
+	_log_new_msg_btn.pressed.connect(_on_new_messages_clicked)
+	log_vbox.add_child(_log_new_msg_btn)
 
 
 # ==================================================================
@@ -686,8 +738,26 @@ func _on_quit_requested() -> void:
 
 func _connect_log_bridge() -> void:
 	if _context and _context.log:
-		GameSession.log_message.connect(func(msg: String): _context.log.append(msg))
+		GameSession.log_message.connect(func(msg: String): _context.log.append(msg, _infer_tag(msg)))
 		GameSession.trace.set_adventure_log(_context.log)
+
+
+static func _infer_tag(msg: String) -> String:
+	if msg.begins_with("Entered:") or msg.begins_with("Returned to:"):
+		return "system"
+	if msg.begins_with("===") or msg.begins_with("=="):
+		return "system"
+	if msg.begins_with("Enemy:") or msg.begins_with("Enemy lurks"):
+		return "enemy"
+	if msg.contains("gold") and (msg.begins_with("Picked up") or msg.begins_with("+") or msg.begins_with("Collected")):
+		return "loot"
+	if msg.begins_with("Found stairs") or msg.begins_with("Discovered") or msg.begins_with("Rested"):
+		return "success"
+	if msg.begins_with("Combat begins") or msg.begins_with("Fled"):
+		return "enemy"
+	if msg.contains("chest") or msg.contains("Chest"):
+		return "loot"
+	return "system"
 
 
 # -------------------------------------------------------------------
@@ -917,18 +987,110 @@ func _append_log(msg: String) -> void:
 	if _log_text == null:
 		return
 
+	if not _log_scroll_sticky:
+		_log_unread_count += 1
+		if _log_new_msg_btn != null:
+			_log_new_msg_btn.text = "New messages (%d)" % _log_unread_count
+			_log_new_msg_btn.visible = true
+
+	var style := _get_line_style(msg)
 	var sm = get_node_or_null("/root/SettingsManager")
 	var delay_ms: int = 0
 	if sm != null and sm.has_method("get_text_speed_delay"):
 		delay_ms = sm.get_text_speed_delay()
 
 	if delay_ms <= 0:
-		_log_text.append_text(msg + "\n")
+		_render_styled_line(msg, style)
 		return
 
-	_typewriter_queue.append(msg)
+	_typewriter_queue.append({"text": msg, "style": style})
 	if not _typewriter_active:
 		_process_typewriter()
+
+
+static func _get_line_style(msg: String) -> Dictionary:
+	if msg.begins_with("===") or msg.begins_with("=="):
+		return {"color": DungeonTheme.TEXT_GOLD, "bold": false}
+	if msg.begins_with("Entered:") or msg.begins_with("Returned to:"):
+		return {"color": DungeonTheme.TEXT_GOLD, "bold": true}
+	if msg.begins_with("Enemy:") or msg.begins_with("Enemy lurks") or msg.contains("blocks your path"):
+		return {"color": DungeonTheme.TEXT_RED, "bold": false}
+	if msg.begins_with("Combat begins"):
+		return {"color": DungeonTheme.TEXT_RED, "bold": false}
+	if msg.begins_with("Found stairs") or msg.begins_with("Rested") or msg.begins_with("Fled successfully"):
+		return {"color": DungeonTheme.TEXT_GREEN, "bold": false}
+	if msg.begins_with("Discovered"):
+		return {"color": DungeonTheme.TEXT_CYAN, "bold": false}
+	if msg.begins_with("Picked up") or msg.begins_with("Opened chest") or msg.begins_with("Searched"):
+		return {"color": DungeonTheme.TEXT_GOLD, "bold": false}
+	if msg.begins_with("[CHEST]"):
+		return {"color": DungeonTheme.TEXT_GOLD, "bold": false}
+	if msg.begins_with("Mini-boss defeated") or msg.begins_with("Boss defeated"):
+		return {"color": DungeonTheme.TEXT_GREEN, "bold": false}
+	if msg.begins_with("[Session Trace]"):
+		return {"color": DungeonTheme.TEXT_SECONDARY, "bold": false}
+	if msg.begins_with("Browsing store"):
+		return {"color": DungeonTheme.TEXT_CYAN, "bold": false}
+	if msg.begins_with("Cannot") or msg.begins_with("No ") or msg.begins_with("Already") or msg.begins_with("Failed"):
+		return {"color": DungeonTheme.TEXT_SECONDARY, "bold": false}
+	if msg.begins_with("Enemies ahead") or msg.begins_with("Something lurks"):
+		return {"color": DungeonTheme.TEXT_RED, "bold": false}
+	return {}
+
+
+func _render_styled_line(msg: String, style: Dictionary) -> void:
+	var has_color: bool = style.has("color")
+	var is_bold: bool = style.get("bold", false)
+	if has_color:
+		_log_text.push_color(style["color"])
+	if is_bold:
+		_log_text.push_bold()
+	_log_text.append_text(msg)
+	if is_bold:
+		_log_text.pop()
+	if has_color:
+		_log_text.pop()
+	_log_text.append_text("\n")
+
+
+func _on_copy_log() -> void:
+	if _context == null or _context.log == null:
+		return
+	var entries := _context.log.get_text_entries()
+	if entries.is_empty():
+		return
+	var text := "\n".join(entries)
+	DisplayServer.clipboard_set(text)
+	_append_log("[Session Trace] Log copied to clipboard.")
+
+
+func _on_new_messages_clicked() -> void:
+	_log_scroll_sticky = true
+	_log_unread_count = 0
+	if _log_new_msg_btn != null:
+		_log_new_msg_btn.visible = false
+	if _log_text != null:
+		_log_text.scroll_following = true
+
+
+func _check_log_scroll() -> void:
+	if _log_text == null:
+		return
+	var vscroll := _log_text.get_v_scroll_bar()
+	if vscroll == null:
+		return
+	var at_bottom := vscroll.value >= vscroll.max_value - vscroll.page - 2.0
+	if at_bottom:
+		if not _log_scroll_sticky:
+			_log_scroll_sticky = true
+			_log_unread_count = 0
+			if _log_new_msg_btn != null:
+				_log_new_msg_btn.visible = false
+			_log_text.scroll_following = true
+	else:
+		if _log_scroll_sticky:
+			_log_scroll_sticky = false
+			_log_text.scroll_following = false
 
 
 func _process_typewriter() -> void:
@@ -936,15 +1098,29 @@ func _process_typewriter() -> void:
 		_typewriter_active = false
 		return
 	_typewriter_active = true
-	var msg: String = _typewriter_queue.pop_front()
-	_typewrite_chars(msg, 0)
+	var entry = _typewriter_queue.pop_front()
+	var msg: String = entry["text"] if entry is Dictionary else str(entry)
+	var style: Dictionary = entry.get("style", {}) if entry is Dictionary else {}
+
+	var has_color: bool = style.has("color")
+	var is_bold: bool = style.get("bold", false)
+	if has_color:
+		_log_text.push_color(style["color"])
+	if is_bold:
+		_log_text.push_bold()
+
+	_typewrite_chars(msg, 0, has_color, is_bold)
 
 
-func _typewrite_chars(msg: String, idx: int) -> void:
+func _typewrite_chars(msg: String, idx: int, has_color: bool, is_bold: bool) -> void:
 	if _log_text == null:
 		_typewriter_active = false
 		return
 	if idx >= msg.length():
+		if is_bold:
+			_log_text.pop()
+		if has_color:
+			_log_text.pop()
 		_log_text.append_text("\n")
 		_process_typewriter()
 		return
@@ -956,12 +1132,17 @@ func _typewrite_chars(msg: String, idx: int) -> void:
 	if sm != null and sm.has_method("get_text_speed_delay"):
 		delay_ms = sm.get_text_speed_delay()
 	if delay_ms <= 0:
-		_log_text.append_text(msg.substr(idx + 1) + "\n")
+		_log_text.append_text(msg.substr(idx + 1))
+		if is_bold:
+			_log_text.pop()
+		if has_color:
+			_log_text.pop()
+		_log_text.append_text("\n")
 		_process_typewriter()
 		return
 
 	get_tree().create_timer(float(delay_ms) / 1000.0).timeout.connect(
-		_typewrite_chars.bind(msg, idx + 1))
+		_typewrite_chars.bind(msg, idx + 1, has_color, is_bold))
 
 
 # -------------------------------------------------------------------

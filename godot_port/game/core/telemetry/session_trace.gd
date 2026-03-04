@@ -95,6 +95,19 @@ func export_json() -> String:
 	if _adventure_log != null and _adventure_log.has_method("get_entries"):
 		log_entries = _adventure_log.get_entries()
 
+	var export_log: Array = []
+	for i in log_entries.size():
+		var entry = log_entries[i]
+		if entry is Dictionary:
+			var out := {"index": i, "text": str(entry.get("text", ""))}
+			if entry.has("tag"):
+				out["event_type"] = str(entry["tag"])
+			if entry.has("category"):
+				out["category"] = str(entry["category"])
+			export_log.append(out)
+		else:
+			export_log.append({"index": i, "text": str(entry)})
+
 	var data := {
 		"run_id": run_id,
 		"start_time_utc": start_time_utc,
@@ -106,7 +119,8 @@ func export_json() -> String:
 		"difficulty": difficulty,
 		"event_count": events.size(),
 		"events": events,
-		"adventure_log": log_entries,
+		"adventure_log": export_log,
+		"adventure_log_count": log_entries.size(),
 	}
 	return JSON.stringify(data, "  ")
 
@@ -163,9 +177,18 @@ func export_text() -> String:
 		log_entries = _adventure_log.get_entries()
 
 	if not log_entries.is_empty():
-		lines.append("=== ADVENTURE LOG ===")
+		lines.append("=== ADVENTURE LOG (%d entries) ===" % log_entries.size())
 		for i in log_entries.size():
-			lines.append("[%d] %s" % [i, str(log_entries[i])])
+			var entry = log_entries[i]
+			if entry is Dictionary:
+				var text: String = str(entry.get("text", ""))
+				var tag: String = str(entry.get("tag", ""))
+				if tag.is_empty():
+					lines.append("[%d] %s" % [i, text])
+				else:
+					lines.append("[%d] [%s] %s" % [i, tag, text])
+			else:
+				lines.append("[%d] %s" % [i, str(entry)])
 		lines.append("")
 
 	return "\n".join(lines)
