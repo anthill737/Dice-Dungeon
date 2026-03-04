@@ -456,6 +456,11 @@ func trace_item_dropped(item_name: String) -> void:
 	trace.record("item_dropped", {"name": item_name})
 
 
+func trace_inventory_qty_changed(item_name: String, before: int, after: int, reason: String) -> void:
+	trace.record("inventory_item_qty_changed", {
+		"item_id": item_name, "before": before, "after": after, "reason": reason})
+
+
 func trace_durability_changed(item_name: String, new_dur: int, broken: bool) -> void:
 	trace.record("durability_changed", {"name": item_name, "durability": new_dur, "broken": broken})
 

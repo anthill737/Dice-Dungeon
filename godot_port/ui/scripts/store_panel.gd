@@ -13,6 +13,7 @@ var _btn_close: Button
 var _info_label: Label
 
 var _store_items: Array = []
+var _sell_items: Array = []
 
 
 func _ready() -> void:
@@ -120,9 +121,19 @@ func refresh() -> void:
 		_buy_list.add_item("%s — %d gold" % [item_name, price])
 
 	_sell_list.clear()
+	_sell_items = []
+	var seen: Dictionary = {}
 	for item_name in gs.inventory:
+		if seen.has(item_name):
+			continue
+		seen[item_name] = true
+		var count: int = gs.inventory.count(item_name)
 		var sell_price := GameSession.store_engine.calculate_sell_price(item_name)
-		_sell_list.add_item("%s — %d gold" % [item_name, sell_price])
+		_sell_items.append({"name": item_name, "price": sell_price, "count": count})
+		var label := "%s — %d gold" % [item_name, sell_price]
+		if count > 1:
+			label = "%s ×%d — %d gold" % [item_name, count, sell_price]
+		_sell_list.add_item(label)
 
 
 func _on_buy() -> void:
@@ -134,6 +145,7 @@ func _on_buy() -> void:
 		return
 	var item_name: String = _store_items[idx][0]
 	var price: int = int(_store_items[idx][1])
+	var before_count: int = GameSession.game_state.inventory.count(item_name)
 	var result := GameSession.store_engine.buy_item(item_name, price)
 	GameSession._emit_logs(GameSession.store_engine.logs)
 	if result.get("ok", false):
@@ -144,6 +156,9 @@ func _on_buy() -> void:
 				result.get("max_hp_bonus", result.get("damage_bonus", result.get("crit_bonus", ""))))
 		else:
 			GameSession.trace_store_bought(item_name, price)
+		var after_count: int = GameSession.game_state.inventory.count(item_name)
+		if after_count != before_count:
+			GameSession.trace_inventory_qty_changed(item_name, before_count, after_count, "buy")
 	else:
 		_info_label.text = "Cannot buy: %s" % result.get("reason", "unknown")
 	GameSession.state_changed.emit()
@@ -155,16 +170,19 @@ func _on_sell() -> void:
 	if sel.is_empty():
 		return
 	var idx: int = sel[0]
-	var gs := GameSession.game_state
-	if idx >= gs.inventory.size():
+	if idx >= _sell_items.size():
 		return
-	var item_name: String = gs.inventory[idx]
-	var price := GameSession.store_engine.calculate_sell_price(item_name)
+	var entry: Dictionary = _sell_items[idx]
+	var item_name: String = entry["name"]
+	var price: int = int(entry["price"])
+	var before_count: int = GameSession.game_state.inventory.count(item_name)
 	var result := GameSession.store_engine.sell_item(item_name, price)
 	GameSession._emit_logs(GameSession.store_engine.logs)
 	if result.get("ok", false):
 		_info_label.text = "Sold %s for %d gold!" % [item_name, result.get("gold_gained", 0)]
 		GameSession.trace_store_sold(item_name, int(result.get("gold_gained", 0)))
+		var after_count: int = GameSession.game_state.inventory.count(item_name)
+		GameSession.trace_inventory_qty_changed(item_name, before_count, after_count, "sell")
 	else:
 		_info_label.text = "Cannot sell: %s" % result.get("reason", "unknown")
 	GameSession.state_changed.emit()
