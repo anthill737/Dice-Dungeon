@@ -105,13 +105,13 @@ func start_new_run(options: Dictionary = {}) -> void:
 
 	trace.reset(run_seed, trace_rng_type, run_rng_mode)
 	trace.difficulty = game_state.difficulty
-	trace.record("run_started", {
+	trace.record_milestone("run_started", {
 		"difficulty": game_state.difficulty,
 		"max_health": game_state.max_health,
 		"num_dice": game_state.num_dice,
 		"rng_mode": run_rng_mode,
 		"seed": run_seed,
-	})
+	}, SessionTrace.make_snapshot(game_state))
 
 	exploration.start_floor(1)
 	_emit_logs(exploration.logs)
@@ -246,7 +246,7 @@ func start_combat_for_room(room: RoomState) -> void:
 	var enemy_list: Array = []
 	for e in combat.enemies:
 		enemy_list.append({"name": e.name, "hp": e.health, "dice": e.num_dice})
-	trace.record("combat_started", {"enemies": enemy_list})
+	trace.record_milestone("combat_started", {"enemies": enemy_list}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null))
 
 	log_message.emit("Combat begins against %s!" % enemy_name)
 	combat_started.emit()
@@ -298,9 +298,9 @@ func _end_combat_internal(victory: bool) -> void:
 		return
 
 	if victory:
-		trace.record("combat_victory", {})
+		trace.record_milestone("combat_ended", {"result": "victory"}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null))
 	else:
-		trace.record("combat_defeat", {})
+		trace.record_milestone("combat_ended", {"result": "defeat"}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null))
 
 	if victory and room != null:
 		exploration.on_combat_clear(room)
@@ -529,11 +529,11 @@ func trace_upgrade_bought(upgrade_type: String, cost: int, new_value: Variant) -
 # -------------------------------------------------------------------
 
 func trace_saved(slot: int, name: String) -> void:
-	trace.record("saved", {"slot": slot, "name": name})
+	trace.record_milestone("saved", {"slot": slot, "name": name}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null))
 
 
 func trace_loaded(slot: int, name: String) -> void:
-	trace.record("loaded", {"slot": slot, "name": name})
+	trace.record_milestone("loaded", {"slot": slot, "name": name}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null))
 
 
 func trace_deleted_slot(slot: int) -> void:
@@ -613,7 +613,7 @@ func _trace_sync_position() -> void:
 func _trace_room_entered(room: RoomState) -> void:
 	if room == null or exploration == null:
 		return
-	trace.record("room_entered", {
+	trace.record_milestone("room_entered", {
 		"room_name": room.room_name,
 		"room_type": room.room_type,
 		"tags": room.tags.duplicate(),
@@ -625,4 +625,4 @@ func _trace_room_entered(room: RoomState) -> void:
 		"miniboss": room.is_mini_boss_room,
 		"boss": room.is_boss_room,
 		"blocked_exits": room.blocked_exits.duplicate(),
-	})
+	}, SessionTrace.make_snapshot(game_state, exploration.floor))

@@ -14,8 +14,8 @@ const DIFFICULTY_OPTIONS := ["Easy", "Normal", "Hard", "Nightmare"]
 
 const COLOR_SCHEME_OPTIONS := ["Classic", "Dark", "Light"]
 
-const TEXT_SPEED_OPTIONS := ["Slow", "Medium", "Fast", "Instant"]
-const TEXT_SPEED_DELAYS := {"Slow": 15, "Medium": 13, "Fast": 7, "Instant": 0}
+const TEXT_SPEED_OPTIONS := ["Slow", "Normal", "Fast", "Instant"]
+const TEXT_SPEED_DELAYS := {"Slow": 15, "Normal": 13, "Fast": 7, "Instant": 0}
 
 const BINDABLE_ACTIONS := [
 	"move_north", "move_south", "move_east", "move_west",
@@ -85,7 +85,7 @@ const DIFFICULTY_MULTIPLIERS := {
 
 var difficulty: String = "Normal"
 var color_scheme: String = "Classic"
-var text_speed: String = "Medium"
+var text_speed: String = "Normal"
 var keybindings: Dictionary = {}  # action_name -> Key enum int
 
 
@@ -127,7 +127,9 @@ func load_settings() -> void:
 		return
 	difficulty = cfg.get_value("general", "difficulty", "Normal")
 	color_scheme = cfg.get_value("general", "color_scheme", "Classic")
-	text_speed = cfg.get_value("general", "text_speed", "Medium")
+	text_speed = cfg.get_value("general", "text_speed", "Normal")
+	if text_speed == "Medium":
+		text_speed = "Normal"
 	if cfg.has_section("keybindings"):
 		for action in cfg.get_section_keys("keybindings"):
 			keybindings[action] = int(cfg.get_value("keybindings", action, 0))
@@ -181,6 +183,11 @@ func _apply_single_keybinding(action: String, keycode: int) -> void:
 	var ev := InputEventKey.new()
 	ev.keycode = keycode as Key
 	InputMap.action_add_event(action, ev)
+
+
+func settings_fingerprint() -> String:
+	var parts := "%s|%s|%s" % [difficulty, text_speed, color_scheme]
+	return "%x" % parts.hash()
 
 
 ## Utility: return the Key enum int currently bound to an action.

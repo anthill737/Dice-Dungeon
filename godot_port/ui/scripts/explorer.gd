@@ -121,6 +121,7 @@ func _build_ui() -> void:
 	var middle_hbox := HBoxContainer.new()
 	middle_hbox.name = "MiddleHBox"
 	middle_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	middle_hbox.size_flags_stretch_ratio = 1.0
 	middle_hbox.add_theme_constant_override("separation", 0)
 	root_vbox.add_child(middle_hbox)
 
@@ -263,7 +264,7 @@ func _build_center_panel(parent: Node) -> void:
 
 	_room_name_label = Label.new()
 	_room_name_label.text = "Room: ---"
-	_room_name_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SUBHEADING)
+	_room_name_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_HEADING)
 	_room_name_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	room_vbox.add_child(_room_name_label)
 
@@ -273,7 +274,7 @@ func _build_center_panel(parent: Node) -> void:
 	_room_desc_label = Label.new()
 	_room_desc_label.text = ""
 	_room_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_room_desc_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
+	_room_desc_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
 	_room_desc_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
 	room_vbox.add_child(_room_desc_label)
 
@@ -380,6 +381,8 @@ func _build_right_sidebar(parent: Node) -> void:
 func _build_adventure_log(parent: Node) -> void:
 	var log_panel := PanelContainer.new()
 	log_panel.name = "LogPanel"
+	log_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	log_panel.size_flags_stretch_ratio = 0.7
 	var log_style := StyleBoxFlat.new()
 	log_style.bg_color = Color(0.10, 0.07, 0.05)
 	log_style.border_color = DungeonTheme.BORDER_GOLD
@@ -387,8 +390,9 @@ func _build_adventure_log(parent: Node) -> void:
 	log_style.set_content_margin_all(10)
 	log_style.content_margin_left = 12
 	log_style.content_margin_right = 12
+	log_style.content_margin_bottom = 8
 	log_panel.add_theme_stylebox_override("panel", log_style)
-	log_panel.custom_minimum_size = Vector2(0, 180)
+	log_panel.custom_minimum_size = Vector2(0, 140)
 	parent.add_child(log_panel)
 
 	var log_vbox := VBoxContainer.new()
@@ -433,6 +437,8 @@ func _build_adventure_log(parent: Node) -> void:
 	_log_text.scroll_following = true
 	_log_text.scroll_active = true
 	_log_text.selection_enabled = true
+	_log_text.fit_content = false
+	_log_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_log_text.add_theme_font_size_override("normal_font_size", 14)
 	_log_text.add_theme_color_override("default_color", Color(0.93, 0.89, 0.80))
 	_log_text.add_theme_constant_override("line_separation", 3)
@@ -738,26 +744,58 @@ func _on_quit_requested() -> void:
 
 func _connect_log_bridge() -> void:
 	if _context and _context.log:
-		GameSession.log_message.connect(func(msg: String): _context.log.append(msg, _infer_tag(msg)))
+		GameSession.log_message.connect(func(msg: String):
+			var meta := _classify_message(msg)
+			_context.log.append(msg, meta[0], meta[1], meta[2])
+		)
 		GameSession.trace.set_adventure_log(_context.log)
 
 
-static func _infer_tag(msg: String) -> String:
-	if msg.begins_with("Entered:") or msg.begins_with("Returned to:"):
-		return "system"
+static func _classify_message(msg: String) -> Array:
+	# Returns [tag, category, source]
 	if msg.begins_with("===") or msg.begins_with("=="):
-		return "system"
+		return ["system", "ROOM", "exploration"]
+	if msg.begins_with("Entered:") or msg.begins_with("Returned to:"):
+		return ["system", "ROOM", "exploration"]
 	if msg.begins_with("Enemy:") or msg.begins_with("Enemy lurks"):
-		return "enemy"
+		return ["enemy", "COMBAT", "exploration"]
+	if msg.begins_with("Combat begins"):
+		return ["enemy", "COMBAT", "combat"]
+	if msg.begins_with("Enemies ahead") or msg.begins_with("Something lurks"):
+		return ["enemy", "COMBAT", "exploration"]
+	if msg.begins_with("Fled"):
+		return ["system", "COMBAT", "combat"]
+	if msg.begins_with("Found stairs"):
+		return ["success", "DISCOVERY", "exploration"]
+	if msg.begins_with("Discovered"):
+		return ["success", "DISCOVERY", "exploration"]
+	if msg.begins_with("Browsing store"):
+		return ["system", "STORE", "store"]
+	if msg.begins_with("Rested") or msg.begins_with("Already at full"):
+		return ["success", "INTERACTION", "system"]
 	if msg.contains("gold") and (msg.begins_with("Picked up") or msg.begins_with("+") or msg.begins_with("Collected")):
-		return "loot"
-	if msg.begins_with("Found stairs") or msg.begins_with("Discovered") or msg.begins_with("Rested"):
-		return "success"
-	if msg.begins_with("Combat begins") or msg.begins_with("Fled"):
-		return "enemy"
-	if msg.contains("chest") or msg.contains("Chest"):
-		return "loot"
-	return "system"
+		return ["loot", "LOOT", "exploration"]
+	if msg.begins_with("Picked up") or msg.begins_with("Searched"):
+		return ["loot", "LOOT", "exploration"]
+	if msg.begins_with("[CHEST]") or msg.begins_with("Opened chest"):
+		return ["loot", "LOOT", "exploration"]
+	if msg.begins_with("Mini-boss defeated") or msg.begins_with("Boss defeated"):
+		return ["success", "COMBAT", "combat"]
+	if msg.begins_with("Container is locked"):
+		return ["system", "INTERACTION", "exploration"]
+	if msg.begins_with("Inventory full"):
+		return ["system", "SYSTEM", "system"]
+	if msg.begins_with("[Session Trace]"):
+		return ["system", "SYSTEM", "system"]
+	if msg.begins_with("Cannot") or msg.begins_with("No ") or msg.begins_with("Failed"):
+		return ["system", "SYSTEM", "system"]
+	if msg.begins_with("Loaded save"):
+		return ["system", "SYSTEM", "system"]
+	# Flavor text and peaceful messages
+	for peaceful in ExplorationEngine.PEACEFUL_MESSAGES:
+		if msg == peaceful:
+			return ["system", "ROOM", "exploration"]
+	return ["system", "SYSTEM", "system"]
 
 
 # -------------------------------------------------------------------
@@ -1059,9 +1097,27 @@ func _on_copy_log() -> void:
 	var entries := _context.log.get_text_entries()
 	if entries.is_empty():
 		return
-	var text := "\n".join(entries)
+	var header := _build_copy_header()
+	var text := header + "\n".join(entries)
 	DisplayServer.clipboard_set(text)
 	_append_log("[Session Trace] Log copied to clipboard.")
+
+
+func _build_copy_header() -> String:
+	var lines: PackedStringArray = []
+	lines.append("=== Dice Dungeon — Adventure Log ===")
+	lines.append("Seed: %d  |  RNG: %s" % [GameSession.run_seed, GameSession.run_rng_mode])
+	var gs := GameSession.game_state
+	if gs != null:
+		lines.append("Floor: %d  |  HP: %d/%d  |  Gold: %d" % [gs.floor, gs.health, gs.max_health, gs.gold])
+	var room := GameSession.get_current_room()
+	if room != null:
+		var fs := GameSession.get_floor_state()
+		var pos := fs.current_pos if fs != null else Vector2i.ZERO
+		lines.append("Room: %s (%d,%d)" % [room.data.get("name", "?"), pos.x, pos.y])
+	lines.append("====================================")
+	lines.append("")
+	return "\n".join(lines)
 
 
 func _on_new_messages_clicked() -> void:

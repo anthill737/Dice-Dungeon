@@ -22,6 +22,14 @@ var build_time_utc: String = ""
 var difficulty: String = "Normal"
 
 # ------------------------------------------------------------------
+# Replay header (computed once at run start)
+# ------------------------------------------------------------------
+
+var build_version: String = ""
+var content_version: String = ""
+var settings_fingerprint: String = ""
+
+# ------------------------------------------------------------------
 # Events
 # ------------------------------------------------------------------
 
@@ -50,6 +58,9 @@ func reset(p_seed: int = -1, p_rng_type: String = "DefaultRNG", p_rng_mode: Stri
 	rng_mode = p_rng_mode if not p_rng_mode.is_empty() else ("deterministic" if p_rng_type == "DeterministicRNG" else "default")
 	game_version = BuildInfo.git_sha()
 	build_time_utc = BuildInfo.build_time_utc()
+	build_version = BuildInfo.git_sha()
+	content_version = _compute_content_version()
+	settings_fingerprint = _compute_settings_fingerprint()
 	_start_ticks_ms = Time.get_ticks_msec()
 	_current_floor = 1
 	_current_coord = Vector2i.ZERO
@@ -87,6 +98,50 @@ func record(event_type: String, payload: Dictionary = {}) -> void:
 
 
 # ------------------------------------------------------------------
+# Milestone snapshots
+# ------------------------------------------------------------------
+
+const MILESTONE_EVENTS := [
+	"run_started", "floor_started", "room_entered",
+	"combat_started", "combat_ended",
+	"saved", "loaded",
+]
+
+func record_milestone(event_type: String, payload: Dictionary, snapshot: Dictionary) -> void:
+	var ev := {
+		"t_ms": Time.get_ticks_msec() - _start_ticks_ms,
+		"type": event_type,
+		"floor": _current_floor,
+		"coord": [_current_coord.x, _current_coord.y],
+		"payload": payload,
+		"snapshot": snapshot,
+	}
+	events.append(ev)
+
+
+static func make_snapshot(gs, fs = null) -> Dictionary:
+	if gs == null:
+		return {}
+	var snap := {
+		"floor": int(gs.floor) if gs.get("floor") != null else 1,
+		"hp": int(gs.health) if gs.get("health") != null else 0,
+		"max_hp": int(gs.max_health) if gs.get("max_health") != null else 0,
+		"gold": int(gs.gold) if gs.get("gold") != null else 0,
+		"inventory_count": gs.inventory.size() if gs.get("inventory") != null else 0,
+	}
+	if fs != null:
+		snap["coord"] = [fs.current_pos.x, fs.current_pos.y] if fs.get("current_pos") != null else [0, 0]
+	var equipped: PackedStringArray = []
+	if gs.get("equipment") != null and gs.equipment is Dictionary:
+		for slot in gs.equipment:
+			var item_name = gs.equipment[slot]
+			if item_name is String and not item_name.is_empty():
+				equipped.append("%s:%s" % [slot, item_name])
+	snap["equipped_summary"] = ", ".join(equipped) if not equipped.is_empty() else "none"
+	return snap
+
+
+# ------------------------------------------------------------------
 # Export — JSON
 # ------------------------------------------------------------------
 
@@ -104,6 +159,10 @@ func export_json() -> String:
 				out["event_type"] = str(entry["tag"])
 			if entry.has("category"):
 				out["category"] = str(entry["category"])
+			if entry.has("source"):
+				out["source"] = str(entry["source"])
+			if entry.has("action_id"):
+				out["action_id"] = int(entry["action_id"])
 			export_log.append(out)
 		else:
 			export_log.append({"index": i, "text": str(entry)})
@@ -112,10 +171,14 @@ func export_json() -> String:
 		"run_id": run_id,
 		"start_time_utc": start_time_utc,
 		"seed": seed_value,
+		"run_seed": seed_value,
 		"rng_mode": rng_mode,
 		"rng_type": rng_type,
 		"game_version": game_version,
 		"build_time_utc": build_time_utc,
+		"build_version": build_version,
+		"content_version": content_version,
+		"settings_fingerprint": settings_fingerprint,
 		"difficulty": difficulty,
 		"event_count": events.size(),
 		"events": events,
@@ -149,6 +212,9 @@ func export_text() -> String:
 	lines.append("RNG Mode    : %s" % rng_mode)
 	lines.append("RNG Type    : %s" % rng_type)
 	lines.append("Version     : %s" % game_version)
+	lines.append("Build Ver   : %s" % build_version)
+	lines.append("Content Ver : %s" % content_version)
+	lines.append("Settings FP : %s" % settings_fingerprint)
 	lines.append("Build Time  : %s" % build_time_utc)
 	lines.append("Difficulty  : %s" % difficulty)
 	lines.append("Total Events: %d" % events.size())
@@ -170,6 +236,8 @@ func export_text() -> String:
 		if payload is Dictionary and not payload.is_empty():
 			for key in payload:
 				lines.append("    %s: %s" % [str(key), str(payload[key])])
+		if ev.has("snapshot"):
+			lines.append("    [snapshot] %s" % str(ev["snapshot"]))
 		lines.append("")
 
 	var log_entries: Array = []
@@ -183,10 +251,11 @@ func export_text() -> String:
 			if entry is Dictionary:
 				var text: String = str(entry.get("text", ""))
 				var tag: String = str(entry.get("tag", ""))
-				if tag.is_empty():
-					lines.append("[%d] %s" % [i, text])
-				else:
-					lines.append("[%d] [%s] %s" % [i, tag, text])
+				var cat: String = str(entry.get("category", ""))
+				var src: String = str(entry.get("source", ""))
+				var aid: int = int(entry.get("action_id", -1))
+				var meta := "[%s/%s src=%s #%d]" % [tag, cat, src, aid]
+				lines.append("[%d] %s %s" % [i, meta, text])
 			else:
 				lines.append("[%d] %s" % [i, str(entry)])
 		lines.append("")
@@ -227,3 +296,22 @@ static func _generate_run_id() -> String:
 	]
 	var rand_suffix := randi() % 10000
 	return "%s_%04d" % [ts, rand_suffix]
+
+
+static func _compute_content_version() -> String:
+	var hash_val: int = 0
+	for path in ["res://data/rooms_v2.json", "res://data/items.json", "res://data/enemy_types.json"]:
+		var f := FileAccess.open(path, FileAccess.READ)
+		if f != null:
+			hash_val = hash_val ^ f.get_as_text().hash()
+			f.close()
+	return "%x" % hash_val if hash_val != 0 else "unknown"
+
+
+static func _compute_settings_fingerprint() -> String:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree and tree.root:
+		var sm = tree.root.get_node_or_null("SettingsManager")
+		if sm != null and sm.has_method("settings_fingerprint"):
+			return sm.settings_fingerprint()
+	return "unknown"
