@@ -11,14 +11,18 @@ var _seed_label: Label
 var _hp_label: Label
 var _hp_bar: ProgressBar
 var _gold_label: Label
+var _rooms_explored_label: Label
 var _room_name_label: Label
-var _room_desc_label: Label
+var _room_desc_label: RichTextLabel
 var _room_flags_label: Label
 
 # --- Adventure log ---
 var _log_text: RichTextLabel
 var _typewriter_queue: Array = []
 var _typewriter_active: bool = false
+var _log_scroll_sticky: bool = true
+var _log_unread_count: int = 0
+var _log_new_msg_btn: Button
 
 # --- Movement buttons ---
 var _btn_north: Button
@@ -85,6 +89,10 @@ func _ready() -> void:
 	_refresh_ui()
 
 
+func _process(_delta: float) -> void:
+	_check_log_scroll()
+
+
 func _consume_pending_run_state() -> void:
 	if GameSession.has_pending_run_state():
 		var run_state := GameSession.consume_pending_run_state()
@@ -111,16 +119,22 @@ func _build_ui() -> void:
 
 	_build_top_bar(root_vbox)
 
-	var middle_hbox := HBoxContainer.new()
-	middle_hbox.name = "MiddleHBox"
-	middle_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	middle_hbox.add_theme_constant_override("separation", 0)
-	root_vbox.add_child(middle_hbox)
+	var content_hbox := HBoxContainer.new()
+	content_hbox.name = "ContentHBox"
+	content_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content_hbox.add_theme_constant_override("separation", 0)
+	root_vbox.add_child(content_hbox)
 
-	_build_center_panel(middle_hbox)
-	_build_right_sidebar(middle_hbox)
+	var left_vbox := VBoxContainer.new()
+	left_vbox.name = "LeftVBox"
+	left_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_vbox.add_theme_constant_override("separation", 0)
+	content_hbox.add_child(left_vbox)
 
-	_build_adventure_log(root_vbox)
+	_build_center_panel(left_vbox)
+	_build_adventure_log(left_vbox)
+
+	_build_right_sidebar(content_hbox)
 
 
 func _build_top_bar(parent: Node) -> void:
@@ -147,30 +161,6 @@ func _build_top_bar(parent: Node) -> void:
 
 	var sep := VSeparator.new()
 	hbox.add_child(sep)
-
-	_floor_label = Label.new()
-	_floor_label.text = "Floor 1"
-	_floor_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
-	_floor_label.add_theme_color_override("font_color", DungeonTheme.TEXT_CYAN)
-	hbox.add_child(_floor_label)
-
-	_room_pos_label = Label.new()
-	_room_pos_label.text = "(0,0)"
-	_room_pos_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
-	_room_pos_label.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
-	hbox.add_child(_room_pos_label)
-
-	_seed_label = Label.new()
-	_seed_label.name = "SeedLabel"
-	_seed_label.text = ""
-	_seed_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
-	_seed_label.add_theme_color_override("font_color", DungeonTheme.TEXT_DIM)
-	_seed_label.modulate.a = 0.8
-	hbox.add_child(_seed_label)
-
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.add_child(spacer)
 
 	var hp_box := HBoxContainer.new()
 	hp_box.add_theme_constant_override("separation", 6)
@@ -212,6 +202,36 @@ func _build_top_bar(parent: Node) -> void:
 	_gold_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	gold_box.add_child(_gold_label)
 
+	_floor_label = Label.new()
+	_floor_label.text = "Floor 1"
+	_floor_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
+	_floor_label.add_theme_color_override("font_color", DungeonTheme.TEXT_CYAN)
+	hbox.add_child(_floor_label)
+
+	_rooms_explored_label = Label.new()
+	_rooms_explored_label.text = "Rooms: 0"
+	_rooms_explored_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	_rooms_explored_label.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
+	hbox.add_child(_rooms_explored_label)
+
+	_seed_label = Label.new()
+	_seed_label.name = "SeedLabel"
+	_seed_label.text = ""
+	_seed_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	_seed_label.add_theme_color_override("font_color", DungeonTheme.TEXT_DIM)
+	_seed_label.modulate.a = 0.8
+	hbox.add_child(_seed_label)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(spacer)
+
+	_room_pos_label = Label.new()
+	_room_pos_label.text = "(0,0)"
+	_room_pos_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	_room_pos_label.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
+	hbox.add_child(_room_pos_label)
+
 	var btn_box := HBoxContainer.new()
 	btn_box.add_theme_constant_override("separation", 4)
 	hbox.add_child(btn_box)
@@ -241,21 +261,23 @@ func _build_center_panel(parent: Node) -> void:
 	var room_panel := PanelContainer.new()
 	room_panel.name = "RoomPanel"
 	var room_style := StyleBoxFlat.new()
-	room_style.bg_color = DungeonTheme.BG_SECONDARY
+	room_style.bg_color = Color(0.16, 0.09, 0.06)
 	room_style.border_color = DungeonTheme.BORDER_GOLD
-	room_style.set_border_width_all(1)
-	room_style.set_content_margin_all(12)
+	room_style.set_border_width_all(2)
+	room_style.set_content_margin_all(6)
 	room_style.content_margin_left = 16
 	room_style.content_margin_right = 16
 	room_panel.add_theme_stylebox_override("panel", room_style)
 	center.add_child(room_panel)
 
 	var room_vbox := VBoxContainer.new()
-	room_vbox.add_theme_constant_override("separation", 6)
+	room_vbox.add_theme_constant_override("separation", 4)
 	room_panel.add_child(room_vbox)
 
 	_room_name_label = Label.new()
-	_room_name_label.text = "Room: ---"
+	_room_name_label.name = "RoomNameLabel"
+	_room_name_label.text = "---"
+	_room_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_room_name_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SUBHEADING)
 	_room_name_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	room_vbox.add_child(_room_name_label)
@@ -263,14 +285,20 @@ func _build_center_panel(parent: Node) -> void:
 	var room_sep := DungeonTheme.make_separator(DungeonTheme.BORDER_GOLD)
 	room_vbox.add_child(room_sep)
 
-	_room_desc_label = Label.new()
+	_room_desc_label = RichTextLabel.new()
+	_room_desc_label.name = "RoomDescLabel"
 	_room_desc_label.text = ""
+	_room_desc_label.bbcode_enabled = true
+	_room_desc_label.fit_content = true
+	_room_desc_label.scroll_active = false
 	_room_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_room_desc_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
-	_room_desc_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
+	_room_desc_label.add_theme_font_size_override("normal_font_size", DungeonTheme.FONT_BODY)
+	_room_desc_label.add_theme_font_size_override("italics_font_size", DungeonTheme.FONT_BODY)
+	_room_desc_label.add_theme_color_override("default_color", Color(0.96, 0.90, 0.83))
 	room_vbox.add_child(_room_desc_label)
 
 	_room_flags_label = Label.new()
+	_room_flags_label.name = "RoomFlagsLabel"
 	_room_flags_label.text = ""
 	_room_flags_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
 	_room_flags_label.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
@@ -284,6 +312,7 @@ func _build_center_panel(parent: Node) -> void:
 func _build_right_sidebar(parent: Node) -> void:
 	var sidebar := PanelContainer.new()
 	sidebar.name = "RightSidebar"
+	sidebar.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var sb_style := StyleBoxFlat.new()
 	sb_style.bg_color = DungeonTheme.BG_PANEL
 	sb_style.border_color = DungeonTheme.BORDER
@@ -298,11 +327,10 @@ func _build_right_sidebar(parent: Node) -> void:
 	sidebar.add_child(sidebar_vbox)
 
 	_minimap_panel = _minimap_scene.instantiate()
-	_minimap_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	sidebar_vbox.add_child(_minimap_panel)
 
 	var move_header := Label.new()
-	move_header.text = "MOVEMENT"
+	move_header.text = "MOVE"
 	move_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	move_header.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
 	move_header.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
@@ -332,7 +360,7 @@ func _build_right_sidebar(parent: Node) -> void:
 	grid.add_child(_spacer())
 
 	var wasd_hint := Label.new()
-	wasd_hint.text = "WASD / Arrows"
+	wasd_hint.text = "WASD/Arrows"
 	wasd_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	wasd_hint.add_theme_font_size_override("font_size", 10)
 	wasd_hint.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
@@ -369,36 +397,90 @@ func _build_right_sidebar(parent: Node) -> void:
 	_btn_descend = _make_action_btn("⬇ Descend", DungeonTheme.TEXT_CYAN)
 	actions.add_child(_btn_descend)
 
+	var sidebar_spacer := Control.new()
+	sidebar_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sidebar_vbox.add_child(sidebar_spacer)
+
 
 func _build_adventure_log(parent: Node) -> void:
 	var log_panel := PanelContainer.new()
 	log_panel.name = "LogPanel"
+	log_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	log_panel.size_flags_stretch_ratio = 0.85
 	var log_style := StyleBoxFlat.new()
-	log_style.bg_color = DungeonTheme.BG_LOG
-	log_style.border_color = DungeonTheme.BORDER
-	log_style.border_width_top = 1
-	log_style.set_content_margin_all(6)
+	log_style.bg_color = Color(0.10, 0.07, 0.05)
+	log_style.border_color = DungeonTheme.BORDER_GOLD
+	log_style.border_width_top = 2
+	log_style.set_content_margin_all(10)
+	log_style.content_margin_left = 12
+	log_style.content_margin_right = 12
+	log_style.content_margin_bottom = 8
 	log_panel.add_theme_stylebox_override("panel", log_style)
-	log_panel.custom_minimum_size = Vector2(0, 160)
+	log_panel.custom_minimum_size = Vector2(0, 140)
 	parent.add_child(log_panel)
 
 	var log_vbox := VBoxContainer.new()
-	log_vbox.add_theme_constant_override("separation", 2)
+	log_vbox.add_theme_constant_override("separation", 4)
 	log_panel.add_child(log_vbox)
 
+	var header_hbox := HBoxContainer.new()
+	header_hbox.add_theme_constant_override("separation", 8)
+	log_vbox.add_child(header_hbox)
+
 	var log_header := Label.new()
-	log_header.text = "— Adventure Log —"
+	log_header.text = "ADVENTURE LOG"
 	log_header.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
 	log_header.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
-	log_vbox.add_child(log_header)
+	header_hbox.add_child(log_header)
+
+	var header_spacer := Control.new()
+	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_hbox.add_child(header_spacer)
+
+	var copy_btn := Button.new()
+	copy_btn.text = "Copy Log"
+	copy_btn.custom_minimum_size = Vector2(70, 20)
+	copy_btn.add_theme_font_size_override("font_size", 10)
+	var copy_style := StyleBoxFlat.new()
+	copy_style.bg_color = DungeonTheme.BG_PANEL
+	copy_style.set_corner_radius_all(3)
+	copy_style.set_content_margin_all(2)
+	copy_btn.add_theme_stylebox_override("normal", copy_style)
+	copy_btn.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
+	var copy_hover := StyleBoxFlat.new()
+	copy_hover.bg_color = DungeonTheme.BG_PANEL.lightened(0.15)
+	copy_hover.set_corner_radius_all(3)
+	copy_hover.set_content_margin_all(2)
+	copy_btn.add_theme_stylebox_override("hover", copy_hover)
+	copy_btn.pressed.connect(_on_copy_log)
+	header_hbox.add_child(copy_btn)
 
 	_log_text = RichTextLabel.new()
 	_log_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_log_text.bbcode_enabled = true
 	_log_text.scroll_following = true
-	_log_text.add_theme_font_size_override("normal_font_size", DungeonTheme.FONT_LOG)
-	_log_text.add_theme_color_override("default_color", DungeonTheme.TEXT_BONE)
+	_log_text.scroll_active = true
+	_log_text.selection_enabled = true
+	_log_text.fit_content = false
+	_log_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_log_text.add_theme_font_size_override("normal_font_size", 14)
+	_log_text.add_theme_color_override("default_color", Color(0.93, 0.89, 0.80))
+	_log_text.add_theme_constant_override("line_separation", 3)
 	log_vbox.add_child(_log_text)
+
+	_log_new_msg_btn = Button.new()
+	_log_new_msg_btn.text = "New messages"
+	_log_new_msg_btn.visible = false
+	_log_new_msg_btn.custom_minimum_size = Vector2(120, 22)
+	_log_new_msg_btn.add_theme_font_size_override("font_size", 10)
+	var nmb_style := StyleBoxFlat.new()
+	nmb_style.bg_color = DungeonTheme.TEXT_GOLD.darkened(0.5)
+	nmb_style.set_corner_radius_all(3)
+	nmb_style.set_content_margin_all(2)
+	_log_new_msg_btn.add_theme_stylebox_override("normal", nmb_style)
+	_log_new_msg_btn.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
+	_log_new_msg_btn.pressed.connect(_on_new_messages_clicked)
+	log_vbox.add_child(_log_new_msg_btn)
 
 
 # ==================================================================
@@ -495,6 +577,7 @@ func _connect_signals() -> void:
 	GameSession.combat_started.connect(_on_combat_started)
 	GameSession.combat_ended.connect(_on_combat_ended)
 	GameSession.combat_pending_changed.connect(_refresh_ui)
+	GameSession.locked_room_prompt.connect(_on_locked_room_prompt)
 
 	# Panel close_requested signals → close via overlay manager
 	if _combat_panel.has_signal("close_requested"):
@@ -544,12 +627,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
 
-	# ESC / ui_cancel: close topmost popup, or toggle pause menu
+	# ESC: close topmost popup, or toggle pause menu
 	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("open_menu"):
 		if _overlay_manager.is_any_open():
 			_overlay_manager.close_top_menu()
 		else:
 			_on_pause()
+		get_viewport().set_input_as_handled()
+		return
+
+	# Tab always opens inventory (even over other panels)
+	if event.keycode == KEY_TAB or event.is_action_pressed("open_inventory"):
+		_on_inventory()
 		get_viewport().set_input_as_handled()
 		return
 
@@ -567,8 +656,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		_move("E")
 	elif event.is_action_pressed("character_status"):
 		_on_character_status()
-	elif event.is_action_pressed("open_inventory"):
-		_on_inventory()
 	elif event.is_action_pressed("rest"):
 		_on_rest()
 	elif event.keycode == KEY_F3:
@@ -686,8 +773,58 @@ func _on_quit_requested() -> void:
 
 func _connect_log_bridge() -> void:
 	if _context and _context.log:
-		GameSession.log_message.connect(func(msg: String): _context.log.append(msg))
+		GameSession.log_message.connect(func(msg: String):
+			var meta := _classify_message(msg)
+			_context.log.append(msg, meta[0], meta[1], meta[2])
+		)
 		GameSession.trace.set_adventure_log(_context.log)
+
+
+static func _classify_message(msg: String) -> Array:
+	# Returns [tag, category, source]
+	if msg.begins_with("===") or msg.begins_with("=="):
+		return ["system", "ROOM", "exploration"]
+	if msg.begins_with("Entered:") or msg.begins_with("Returned to:"):
+		return ["system", "ROOM", "exploration"]
+	if msg.begins_with("Enemy:") or msg.begins_with("Enemy lurks"):
+		return ["enemy", "COMBAT", "exploration"]
+	if msg.begins_with("Combat begins"):
+		return ["enemy", "COMBAT", "combat"]
+	if msg.begins_with("Enemies ahead") or msg.begins_with("Something lurks"):
+		return ["enemy", "COMBAT", "exploration"]
+	if msg.begins_with("Fled"):
+		return ["system", "COMBAT", "combat"]
+	if msg.begins_with("Found stairs"):
+		return ["success", "DISCOVERY", "exploration"]
+	if msg.begins_with("Discovered"):
+		return ["success", "DISCOVERY", "exploration"]
+	if msg.begins_with("Browsing store"):
+		return ["system", "STORE", "store"]
+	if msg.begins_with("Rested") or msg.begins_with("Already at full"):
+		return ["success", "INTERACTION", "system"]
+	if msg.contains("gold") and (msg.begins_with("Picked up") or msg.begins_with("+") or msg.begins_with("Collected")):
+		return ["loot", "LOOT", "exploration"]
+	if msg.begins_with("Picked up") or msg.begins_with("Searched"):
+		return ["loot", "LOOT", "exploration"]
+	if msg.begins_with("[CHEST]") or msg.begins_with("Opened chest"):
+		return ["loot", "LOOT", "exploration"]
+	if msg.begins_with("Mini-boss defeated") or msg.begins_with("Boss defeated"):
+		return ["success", "COMBAT", "combat"]
+	if msg.begins_with("Container is locked"):
+		return ["system", "INTERACTION", "exploration"]
+	if msg.begins_with("Inventory full"):
+		return ["system", "SYSTEM", "system"]
+	if msg.begins_with("[Session Trace]"):
+		return ["system", "SYSTEM", "system"]
+	if msg.begins_with("Cannot") or msg.begins_with("No ") or msg.begins_with("Failed"):
+		return ["system", "SYSTEM", "system"]
+	if msg.begins_with("Loaded save"):
+		return ["system", "SYSTEM", "system"]
+	# Flavor text and peaceful messages
+	for peaceful in ExplorationEngine.PEACEFUL_MESSAGES:
+		if msg == peaceful:
+			return ["system", "ROOM", "exploration"]
+	return ["system", "SYSTEM", "system"]
 
 
 # -------------------------------------------------------------------
@@ -770,6 +907,42 @@ func _on_descend() -> void:
 		_append_log("Cannot descend. Defeat the boss first or find stairs.")
 
 
+var _pending_gate_type: String = ""
+var _pending_gate_direction: String = ""
+
+func _on_locked_room_prompt(gate_type: String, direction: String) -> void:
+	_pending_gate_type = gate_type
+	_pending_gate_direction = direction
+	var title := ""
+	var message := ""
+	if gate_type == "has_key_mini_boss":
+		title = "LOCKED ELITE ROOM"
+		message = "The door is sealed with an ancient lock.\nYou have an Old Key that fits!\n\nUse the key to unlock and enter,\nor turn back and save it for later?"
+	else:
+		title = "LOCKED BOSS ROOM"
+		message = "The boss chamber door is sealed shut.\nYou have all 3 Boss Key Fragments!\n\nForge them to unlock the door and\nface the floor boss, or turn back?"
+	_show_locked_room_dialog(title, message)
+
+
+func _show_locked_room_dialog(title: String, message: String) -> void:
+	var dialog := AcceptDialog.new()
+	dialog.title = title
+	dialog.dialog_text = message
+	dialog.ok_button_text = "Unlock & Enter"
+	dialog.add_cancel_button("Turn Back")
+	dialog.confirmed.connect(func():
+		GameSession.confirm_locked_room_entry(_pending_gate_direction)
+		_refresh_ui()
+		dialog.queue_free()
+	)
+	dialog.canceled.connect(func():
+		GameSession.decline_locked_room_entry(_pending_gate_type)
+		dialog.queue_free()
+	)
+	add_child(dialog)
+	dialog.popup_centered()
+
+
 # -------------------------------------------------------------------
 # UI refresh
 # -------------------------------------------------------------------
@@ -788,10 +961,13 @@ func _refresh_ui() -> void:
 	_hp_label.text = "%d / %d" % [gs.health, gs.max_health]
 	_gold_label.text = "%d" % gs.gold
 
+	var rooms_explored: int = fs.rooms_explored if fs != null else 0
+	_rooms_explored_label.text = "Rooms: %d" % rooms_explored
+
 	if GameSession.run_rng_mode == "deterministic":
-		_seed_label.text = "Seed: %d (Deterministic)" % GameSession.run_seed
+		_seed_label.text = "Seed: %d (Det)" % GameSession.run_seed
 	else:
-		_seed_label.text = "Seed: Random"
+		_seed_label.text = "Seed: %d" % GameSession.run_seed
 
 	_hp_bar.max_value = gs.max_health
 	_hp_bar.value = gs.health
@@ -800,10 +976,11 @@ func _refresh_ui() -> void:
 
 	if room != null:
 		_room_name_label.text = room.data.get("name", "Unknown Room")
-		var desc: String = room.data.get("description", "")
+		var desc: String = room.data.get("flavor", "")
 		if desc.is_empty():
-			desc = room.data.get("flavor", "")
-		_room_desc_label.text = desc
+			desc = room.data.get("description", "")
+		_room_desc_label.clear()
+		_room_desc_label.append_text("[i]%s[/i]" % desc if not desc.is_empty() else "")
 		var flags: PackedStringArray = []
 		if room.has_combat and not room.enemies_defeated and not room.combat_escaped:
 			flags.append("⚔ COMBAT")
@@ -819,10 +996,10 @@ func _refresh_ui() -> void:
 			flags.append("⚠ MINI-BOSS")
 		if room.is_boss_room:
 			flags.append("☠ BOSS")
-		_room_flags_label.text = "  ".join(flags) if not flags.is_empty() else "✓ Safe"
+		_room_flags_label.text = "  ".join(flags) if not flags.is_empty() else ""
 	else:
 		_room_name_label.text = "---"
-		_room_desc_label.text = ""
+		_room_desc_label.clear()
 		_room_flags_label.text = ""
 
 	_update_button_visibility(room)
@@ -917,18 +1094,134 @@ func _append_log(msg: String) -> void:
 	if _log_text == null:
 		return
 
+	if not _log_scroll_sticky:
+		_log_unread_count += 1
+		if _log_new_msg_btn != null:
+			_log_new_msg_btn.text = "New messages (%d)" % _log_unread_count
+			_log_new_msg_btn.visible = true
+
+	var style := _get_line_style(msg)
 	var sm = get_node_or_null("/root/SettingsManager")
 	var delay_ms: int = 0
 	if sm != null and sm.has_method("get_text_speed_delay"):
 		delay_ms = sm.get_text_speed_delay()
 
 	if delay_ms <= 0:
-		_log_text.append_text(msg + "\n")
+		_render_styled_line(msg, style)
 		return
 
-	_typewriter_queue.append(msg)
+	_typewriter_queue.append({"text": msg, "style": style})
 	if not _typewriter_active:
 		_process_typewriter()
+
+
+static func _get_line_style(msg: String) -> Dictionary:
+	if msg.begins_with("===") or msg.begins_with("=="):
+		return {"color": DungeonTheme.TEXT_GOLD, "bold": false}
+	if msg.begins_with("Entered:") or msg.begins_with("Returned to:"):
+		return {"color": DungeonTheme.TEXT_GOLD, "bold": true}
+	if msg.begins_with("Enemy:") or msg.begins_with("Enemy lurks") or msg.contains("blocks your path"):
+		return {"color": DungeonTheme.TEXT_RED, "bold": false}
+	if msg.begins_with("Combat begins"):
+		return {"color": DungeonTheme.TEXT_RED, "bold": false}
+	if msg.begins_with("Found stairs") or msg.begins_with("Rested") or msg.begins_with("Fled successfully"):
+		return {"color": DungeonTheme.TEXT_GREEN, "bold": false}
+	if msg.begins_with("Discovered"):
+		return {"color": DungeonTheme.TEXT_CYAN, "bold": false}
+	if msg.begins_with("Picked up") or msg.begins_with("Opened chest") or msg.begins_with("Searched"):
+		return {"color": DungeonTheme.TEXT_GOLD, "bold": false}
+	if msg.begins_with("[CHEST]"):
+		return {"color": DungeonTheme.TEXT_GOLD, "bold": false}
+	if msg.begins_with("Mini-boss defeated") or msg.begins_with("Boss defeated"):
+		return {"color": DungeonTheme.TEXT_GREEN, "bold": false}
+	if msg.begins_with("[Session Trace]"):
+		return {"color": DungeonTheme.TEXT_SECONDARY, "bold": false}
+	if msg.begins_with("Browsing store"):
+		return {"color": DungeonTheme.TEXT_CYAN, "bold": false}
+	if msg.begins_with("Cannot") or msg.begins_with("No ") or msg.begins_with("Already") or msg.begins_with("Failed"):
+		return {"color": DungeonTheme.TEXT_SECONDARY, "bold": false}
+	if msg.begins_with("Enemies ahead") or msg.begins_with("Something lurks"):
+		return {"color": DungeonTheme.TEXT_RED, "bold": false}
+	return {}
+
+
+func _render_styled_line(msg: String, style: Dictionary) -> void:
+	var has_color: bool = style.has("color")
+	var is_bold: bool = style.get("bold", false)
+	if has_color:
+		_log_text.push_color(style["color"])
+	if is_bold:
+		_log_text.push_bold()
+	_log_text.append_text(msg)
+	if is_bold:
+		_log_text.pop()
+	if has_color:
+		_log_text.pop()
+	_log_text.append_text("\n")
+
+
+func _on_copy_log() -> void:
+	if _context == null or _context.log == null:
+		return
+	var entries := _context.log.get_text_entries()
+	if entries.is_empty():
+		return
+	var header := _build_copy_header()
+	var text := header + "\n".join(entries)
+	DisplayServer.clipboard_set(text)
+	_append_log("[Session Trace] Log copied to clipboard.")
+
+
+func _build_copy_header() -> String:
+	var lines: PackedStringArray = []
+	lines.append("=== Dice Dungeon — Adventure Log ===")
+	lines.append("Seed: %d" % GameSession.run_seed)
+	lines.append("RNG Mode: %s" % GameSession.run_rng_mode)
+	var gs := GameSession.game_state
+	if gs != null:
+		lines.append("Floor: %d" % gs.floor)
+	var room := GameSession.get_current_room()
+	if room != null:
+		lines.append("Room: %s" % room.data.get("name", "?"))
+	var aid: int = 0
+	if _context != null and _context.log != null:
+		aid = _context.log.size()
+	lines.append("Action ID: %d" % aid)
+	lines.append("Build: %s" % GameSession.trace.build_version)
+	lines.append("Content Version: %s" % GameSession.trace.content_version)
+	lines.append("Settings Fingerprint: %s" % GameSession.trace.settings_fingerprint)
+	lines.append("====================================")
+	lines.append("")
+	return "\n".join(lines)
+
+
+func _on_new_messages_clicked() -> void:
+	_log_scroll_sticky = true
+	_log_unread_count = 0
+	if _log_new_msg_btn != null:
+		_log_new_msg_btn.visible = false
+	if _log_text != null:
+		_log_text.scroll_following = true
+
+
+func _check_log_scroll() -> void:
+	if _log_text == null:
+		return
+	var vscroll := _log_text.get_v_scroll_bar()
+	if vscroll == null:
+		return
+	var at_bottom := vscroll.value >= vscroll.max_value - vscroll.page - 2.0
+	if at_bottom:
+		if not _log_scroll_sticky:
+			_log_scroll_sticky = true
+			_log_unread_count = 0
+			if _log_new_msg_btn != null:
+				_log_new_msg_btn.visible = false
+			_log_text.scroll_following = true
+	else:
+		if _log_scroll_sticky:
+			_log_scroll_sticky = false
+			_log_text.scroll_following = false
 
 
 func _process_typewriter() -> void:
@@ -936,15 +1229,29 @@ func _process_typewriter() -> void:
 		_typewriter_active = false
 		return
 	_typewriter_active = true
-	var msg: String = _typewriter_queue.pop_front()
-	_typewrite_chars(msg, 0)
+	var entry = _typewriter_queue.pop_front()
+	var msg: String = entry["text"] if entry is Dictionary else str(entry)
+	var style: Dictionary = entry.get("style", {}) if entry is Dictionary else {}
+
+	var has_color: bool = style.has("color")
+	var is_bold: bool = style.get("bold", false)
+	if has_color:
+		_log_text.push_color(style["color"])
+	if is_bold:
+		_log_text.push_bold()
+
+	_typewrite_chars(msg, 0, has_color, is_bold)
 
 
-func _typewrite_chars(msg: String, idx: int) -> void:
+func _typewrite_chars(msg: String, idx: int, has_color: bool, is_bold: bool) -> void:
 	if _log_text == null:
 		_typewriter_active = false
 		return
 	if idx >= msg.length():
+		if is_bold:
+			_log_text.pop()
+		if has_color:
+			_log_text.pop()
 		_log_text.append_text("\n")
 		_process_typewriter()
 		return
@@ -956,12 +1263,17 @@ func _typewrite_chars(msg: String, idx: int) -> void:
 	if sm != null and sm.has_method("get_text_speed_delay"):
 		delay_ms = sm.get_text_speed_delay()
 	if delay_ms <= 0:
-		_log_text.append_text(msg.substr(idx + 1) + "\n")
+		_log_text.append_text(msg.substr(idx + 1))
+		if is_bold:
+			_log_text.pop()
+		if has_color:
+			_log_text.pop()
+		_log_text.append_text("\n")
 		_process_typewriter()
 		return
 
 	get_tree().create_timer(float(delay_ms) / 1000.0).timeout.connect(
-		_typewrite_chars.bind(msg, idx + 1))
+		_typewrite_chars.bind(msg, idx + 1, has_color, is_bold))
 
 
 # -------------------------------------------------------------------

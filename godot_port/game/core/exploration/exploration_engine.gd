@@ -100,7 +100,11 @@ func start_floor(floor_index: int) -> RoomState:
 	## This means NO ground loot, NO mechanics, NO stairs/store/chest rolls
 	## (entrance is treated as already-visited)
 	logs.append("=== Floor %d ===" % floor_index)
+	logs.append("==================================================")
 	logs.append("Entered: %s" % room_data.get("name", "Unknown"))
+	var flavor: String = room_data.get("flavor", "")
+	if not flavor.is_empty():
+		logs.append(flavor)
 	return entrance
 
 
@@ -143,6 +147,8 @@ func can_move(direction: String) -> bool:
 
 ## Check whether a locked special room at pos can be entered.
 ## Returns "" if entry is allowed, otherwise a reason string.
+## "has_key_mini_boss" means the player has an Old Key and can choose to use it.
+## "has_key_boss" means the player has 3 fragments and can choose to use them.
 func check_room_gating(pos: Vector2i) -> String:
 	if not floor.special_rooms.has(pos):
 		return ""
@@ -150,12 +156,38 @@ func check_room_gating(pos: Vector2i) -> String:
 		return ""
 	var room_type: String = floor.special_rooms[pos]
 	if room_type == "mini_boss":
-		if not state.inventory.has("Old Key"):
+		if state.inventory.has("Old Key"):
+			return "has_key_mini_boss"
+		else:
 			return "locked_mini_boss"
 	elif room_type == "boss":
-		if floor.key_fragments < 3:
+		if floor.key_fragments >= 3:
+			return "has_key_boss"
+		else:
 			return "locked_boss"
 	return ""
+
+
+## Unlock a mini-boss room by consuming an Old Key. Returns true on success.
+func use_old_key(pos: Vector2i) -> bool:
+	if not state.inventory.has("Old Key"):
+		return false
+	state.inventory.erase("Old Key")
+	floor.unlocked_rooms[pos] = true
+	logs.append("The Old Key turns in the lock...")
+	logs.append("The elite room door swings open!")
+	return true
+
+
+## Unlock a boss room by consuming 3 key fragments. Returns true on success.
+func use_boss_key(pos: Vector2i) -> bool:
+	if floor.key_fragments < 3:
+		return false
+	floor.key_fragments = 0
+	floor.unlocked_rooms[pos] = true
+	logs.append("The 3 fragments merge into a complete key!")
+	logs.append("The massive boss door grinds open!")
+	return true
 
 
 func move(direction: String) -> RoomState:
@@ -167,8 +199,16 @@ func move(direction: String) -> RoomState:
 
 	## Python: check special room gating BEFORE allowing entry
 	var gate := check_room_gating(new_pos)
-	if not gate.is_empty():
-		logs.append("Path blocked: %s" % gate)
+	if gate == "locked_mini_boss":
+		logs.append("⚡ A locked door blocks your path!")
+		logs.append("You need an Old Key to proceed.")
+		return null
+	elif gate == "locked_boss":
+		logs.append("☠ A sealed boss door blocks your path!")
+		logs.append("You need 3 key fragments. You have %d." % floor.key_fragments)
+		return null
+	elif gate == "has_key_mini_boss" or gate == "has_key_boss":
+		# Caller (GameSession) must handle the dialog
 		return null
 
 	# Revisiting existing room — Python handles this in explore_direction
@@ -176,7 +216,11 @@ func move(direction: String) -> RoomState:
 		var existing: RoomState = floor.rooms[new_pos]
 		floor.current_pos = new_pos
 		# Python does NOT make RNG calls when revisiting
+		logs.append("==================================================")
 		logs.append("Returned to: %s" % existing.data.get("name", "Room"))
+		var flavor: String = existing.data.get("flavor", "")
+		if not flavor.is_empty():
+			logs.append(flavor)
 		return existing
 
 	# New room — Python increments rooms_explored_on_floor BEFORE spawn checks
@@ -191,6 +235,10 @@ func move(direction: String) -> RoomState:
 	# Then room.visited = True
 	# Then rooms_explored += 1 (for non-entrance rooms)
 	floor.rooms_explored += 1
+
+	# Python: decrement rest cooldown on first visit
+	if state.rest_cooldown > 0:
+		state.rest_cooldown -= 1
 
 	## Python: first 3 rooms on floor 1 are starter rooms (never combat)
 	if floor.floor_index == 1 and floor.rooms_explored <= 3:
@@ -364,16 +412,28 @@ func _on_first_visit(room: RoomState) -> void:
 	var threats: Array = room.data.get("threats", [])
 	var has_combat_tag: bool = (room.data.get("tags", []) as Array).has("combat")
 
+	var room_name: String = room.data.get("name", "Room")
+	var flavor: String = room.data.get("flavor", "")
+
 	if room.has_combat and not room.enemies_defeated:
 		if not threats.is_empty():
 			var enemy_name: String = rng.choice(threats)
-			logs.append("Entered: %s" % room.data.get("name", "Room"))
+			logs.append("==================================================")
+			logs.append("Entered: %s" % room_name)
+			if not flavor.is_empty():
+				logs.append(flavor)
 			logs.append("Enemy: %s" % enemy_name)
 		else:
-			logs.append("Entered: %s" % room.data.get("name", "Room"))
+			logs.append("==================================================")
+			logs.append("Entered: %s" % room_name)
+			if not flavor.is_empty():
+				logs.append(flavor)
 			logs.append("Enemy lurks here!")
 	else:
-		logs.append("Entered: %s" % room.data.get("name", "Room"))
+		logs.append("==================================================")
+		logs.append("Entered: %s" % room_name)
+		if not flavor.is_empty():
+			logs.append(flavor)
 		if not threats.is_empty() or has_combat_tag:
 			## Python RNG call: rng.choice(peaceful_messages)
 			logs.append(rng.choice(PEACEFUL_MESSAGES))

@@ -50,6 +50,7 @@ signal combat_started()
 signal combat_ended()
 signal combat_pending_changed()
 signal log_message(msg: String)
+signal locked_room_prompt(gate_type: String, direction: String)
 
 
 func _ready() -> void:
@@ -87,7 +88,7 @@ func start_new_run(options: Dictionary = {}) -> void:
 	else:
 		rng = DefaultRNG.new()
 		run_rng_mode = "default"
-		run_seed = -1
+		run_seed = rng.initial_seed
 
 	var trace_rng_type := "DeterministicRNG" if run_rng_mode == "deterministic" else "DefaultRNG"
 
@@ -105,13 +106,13 @@ func start_new_run(options: Dictionary = {}) -> void:
 
 	trace.reset(run_seed, trace_rng_type, run_rng_mode)
 	trace.difficulty = game_state.difficulty
-	trace.record("run_started", {
+	trace.record_milestone("run_started", {
 		"difficulty": game_state.difficulty,
 		"max_health": game_state.max_health,
 		"num_dice": game_state.num_dice,
 		"rng_mode": run_rng_mode,
 		"seed": run_seed,
-	})
+	}, SessionTrace.make_snapshot(game_state))
 
 	exploration.start_floor(1)
 	_emit_logs(exploration.logs)
@@ -178,7 +179,20 @@ func move_direction(direction: String) -> RoomState:
 		trace.record("move_attempted", {"dir": direction, "success": false, "reason": "combat_blocking"})
 		return null
 
-	var old_pos: Vector2i = exploration.floor.current_pos if exploration.floor != null else Vector2i.ZERO
+	# Check locked room gating before attempting move
+	var delta := RoomState.dir_delta(direction)
+	var new_pos: Vector2i = exploration.floor.current_pos + delta
+	var gate := exploration.check_room_gating(new_pos)
+	if gate == "has_key_mini_boss" or gate == "has_key_boss":
+		if gate == "has_key_mini_boss":
+			log_message.emit("⚡ A reinforced door blocks your path! ⚡")
+			log_message.emit("The door is sealed with an ornate lock.")
+		else:
+			log_message.emit("☠ An enormous sealed door looms before you! ☠")
+			log_message.emit("Three keyhole slots glow faintly in the door.")
+		locked_room_prompt.emit(gate, direction)
+		return null
+
 	var room := exploration.move(direction)
 	_emit_logs(exploration.logs)
 
@@ -194,6 +208,40 @@ func move_direction(direction: String) -> RoomState:
 
 	state_changed.emit()
 	return room
+
+
+func confirm_locked_room_entry(direction: String) -> RoomState:
+	if exploration == null:
+		return null
+	var delta := RoomState.dir_delta(direction)
+	var new_pos: Vector2i = exploration.floor.current_pos + delta
+	var gate := exploration.check_room_gating(new_pos)
+	if gate == "has_key_mini_boss":
+		exploration.use_old_key(new_pos)
+		_emit_logs(exploration.logs)
+	elif gate == "has_key_boss":
+		exploration.use_boss_key(new_pos)
+		_emit_logs(exploration.logs)
+	var room := exploration.move(direction)
+	_emit_logs(exploration.logs)
+	if room != null:
+		_drain_ground_to_inventory()
+		_trace_sync_position()
+		trace.record("move_attempted", {"dir": direction, "success": true})
+		_trace_room_entered(room)
+		_log_room_enter(room)
+		_check_combat_pending(room)
+	state_changed.emit()
+	return room
+
+
+func decline_locked_room_entry(gate_type: String) -> void:
+	if gate_type == "has_key_mini_boss":
+		log_message.emit("You decide to save your Old Key for later.")
+		log_message.emit("You turn back. The elite room remains locked.")
+	else:
+		log_message.emit("You decide to prepare more before facing the boss.")
+		log_message.emit("You turn back. The boss room remains sealed.")
 
 
 func _check_combat_pending(room: RoomState) -> void:
@@ -246,7 +294,9 @@ func start_combat_for_room(room: RoomState) -> void:
 	var enemy_list: Array = []
 	for e in combat.enemies:
 		enemy_list.append({"name": e.name, "hp": e.health, "dice": e.num_dice})
-	trace.record("combat_started", {"enemies": enemy_list})
+	var _cs_room := get_current_room()
+	var _cs_room_name := _cs_room.room_name if _cs_room != null else ""
+	trace.record_milestone("combat_started", {"enemies": enemy_list}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null, _cs_room_name))
 
 	log_message.emit("Combat begins against %s!" % enemy_name)
 	combat_started.emit()
@@ -297,10 +347,12 @@ func _end_combat_internal(victory: bool) -> void:
 	if combat == null:
 		return
 
+	var _ce_room := get_current_room()
+	var _ce_room_name := _ce_room.room_name if _ce_room != null else ""
 	if victory:
-		trace.record("combat_victory", {})
+		trace.record_milestone("combat_ended", {"result": "victory"}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null, _ce_room_name))
 	else:
-		trace.record("combat_defeat", {})
+		trace.record_milestone("combat_ended", {"result": "defeat"}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null, _ce_room_name))
 
 	if victory and room != null:
 		exploration.on_combat_clear(room)
@@ -417,12 +469,21 @@ func descend_stairs() -> RoomState:
 func attempt_rest() -> void:
 	if game_state == null:
 		return
-	var base_heal := 10
+	if game_state.rest_cooldown > 0:
+		log_message.emit("Cannot rest yet! Explore %d more room%s to rest again." % [
+			game_state.rest_cooldown,
+			"s" if game_state.rest_cooldown > 1 else ""])
+		return
+	if game_state.in_combat:
+		log_message.emit("Cannot rest during combat!")
+		return
+	var base_heal := 20 + game_state.heal_bonus
 	var heal_mult: float = game_state.difficulty_mults.get("heal_mult", 1.0)
 	var heal := mini(int(float(base_heal) * heal_mult), game_state.max_health - game_state.health)
 	if heal > 0:
 		game_state.health += heal
-		log_message.emit("Rested and recovered %d HP." % heal)
+		game_state.rest_cooldown = 3
+		log_message.emit("Rested and recovered %d HP. Must explore 3 rooms before resting again." % heal)
 	else:
 		log_message.emit("Already at full health.")
 	state_changed.emit()
@@ -529,11 +590,11 @@ func trace_upgrade_bought(upgrade_type: String, cost: int, new_value: Variant) -
 # -------------------------------------------------------------------
 
 func trace_saved(slot: int, name: String) -> void:
-	trace.record("saved", {"slot": slot, "name": name})
+	trace.record_milestone("saved", {"slot": slot, "name": name}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null))
 
 
 func trace_loaded(slot: int, name: String) -> void:
-	trace.record("loaded", {"slot": slot, "name": name})
+	trace.record_milestone("loaded", {"slot": slot, "name": name}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null))
 
 
 func trace_deleted_slot(slot: int) -> void:
@@ -613,7 +674,7 @@ func _trace_sync_position() -> void:
 func _trace_room_entered(room: RoomState) -> void:
 	if room == null or exploration == null:
 		return
-	trace.record("room_entered", {
+	trace.record_milestone("room_entered", {
 		"room_name": room.room_name,
 		"room_type": room.room_type,
 		"tags": room.tags.duplicate(),
@@ -625,4 +686,4 @@ func _trace_room_entered(room: RoomState) -> void:
 		"miniboss": room.is_mini_boss_room,
 		"boss": room.is_boss_room,
 		"blocked_exits": room.blocked_exits.duplicate(),
-	})
+	}, SessionTrace.make_snapshot(game_state, exploration.floor, room.room_name))

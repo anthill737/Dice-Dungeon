@@ -16,6 +16,8 @@ var reroll_bonus: int = 0
 var temp_shield: int = 0
 var shop_discount: float = 0.0
 var armor: int = 0
+var heal_bonus: int = 0
+var rest_cooldown: int = 0
 
 var inventory: Array = []
 var max_inventory: int = 20
@@ -103,6 +105,8 @@ func reset() -> void:
 	temp_shield = 0
 	shop_discount = 0.0
 	armor = 0
+	heal_bonus = 0
+	rest_cooldown = 0
 	inventory = []
 	max_inventory = 20
 	ground_items = []

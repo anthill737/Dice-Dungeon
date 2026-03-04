@@ -496,7 +496,7 @@ func _draw_blocked_bars(room: RoomState, cx: float, cy: float, half: float) -> v
 
 func _draw_room_icon(room: RoomState, pos: Vector2i, center: Vector2,
 		half: float, fs: FloorState) -> void:
-	var icon_size := half * 0.6
+	var icon_size := half * 0.85
 	var marker := _classify_room_marker(room, pos, fs)
 	match marker:
 		"locked":
