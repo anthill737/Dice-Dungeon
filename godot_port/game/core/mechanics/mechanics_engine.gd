@@ -151,7 +151,7 @@ func _apply_bundle(state: GameState, eff: Dictionary) -> void:
 		state.flags["escape_token"] = int(state.flags.get("escape_token", 0)) + 1
 		_log("Gained an escape token")
 
-	# Item — add to ground_items (mirrors Python)
+	# Item — add to ground_items staging area (mirrors Python parity runner)
 	var item_name = eff.get("item")
 	if item_name != null and item_name is String and item_name.length() > 0:
 		state.ground_items.append(item_name)
