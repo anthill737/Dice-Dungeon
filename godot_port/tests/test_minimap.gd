@@ -1,7 +1,7 @@
 extends "res://addons/gut/test.gd"
-## Smoke tests for the MinimapPanel added in Step 10.
-## Validates: instantiation, explored-room tracking, current-room indicator,
-## and save/load rebuild.
+## Minimap tests — validates data/state mapping (not pixels).
+## Covers: instantiation, model accuracy, visibility, special markers,
+## blocked edges, follow behavior, and save/load rebuild.
 
 var _minimap_scene := preload("res://ui/scenes/MinimapPanel.tscn")
 var _explorer_scene := preload("res://ui/scenes/Explorer.tscn")
@@ -161,6 +161,275 @@ func test_save_load_rebuild() -> void:
 		"Minimap room count matches saved state after load")
 	assert_eq(panel.get_current_room_pos(), pre_pos,
 		"Minimap current pos matches saved state after load")
+
+	panel.queue_free()
+	await get_tree().process_frame
+
+
+# ------------------------------------------------------------------
+# 6) On new run start: player marker at starting room
+# ------------------------------------------------------------------
+
+func test_player_marker_at_start() -> void:
+	GameSession.start_new_game()
+	var panel := _minimap_scene.instantiate()
+	add_child(panel)
+	await get_tree().process_frame
+
+	assert_not_null(panel.model_player_room,
+		"model_player_room is set at start")
+	assert_eq(panel.model_player_room, Vector2i.ZERO,
+		"Player marker is at origin (starting room)")
+
+	panel.queue_free()
+	await get_tree().process_frame
+
+
+# ------------------------------------------------------------------
+# 7) Starting room visible immediately
+# ------------------------------------------------------------------
+
+func test_starting_room_visible() -> void:
+	GameSession.start_new_game()
+	var panel := _minimap_scene.instantiate()
+	add_child(panel)
+	await get_tree().process_frame
+
+	assert_true(panel.model_visible_rooms.has(Vector2i.ZERO),
+		"Starting room (0,0) is in visible rooms list")
+	assert_eq(panel.model_visible_rooms.size(), 1,
+		"Only the starting room is visible at start")
+
+	panel.queue_free()
+	await get_tree().process_frame
+
+
+# ------------------------------------------------------------------
+# 8) Special room markers — stairs
+# ------------------------------------------------------------------
+
+func test_special_marker_stairs() -> void:
+	GameSession.start_new_game()
+	var fs := GameSession.get_floor_state()
+	var room := fs.get_current_room()
+	room.has_stairs = true
+
+	var panel := _minimap_scene.instantiate()
+	add_child(panel)
+	await get_tree().process_frame
+	# Force model update after mutating room
+	GameSession.state_changed.emit()
+	await get_tree().process_frame
+
+	assert_true(panel.model_special_markers.has(Vector2i.ZERO),
+		"Starting room has a special marker")
+	assert_eq(panel.model_special_markers[Vector2i.ZERO], "stairs",
+		"Marker type is 'stairs'")
+
+	panel.queue_free()
+	await get_tree().process_frame
+
+
+# ------------------------------------------------------------------
+# 9) Special room markers — store
+# ------------------------------------------------------------------
+
+func test_special_marker_store() -> void:
+	GameSession.start_new_game()
+	var fs := GameSession.get_floor_state()
+	var room := fs.get_current_room()
+	room.has_store = true
+	fs.store_found = true
+	fs.store_pos = Vector2i.ZERO
+
+	var panel := _minimap_scene.instantiate()
+	add_child(panel)
+	await get_tree().process_frame
+	GameSession.state_changed.emit()
+	await get_tree().process_frame
+
+	assert_true(panel.model_special_markers.has(Vector2i.ZERO),
+		"Starting room has a special marker")
+	assert_eq(panel.model_special_markers[Vector2i.ZERO], "store",
+		"Marker type is 'store'")
+
+	panel.queue_free()
+	await get_tree().process_frame
+
+
+# ------------------------------------------------------------------
+# 10) Special room markers — boss locked
+# ------------------------------------------------------------------
+
+func test_special_marker_boss_locked() -> void:
+	GameSession.start_new_game()
+	var fs := GameSession.get_floor_state()
+	var room := fs.get_current_room()
+	room.is_boss_room = true
+	room.has_combat = true
+	fs.special_rooms[Vector2i.ZERO] = "boss"
+	# Not in unlocked_rooms → should be "locked"
+
+	var panel := _minimap_scene.instantiate()
+	add_child(panel)
+	await get_tree().process_frame
+	GameSession.state_changed.emit()
+	await get_tree().process_frame
+
+	assert_true(panel.model_special_markers.has(Vector2i.ZERO),
+		"Boss room has a special marker")
+	assert_eq(panel.model_special_markers[Vector2i.ZERO], "locked",
+		"Marker type is 'locked' for undefeated boss in special_rooms")
+
+	panel.queue_free()
+	await get_tree().process_frame
+
+
+# ------------------------------------------------------------------
+# 11) Special room markers — boss defeated
+# ------------------------------------------------------------------
+
+func test_special_marker_boss_defeated() -> void:
+	GameSession.start_new_game()
+	var fs := GameSession.get_floor_state()
+	var room := fs.get_current_room()
+	room.is_boss_room = true
+	room.enemies_defeated = true
+	fs.special_rooms[Vector2i.ZERO] = "boss"
+	fs.unlocked_rooms[Vector2i.ZERO] = true
+
+	var panel := _minimap_scene.instantiate()
+	add_child(panel)
+	await get_tree().process_frame
+	GameSession.state_changed.emit()
+	await get_tree().process_frame
+
+	assert_eq(panel.model_special_markers[Vector2i.ZERO], "defeated",
+		"Marker type is 'defeated' for beaten boss")
+
+	panel.queue_free()
+	await get_tree().process_frame
+
+
+# ------------------------------------------------------------------
+# 12) Blocked edges appear in model
+# ------------------------------------------------------------------
+
+func test_blocked_edges_in_model() -> void:
+	GameSession.start_new_game()
+	var fs := GameSession.get_floor_state()
+	var room := fs.get_current_room()
+	# Force a blocked exit
+	if "N" not in room.blocked_exits:
+		room.blocked_exits.append("N")
+		room.exits["N"] = false
+
+	var panel := _minimap_scene.instantiate()
+	add_child(panel)
+	await get_tree().process_frame
+	GameSession.state_changed.emit()
+	await get_tree().process_frame
+
+	var found_blocked := false
+	for edge in panel.model_blocked_edges:
+		if edge["pos"] == Vector2i.ZERO and edge["dir"] == "N":
+			found_blocked = true
+			break
+	assert_true(found_blocked,
+		"Blocked edge (0,0 N) is present in model_blocked_edges")
+
+	panel.queue_free()
+	await get_tree().process_frame
+
+
+# ------------------------------------------------------------------
+# 13) Follow behavior: center target updates on move
+# ------------------------------------------------------------------
+
+func test_follow_center_target_updates() -> void:
+	GameSession.start_new_game()
+	var panel := _minimap_scene.instantiate()
+	add_child(panel)
+	await get_tree().process_frame
+
+	assert_eq(panel.model_center_target, Vector2i.ZERO,
+		"Center target starts at origin")
+
+	var moved := false
+	for dir in ["N", "E", "S", "W"]:
+		var result := GameSession.move_direction(dir)
+		if result != null:
+			if GameSession.combat_pending:
+				var r := GameSession.get_current_room()
+				if r != null:
+					r.combat_escaped = true
+				GameSession.combat_pending = false
+				GameSession.state_changed.emit()
+			moved = true
+			break
+
+	if moved:
+		await get_tree().process_frame
+		assert_eq(panel.model_center_target, panel.model_player_room,
+			"Center target matches player room after move")
+		assert_ne(panel.model_center_target, Vector2i.ZERO,
+			"Center target is no longer at origin after move")
+	else:
+		pending("All directions blocked — rare but possible")
+
+	panel.queue_free()
+	await get_tree().process_frame
+
+
+# ------------------------------------------------------------------
+# 14) Tooltip child exists
+# ------------------------------------------------------------------
+
+func test_tooltip_node_exists() -> void:
+	var panel := _minimap_scene.instantiate()
+	add_child(panel)
+	await get_tree().process_frame
+
+	var tooltip := panel.find_child("MinimapTooltip", true, false)
+	assert_not_null(tooltip, "MinimapTooltip label exists")
+	assert_false(tooltip.visible, "Tooltip starts hidden")
+
+	panel.queue_free()
+	await get_tree().process_frame
+
+
+# ------------------------------------------------------------------
+# 15) Multiple rooms visible after movement
+# ------------------------------------------------------------------
+
+func test_visible_rooms_grow_after_moves() -> void:
+	GameSession.start_new_game()
+	var panel := _minimap_scene.instantiate()
+	add_child(panel)
+	await get_tree().process_frame
+
+	var initial_visible: int = panel.model_visible_rooms.size()
+
+	var moves_made := 0
+	for dir in ["N", "E", "S", "W"]:
+		var result := GameSession.move_direction(dir)
+		if result != null:
+			if GameSession.combat_pending:
+				var r := GameSession.get_current_room()
+				if r != null:
+					r.combat_escaped = true
+				GameSession.combat_pending = false
+				GameSession.state_changed.emit()
+			moves_made += 1
+			if moves_made >= 2:
+				break
+
+	if moves_made > 0:
+		await get_tree().process_frame
+		assert_gt(panel.model_visible_rooms.size(), initial_visible,
+			"More rooms visible after movement")
+	else:
+		pending("Could not move in any direction")
 
 	panel.queue_free()
 	await get_tree().process_frame
