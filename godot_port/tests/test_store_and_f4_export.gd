@@ -346,8 +346,8 @@ func test_f4_export_includes_adventure_log():
 	trace.reset(42, "DeterministicRNG", "deterministic")
 
 	log.append("You entered the dungeon.")
-	log.append("Found a mysterious shop!")
-	log.append("Defeated a goblin.")
+	log.append("Found a mysterious shop!", "loot")
+	log.append("Defeated a goblin.", "enemy")
 
 	var json_str := trace.export_json()
 	var json := JSON.new()
@@ -357,9 +357,9 @@ func test_f4_export_includes_adventure_log():
 	assert_true(data.has("adventure_log"), "Export should have adventure_log key")
 	var entries: Array = data.get("adventure_log", [])
 	assert_eq(entries.size(), 3, "Should have 3 log entries")
-	assert_eq(entries[0], "You entered the dungeon.", "First entry matches")
-	assert_eq(entries[1], "Found a mysterious shop!", "Second entry matches")
-	assert_eq(entries[2], "Defeated a goblin.", "Third entry matches")
+	assert_eq(entries[0]["text"], "You entered the dungeon.", "First entry matches")
+	assert_eq(entries[1]["text"], "Found a mysterious shop!", "Second entry matches")
+	assert_eq(entries[2]["text"], "Defeated a goblin.", "Third entry matches")
 
 
 func test_f4_export_empty_adventure_log():
@@ -403,7 +403,7 @@ func test_adventure_log_order_preserved():
 
 	assert_eq(entries.size(), messages.size(), "Entry count matches")
 	for i in messages.size():
-		assert_eq(entries[i], messages[i],
+		assert_eq(entries[i]["text"], messages[i],
 			"Entry %d should be '%s'" % [i, messages[i]])
 
 
@@ -417,7 +417,7 @@ func test_adventure_log_in_text_export():
 	log.append("Test entry 2")
 
 	var text := trace.export_text()
-	assert_true(text.contains("=== ADVENTURE LOG ==="),
+	assert_true(text.contains("=== ADVENTURE LOG"),
 		"Text export should have adventure log section")
 	assert_true(text.contains("Test entry 1"),
 		"Text export should contain entry 1")

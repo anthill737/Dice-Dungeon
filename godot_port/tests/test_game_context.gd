@@ -51,4 +51,4 @@ func test_log_service_works():
 	var ctx := GameContext.new()
 	ctx.log.append("test entry")
 	assert_eq(ctx.log.size(), 1)
-	assert_eq(ctx.log.get_entries()[0], "test entry")
+	assert_eq(ctx.log.get_entries()[0]["text"], "test entry")

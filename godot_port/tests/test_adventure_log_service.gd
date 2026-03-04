@@ -12,7 +12,9 @@ func test_append_adds_entry():
 	var svc := AdventureLogService.new()
 	svc.append("You enter the dungeon.")
 	assert_eq(svc.size(), 1)
-	assert_eq(svc.get_entries()[0], "You enter the dungeon.")
+	var entry: Dictionary = svc.get_entries()[0]
+	assert_eq(entry["text"], "You enter the dungeon.")
+	assert_eq(entry["tag"], "system")
 
 
 func test_append_multiple():
@@ -21,7 +23,7 @@ func test_append_multiple():
 	svc.append("Second")
 	svc.append("Third")
 	assert_eq(svc.size(), 3)
-	assert_eq(svc.get_entries()[1], "Second")
+	assert_eq(svc.get_entries()[1]["text"], "Second")
 
 
 func test_clear():
@@ -44,3 +46,32 @@ func test_signal_entry_added():
 	watch_signals(svc)
 	svc.append("Signal test")
 	assert_signal_emitted(svc, "entry_added")
+
+
+func test_append_with_tag():
+	var svc := AdventureLogService.new()
+	svc.append("Found gold!", "loot")
+	var entry: Dictionary = svc.get_entries()[0]
+	assert_eq(entry["text"], "Found gold!")
+	assert_eq(entry["tag"], "loot")
+
+
+func test_append_with_category():
+	var svc := AdventureLogService.new()
+	svc.append("Boss fight!", "enemy", "combat")
+	var entry: Dictionary = svc.get_entries()[0]
+	assert_eq(entry["text"], "Boss fight!")
+	assert_eq(entry["tag"], "enemy")
+	assert_eq(entry["category"], "combat")
+
+
+func test_get_text_entries():
+	var svc := AdventureLogService.new()
+	svc.append("First", "system")
+	svc.append("Second", "loot")
+	svc.append("Third", "enemy")
+	var texts := svc.get_text_entries()
+	assert_eq(texts.size(), 3)
+	assert_eq(texts[0], "First")
+	assert_eq(texts[1], "Second")
+	assert_eq(texts[2], "Third")
