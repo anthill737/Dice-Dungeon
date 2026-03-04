@@ -861,7 +861,7 @@ func _refresh_ui() -> void:
 	if GameSession.run_rng_mode == "deterministic":
 		_seed_label.text = "Seed: %d (Deterministic)" % GameSession.run_seed
 	else:
-		_seed_label.text = "Seed: Random"
+		_seed_label.text = "Seed: %d" % GameSession.run_seed
 
 	_hp_bar.max_value = gs.max_health
 	_hp_bar.value = gs.health

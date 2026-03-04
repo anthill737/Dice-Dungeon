@@ -87,7 +87,7 @@ func start_new_run(options: Dictionary = {}) -> void:
 	else:
 		rng = DefaultRNG.new()
 		run_rng_mode = "default"
-		run_seed = -1
+		run_seed = rng.initial_seed
 
 	var trace_rng_type := "DeterministicRNG" if run_rng_mode == "deterministic" else "DefaultRNG"
 

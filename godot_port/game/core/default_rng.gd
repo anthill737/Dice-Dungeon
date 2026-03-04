@@ -7,10 +7,12 @@ extends RNG
 ## on creation so sequences are unpredictable.
 
 var _rng := RandomNumberGenerator.new()
+var initial_seed: int = 0
 
 
 func _init() -> void:
 	_rng.randomize()
+	initial_seed = _rng.seed
 
 
 func rand_int(a: int, b: int) -> int:
