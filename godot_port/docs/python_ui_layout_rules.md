@@ -77,9 +77,10 @@ RootVBox
 ├── TopBar (shrink)
 ├── MiddleHBox (expand, ratio=1.0)
 │   ├── CenterPanel (expand horizontal, ratio=3.0)
-│   └── Sidebar (fixed 220px width, expand vertical)
-└── LogPanel (expand, ratio=0.7)
+│   └── Sidebar (fixed 220px width, expand vertical, SIZE_EXPAND_FILL)
+└── LogPanel (expand, ratio=0.85)
 ```
 
-The log panel uses `SIZE_EXPAND_FILL` with `stretch_ratio=0.7` relative to the
-middle content area's `1.0`, giving the log roughly 40% of vertical space.
+The log panel uses `SIZE_EXPAND_FILL` with `stretch_ratio=0.85` relative to the
+middle content area's `1.0`, giving the log roughly 46% of vertical space.
+The sidebar uses `SIZE_EXPAND_FILL` vertically to extend to the bottom edge.

@@ -58,6 +58,26 @@ These events include a `snapshot` field with a lightweight state summary:
 | `gold`             | int    | Current gold                         |
 | `inventory_count`  | int    | Number of inventory items            |
 | `equipped_summary` | String | Comma-separated `slot:item` pairs    |
+| `room_name`        | String | Current room name (when available)   |
+
+---
+
+## Copy Log Header
+
+When the user clicks "Copy Log", a stable header is prepended:
+
+```
+=== Dice Dungeon — Adventure Log ===
+Seed: <number>
+RNG Mode: default|deterministic
+Floor: <n>
+Room: <room name>
+Action ID: <current action id>
+Build: <build_version>
+Content Version: <content_version>
+Settings Fingerprint: <settings_fingerprint>
+====================================
+```
 
 ---
 
