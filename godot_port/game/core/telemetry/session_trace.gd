@@ -119,7 +119,7 @@ func record_milestone(event_type: String, payload: Dictionary, snapshot: Diction
 	events.append(ev)
 
 
-static func make_snapshot(gs, fs = null) -> Dictionary:
+static func make_snapshot(gs, fs = null, room_name: String = "") -> Dictionary:
 	if gs == null:
 		return {}
 	var snap := {
@@ -131,6 +131,8 @@ static func make_snapshot(gs, fs = null) -> Dictionary:
 	}
 	if fs != null:
 		snap["coord"] = [fs.current_pos.x, fs.current_pos.y] if fs.get("current_pos") != null else [0, 0]
+	if not room_name.is_empty():
+		snap["room_name"] = room_name
 	var equipped: PackedStringArray = []
 	if gs.get("equipment") != null and gs.equipment is Dictionary:
 		for slot in gs.equipment:

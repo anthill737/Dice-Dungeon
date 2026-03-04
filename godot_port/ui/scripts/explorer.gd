@@ -249,22 +249,24 @@ func _build_center_panel(parent: Node) -> void:
 	var room_panel := PanelContainer.new()
 	room_panel.name = "RoomPanel"
 	var room_style := StyleBoxFlat.new()
-	room_style.bg_color = DungeonTheme.BG_SECONDARY
+	room_style.bg_color = Color(0.16, 0.09, 0.06)
 	room_style.border_color = DungeonTheme.BORDER_GOLD
-	room_style.set_border_width_all(1)
-	room_style.set_content_margin_all(12)
+	room_style.set_border_width_all(2)
+	room_style.set_content_margin_all(6)
 	room_style.content_margin_left = 16
 	room_style.content_margin_right = 16
 	room_panel.add_theme_stylebox_override("panel", room_style)
 	center.add_child(room_panel)
 
 	var room_vbox := VBoxContainer.new()
-	room_vbox.add_theme_constant_override("separation", 6)
+	room_vbox.add_theme_constant_override("separation", 4)
 	room_panel.add_child(room_vbox)
 
 	_room_name_label = Label.new()
-	_room_name_label.text = "Room: ---"
-	_room_name_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_HEADING)
+	_room_name_label.name = "RoomNameLabel"
+	_room_name_label.text = "---"
+	_room_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_room_name_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SUBHEADING)
 	_room_name_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	room_vbox.add_child(_room_name_label)
 
@@ -272,13 +274,15 @@ func _build_center_panel(parent: Node) -> void:
 	room_vbox.add_child(room_sep)
 
 	_room_desc_label = Label.new()
+	_room_desc_label.name = "RoomDescLabel"
 	_room_desc_label.text = ""
 	_room_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_room_desc_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
-	_room_desc_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
+	_room_desc_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
+	_room_desc_label.add_theme_color_override("font_color", Color(0.96, 0.90, 0.83))
 	room_vbox.add_child(_room_desc_label)
 
 	_room_flags_label = Label.new()
+	_room_flags_label.name = "RoomFlagsLabel"
 	_room_flags_label.text = ""
 	_room_flags_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
 	_room_flags_label.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
@@ -292,6 +296,7 @@ func _build_center_panel(parent: Node) -> void:
 func _build_right_sidebar(parent: Node) -> void:
 	var sidebar := PanelContainer.new()
 	sidebar.name = "RightSidebar"
+	sidebar.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var sb_style := StyleBoxFlat.new()
 	sb_style.bg_color = DungeonTheme.BG_PANEL
 	sb_style.border_color = DungeonTheme.BORDER
@@ -382,7 +387,7 @@ func _build_adventure_log(parent: Node) -> void:
 	var log_panel := PanelContainer.new()
 	log_panel.name = "LogPanel"
 	log_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	log_panel.size_flags_stretch_ratio = 0.7
+	log_panel.size_flags_stretch_ratio = 0.85
 	var log_style := StyleBoxFlat.new()
 	log_style.bg_color = Color(0.10, 0.07, 0.05)
 	log_style.border_color = DungeonTheme.BORDER_GOLD
@@ -908,9 +913,9 @@ func _refresh_ui() -> void:
 
 	if room != null:
 		_room_name_label.text = room.data.get("name", "Unknown Room")
-		var desc: String = room.data.get("description", "")
+		var desc: String = room.data.get("flavor", "")
 		if desc.is_empty():
-			desc = room.data.get("flavor", "")
+			desc = room.data.get("description", "")
 		_room_desc_label.text = desc
 		var flags: PackedStringArray = []
 		if room.has_combat and not room.enemies_defeated and not room.combat_escaped:
@@ -927,7 +932,7 @@ func _refresh_ui() -> void:
 			flags.append("⚠ MINI-BOSS")
 		if room.is_boss_room:
 			flags.append("☠ BOSS")
-		_room_flags_label.text = "  ".join(flags) if not flags.is_empty() else "✓ Safe"
+		_room_flags_label.text = "  ".join(flags) if not flags.is_empty() else ""
 	else:
 		_room_name_label.text = "---"
 		_room_desc_label.text = ""
@@ -1106,15 +1111,21 @@ func _on_copy_log() -> void:
 func _build_copy_header() -> String:
 	var lines: PackedStringArray = []
 	lines.append("=== Dice Dungeon — Adventure Log ===")
-	lines.append("Seed: %d  |  RNG: %s" % [GameSession.run_seed, GameSession.run_rng_mode])
+	lines.append("Seed: %d" % GameSession.run_seed)
+	lines.append("RNG Mode: %s" % GameSession.run_rng_mode)
 	var gs := GameSession.game_state
 	if gs != null:
-		lines.append("Floor: %d  |  HP: %d/%d  |  Gold: %d" % [gs.floor, gs.health, gs.max_health, gs.gold])
+		lines.append("Floor: %d" % gs.floor)
 	var room := GameSession.get_current_room()
 	if room != null:
-		var fs := GameSession.get_floor_state()
-		var pos := fs.current_pos if fs != null else Vector2i.ZERO
-		lines.append("Room: %s (%d,%d)" % [room.data.get("name", "?"), pos.x, pos.y])
+		lines.append("Room: %s" % room.data.get("name", "?"))
+	var aid: int = 0
+	if _context != null and _context.log != null:
+		aid = _context.log.size()
+	lines.append("Action ID: %d" % aid)
+	lines.append("Build: %s" % GameSession.trace.build_version)
+	lines.append("Content Version: %s" % GameSession.trace.content_version)
+	lines.append("Settings Fingerprint: %s" % GameSession.trace.settings_fingerprint)
 	lines.append("====================================")
 	lines.append("")
 	return "\n".join(lines)

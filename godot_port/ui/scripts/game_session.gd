@@ -246,7 +246,9 @@ func start_combat_for_room(room: RoomState) -> void:
 	var enemy_list: Array = []
 	for e in combat.enemies:
 		enemy_list.append({"name": e.name, "hp": e.health, "dice": e.num_dice})
-	trace.record_milestone("combat_started", {"enemies": enemy_list}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null))
+	var _cs_room := get_current_room()
+	var _cs_room_name := _cs_room.room_name if _cs_room != null else ""
+	trace.record_milestone("combat_started", {"enemies": enemy_list}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null, _cs_room_name))
 
 	log_message.emit("Combat begins against %s!" % enemy_name)
 	combat_started.emit()
@@ -297,10 +299,12 @@ func _end_combat_internal(victory: bool) -> void:
 	if combat == null:
 		return
 
+	var _ce_room := get_current_room()
+	var _ce_room_name := _ce_room.room_name if _ce_room != null else ""
 	if victory:
-		trace.record_milestone("combat_ended", {"result": "victory"}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null))
+		trace.record_milestone("combat_ended", {"result": "victory"}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null, _ce_room_name))
 	else:
-		trace.record_milestone("combat_ended", {"result": "defeat"}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null))
+		trace.record_milestone("combat_ended", {"result": "defeat"}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null, _ce_room_name))
 
 	if victory and room != null:
 		exploration.on_combat_clear(room)
@@ -625,4 +629,4 @@ func _trace_room_entered(room: RoomState) -> void:
 		"miniboss": room.is_mini_boss_room,
 		"boss": room.is_boss_room,
 		"blocked_exits": room.blocked_exits.duplicate(),
-	}, SessionTrace.make_snapshot(game_state, exploration.floor))
+	}, SessionTrace.make_snapshot(game_state, exploration.floor, room.room_name))
