@@ -359,3 +359,292 @@ func test_lore_item_normalization():
 
 	assert_eq(rows, 2,
 		"Ancient Scroll variants collapse to one display row")
+
+
+# ==================================================================
+# TEST 9: Ground item pickup goes to inventory (not ground_items)
+# ==================================================================
+
+func test_ground_pickup_adds_to_inventory():
+	var gs := GameState.new()
+	gs.reset()
+	var rng := DeterministicRNG.new(100)
+	var ee := ExplorationEngine.new(rng, gs, [])
+	ee.start_floor(1)
+
+	var room := RoomState.new({}, 0, 0)
+	room.ground_items = ["Silk Bundle", "Antivenom Leaf"]
+
+	var picked := ee.pickup_ground_item(room, 0)
+	assert_eq(picked, "Silk Bundle")
+	assert_eq(gs.inventory.count("Silk Bundle"), 1,
+		"Silk Bundle should be in inventory after ground pickup")
+	assert_eq(gs.ground_items.size(), 0,
+		"ground_items staging should be empty")
+	assert_eq(room.ground_items.size(), 1,
+		"One item left on room ground")
+
+
+func test_ground_pickup_multiple_same_item():
+	var gs := GameState.new()
+	gs.reset()
+	var rng := DeterministicRNG.new(101)
+	var ee := ExplorationEngine.new(rng, gs, [])
+	ee.start_floor(1)
+
+	var room := RoomState.new({}, 0, 0)
+	room.ground_items = ["Antivenom Leaf", "Antivenom Leaf", "Antivenom Leaf"]
+
+	ee.pickup_ground_item(room, 0)
+	ee.pickup_ground_item(room, 0)
+	ee.pickup_ground_item(room, 0)
+
+	assert_eq(gs.inventory.count("Antivenom Leaf"), 3,
+		"Three Antivenom Leaves should be in inventory")
+	assert_eq(gs.inventory.size(), 3,
+		"Inventory size should be 3")
+	assert_eq(room.ground_items.size(), 0,
+		"Room ground should be empty")
+
+
+# ==================================================================
+# TEST 10: Chest loot goes to inventory
+# ==================================================================
+
+func test_chest_loot_goes_to_inventory():
+	var gs := GameState.new()
+	gs.reset()
+	var found_item := false
+	for seed_val in range(200, 300):
+		gs.inventory.clear()
+		gs.ground_items.clear()
+		var rng := DeterministicRNG.new(seed_val)
+		var ee := ExplorationEngine.new(rng, gs, [])
+		ee.start_floor(1)
+		var room := RoomState.new({}, 0, 0)
+		room.has_chest = true
+		room.chest_looted = false
+		var result := ee.open_chest(room)
+		var chest_item: String = str(result.get("item", ""))
+		if not chest_item.is_empty():
+			assert_true(gs.inventory.has(chest_item),
+				"Chest item '%s' should be in inventory" % chest_item)
+			assert_eq(gs.ground_items.size(), 0,
+				"ground_items staging should be empty")
+			found_item = true
+			break
+	assert_true(found_item, "At least one seed should produce a chest item")
+
+
+# ==================================================================
+# TEST 11: Sell after ground pickup — quantity integrity
+# ==================================================================
+
+func test_sell_after_ground_pickup():
+	var gs := GameState.new()
+	gs.reset()
+	gs.gold = 0
+
+	gs.inventory.append("Silk Bundle")
+	gs.inventory.append("Silk Bundle")
+	gs.inventory.append("Silk Bundle")
+
+	var se := StoreEngine.new(gs, {})
+	var price := se.calculate_sell_price("Silk Bundle")
+
+	se.sell_item("Silk Bundle", price, 1)
+	assert_eq(gs.inventory.count("Silk Bundle"), 2,
+		"After selling 1 of 3 Silk Bundles, 2 should remain")
+
+	se.sell_item("Silk Bundle", price, 1)
+	assert_eq(gs.inventory.count("Silk Bundle"), 1,
+		"After selling another, 1 should remain")
+
+	se.sell_item("Silk Bundle", price, 1)
+	assert_eq(gs.inventory.count("Silk Bundle"), 0,
+		"After selling last one, 0 should remain")
+	assert_eq(gs.inventory.size(), 0,
+		"Inventory should be empty")
+	assert_eq(gs.gold, price * 3,
+		"Gold should reflect all three sales")
+
+
+# ==================================================================
+# TEST 12: Silk Bundle full lifecycle — buy + sell + save/load
+# ==================================================================
+
+func test_silk_bundle_full_lifecycle():
+	var gs := GameState.new()
+	gs.reset()
+	gs.gold = 9999
+
+	var se := StoreEngine.new(gs, {})
+	se.buy_item("Silk Bundle", 150, 3)
+	assert_eq(gs.inventory.count("Silk Bundle"), 3,
+		"Bought 3 Silk Bundles")
+
+	var price := se.calculate_sell_price("Silk Bundle")
+	se.sell_item("Silk Bundle", price, 1)
+	assert_eq(gs.inventory.count("Silk Bundle"), 2,
+		"Sold 1, 2 remain")
+
+	var floor_st := FloorState.new()
+	floor_st.rooms[Vector2i.ZERO] = RoomState.new({}, 0, 0)
+	floor_st.current_pos = Vector2i.ZERO
+
+	var json_str := SaveEngine.save_to_string(gs, floor_st)
+	var loaded_gs := GameState.new()
+	var loaded_fs := FloorState.new()
+	SaveEngine.load_from_string(json_str, loaded_gs, loaded_fs)
+
+	assert_eq(loaded_gs.inventory.count("Silk Bundle"), 2,
+		"After save/load, 2 Silk Bundles preserved")
+
+	var se2 := StoreEngine.new(loaded_gs, {})
+	se2.sell_item("Silk Bundle", price, 1)
+	assert_eq(loaded_gs.inventory.count("Silk Bundle"), 1,
+		"Selling after reload: 1 remains")
+
+	se2.sell_item("Silk Bundle", price, 1)
+	assert_eq(loaded_gs.inventory.count("Silk Bundle"), 0,
+		"Selling last after reload: 0 remain")
+
+
+# ==================================================================
+# TEST 13: Antivenom Leaf full lifecycle
+# ==================================================================
+
+func test_antivenom_leaf_full_lifecycle():
+	var gs := GameState.new()
+	gs.reset()
+	gs.gold = 9999
+
+	var se := StoreEngine.new(gs, {})
+	se.buy_item("Antivenom Leaf", 50, 2)
+	assert_eq(gs.inventory.count("Antivenom Leaf"), 2)
+
+	gs.inventory.append("Antivenom Leaf")
+	assert_eq(gs.inventory.count("Antivenom Leaf"), 3,
+		"After ground pickup simulation, count is 3")
+
+	var display_rows := 0
+	var seen: Dictionary = {}
+	for item in gs.inventory:
+		var normalized: String = item.split(" #")[0] if " #" in item else item
+		if not seen.has(normalized):
+			seen[normalized] = true
+			display_rows += 1
+
+	assert_eq(display_rows, 1,
+		"Only one display row for Antivenom Leaf")
+
+	var count := 0
+	for inv_item in gs.inventory:
+		var norm: String = inv_item.split(" #")[0] if " #" in inv_item else inv_item
+		if norm == "Antivenom Leaf":
+			count += 1
+	assert_eq(count, 3,
+		"Normalized count matches internal count for display")
+
+	var price := se.calculate_sell_price("Antivenom Leaf")
+	se.sell_item("Antivenom Leaf", price, 1)
+	assert_eq(gs.inventory.count("Antivenom Leaf"), 2,
+		"After selling 1, 2 remain")
+
+	var floor_st := FloorState.new()
+	floor_st.rooms[Vector2i.ZERO] = RoomState.new({}, 0, 0)
+	floor_st.current_pos = Vector2i.ZERO
+
+	var json_str := SaveEngine.save_to_string(gs, floor_st)
+	var loaded_gs := GameState.new()
+	var loaded_fs := FloorState.new()
+	SaveEngine.load_from_string(json_str, loaded_gs, loaded_fs)
+
+	assert_eq(loaded_gs.inventory.count("Antivenom Leaf"), 2,
+		"Save/load preserves count")
+
+
+# ==================================================================
+# TEST 14: Inventory full — ground pickup rejected
+# ==================================================================
+
+func test_ground_pickup_inventory_full():
+	var gs := GameState.new()
+	gs.reset()
+	gs.max_inventory = 2
+
+	gs.inventory.append("Health Potion")
+	gs.inventory.append("Iron Sword")
+
+	var rng := DeterministicRNG.new(300)
+	var ee := ExplorationEngine.new(rng, gs, [])
+	ee.start_floor(1)
+
+	var room := RoomState.new({}, 0, 0)
+	room.ground_items = ["Silk Bundle"]
+
+	var picked := ee.pickup_ground_item(room, 0)
+	assert_eq(picked, "",
+		"Should not pick up when inventory is full")
+	assert_eq(room.ground_items.size(), 1,
+		"Item should remain on room ground")
+	assert_eq(gs.inventory.size(), 2,
+		"Inventory unchanged")
+
+
+# ==================================================================
+# TEST 15: Chest loot with full inventory — item not lost
+# ==================================================================
+
+func test_chest_loot_inventory_full():
+	var gs := GameState.new()
+	gs.reset()
+	gs.max_inventory = 0
+	var found_item := false
+	for seed_val in range(400, 500):
+		gs.inventory.clear()
+		gs.ground_items.clear()
+		var rng := DeterministicRNG.new(seed_val)
+		var ee := ExplorationEngine.new(rng, gs, [])
+		ee.start_floor(1)
+		var room := RoomState.new({}, 0, 0)
+		room.has_chest = true
+		room.chest_looted = false
+		room.uncollected_items.clear()
+		var result := ee.open_chest(room)
+		var chest_item: String = str(result.get("item", ""))
+		if not chest_item.is_empty():
+			assert_eq(gs.inventory.size(), 0,
+				"Inventory should still be empty (full)")
+			assert_true(room.uncollected_items.has(chest_item),
+				"Chest item should be in room's uncollected_items")
+			found_item = true
+			break
+	assert_true(found_item, "At least one seed should produce a chest item")
+
+
+# ==================================================================
+# TEST 16: Mechanics drain — ground_items transferred to inventory
+# ==================================================================
+
+func test_mechanics_drain_to_inventory():
+	var gs := GameState.new()
+	gs.reset()
+
+	gs.ground_items.append("Old Key")
+	gs.ground_items.append("Cracked Map Scrap")
+
+	var rng := DeterministicRNG.new(500)
+	var ie := InventoryEngine.new(rng, gs, {})
+
+	while not gs.ground_items.is_empty():
+		var item_name: String = gs.ground_items[0]
+		gs.ground_items.remove_at(0)
+		ie.add_item_to_inventory(item_name, "found")
+
+	assert_eq(gs.inventory.size(), 2,
+		"Both items should be in inventory")
+	assert_true(gs.inventory.has("Old Key"))
+	assert_true(gs.inventory.has("Cracked Map Scrap"))
+	assert_eq(gs.ground_items.size(), 0,
+		"ground_items should be empty")

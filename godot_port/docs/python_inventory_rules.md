@@ -70,9 +70,11 @@ All adds use `self.inventory.append(item_name)`:
 | Pickup (generic) | `try_add_to_inventory(item_name, source)` → `self.inventory.append(item_name)` |
 | Buy equipment | `self.game.inventory.append(item_name)` |
 | Buy consumable | `for _ in range(quantity): self.game.inventory.append(item_name)` |
-| Chest loot | `self.inventory.append(item_name)` |
+| Chest loot | `try_add_to_inventory(item_name)` → directly to inventory |
 
 **No merging** — each add appends a new entry.
+
+When inventory is full, `try_add_to_inventory` places the item in `room.uncollected_items`.
 
 ## Removing Items
 
@@ -120,6 +122,16 @@ def get_unequipped_inventory_count(self):
 - Store uses `get_unequipped_inventory_count()` — equipped items excluded.
 - Generic pickup uses `len(self.inventory) < self.max_inventory`.
 
+## Item Delivery
+
+### Chest / Ground Pickup
+Items go **directly to inventory** via `try_add_to_inventory()`.
+If inventory is full, items go to `room.uncollected_items`.
+
+### Mechanics Engine (room effects)
+Items go to `game.ground_items` staging area.
+The game flow later drains `ground_items` into inventory.
+
 ## Save/Load Serialization
 
 ```python
@@ -134,40 +146,40 @@ self.inventory = save_data['inventory']
 
 ---
 
-## Godot Deviations
+## Godot Deviations (Remaining)
 
-### 1. Inventory Panel Duplicate Rows (CRITICAL BUG)
-
-**Python:** Shows ONE row per unique item name. Uses `processed_items = set()` to deduplicate. Count shown as suffix `" x3"`.
-
-**Godot:** `inventory_panel.gd` iterates every `gs.inventory` slot and adds a separate row for each. If you have 3 "Silk Bundle" items, you see 3 rows each labeled "Silk Bundle ×3". Total displayed appears to be 9 when actual is 3.
-
-**Impact:** Display shows inflated quantities. This is the Silk Bundle / Antivenom Leaf bug.
-
-**Fix:** Add deduplication logic matching Python. Maintain an index map for operations.
-
-### 2. Store Sell List Not Grouped (BUG)
-
-**Python:** Groups sell items with `Counter`, shows one row per unique item with count and quantity slider.
-
-**Godot:** `store_panel.gd` shows every inventory slot as a separate row in the sell list. No grouping, no counts.
-
-**Impact:** Functional but inconsistent with Python. Multiple identical rows for stacked items.
-
-**Fix:** Group sell items by name, show count, sell by item name.
-
-### 3. max_inventory Default: Python 10, Godot 20
+### 1. max_inventory Default: Python 10, Godot 20
 
 **Python:** `self.max_inventory = 10` (base, +10/+20 from backpack).
 
 **Godot:** `var max_inventory: int = 20` (GameState default).
 
-**Assessment:** May be intentional for the Godot port. Document only.
+**Assessment:** May be intentional for the Godot port. Not changed.
 
-### 4. Capacity Check: Python excludes equipped items for store, Godot doesn't
+### 2. Capacity Check: Python excludes equipped items for store, Godot doesn't
 
 **Python:** Store buy checks `get_unequipped_inventory_count() >= max_inventory`.
 
 **Godot:** Store buy checks `state.inventory.size() >= state.max_inventory`.
 
 **Assessment:** Minor deviation — equipped items count toward limit in Godot. Matches Python's generic pickup behavior but not store-specific behavior.
+
+---
+
+## Fixed Deviations (This PR)
+
+### A. Ground/Chest Items → Dead-End Staging (FIXED)
+
+**Was:** `exploration_engine.pickup_ground_item()` and `open_chest()` put items into `state.ground_items` which was never transferred to inventory. Items were lost.
+
+**Fix:** Both now add items directly to `state.inventory`. If inventory is full, items go to `room.uncollected_items`. The mechanics engine still uses `ground_items` as staging (matching Python parity tests); `game_session._drain_ground_to_inventory()` transfers them after room enter/combat clear.
+
+### B. Lore Item Display Count (FIXED)
+
+**Was:** `inventory_panel.gd` counted items using exact name (`gs.inventory.count(item_name)`) but deduplicated rows using normalized name. Lore items like "Ancient Scroll #1" and "Ancient Scroll #2" would show as one row but with count 1 instead of 2.
+
+**Fix:** Count now uses normalized name matching, consistent with Python's `Counter(normalized_inventory)`.
+
+### C. Trace Enhancement (ADDED)
+
+Added `inventory_item_qty_changed` trace events for pickup operations (ground, chest, mechanic drain), complementing existing buy/sell/use/drop traces.

@@ -482,7 +482,11 @@ func open_chest(room: RoomState) -> Dictionary:
 		state.gold += gold
 		state.total_gold_earned += gold
 	if not item.is_empty():
-		state.ground_items.append(item)
+		if state.inventory.size() < state.max_inventory:
+			state.inventory.append(item)
+		else:
+			room.uncollected_items.append(item)
+			logs.append("Inventory full! %s left behind." % item)
 
 	logs.append("Opened chest: +%d gold%s" % [gold, (", " + item) if not item.is_empty() else ""])
 	return {"gold": gold, "item": item}
@@ -513,8 +517,11 @@ func pickup_ground_item(room: RoomState, index: int) -> String:
 	if index < 0 or index >= room.ground_items.size():
 		return ""
 	var item_name: String = room.ground_items[index]
+	if state.inventory.size() >= state.max_inventory:
+		logs.append("Inventory full! Cannot pick up %s." % item_name)
+		return ""
 	room.ground_items.remove_at(index)
-	state.ground_items.append(item_name)
+	state.inventory.append(item_name)
 	logs.append("Picked up %s" % item_name)
 	return item_name
 

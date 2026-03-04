@@ -145,6 +145,27 @@ func get_floor_state() -> FloorState:
 
 
 # -------------------------------------------------------------------
+# Ground-items drain — transfer mechanic-dropped items to inventory
+# -------------------------------------------------------------------
+
+func _drain_ground_to_inventory() -> void:
+	if game_state == null:
+		return
+	while not game_state.ground_items.is_empty():
+		var item_name: String = game_state.ground_items[0]
+		var before_count: int = game_state.inventory.count(item_name)
+		game_state.ground_items.remove_at(0)
+		if inventory_engine.add_item_to_inventory(item_name, "found"):
+			var after_count: int = game_state.inventory.count(item_name)
+			trace_inventory_qty_changed(item_name, before_count, after_count, "pickup")
+		else:
+			var room := get_current_room()
+			if room != null:
+				room.uncollected_items.append(item_name)
+			break
+
+
+# -------------------------------------------------------------------
 # Movement
 # -------------------------------------------------------------------
 
@@ -164,6 +185,7 @@ func move_direction(direction: String) -> RoomState:
 	if room == null:
 		trace.record("move_attempted", {"dir": direction, "success": false, "reason": "blocked"})
 	else:
+		_drain_ground_to_inventory()
 		_trace_sync_position()
 		trace.record("move_attempted", {"dir": direction, "success": true})
 		_trace_room_entered(room)
@@ -283,9 +305,11 @@ func _end_combat_internal(victory: bool) -> void:
 	if victory and room != null:
 		exploration.on_combat_clear(room)
 		_emit_logs(exploration.logs)
+		_drain_ground_to_inventory()
 	elif room != null:
 		exploration.on_combat_fail(room)
 		_emit_logs(exploration.logs)
+		_drain_ground_to_inventory()
 
 	inventory_engine.clear_combat_temps()
 	combat = null
@@ -320,13 +344,19 @@ func open_chest() -> Dictionary:
 	var room := get_current_room()
 	if room == null:
 		return {}
+	var chest_item_name := ""
+	var before_count: int = 0
 	var result := exploration.open_chest(room)
 	_emit_logs(exploration.logs)
 	if not result.is_empty():
+		chest_item_name = str(result.get("item", ""))
+		if not chest_item_name.is_empty():
+			var after_count: int = game_state.inventory.count(chest_item_name)
+			trace_inventory_qty_changed(chest_item_name, before_count, after_count, "pickup")
 		trace.record("item_picked_up", {
 			"source": "chest",
 			"gold": int(result.get("gold", 0)),
-			"item": str(result.get("item", "")),
+			"item": chest_item_name,
 		})
 	state_changed.emit()
 	return result
@@ -351,9 +381,14 @@ func pickup_ground_item(index: int) -> String:
 	var room := get_current_room()
 	if room == null:
 		return ""
+	var before_count: int = 0
+	if index >= 0 and room != null and index < room.ground_items.size():
+		before_count = game_state.inventory.count(room.ground_items[index])
 	var item := exploration.pickup_ground_item(room, index)
 	_emit_logs(exploration.logs)
 	if not item.is_empty():
+		var after_count: int = game_state.inventory.count(item)
+		trace_inventory_qty_changed(item, before_count, after_count, "pickup")
 		trace.record("item_picked_up", {
 			"source": "ground",
 			"item_id": item,

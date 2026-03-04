@@ -142,7 +142,11 @@ func refresh() -> void:
 		seen[normalized] = true
 		_inv_index_map.append(i)
 
-		var count := gs.inventory.count(item_name)
+		var count := 0
+		for inv_item in gs.inventory:
+			var norm: String = inv_item.split(" #")[0] if " #" in inv_item else inv_item
+			if norm == normalized:
+				count += 1
 		var display_text := item_name
 		if count > 1:
 			display_text += " ×%d" % count

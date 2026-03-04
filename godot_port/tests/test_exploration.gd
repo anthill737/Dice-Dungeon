@@ -600,7 +600,7 @@ func test_pickup_ground_item():
 	var item := engine.pickup_ground_item(room, 0)
 	assert_eq(item, "Health Potion")
 	assert_eq(room.ground_items.size(), 1, "item removed from room")
-	assert_true(engine.state.ground_items.has("Health Potion"), "item added to state")
+	assert_true(engine.state.inventory.has("Health Potion"), "item added to inventory")
 
 
 func test_search_container():
