@@ -58,11 +58,11 @@ func test_append_with_tag():
 
 func test_append_with_category():
 	var svc := AdventureLogService.new()
-	svc.append("Boss fight!", "enemy", "combat")
+	svc.append("Boss fight!", "enemy", "COMBAT")
 	var entry: Dictionary = svc.get_entries()[0]
 	assert_eq(entry["text"], "Boss fight!")
 	assert_eq(entry["tag"], "enemy")
-	assert_eq(entry["category"], "combat")
+	assert_eq(entry["category"], "COMBAT")
 
 
 func test_get_text_entries():

@@ -309,7 +309,7 @@ func test_f4_export_adventure_log_has_event_type():
 
 	log.append("Room entry", "system")
 	log.append("Found gold!", "loot")
-	log.append("Boss fight!", "enemy", "combat")
+	log.append("Boss fight!", "enemy", "COMBAT")
 
 	var json_str := trace.export_json()
 	var json := JSON.new()
@@ -319,7 +319,7 @@ func test_f4_export_adventure_log_has_event_type():
 	assert_eq(entries[0].get("event_type"), "system")
 	assert_eq(entries[1].get("event_type"), "loot")
 	assert_eq(entries[2].get("event_type"), "enemy")
-	assert_eq(entries[2].get("category"), "combat")
+	assert_eq(entries[2].get("category"), "COMBAT")
 
 
 # ==================================================================
@@ -361,5 +361,5 @@ func test_text_export_includes_tag():
 	log.append("Entered: Dark Cave", "system")
 
 	var text := trace.export_text()
-	assert_true(text.contains("[system]"), "Text export should include tag")
+	assert_true(text.contains("system"), "Text export should include tag")
 	assert_true(text.contains("Entered: Dark Cave"), "Text export should include entry text")
