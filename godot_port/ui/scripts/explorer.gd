@@ -119,17 +119,22 @@ func _build_ui() -> void:
 
 	_build_top_bar(root_vbox)
 
-	var middle_hbox := HBoxContainer.new()
-	middle_hbox.name = "MiddleHBox"
-	middle_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	middle_hbox.size_flags_stretch_ratio = 1.0
-	middle_hbox.add_theme_constant_override("separation", 0)
-	root_vbox.add_child(middle_hbox)
+	var content_hbox := HBoxContainer.new()
+	content_hbox.name = "ContentHBox"
+	content_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content_hbox.add_theme_constant_override("separation", 0)
+	root_vbox.add_child(content_hbox)
 
-	_build_center_panel(middle_hbox)
-	_build_right_sidebar(middle_hbox)
+	var left_vbox := VBoxContainer.new()
+	left_vbox.name = "LeftVBox"
+	left_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_vbox.add_theme_constant_override("separation", 0)
+	content_hbox.add_child(left_vbox)
 
-	_build_adventure_log(root_vbox)
+	_build_center_panel(left_vbox)
+	_build_adventure_log(left_vbox)
+
+	_build_right_sidebar(content_hbox)
 
 
 func _build_top_bar(parent: Node) -> void:
