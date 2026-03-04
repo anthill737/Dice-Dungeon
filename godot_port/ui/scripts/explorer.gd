@@ -327,7 +327,6 @@ func _build_right_sidebar(parent: Node) -> void:
 	sidebar.add_child(sidebar_vbox)
 
 	_minimap_panel = _minimap_scene.instantiate()
-	_minimap_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	sidebar_vbox.add_child(_minimap_panel)
 
 	var move_header := Label.new()
@@ -397,6 +396,10 @@ func _build_right_sidebar(parent: Node) -> void:
 	actions.add_child(_btn_rest)
 	_btn_descend = _make_action_btn("⬇ Descend", DungeonTheme.TEXT_CYAN)
 	actions.add_child(_btn_descend)
+
+	var sidebar_spacer := Control.new()
+	sidebar_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sidebar_vbox.add_child(sidebar_spacer)
 
 
 func _build_adventure_log(parent: Node) -> void:
