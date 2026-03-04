@@ -88,7 +88,6 @@ func test_on_enter_item_to_ground():
 # ------------------------------------------------------------------
 
 func test_on_clear_item():
-	# Room 1: Whispering Antechamber -> on_clear: item "Cracked Map Scrap"
 	var room := _room({}, {"item": "Cracked Map Scrap"})
 	_engine.apply_on_clear(_state, room)
 	assert_true(_state.ground_items.has("Cracked Map Scrap"))
