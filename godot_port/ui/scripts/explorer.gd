@@ -133,87 +133,42 @@ func _build_ui() -> void:
 
 
 func _build_top_bar(parent: Node) -> void:
-	var outer := VBoxContainer.new()
-	outer.name = "TopBarOuter"
-	outer.add_theme_constant_override("separation", 0)
-	parent.add_child(outer)
+	var bar := PanelContainer.new()
+	bar.name = "TopBar"
+	var bar_style := StyleBoxFlat.new()
+	bar_style.bg_color = DungeonTheme.BG_HEADER
+	bar_style.border_color = DungeonTheme.BORDER_GOLD
+	bar_style.set_border_width_all(0)
+	bar_style.border_width_bottom = 2
+	bar_style.set_content_margin_all(8)
+	bar.add_theme_stylebox_override("panel", bar_style)
+	parent.add_child(bar)
 
-	# --- Row 1: Title + icon buttons ---
-	var row1 := PanelContainer.new()
-	row1.name = "TopBar"
-	var r1_style := StyleBoxFlat.new()
-	r1_style.bg_color = DungeonTheme.BG_HEADER
-	r1_style.border_color = DungeonTheme.BORDER_GOLD
-	r1_style.set_border_width_all(0)
-	r1_style.border_width_bottom = 1
-	r1_style.set_content_margin_all(6)
-	r1_style.content_margin_left = 10
-	r1_style.content_margin_right = 10
-	row1.add_theme_stylebox_override("panel", r1_style)
-	outer.add_child(row1)
-
-	var hbox1 := HBoxContainer.new()
-	hbox1.add_theme_constant_override("separation", 12)
-	row1.add_child(hbox1)
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 16)
+	bar.add_child(hbox)
 
 	var title := Label.new()
 	title.text = "⚔ DICE DUNGEON ⚔"
 	title.add_theme_font_size_override("font_size", DungeonTheme.FONT_HEADING)
 	title.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
-	hbox1.add_child(title)
+	hbox.add_child(title)
 
-	var spacer1 := Control.new()
-	spacer1.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox1.add_child(spacer1)
+	var sep := VSeparator.new()
+	hbox.add_child(sep)
 
-	var btn_box := HBoxContainer.new()
-	btn_box.add_theme_constant_override("separation", 4)
-	hbox1.add_child(btn_box)
-
-	_btn_pause = _make_icon_btn("☰", "Menu")
-	_btn_pause.pressed.connect(_on_pause)
-	btn_box.add_child(_btn_pause)
-
-	_btn_settings = _make_icon_btn("⚙", "Settings")
-	_btn_settings.pressed.connect(_on_settings)
-	btn_box.add_child(_btn_settings)
-
-	_btn_character = _make_icon_btn("?", "Character")
-	_btn_character.pressed.connect(_on_character_status)
-	btn_box.add_child(_btn_character)
-
-	# --- Row 2: Stats bar (HP/Gold left, floor info right) ---
-	var row2 := PanelContainer.new()
-	row2.name = "StatsBar"
-	var r2_style := StyleBoxFlat.new()
-	r2_style.bg_color = DungeonTheme.BG_PANEL
-	r2_style.border_color = DungeonTheme.BORDER
-	r2_style.set_border_width_all(0)
-	r2_style.border_width_bottom = 1
-	r2_style.border_width_top = 1
-	r2_style.set_content_margin_all(5)
-	r2_style.content_margin_left = 10
-	r2_style.content_margin_right = 10
-	row2.add_theme_stylebox_override("panel", r2_style)
-	outer.add_child(row2)
-
-	var hbox2 := HBoxContainer.new()
-	hbox2.add_theme_constant_override("separation", 16)
-	row2.add_child(hbox2)
-
-	# Left side: HP + Gold
 	var hp_box := HBoxContainer.new()
 	hp_box.add_theme_constant_override("separation", 6)
-	hbox2.add_child(hp_box)
+	hbox.add_child(hp_box)
 
 	var hp_icon := Label.new()
-	hp_icon.text = "♥ HEALTH"
+	hp_icon.text = "♥"
 	hp_icon.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
 	hp_icon.add_theme_color_override("font_color", DungeonTheme.TEXT_RED)
 	hp_box.add_child(hp_icon)
 
 	_hp_bar = ProgressBar.new()
-	_hp_bar.custom_minimum_size = Vector2(120, 16)
+	_hp_bar.custom_minimum_size = Vector2(140, 20)
 	_hp_bar.max_value = 50
 	_hp_bar.value = 50
 	_hp_bar.show_percentage = false
@@ -228,10 +183,10 @@ func _build_top_bar(parent: Node) -> void:
 
 	var gold_box := HBoxContainer.new()
 	gold_box.add_theme_constant_override("separation", 4)
-	hbox2.add_child(gold_box)
+	hbox.add_child(gold_box)
 
 	var gold_icon := Label.new()
-	gold_icon.text = "◆ Gold:"
+	gold_icon.text = "◆"
 	gold_icon.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
 	gold_icon.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	gold_box.add_child(gold_icon)
@@ -242,32 +197,52 @@ func _build_top_bar(parent: Node) -> void:
 	_gold_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	gold_box.add_child(_gold_label)
 
-	var spacer2 := Control.new()
-	spacer2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox2.add_child(spacer2)
-
-	# Right side: Floor info + rooms explored
 	_floor_label = Label.new()
-	_floor_label.text = "▼ THE THRESHOLD"
+	_floor_label.text = "Floor 1"
 	_floor_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
-	_floor_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
-	hbox2.add_child(_floor_label)
+	_floor_label.add_theme_color_override("font_color", DungeonTheme.TEXT_CYAN)
+	hbox.add_child(_floor_label)
 
 	_rooms_explored_label = Label.new()
-	_rooms_explored_label.text = "Rooms Explored: 0 | Rest Ready!"
+	_rooms_explored_label.text = "Rooms: 0"
 	_rooms_explored_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
 	_rooms_explored_label.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
-	hbox2.add_child(_rooms_explored_label)
-
-	# Hidden labels kept for compatibility
-	_room_pos_label = Label.new()
-	_room_pos_label.visible = false
-	hbox2.add_child(_room_pos_label)
+	hbox.add_child(_rooms_explored_label)
 
 	_seed_label = Label.new()
 	_seed_label.name = "SeedLabel"
-	_seed_label.visible = false
-	hbox2.add_child(_seed_label)
+	_seed_label.text = ""
+	_seed_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	_seed_label.add_theme_color_override("font_color", DungeonTheme.TEXT_DIM)
+	_seed_label.modulate.a = 0.8
+	hbox.add_child(_seed_label)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(spacer)
+
+	_room_pos_label = Label.new()
+	_room_pos_label.text = "(0,0)"
+	_room_pos_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	_room_pos_label.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
+	hbox.add_child(_room_pos_label)
+
+	var btn_box := HBoxContainer.new()
+	btn_box.add_theme_constant_override("separation", 4)
+	hbox.add_child(btn_box)
+
+	_btn_character = _make_icon_btn("⚙", "Character")
+	_btn_character.pressed.connect(_on_character_status)
+	btn_box.add_child(_btn_character)
+
+	_btn_pause = _make_icon_btn("☰", "Menu")
+	_btn_pause.pressed.connect(_on_pause)
+	btn_box.add_child(_btn_pause)
+
+	_btn_settings = _make_icon_btn("⚙", "Settings")
+	_btn_settings.modulate = Color(0.7, 0.7, 0.8)
+	_btn_settings.pressed.connect(_on_settings)
+	btn_box.add_child(_btn_settings)
 
 
 func _build_center_panel(parent: Node) -> void:
@@ -381,7 +356,7 @@ func _build_right_sidebar(parent: Node) -> void:
 	grid.add_child(_spacer())
 
 	var wasd_hint := Label.new()
-	wasd_hint.text = "(or WASD/Arrows)"
+	wasd_hint.text = "WASD/Arrows"
 	wasd_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	wasd_hint.add_theme_font_size_override("font_size", 10)
 	wasd_hint.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
@@ -932,16 +907,16 @@ func _refresh_ui() -> void:
 		return
 
 	var pos := fs.current_pos if fs != null else Vector2i.ZERO
-	_floor_label.text = "▼ Floor %d" % gs.floor
+	_floor_label.text = "Floor %d" % gs.floor
 	_room_pos_label.text = "(%d, %d)" % [pos.x, pos.y]
-	_hp_label.text = "%d/%d" % [gs.health, gs.max_health]
+	_hp_label.text = "%d / %d" % [gs.health, gs.max_health]
 	_gold_label.text = "%d" % gs.gold
 
 	var rooms_explored: int = fs.rooms_explored if fs != null else 0
-	_rooms_explored_label.text = "Rooms Explored: %d | Seed: %d" % [rooms_explored, GameSession.run_seed]
+	_rooms_explored_label.text = "Rooms: %d" % rooms_explored
 
 	if GameSession.run_rng_mode == "deterministic":
-		_seed_label.text = "Seed: %d (Deterministic)" % GameSession.run_seed
+		_seed_label.text = "Seed: %d (Det)" % GameSession.run_seed
 	else:
 		_seed_label.text = "Seed: %d" % GameSession.run_seed
 
