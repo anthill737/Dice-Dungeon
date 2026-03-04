@@ -174,7 +174,7 @@ func use_old_key(pos: Vector2i) -> bool:
 		return false
 	state.inventory.erase("Old Key")
 	floor.unlocked_rooms[pos] = true
-	logs.append("The Old Key turns in the lock...")
+	logs.append("[KEY USED] The Old Key turns in the lock with a satisfying click!")
 	logs.append("The elite room door swings open!")
 	return true
 

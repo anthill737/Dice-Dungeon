@@ -10,6 +10,10 @@ const MIN_ZOOM := 0.25
 const MAX_ZOOM := 3.0
 const ZOOM_STEP := 0.25
 
+## Icon sizing constraints — prevent overlap/clipping at any zoom level.
+const MIN_ICON_SIZE := 3.0
+const ICON_MARGIN := 1.0
+
 ## Python-matching room fill colours
 const COLOR_CURRENT := Color("#ffd700")      # gold — player room
 const COLOR_VISITED := Color("#4a4a4a")      # medium gray
@@ -496,7 +500,7 @@ func _draw_blocked_bars(room: RoomState, cx: float, cy: float, half: float) -> v
 
 func _draw_room_icon(room: RoomState, pos: Vector2i, center: Vector2,
 		half: float, fs: FloorState) -> void:
-	var icon_size := half * 0.85
+	var icon_size := clampf(half * 0.85, MIN_ICON_SIZE, half - ICON_MARGIN)
 	var marker := _classify_room_marker(room, pos, fs)
 	match marker:
 		"locked":
@@ -515,6 +519,16 @@ func _draw_room_icon(room: RoomState, pos: Vector2i, center: Vector2,
 			_draw_chest_icon(center, icon_size)
 		"escaped":
 			_draw_cross(center, icon_size)
+
+
+# ------------------------------------------------------------------
+# Icon sizing — testable formula
+# ------------------------------------------------------------------
+
+## Compute the clamped icon size for a given cell half-size.
+## Ensures icon_size <= (half - ICON_MARGIN) and icon_size >= MIN_ICON_SIZE.
+static func compute_icon_size(half: float) -> float:
+	return clampf(half * 0.85, MIN_ICON_SIZE, half - ICON_MARGIN)
 
 
 # ------------------------------------------------------------------

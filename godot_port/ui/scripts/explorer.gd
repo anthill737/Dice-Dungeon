@@ -792,6 +792,8 @@ static func _classify_message(msg: String) -> Array:
 		return ["enemy", "COMBAT", "combat"]
 	if msg.begins_with("Enemies ahead") or msg.begins_with("Something lurks"):
 		return ["enemy", "COMBAT", "exploration"]
+	if msg.contains("blocks your path") or msg.contains("sealed door looms"):
+		return ["enemy", "INTERACTION", "exploration"]
 	if msg.begins_with("Fled"):
 		return ["system", "COMBAT", "combat"]
 	if msg.begins_with("Found stairs"):
@@ -810,6 +812,18 @@ static func _classify_message(msg: String) -> Array:
 		return ["loot", "LOOT", "exploration"]
 	if msg.begins_with("Mini-boss defeated") or msg.begins_with("Boss defeated"):
 		return ["success", "COMBAT", "combat"]
+	if msg.begins_with("[KEY USED]") or msg.begins_with("The elite room door swings open") or msg.begins_with("The massive boss door grinds open"):
+		return ["success", "INTERACTION", "exploration"]
+	if msg.begins_with("The 3 fragments merge"):
+		return ["success", "INTERACTION", "exploration"]
+	if msg.begins_with("You decide to save your Old Key") or msg.begins_with("You decide to prepare more"):
+		return ["system", "INTERACTION", "exploration"]
+	if msg.begins_with("You turn back."):
+		return ["enemy", "INTERACTION", "exploration"]
+	if msg.begins_with("The door is sealed with an ornate lock"):
+		return ["system", "INTERACTION", "exploration"]
+	if msg.begins_with("Three keyhole slots glow faintly"):
+		return ["system", "INTERACTION", "exploration"]
 	if msg.begins_with("Container is locked"):
 		return ["system", "INTERACTION", "exploration"]
 	if msg.begins_with("Inventory full"):
@@ -916,11 +930,11 @@ func _on_locked_room_prompt(gate_type: String, direction: String) -> void:
 	var title := ""
 	var message := ""
 	if gate_type == "has_key_mini_boss":
-		title = "LOCKED ELITE ROOM"
-		message = "The door is sealed with an ancient lock.\nYou have an Old Key that fits!\n\nUse the key to unlock and enter,\nor turn back and save it for later?"
+		title = "⚿ LOCKED ELITE ROOM"
+		message = "The door is sealed with an ancient lock.\n\nYou have an Old Key that fits!\n\nUse the key to unlock and enter,\nor turn back and save it for later?"
 	else:
-		title = "LOCKED BOSS ROOM"
-		message = "The boss chamber door is sealed shut.\nYou have all 3 Boss Key Fragments!\n\nForge them to unlock the door and\nface the floor boss, or turn back?"
+		title = "☠ LOCKED BOSS ROOM"
+		message = "The boss chamber door is sealed shut.\n\nYou have all 3 Boss Key Fragments!\n\nForge them to unlock the door and\nface the floor boss, or turn back?"
 	_show_locked_room_dialog(title, message)
 
 
@@ -1134,6 +1148,12 @@ static func _get_line_style(msg: String) -> Dictionary:
 		return {"color": DungeonTheme.TEXT_GOLD, "bold": false}
 	if msg.begins_with("Mini-boss defeated") or msg.begins_with("Boss defeated"):
 		return {"color": DungeonTheme.TEXT_GREEN, "bold": false}
+	if msg.begins_with("[KEY USED]") or msg.begins_with("The elite room door swings open") or msg.begins_with("The massive boss door grinds open") or msg.begins_with("The 3 fragments merge"):
+		return {"color": DungeonTheme.TEXT_GREEN, "bold": false}
+	if msg.begins_with("You decide to save your Old Key") or msg.begins_with("You decide to prepare more"):
+		return {"color": DungeonTheme.TEXT_SECONDARY, "bold": false}
+	if msg.begins_with("You turn back."):
+		return {"color": DungeonTheme.TEXT_RED, "bold": false}
 	if msg.begins_with("[Session Trace]"):
 		return {"color": DungeonTheme.TEXT_SECONDARY, "bold": false}
 	if msg.begins_with("Browsing store"):
