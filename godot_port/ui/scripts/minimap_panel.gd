@@ -500,7 +500,7 @@ func _draw_blocked_bars(room: RoomState, cx: float, cy: float, half: float) -> v
 
 func _draw_room_icon(room: RoomState, pos: Vector2i, center: Vector2,
 		half: float, fs: FloorState) -> void:
-	var icon_size := clampf(half * 0.85, MIN_ICON_SIZE, half - ICON_MARGIN)
+	var icon_size := clampf(half * 0.85, MIN_ICON_SIZE, maxf(MIN_ICON_SIZE, half - ICON_MARGIN))
 	var marker := _classify_room_marker(room, pos, fs)
 	match marker:
 		"locked":
@@ -528,7 +528,7 @@ func _draw_room_icon(room: RoomState, pos: Vector2i, center: Vector2,
 ## Compute the clamped icon size for a given cell half-size.
 ## Ensures icon_size <= (half - ICON_MARGIN) and icon_size >= MIN_ICON_SIZE.
 static func compute_icon_size(half: float) -> float:
-	return clampf(half * 0.85, MIN_ICON_SIZE, half - ICON_MARGIN)
+	return clampf(half * 0.85, MIN_ICON_SIZE, maxf(MIN_ICON_SIZE, half - ICON_MARGIN))
 
 
 # ------------------------------------------------------------------
