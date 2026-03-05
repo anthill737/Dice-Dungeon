@@ -53,7 +53,7 @@ func test_first_visit_has_separator_and_name_and_flavor():
 	assert_true(has_entered, "First visit should have 'Entered:' line")
 
 
-func test_revisit_has_separator_and_returned():
+func test_revisit_has_separator_and_entered():
 	var engine := _make_engine(42)
 	engine.start_floor(1)
 	var room := engine.move("E")
@@ -65,14 +65,14 @@ func test_revisit_has_separator_and_returned():
 	engine.logs.clear()
 	engine.move("E")
 	var has_sep := false
-	var has_returned := false
+	var has_entered := false
 	for line in engine.logs:
 		if line.begins_with("===="):
 			has_sep = true
-		if line.begins_with("Returned to:"):
-			has_returned = true
+		if line.begins_with("Entered:"):
+			has_entered = true
 	assert_true(has_sep, "Revisit should have separator")
-	assert_true(has_returned, "Revisit should have 'Returned to:' line")
+	assert_true(has_entered, "Revisit uses 'Entered:' (Python parity)")
 
 
 # ==================================================================

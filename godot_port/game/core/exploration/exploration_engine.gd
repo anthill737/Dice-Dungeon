@@ -10,6 +10,7 @@ var floor: FloorState
 var rooms_db: Array = []
 var mechanics: MechanicsEngine
 var logs: Array[String] = []
+var last_move_was_revisit: bool = false
 
 const DIRS := ["N", "S", "E", "W"]
 
@@ -102,6 +103,9 @@ func start_floor(floor_index: int) -> RoomState:
 	logs.append("=== Floor %d ===" % floor_index)
 	logs.append("==================================================")
 	logs.append("Entered: %s" % room_data.get("name", "Unknown"))
+	var entrance_flavor: String = room_data.get("flavor", "")
+	if not entrance_flavor.is_empty():
+		logs.append(entrance_flavor)
 	return entrance
 
 
@@ -210,13 +214,18 @@ func move(direction: String) -> RoomState:
 
 	# Revisiting existing room — Python handles this in explore_direction
 	if floor.has_room_at(new_pos):
+		last_move_was_revisit = true
 		var existing: RoomState = floor.rooms[new_pos]
 		floor.current_pos = new_pos
 		# Python does NOT make RNG calls when revisiting
 		logs.append("==================================================")
-		logs.append("Returned to: %s" % existing.data.get("name", "Room"))
+		logs.append("Entered: %s" % existing.data.get("name", "Room"))
+		var revisit_flavor: String = existing.data.get("flavor", "")
+		if not revisit_flavor.is_empty():
+			logs.append(revisit_flavor)
 		return existing
 
+	last_move_was_revisit = false
 	# New room — Python increments rooms_explored_on_floor BEFORE spawn checks
 	floor.rooms_explored_on_floor += 1
 
@@ -414,14 +423,20 @@ func _on_first_visit(room: RoomState) -> void:
 			var enemy_name: String = rng.choice(threats)
 			logs.append("==================================================")
 			logs.append("Entered: %s" % room_name)
+			if not flavor.is_empty():
+				logs.append(flavor)
 			logs.append("Enemy: %s" % enemy_name)
 		else:
 			logs.append("==================================================")
 			logs.append("Entered: %s" % room_name)
+			if not flavor.is_empty():
+				logs.append(flavor)
 			logs.append("Enemy lurks here!")
 	else:
 		logs.append("==================================================")
 		logs.append("Entered: %s" % room_name)
+		if not flavor.is_empty():
+			logs.append(flavor)
 		if not threats.is_empty() or has_combat_tag:
 			## Python RNG call: rng.choice(peaceful_messages)
 			logs.append(rng.choice(PEACEFUL_MESSAGES))

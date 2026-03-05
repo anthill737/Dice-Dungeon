@@ -91,6 +91,34 @@ func test_combat_enemy_not_all_20hp() -> void:
 	GameSession.end_combat(true)
 
 
+func test_enemy_hp_multiplier_lookup_matches_python() -> void:
+	# Python table (explorer/combat.py lines 360-396): partial name match, first wins.
+	# Verify the ENEMY_HP_MULTIPLIERS dict contains the correct keys and values
+	# matching the Python table, and that _calc_enemy_hp produces correctly
+	# scaled relative differences between enemy types.
+	var table: Dictionary = GameSession.ENEMY_HP_MULTIPLIERS
+
+	# Verify specific Python table entries exist with correct values
+	assert_eq(table.get("Goblin"), 0.7, "Goblin mult matches Python")
+	assert_eq(table.get("Dragon"), 2.5, "Dragon mult matches Python")
+	assert_eq(table.get("Troll"), 1.5, "Troll mult matches Python")
+	assert_eq(table.get("Skeleton"), 1.0, "Skeleton mult matches Python")
+	assert_eq(table.get("Bat"), 0.5, "Bat mult matches Python")
+
+	# Verify relative HP ordering: Dragon > Troll > Skeleton > Goblin > Bat
+	_make_session(8888)
+	var hp_dragon := GameSession._calc_enemy_hp("Dragon", 3, false, false)
+	var hp_troll := GameSession._calc_enemy_hp("Troll", 3, false, false)
+	var hp_skel := GameSession._calc_enemy_hp("Skeleton", 3, false, false)
+	var hp_goblin := GameSession._calc_enemy_hp("Goblin", 3, false, false)
+	var hp_bat := GameSession._calc_enemy_hp("Bat", 3, false, false)
+
+	assert_gt(hp_dragon, hp_troll, "Dragon HP > Troll HP")
+	assert_gt(hp_troll, hp_skel, "Troll HP > Skeleton HP")
+	assert_gt(hp_skel, hp_goblin, "Skeleton HP > Goblin HP")
+	assert_gt(hp_goblin, hp_bat, "Goblin HP > Bat HP")
+
+
 func test_health_sanity_no_uniform_fallback() -> void:
 	_make_session(77)
 	var hp_set: Dictionary = {}
@@ -107,7 +135,7 @@ func test_health_sanity_no_uniform_fallback() -> void:
 	assert_lt(pct, 0.8, "Less than 80%% of enemies should share the same HP")
 
 
-# ── Room entry log: exactly once, no flavor duplication ──
+# ── Room entry log: exactly once with flavor ──
 
 func test_room_entry_log_exactly_once() -> void:
 	_make_session(200)
@@ -123,17 +151,48 @@ func test_room_entry_log_exactly_once() -> void:
 
 	var entered_count := 0
 	for entry in log_entries:
-		if entry.begins_with("Entered:") or entry.begins_with("Returned to:"):
+		if entry.begins_with("Entered:"):
 			entered_count += 1
-	assert_eq(entered_count, 1, "Exactly one room entry log per move")
+	assert_eq(entered_count, 1, "Exactly one 'Entered:' log per move")
 
 	GameSession.log_message.disconnect(_capture)
 
 
-func test_revisit_log_exactly_once() -> void:
+func test_room_entry_log_includes_flavor() -> void:
+	_make_session(200)
+
+	var log_entries: Array[String] = []
+	var _capture := func(msg: String):
+		log_entries.append(msg)
+	GameSession.log_message.connect(_capture)
+
+	var moved_room: RoomState = null
+	for dir in ["E", "N", "S", "W"]:
+		moved_room = GameSession.move_direction(dir)
+		if moved_room != null:
+			break
+	GameSession.log_message.disconnect(_capture)
+
+	if moved_room == null:
+		pending("Could not move in any direction")
+		return
+
+	var flavor: String = moved_room.data.get("flavor", "")
+	if flavor.is_empty():
+		pending("Room has no flavor text")
+		return
+
+	var flavor_found := false
+	for entry in log_entries:
+		if entry == flavor:
+			flavor_found = true
+			break
+	assert_true(flavor_found, "Log should include room flavor text (Python parity)")
+
+
+func test_revisit_uses_entered_not_returned() -> void:
 	_make_session(300)
 
-	# Try multiple directions to find one that works for a round trip
 	var moved_out := false
 	var out_dir := ""
 	var back_dir := ""
@@ -161,10 +220,10 @@ func test_revisit_log_exactly_once() -> void:
 
 	GameSession.move_direction(out_dir)
 
-	var returned_count := 0
+	var entered_count := 0
 	for entry in log_entries:
-		if entry.begins_with("Returned to:"):
-			returned_count += 1
-	assert_eq(returned_count, 1, "Exactly one 'Returned to:' log per revisit")
+		if entry.begins_with("Entered:"):
+			entered_count += 1
+	assert_eq(entered_count, 1, "Revisit uses 'Entered:' (Python parity, not 'Returned to:')")
 
 	GameSession.log_message.disconnect(_capture)

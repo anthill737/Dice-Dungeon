@@ -42,21 +42,8 @@ static func generate(seed_val: int, moves: Array, floor_num: int = 1) -> Array:
 	return steps
 
 
-static func _is_revisit(engine: ExplorationEngine, room: RoomState) -> bool:
-	## In the engine, new rooms get _on_first_visit called which sets visited=true.
-	## For revisits, move() returns early without calling _on_first_visit.
-	## We detect revisit by checking if the room was NOT just generated:
-	## The engine logs "Returned to:" for revisits.
-	if engine.logs.is_empty():
-		return false
-	var last_log: String = engine.logs[engine.logs.size() - 1]
-	## Check any of the recent logs for "Returned to:"
-	for idx in range(engine.logs.size() - 1, maxi(0, engine.logs.size() - 5) - 1, -1):
-		if engine.logs[idx].begins_with("Returned to:"):
-			return true
-		if engine.logs[idx].begins_with("Entered:") or engine.logs[idx].begins_with("Enemy:"):
-			return false
-	return false
+static func _is_revisit(engine: ExplorationEngine, _room: RoomState) -> bool:
+	return engine.last_move_was_revisit
 
 
 static func _room_record(room: RoomState, pos: Vector2i, step: int, direction: String, revisit: bool) -> Dictionary:

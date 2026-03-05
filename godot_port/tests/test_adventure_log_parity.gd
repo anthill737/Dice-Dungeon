@@ -29,7 +29,7 @@ func _force_move(engine: ExplorationEngine, preferred: String) -> RoomState:
 
 
 # ==================================================================
-# TEST 1: Room entry logging — separator + name (flavor shown in header only)
+# TEST 1: Room entry logging — separator + name + flavor (Python parity)
 # ==================================================================
 
 func test_room_entry_has_separator():
@@ -60,9 +60,10 @@ func test_room_entry_has_name():
 	assert_true(has_entered, "Room entry should include 'Entered: ...' line")
 
 
-func test_room_entry_does_not_duplicate_flavor():
+func test_room_entry_includes_flavor():
 	var engine := _make_engine(42)
 	engine.start_floor(1)
+	var flavor_found := false
 	for i in range(10):
 		engine.logs.clear()
 		var room := _force_move(engine, ["E", "N", "S", "W"][i % 4])
@@ -72,8 +73,30 @@ func test_room_entry_does_not_duplicate_flavor():
 		if room_flavor.is_empty():
 			continue
 		for log_line in engine.logs:
-			assert_ne(log_line, room_flavor,
-				"Flavor text should NOT appear in log (shown in header only)")
+			if log_line == room_flavor:
+				flavor_found = true
+				break
+		if flavor_found:
+			break
+	assert_true(flavor_found, "Room entry log should include flavor text (Python parity)")
+
+
+func test_room_entry_flavor_appears_exactly_once():
+	var engine := _make_engine(55)
+	engine.start_floor(1)
+	for i in range(10):
+		engine.logs.clear()
+		var room := _force_move(engine, ["E", "N", "S", "W"][i % 4])
+		if room == null:
+			continue
+		var room_flavor: String = room.data.get("flavor", "")
+		if room_flavor.is_empty():
+			continue
+		var count := 0
+		for log_line in engine.logs:
+			if log_line == room_flavor:
+				count += 1
+		assert_eq(count, 1, "Flavor text should appear exactly once per room entry")
 		break
 
 
