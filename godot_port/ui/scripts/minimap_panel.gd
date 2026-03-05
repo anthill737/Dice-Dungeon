@@ -269,7 +269,8 @@ func _center_on_player() -> void:
 		return
 	if _canvas.size.x <= 0 or _canvas.size.y <= 0:
 		_needs_center = true
-		_canvas.call_deferred("queue_redraw")
+		if is_inside_tree() and is_instance_valid(_canvas):
+			_canvas.call_deferred("queue_redraw")
 		return
 	var cell := CELL_SIZE_DEFAULT * _zoom
 	var center := _canvas.size / 2.0
@@ -397,8 +398,8 @@ func _draw_minimap() -> void:
 			_pan_offset = center - Vector2(fs.current_pos.x, -fs.current_pos.y) * stride
 			_needs_center = false
 		else:
-			# Canvas not laid out yet — schedule a retry next frame
-			_canvas.call_deferred("queue_redraw")
+			if is_inside_tree() and is_instance_valid(_canvas):
+				_canvas.call_deferred("queue_redraw")
 			return
 
 	for pos_key in fs.rooms:

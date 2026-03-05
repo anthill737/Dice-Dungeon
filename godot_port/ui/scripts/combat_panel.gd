@@ -45,6 +45,7 @@ var _roll_anim_active: bool = false
 const ROLL_ANIM_FRAMES := 8
 const ROLL_ANIM_INTERVAL := 0.025  # 25ms per frame
 var _last_turn_count: int = -1
+var _active_tweens: Array[Tween] = []
 
 const COMBAT_ROLL_COLOR := Color(0.31, 0.80, 0.77)
 const COMBAT_FLEE_COLOR := Color(0.95, 0.61, 0.07)
@@ -69,6 +70,19 @@ func _process(delta: float) -> void:
 				_sync_dice_display()
 			else:
 				_show_random_dice()
+
+
+func _exit_tree() -> void:
+	_roll_anim_active = false
+	for tw in _active_tweens:
+		if is_instance_valid(tw) and tw.is_running():
+			tw.kill()
+	_active_tweens.clear()
+	_dice_labels.clear()
+	_dice_panels.clear()
+	_dice_lock_icons.clear()
+	_enemy_dice_labels.clear()
+	_enemy_dice_panels.clear()
 
 
 func _build_ui() -> void:
@@ -431,6 +445,7 @@ func _flash_hp_bar(bar: ProgressBar, section: HBoxContainer) -> void:
 	if not is_inside_tree():
 		return
 	var tween := create_tween()
+	_track_tween(tween)
 	tween.tween_method(func(v: float):
 		var flash_color := DungeonTheme.FLASH_RED.lerp(DungeonTheme.HP_BG, v)
 		var s := StyleBoxFlat.new()
@@ -452,10 +467,17 @@ func _show_floating_damage(value: int, section: HBoxContainer, color: Color) -> 
 	lbl.z_index = 10
 	section.add_child(lbl)
 	var tween := create_tween()
+	_track_tween(tween)
 	tween.set_parallel(true)
 	tween.tween_property(lbl, "modulate:a", 0.0, 0.8)
 	tween.tween_property(lbl, "position:y", lbl.position.y - 20, 0.8)
 	tween.chain().tween_callback(lbl.queue_free)
+
+
+func _track_tween(tw: Tween) -> void:
+	_active_tweens = _active_tweens.filter(func(t: Tween) -> bool:
+		return is_instance_valid(t) and t.is_running())
+	_active_tweens.append(tw)
 
 
 # ------------------------------------------------------------------

@@ -143,7 +143,9 @@ func _on_start_run(options: Dictionary) -> void:
 		_context.session.start_new_run(options)
 	else:
 		GameSession.start_new_run(options)
-	get_tree().change_scene_to_file("res://ui/scenes/Explorer.tscn")
+	var tree := get_tree()
+	if tree != null:
+		tree.change_scene_to_file("res://ui/scenes/Explorer.tscn")
 
 
 func _on_save_load() -> void:
@@ -160,11 +162,15 @@ func _on_load_save(slot_id: int) -> void:
 	var ok := _context.session.start_run_from_save(slot_id)
 	if ok:
 		_overlay_manager.close_all_menus()
-		get_tree().change_scene_to_file("res://ui/scenes/Explorer.tscn")
+		var tree := get_tree()
+		if tree != null:
+			tree.change_scene_to_file("res://ui/scenes/Explorer.tscn")
 
 
 func _on_quit() -> void:
-	get_tree().quit()
+	var tree := get_tree()
+	if tree != null:
+		tree.quit()
 
 
 func _unhandled_input(event: InputEvent) -> void:

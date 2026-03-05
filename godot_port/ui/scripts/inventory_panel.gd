@@ -28,6 +28,12 @@ func _ready() -> void:
 	GameSession.state_changed.connect(func(): if visible: refresh())
 
 
+func _exit_tree() -> void:
+	if is_instance_valid(_lore_popup):
+		_lore_popup.queue_free()
+		_lore_popup = null
+
+
 func _build_ui() -> void:
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color(0.0, 0.0, 0.0, 0.0)

@@ -57,6 +57,17 @@ func _ready() -> void:
 	_load_data()
 
 
+func _exit_tree() -> void:
+	combat = null
+	exploration = null
+	inventory_engine = null
+	store_engine = null
+	lore_engine = null
+	game_state = null
+	rng = null
+	_content_manager = null
+
+
 func _load_data() -> void:
 	if _content_manager == null:
 		_content_manager = ContentManager.new()
