@@ -60,6 +60,26 @@ const DICE_FONT_SIZE := 32
 const ENEMY_SELECTED_BG := Color(0.78, 0.33, 0.31, 0.25)
 const COMBAT_ACCENT := Color(0.78, 0.33, 0.31)
 
+# Combat log line colors — mirrors Python tag_config
+const LOG_PLAYER := Color(0.37, 0.65, 0.65)      # cyan
+const LOG_ENEMY := Color(0.78, 0.33, 0.31)        # red
+const LOG_SYSTEM := Color(0.83, 0.69, 0.22)       # gold
+const LOG_CRIT := Color(0.71, 0.40, 0.71)         # magenta
+const LOG_LOOT := Color(0.55, 0.44, 0.61)         # purple
+const LOG_SUCCESS := Color(0.50, 0.68, 0.50)      # green
+const LOG_FIRE := Color(1.0, 0.27, 0.0)           # orange-red
+const LOG_SEPARATOR := Color(0.45, 0.40, 0.35)    # dim
+
+# Enemy dice
+const ENEMY_DICE_BG := Color(0.29, 0.0, 0.0)      # #4a0000
+const ENEMY_DICE_BORDER := Color(0.55, 0.0, 0.0)   # #8b0000
+const ENEMY_DICE_SIZE := 36
+const ENEMY_DICE_FONT := 18
+
+# Damage flash
+const FLASH_RED := Color(0.85, 0.15, 0.10)
+const FLASH_DURATION := 0.35
+
 # --- Standard sizes ---
 const PANEL_MARGIN := 16
 const PANEL_CORNER := 6
