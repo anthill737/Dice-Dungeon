@@ -57,6 +57,7 @@ func _ready() -> void:
 	_build_ui()
 	GameSession.state_changed.connect(_on_state_changed)
 	GameSession.combat_ended.connect(func(): close_requested.emit())
+	GameSession.combat_started.connect(_on_combat_started_reset)
 
 
 func _process(delta: float) -> void:
@@ -533,6 +534,26 @@ func _append_styled_log(line: String) -> void:
 # State sync
 # ------------------------------------------------------------------
 
+func _on_combat_started_reset() -> void:
+	# Clear stale combat log from prior encounter (Python parity)
+	if _log_text != null:
+		_log_text.clear()
+	# Clear stale enemy dice from prior encounter
+	_clear_enemy_dice()
+	_last_turn_count = -1
+	_result_label.text = ""
+
+
+func _clear_enemy_dice() -> void:
+	for p in _enemy_dice_panels:
+		if is_instance_valid(p):
+			p.queue_free()
+	_enemy_dice_panels.clear()
+	_enemy_dice_labels.clear()
+	if _enemy_dice_container != null:
+		_enemy_dice_container.visible = false
+
+
 func _on_state_changed() -> void:
 	if not visible:
 		return
@@ -625,8 +646,8 @@ func _sync_close_flee_visibility(combat_over: bool = false) -> void:
 	var pending := GameSession.is_pending_choice()
 	var active := GameSession.is_combat_active()
 	_btn_close.visible = combat_over or (not pending and not active)
-	_btn_flee.visible = pending and not active
-	_btn_flee.disabled = not pending
+	_btn_flee.visible = pending or active
+	_btn_flee.disabled = combat_over
 
 
 # ------------------------------------------------------------------
@@ -683,6 +704,41 @@ func _on_attack() -> void:
 	if result.status_tick_damage > 0:
 		GameSession.trace_status_tick("combined", result.status_tick_damage)
 
+	# Weapon durability degrades on player attack (Python parity: 3 per attack)
+	if result.player_damage > 0 and GameSession.inventory_engine != null:
+		var weapon_result := DurabilitySystem.degrade_weapon(
+			GameSession.inventory_engine, GameSession.game_state)
+		if weapon_result.get("degraded", false):
+			if weapon_result.get("broken", false):
+				_append_styled_log("%s has broken!" % weapon_result.get("item_name", ""))
+				GameSession.log_message.emit("%s has broken!" % weapon_result.get("item_name", ""))
+				GameSession.trace_durability_changed(str(weapon_result.get("item_name", "")), 0, true)
+			elif weapon_result.get("warning", false):
+				var dur_msg := "%s durability low (%d)" % [weapon_result.get("item_name", ""), weapon_result.get("durability", 0)]
+				_append_styled_log(dur_msg)
+				GameSession.log_message.emit(dur_msg)
+				GameSession.trace_durability_changed(str(weapon_result.get("item_name", "")), int(weapon_result.get("durability", 0)), false)
+			else:
+				GameSession.trace_durability_changed(str(weapon_result.get("item_name", "")), int(weapon_result.get("durability", 0)), false)
+
+	# Armor durability degrades on taking damage (Python parity: 5 per hit)
+	var player_dmg_taken := hp_before - GameSession.game_state.health
+	if player_dmg_taken > 0 and GameSession.inventory_engine != null:
+		var armor_result := DurabilitySystem.degrade_armor(
+			GameSession.inventory_engine, GameSession.game_state)
+		if armor_result.get("degraded", false):
+			if armor_result.get("broken", false):
+				_append_styled_log("%s has broken!" % armor_result.get("item_name", ""))
+				GameSession.log_message.emit("%s has broken!" % armor_result.get("item_name", ""))
+				GameSession.trace_durability_changed(str(armor_result.get("item_name", "")), 0, true)
+			elif armor_result.get("warning", false):
+				var dur_msg := "%s durability low (%d)" % [armor_result.get("item_name", ""), armor_result.get("durability", 0)]
+				_append_styled_log(dur_msg)
+				GameSession.log_message.emit(dur_msg)
+				GameSession.trace_durability_changed(str(armor_result.get("item_name", "")), int(armor_result.get("durability", 0)), false)
+			else:
+				GameSession.trace_durability_changed(str(armor_result.get("item_name", "")), int(armor_result.get("durability", 0)), false)
+
 	for log_line in result.logs:
 		_append_styled_log(log_line)
 		GameSession.log_message.emit(log_line)
@@ -698,7 +754,6 @@ func _on_attack() -> void:
 		_flash_hp_bar(_enemy_hp_bar, _enemy_hp_section)
 		_show_floating_damage(result.player_damage, _enemy_hp_section, DungeonTheme.LOG_PLAYER)
 
-	var player_dmg_taken := hp_before - GameSession.game_state.health
 	if player_dmg_taken > 0:
 		_flash_hp_bar(_player_hp_bar, _player_hp_section)
 		_show_floating_damage(player_dmg_taken, _player_hp_section, DungeonTheme.LOG_ENEMY)
@@ -715,13 +770,23 @@ func _on_attack() -> void:
 
 
 func _on_flee() -> void:
-	if not GameSession.is_pending_choice():
+	if GameSession.is_pending_choice() and GameSession.combat == null:
+		var ok := GameSession.attempt_flee_pending()
+		if ok:
+			_append_styled_log("Fled successfully!")
+		else:
+			_append_styled_log("Failed to flee!")
+		refresh()
 		return
-	if GameSession.combat != null:
-		return
-	var ok := GameSession.attempt_flee_pending()
-	if ok:
-		_append_styled_log("Fled successfully!")
-	else:
-		_append_styled_log("Failed to flee!")
-	refresh()
+	if GameSession.is_combat_active():
+		var flee_policy := CombatGatingPolicy.can_flee(GameSession.combat)
+		if not flee_policy.get("allowed", false):
+			_append_styled_log(CombatGatingPolicy.flee_blocked_message())
+			GameSession.log_message.emit(CombatGatingPolicy.flee_blocked_message())
+			return
+		var ok := GameSession.flee_from_combat()
+		if ok:
+			_append_styled_log("Fled successfully!")
+		else:
+			_append_styled_log("Failed to flee!")
+		refresh()

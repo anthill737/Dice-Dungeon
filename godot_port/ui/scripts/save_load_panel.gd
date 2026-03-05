@@ -245,9 +245,9 @@ func refresh() -> void:
 		_btn_save.disabled = true
 		_btn_save.text = "Save"
 	else:
-		var in_combat := GameSession.is_combat_active()
-		_btn_save.disabled = in_combat
-		if in_combat:
+		var save_blocked := not CombatGatingPolicy.can_save(GameSession.game_state, GameSession.combat)
+		_btn_save.disabled = save_blocked
+		if save_blocked:
 			_btn_save.text = "Cannot Save"
 		else:
 			_btn_save.text = "Save"
@@ -317,8 +317,8 @@ func _on_save() -> void:
 	if slot < 0:
 		_info_label.text = "Select a slot first."
 		return
-	if GameSession.is_combat_active():
-		_info_label.text = "Cannot save during combat!"
+	if not CombatGatingPolicy.can_save(GameSession.game_state, GameSession.combat):
+		_info_label.text = CombatGatingPolicy.save_blocked_message()
 		return
 	var gs := GameSession.game_state
 	var fs := GameSession.get_floor_state()
