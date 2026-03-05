@@ -102,9 +102,6 @@ func start_floor(floor_index: int) -> RoomState:
 	logs.append("=== Floor %d ===" % floor_index)
 	logs.append("==================================================")
 	logs.append("Entered: %s" % room_data.get("name", "Unknown"))
-	var flavor: String = room_data.get("flavor", "")
-	if not flavor.is_empty():
-		logs.append(flavor)
 	return entrance
 
 
@@ -218,9 +215,6 @@ func move(direction: String) -> RoomState:
 		# Python does NOT make RNG calls when revisiting
 		logs.append("==================================================")
 		logs.append("Returned to: %s" % existing.data.get("name", "Room"))
-		var flavor: String = existing.data.get("flavor", "")
-		if not flavor.is_empty():
-			logs.append(flavor)
 		return existing
 
 	# New room — Python increments rooms_explored_on_floor BEFORE spawn checks
@@ -420,20 +414,14 @@ func _on_first_visit(room: RoomState) -> void:
 			var enemy_name: String = rng.choice(threats)
 			logs.append("==================================================")
 			logs.append("Entered: %s" % room_name)
-			if not flavor.is_empty():
-				logs.append(flavor)
 			logs.append("Enemy: %s" % enemy_name)
 		else:
 			logs.append("==================================================")
 			logs.append("Entered: %s" % room_name)
-			if not flavor.is_empty():
-				logs.append(flavor)
 			logs.append("Enemy lurks here!")
 	else:
 		logs.append("==================================================")
 		logs.append("Entered: %s" % room_name)
-		if not flavor.is_empty():
-			logs.append(flavor)
 		if not threats.is_empty() or has_combat_tag:
 			## Python RNG call: rng.choice(peaceful_messages)
 			logs.append(rng.choice(PEACEFUL_MESSAGES))

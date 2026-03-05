@@ -302,7 +302,7 @@ func _build_center_panel(parent: Node) -> void:
 	_room_name_label.name = "RoomNameLabel"
 	_room_name_label.text = "---"
 	_room_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_room_name_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SUBHEADING)
+	_room_name_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_HEADING)
 	_room_name_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	room_vbox.add_child(_room_name_label)
 
@@ -318,7 +318,7 @@ func _build_center_panel(parent: Node) -> void:
 	_room_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_room_desc_label.add_theme_font_size_override("normal_font_size", DungeonTheme.FONT_BODY)
 	_room_desc_label.add_theme_font_size_override("italics_font_size", DungeonTheme.FONT_BODY)
-	_room_desc_label.add_theme_color_override("default_color", Color(0.96, 0.90, 0.83))
+	_room_desc_label.add_theme_color_override("default_color", Color(0.78, 0.73, 0.65))
 	room_vbox.add_child(_room_desc_label)
 
 	_room_flags_label = Label.new()
