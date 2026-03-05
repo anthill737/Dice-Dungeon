@@ -260,16 +260,15 @@ func _build_top_bar(parent: Node) -> void:
 	btn_box.add_theme_constant_override("separation", 4)
 	hbox.add_child(btn_box)
 
-	_btn_character = _make_icon_btn("⚙", "Character")
+	_btn_character = DungeonTheme.make_icon_btn(DungeonTheme.ICON_CHARACTER, "Character")
 	_btn_character.pressed.connect(_on_character_status)
 	btn_box.add_child(_btn_character)
 
-	_btn_pause = _make_icon_btn("☰", "Menu")
+	_btn_pause = DungeonTheme.make_icon_btn(DungeonTheme.ICON_MENU, "Menu")
 	_btn_pause.pressed.connect(_on_pause)
 	btn_box.add_child(_btn_pause)
 
-	_btn_settings = _make_icon_btn("⚙", "Settings")
-	_btn_settings.modulate = Color(0.7, 0.7, 0.8)
+	_btn_settings = DungeonTheme.make_icon_btn(DungeonTheme.ICON_SETTINGS, "Settings")
 	_btn_settings.pressed.connect(_on_settings)
 	btn_box.add_child(_btn_settings)
 

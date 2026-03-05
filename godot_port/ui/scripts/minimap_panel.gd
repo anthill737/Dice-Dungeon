@@ -2,6 +2,10 @@ extends PanelContainer
 ## MinimapPanel — purely visual 2D grid representation of explored rooms.
 ## Reads from FloorState via GameSession. No gameplay logic; display only.
 ##
+## Follow behavior matches Python exactly: the view center is always
+## player_pos + _user_pan (in room coordinates). The minimap follows
+## the player automatically on every move.
+##
 ## Python-parity reference: docs/python_minimap_rules.md
 
 const CELL_SIZE_DEFAULT := 18
@@ -34,18 +38,20 @@ const TOOLTIP_BG := Color(0.08, 0.06, 0.10, 0.92)
 const TOOLTIP_TEXT := Color(0.9, 0.85, 0.7)
 
 var _zoom: float = 1.0
-var _pan_offset := Vector2.ZERO
+
+## User pan offset in room coordinates (matches Python minimap_pan_x/y).
+## The view center is always: player_pos + _user_pan.
+var _user_pan := Vector2.ZERO
+
 var _dragging := false
 var _drag_start := Vector2.ZERO
-var _pan_start := Vector2.ZERO
+var _drag_pan_start := Vector2.ZERO
 
 var _canvas: Control
 var _btn_zoom_in: Button
 var _btn_zoom_out: Button
 var _btn_center: Button
 var _last_floor_index: int = -1
-var _needs_center: bool = false  # deferred centering when canvas has no size yet
-var _user_interacted: bool = false  # set true on first manual pan/zoom
 
 ## Tooltip state
 var _tooltip_label: Label
@@ -57,27 +63,13 @@ var model_visible_rooms: Array[Vector2i] = []  # rooms that would be drawn
 var model_blocked_edges: Array[Dictionary] = [] # [{pos, dir}]
 var model_special_markers: Dictionary = {}      # Vector2i -> String marker type
 var model_center_target: Variant = null         # Vector2i follow target
+var model_follow_active: bool = true            # always true in Python-parity mode
 
 
 func _ready() -> void:
 	_build_ui()
 	GameSession.state_changed.connect(_on_state_changed)
 	_update_model()
-	_needs_center = true
-	set_process(true)
-
-
-func _process(_delta: float) -> void:
-	if not _needs_center:
-		set_process(false)
-		return
-	if _canvas == null or _canvas.size.x <= 0 or _canvas.size.y <= 0:
-		return
-	var fs := GameSession.get_floor_state()
-	if fs != null:
-		_last_floor_index = fs.floor_index
-	_center_on_player()
-	set_process(false)
 
 
 func _build_ui() -> void:
@@ -106,7 +98,6 @@ func _build_ui() -> void:
 	_canvas.draw.connect(_draw_minimap)
 	_canvas.gui_input.connect(_on_canvas_input)
 	_canvas.mouse_exited.connect(_on_canvas_mouse_exited)
-	_canvas.resized.connect(_on_canvas_resized)
 	vbox.add_child(_canvas)
 
 	_tooltip_label = Label.new()
@@ -147,8 +138,7 @@ func _on_state_changed() -> void:
 	var fs := GameSession.get_floor_state()
 	if fs != null and fs.floor_index != _last_floor_index:
 		_last_floor_index = fs.floor_index
-		_needs_center = true
-		_user_interacted = false
+		_user_pan = Vector2.ZERO
 	_update_model()
 	if _canvas != null:
 		_canvas.queue_redraw()
@@ -156,7 +146,7 @@ func _on_state_changed() -> void:
 
 func rebuild_from_state() -> void:
 	_update_model()
-	_center_on_player()
+	_user_pan = Vector2.ZERO
 	if _canvas != null:
 		_canvas.queue_redraw()
 
@@ -197,17 +187,16 @@ func _update_model() -> void:
 
 	model_player_room = fs.current_pos
 	model_center_target = fs.current_pos
+	model_follow_active = true
 
 	for pos_key in fs.rooms:
 		var pos: Vector2i = pos_key
 		var room: RoomState = fs.rooms[pos_key]
 		model_visible_rooms.append(pos)
 
-		# Blocked edges
 		for dir in room.blocked_exits:
 			model_blocked_edges.append({"pos": pos, "dir": dir})
 
-		# Special markers
 		var marker := _classify_room_marker(room, pos, fs)
 		if not marker.is_empty():
 			model_special_markers[pos] = marker
@@ -215,7 +204,6 @@ func _update_model() -> void:
 
 ## Classify what marker icon a room should display (pure data, no drawing).
 func _classify_room_marker(room: RoomState, pos: Vector2i, fs: FloorState) -> String:
-	# Locked boss/miniboss (in special_rooms but not unlocked, possibly not visited)
 	if fs.special_rooms.has(pos) and not fs.unlocked_rooms.has(pos):
 		var stype: String = fs.special_rooms[pos]
 		if stype == "boss" or stype == "mini_boss":
@@ -247,36 +235,37 @@ func _classify_room_marker(room: RoomState, pos: Vector2i, fs: FloorState) -> St
 
 
 # ------------------------------------------------------------------
-# Zoom / Pan
+# Zoom / Pan (Python parity: pan is in room coordinates, relative to player)
 # ------------------------------------------------------------------
 
 func _zoom_in() -> void:
-	_user_interacted = true
 	_zoom = minf(_zoom + ZOOM_STEP, MAX_ZOOM)
 	_canvas.queue_redraw()
 
 
 func _zoom_out() -> void:
-	_user_interacted = true
 	_zoom = maxf(_zoom - ZOOM_STEP, MIN_ZOOM)
 	_canvas.queue_redraw()
 
 
 func _center_on_player() -> void:
-	var fs := GameSession.get_floor_state()
-	if fs == null:
-		_pan_offset = Vector2.ZERO
-		return
-	if _canvas.size.x <= 0 or _canvas.size.y <= 0:
-		_needs_center = true
-		if is_inside_tree() and is_instance_valid(_canvas):
-			_canvas.call_deferred("queue_redraw")
-		return
-	var cell := CELL_SIZE_DEFAULT * _zoom
-	var center := _canvas.size / 2.0
-	_pan_offset = center - Vector2(fs.current_pos.x, -fs.current_pos.y) * (cell + CELL_GAP)
-	_needs_center = false
-	_canvas.queue_redraw()
+	_user_pan = Vector2.ZERO
+	if _canvas != null:
+		_canvas.queue_redraw()
+
+
+## Compute the current stride (pixels per room) for the current zoom level.
+func _stride() -> float:
+	return CELL_SIZE_DEFAULT * _zoom + CELL_GAP * _zoom
+
+
+## Convert a room-coordinate position to screen pixel position.
+## Returns the CENTER of the room cell on screen.
+func _room_to_screen(room_pos: Vector2i, center_room: Vector2, canvas_center: Vector2, stride: float) -> Vector2:
+	var rel := Vector2(room_pos) - center_room
+	return Vector2(
+		canvas_center.x + rel.x * stride,
+		canvas_center.y - rel.y * stride)
 
 
 func _on_canvas_input(event: InputEvent) -> void:
@@ -286,7 +275,7 @@ func _on_canvas_input(event: InputEvent) -> void:
 			if mb.pressed:
 				_dragging = true
 				_drag_start = mb.position
-				_pan_start = _pan_offset
+				_drag_pan_start = _user_pan
 			else:
 				_dragging = false
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
@@ -296,17 +285,13 @@ func _on_canvas_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion:
 		var mm: InputEventMouseMotion = event
 		if _dragging:
-			_user_interacted = true
-			_pan_offset = _pan_start + (mm.position - _drag_start)
+			var stride := _stride()
+			if stride > 0:
+				var delta_px := mm.position - _drag_start
+				_user_pan = _drag_pan_start + Vector2(-delta_px.x, delta_px.y) / stride
 			_canvas.queue_redraw()
 		else:
 			_update_hover(mm.position)
-
-
-func _on_canvas_resized() -> void:
-	if _canvas.size.x > 0 and _canvas.size.y > 0:
-		if _needs_center or not _user_interacted:
-			_center_on_player()
 
 
 func _on_canvas_mouse_exited() -> void:
@@ -321,17 +306,18 @@ func _update_hover(mouse_pos: Vector2) -> void:
 		return
 	var cell := CELL_SIZE_DEFAULT * _zoom
 	var half := cell / 2.0
-	var stride := cell + CELL_GAP * _zoom
+	var stride := _stride()
+	var canvas_center := _canvas.size / 2.0
+	var center_room := Vector2(fs.current_pos.x, fs.current_pos.y) + _user_pan
 
 	var best_pos: Variant = null
 	var best_dist := INF
 	for pos_key in fs.rooms:
 		var pos: Vector2i = pos_key
-		var sx: float = pos.x * stride + _pan_offset.x
-		var sy: float = -pos.y * stride + _pan_offset.y
-		var rect := Rect2(sx - half, sy - half, cell, cell)
+		var screen := _room_to_screen(pos, center_room, canvas_center, stride)
+		var rect := Rect2(screen.x - half, screen.y - half, cell, cell)
 		if rect.has_point(mouse_pos):
-			var dist := mouse_pos.distance_squared_to(Vector2(sx, sy))
+			var dist := mouse_pos.distance_squared_to(screen)
 			if dist < best_dist:
 				best_dist = dist
 				best_pos = pos
@@ -366,7 +352,6 @@ func _show_tooltip(mouse_pos: Vector2) -> void:
 			"escaped": text += " [Fled]"
 	_tooltip_label.text = truncate_label(text, 28)
 	_tooltip_label.visible = true
-	# Position tooltip near cursor, clamped to canvas
 	var tip_size := _tooltip_label.size
 	var tx := mouse_pos.x + 12
 	var ty := mouse_pos.y - tip_size.y - 4
@@ -387,56 +372,43 @@ static func truncate_label(text: String, max_chars: int = 28) -> String:
 
 
 # ------------------------------------------------------------------
-# Drawing
+# Drawing — Python-parity: center = player + _user_pan
 # ------------------------------------------------------------------
 
 func _draw_minimap() -> void:
 	var fs := GameSession.get_floor_state()
 	if fs == null:
 		return
+	if _canvas.size.x <= 0 or _canvas.size.y <= 0:
+		return
 
 	var cell := CELL_SIZE_DEFAULT * _zoom
 	var half := cell / 2.0
-	var gap := CELL_GAP * _zoom
-	var stride := cell + gap
-
-	# Defer centering until canvas has a valid size (first frame after layout)
-	if _needs_center or _pan_offset == Vector2.ZERO:
-		if _canvas.size.x > 0 and _canvas.size.y > 0:
-			var center := _canvas.size / 2.0
-			_pan_offset = center - Vector2(fs.current_pos.x, -fs.current_pos.y) * stride
-			_needs_center = false
-		else:
-			if is_inside_tree() and is_instance_valid(_canvas):
-				_canvas.call_deferred("queue_redraw")
-			return
+	var stride := _stride()
+	var canvas_center := _canvas.size / 2.0
+	var center_room := Vector2(fs.current_pos.x, fs.current_pos.y) + _user_pan
 
 	for pos_key in fs.rooms:
 		var pos: Vector2i = pos_key
 		var room: RoomState = fs.rooms[pos_key]
 
-		var screen_x: float = pos.x * stride + _pan_offset.x - half
-		var screen_y: float = -pos.y * stride + _pan_offset.y - half
+		var screen := _room_to_screen(pos, center_room, canvas_center, stride)
+		var screen_x := screen.x - half
+		var screen_y := screen.y - half
 		var rect := Rect2(screen_x, screen_y, cell, cell)
 
-		# Room fill — Python-parity: gold for current, gray for visited/unvisited
 		var color := _room_color(pos, room, fs)
 		_canvas.draw_rect(rect, color)
 
-		# White outline on every room (Python: outline='#ffffff', width=1)
 		_canvas.draw_rect(rect, COLOR_ROOM_OUTLINE, false, 1.0)
 
-		# Current room gets an extra bright border (Godot enhancement for clarity)
 		if pos == fs.current_pos:
 			_canvas.draw_rect(rect.grow(1.0), COLOR_CURRENT, false, 2.0 * _zoom)
 
-		# Open-path connection lines (drawn from this room towards neighbours)
 		_draw_exits(room, pos, screen_x, screen_y, cell, stride, fs)
 
-		# Blocked-exit red bars (Python parity)
 		_draw_blocked_bars(room, screen_x + half, screen_y + half, half)
 
-		# Special room icons (zoom >= 0.5 to match Python)
 		if _zoom >= 0.5:
 			_draw_room_icon(room, pos, Vector2(screen_x + half, screen_y + half), half, fs)
 
@@ -473,8 +445,6 @@ func _draw_exits(room: RoomState, pos: Vector2i, sx: float, sy: float,
 			"S": dy = half
 			"E": dx = half
 			"W": dx = -half
-		# Python uses dashed line (#3a3a3a). Godot doesn't support dash natively,
-		# so we approximate with a thin semi-transparent line.
 		_canvas.draw_line(
 			Vector2(cx + dx, cy + dy),
 			Vector2(cx + dx + delta.x * line_len, cy + dy - delta.y * line_len),
@@ -536,13 +506,10 @@ func _draw_room_icon(room: RoomState, pos: Vector2i, center: Vector2,
 # Icon sizing — testable formula
 # ------------------------------------------------------------------
 
-## Compute the clamped icon size for a given cell half-size.
-## Ensures icon_size <= (half - ICON_MARGIN) and icon_size >= MIN_ICON_SIZE.
 static func compute_icon_size(half: float) -> float:
 	return clampf(half * 0.85, MIN_ICON_SIZE, maxf(MIN_ICON_SIZE, half - ICON_MARGIN))
 
 
-## Larger icon size for boss/miniboss markers (Python parity: uses 16*zoom vs 14*zoom).
 static func compute_boss_icon_size(half: float) -> float:
 	return clampf(half * 1.15, MIN_ICON_SIZE, maxf(MIN_ICON_SIZE, half - ICON_MARGIN * 0.5))
 
@@ -581,7 +548,6 @@ func _draw_stairs_icon(center: Vector2, s: float) -> void:
 
 
 func _draw_store_icon(center: Vector2, s: float) -> void:
-	# Dollar sign approximation — matches Python "$" glyph
 	_canvas.draw_circle(center, s * 0.5, COLOR_ICON_GREEN)
 	_canvas.draw_circle(center, s * 0.3, Color(0.0, 0.6, 0.0))
 

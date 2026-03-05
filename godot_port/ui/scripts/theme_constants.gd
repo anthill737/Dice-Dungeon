@@ -88,6 +88,17 @@ const BTN_MIN_HEIGHT := 32
 const BTN_ICON_SIZE := Vector2(32, 28)
 const SEPARATOR_THICKNESS := 1
 
+# --- Icon button styling ---
+const ICON_BTN_SIZE := Vector2(34, 30)
+const ICON_BTN_FONT_SIZE := 15
+const ICON_BTN_CORNER := 4
+const ICON_BTN_PADDING := 4
+
+# --- Standard icon glyphs ---
+const ICON_CHARACTER := "♚"
+const ICON_MENU := "☰"
+const ICON_SETTINGS := "⚙"
+
 # --- Animation ---
 const FADE_DURATION := 0.15
 const SLIDE_DURATION := 0.2
@@ -180,6 +191,50 @@ static func make_item_list(min_height: int = 120) -> ItemList:
 	s.set_border_width_all(1)
 	list.add_theme_stylebox_override("panel", s)
 	return list
+
+
+## Creates a standardized icon button matching the dungeon UI style.
+static func make_icon_btn(icon_text: String, tooltip: String) -> Button:
+	var btn := Button.new()
+	btn.text = icon_text
+	btn.tooltip_text = tooltip
+	btn.custom_minimum_size = ICON_BTN_SIZE
+	btn.add_theme_font_size_override("font_size", ICON_BTN_FONT_SIZE)
+	btn.add_theme_color_override("font_color", TEXT_BONE)
+
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = BG_PANEL
+	normal.set_corner_radius_all(ICON_BTN_CORNER)
+	normal.set_content_margin_all(ICON_BTN_PADDING)
+	normal.border_color = BORDER.darkened(0.3)
+	normal.set_border_width_all(1)
+	btn.add_theme_stylebox_override("normal", normal)
+
+	var hover := StyleBoxFlat.new()
+	hover.bg_color = BG_PANEL.lightened(0.18)
+	hover.set_corner_radius_all(ICON_BTN_CORNER)
+	hover.set_content_margin_all(ICON_BTN_PADDING)
+	hover.border_color = BORDER_GOLD
+	hover.set_border_width_all(1)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_color_override("font_hover_color", TEXT_GOLD)
+
+	var pressed := StyleBoxFlat.new()
+	pressed.bg_color = BG_PANEL.darkened(0.15)
+	pressed.set_corner_radius_all(ICON_BTN_CORNER)
+	pressed.set_content_margin_all(ICON_BTN_PADDING)
+	pressed.border_color = BORDER.darkened(0.3)
+	pressed.set_border_width_all(1)
+	btn.add_theme_stylebox_override("pressed", pressed)
+
+	var disabled := StyleBoxFlat.new()
+	disabled.bg_color = BTN_DISABLED_BG
+	disabled.set_corner_radius_all(ICON_BTN_CORNER)
+	disabled.set_content_margin_all(ICON_BTN_PADDING)
+	btn.add_theme_stylebox_override("disabled", disabled)
+	btn.add_theme_color_override("font_disabled_color", BTN_DISABLED_TEXT)
+
+	return btn
 
 
 ## Styles an HP bar based on fill ratio.
