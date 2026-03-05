@@ -60,6 +60,7 @@ class TurnResult extends RefCounted:
 	var player_hp_after: int = 0
 	var logs: Array = []
 	var trace_events: Array = []   ## structured trace events
+	var durability_events: Array = [] ## [{item_name, durability, broken, warning, slot}]
 
 
 ## Full combat outcome.
@@ -94,6 +95,7 @@ var enemy_burn_status: Dictionary = {}  ## int(index) -> {initial_damage, turns_
 
 var _logs: Array = []
 var _trace: SessionTrace
+var _inventory_engine: InventoryEngine  ## optional; when set, durability is applied in core
 
 
 func _init(p_rng: RNG, p_state: GameState, p_num_dice: int = 3,
@@ -107,6 +109,10 @@ func _init(p_rng: RNG, p_state: GameState, p_num_dice: int = 3,
 
 func set_trace(trace: SessionTrace) -> void:
 	_trace = trace
+
+
+func set_inventory_engine(inv: InventoryEngine) -> void:
+	_inventory_engine = inv
 
 
 # ------------------------------------------------------------------
@@ -275,6 +281,20 @@ func player_attack(target_index: int = 0) -> TurnResult:
 				result.spawned.append(sev.spawn_type)
 				result.logs.append_array(sev.logs)
 
+	# --- Weapon durability (Python parity: degrade weapon by 3 on attack) ---
+	if _inventory_engine != null and result.player_damage > 0:
+		var w_res := DurabilitySystem.degrade_weapon(_inventory_engine, state)
+		if w_res.get("degraded", false):
+			result.durability_events.append({
+				"slot": "weapon",
+				"item_name": w_res.get("item_name", ""),
+				"durability": int(w_res.get("durability", 0)),
+				"broken": w_res.get("broken", false),
+				"warning": w_res.get("warning", false),
+			})
+			if w_res.get("broken", false):
+				result.logs.append("%s has broken!" % w_res.get("item_name", ""))
+
 	# --- Status tick damage ---
 	# If statuses_db has entries, use the catalog-based system (Godot-specific).
 	# Otherwise, use Python-style name-based matching (5 dmg per DoT).
@@ -330,6 +350,23 @@ func player_attack(target_index: int = 0) -> TurnResult:
 		state.health -= enemy_dmg
 		result.enemy_rolls.append({"name": enemy.name, "dice": enemy_dice, "damage": enemy_dmg})
 		result.logs.append("%s rolls %s for %d damage" % [enemy.name, str(enemy_dice), enemy_dmg])
+
+	# --- Armor durability (Python parity: degrade armor by 5 when player takes damage) ---
+	var total_enemy_dmg := 0
+	for er in result.enemy_rolls:
+		total_enemy_dmg += int(er.get("damage", 0))
+	if _inventory_engine != null and total_enemy_dmg > 0:
+		var a_res := DurabilitySystem.degrade_armor(_inventory_engine, state)
+		if a_res.get("degraded", false):
+			result.durability_events.append({
+				"slot": "armor",
+				"item_name": a_res.get("item_name", ""),
+				"durability": int(a_res.get("durability", 0)),
+				"broken": a_res.get("broken", false),
+				"warning": a_res.get("warning", false),
+			})
+			if a_res.get("broken", false):
+				result.logs.append("%s has broken!" % a_res.get("item_name", ""))
 
 	# --- Periodic spawns (ability-driven) ---
 	_handle_periodic_spawns(result)

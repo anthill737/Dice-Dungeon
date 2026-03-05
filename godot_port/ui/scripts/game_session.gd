@@ -296,6 +296,8 @@ func start_combat_for_room(room: RoomState) -> void:
 	game_state.in_combat = true
 	combat = CombatEngine.new(rng, game_state, game_state.num_dice, enemy_types_db)
 	combat.set_trace(trace)
+	if inventory_engine != null:
+		combat.set_inventory_engine(inventory_engine)
 
 	var enemy_name: String = threats[0] if not threats.is_empty() else "Monster"
 	var enemy_data: Dictionary = enemy_types_db.get(enemy_name, {})
@@ -317,38 +319,101 @@ func start_combat_for_room(room: RoomState) -> void:
 
 
 ## Player chose Flee from the pending-choice prompt (before combat starts).
-## Uses core 50 % chance.  No CombatEngine exists yet.
-func attempt_flee_pending() -> bool:
-	var success := rng.randf() < 0.5
-	trace.record("flee_attempted", {"context": "pending", "success": success})
-	if success:
-		var room := get_current_room()
+## Python parity: single attempt_flee path — 50% chance, damage on success.
+## No CombatEngine exists yet, so we use the session-level rng.
+func attempt_flee_pending() -> Dictionary:
+	var room := get_current_room()
+	# Boss/mini-boss check (Python: is_boss_fight blocks flee entirely)
+	if room != null and (room.is_boss_room or room.is_mini_boss_room):
+		log_message.emit(CombatGatingPolicy.flee_blocked_message())
+		trace.record("flee_attempted", {"context": "pending", "success": false, "reason": "boss_fight"})
+		return {"success": false, "reason": "boss_fight"}
+
+	# Escape token (Python: guaranteed flee, no damage)
+	var has_escape_token: bool = game_state.flags.get("escape_token", 0) > 0
+	if has_escape_token:
+		game_state.flags["escape_token"] = int(game_state.flags.get("escape_token", 0)) - 1
 		if room != null:
 			room.combat_escaped = true
 		combat_pending = false
-		log_message.emit("Fled successfully!")
+		var statuses: Array = game_state.flags.get("statuses", [])
+		if not statuses.is_empty():
+			game_state.flags["statuses"] = []
+		log_message.emit("Used Escape Token — fled safely without damage!")
+		trace.record("flee_attempted", {"context": "pending", "success": true, "escape_token": true})
 		combat_pending_changed.emit()
 		state_changed.emit()
+		return {"success": true, "damage": 0, "escape_token": true}
+
+	# Normal flee: 50% chance, rng.randint(5,15) damage on success
+	var success := rng.randf() < 0.5
+	trace.record("flee_attempted", {"context": "pending", "success": success})
+	if success:
+		var damage := rng.rand_int(5, 15)
+		game_state.health -= damage
+		if room != null:
+			room.combat_escaped = true
+		if game_state.health <= 0:
+			log_message.emit("[FLEE] You fled! Lost %d HP in the escape." % damage)
+			combat_pending = false
+			combat_pending_changed.emit()
+			state_changed.emit()
+			return {"success": true, "damage": damage, "player_died": true}
+		combat_pending = false
+		var statuses: Array = game_state.flags.get("statuses", [])
+		if not statuses.is_empty():
+			game_state.flags["statuses"] = []
+		log_message.emit("[FLEE] You fled! Lost %d HP in the escape." % damage)
+		combat_pending_changed.emit()
+		state_changed.emit()
+		return {"success": true, "damage": damage}
 	else:
-		log_message.emit("Failed to flee!")
-	return success
+		log_message.emit("Can't escape! Enemy blocks the way!")
+		return {"success": false}
 
 
 ## Player chose Flee from within the active combat panel.
-func flee_from_combat() -> bool:
+## Python parity: same rules as pending flee but via CombatEngine.
+func flee_from_combat() -> Dictionary:
 	if combat == null:
-		return false
-	var success := combat.attempt_flee()
-	trace.record("flee_attempted", {"context": "combat", "success": success})
-	if success:
+		return {"success": false, "reason": "no_combat"}
+	# Boss/mini-boss check
+	var flee_policy := CombatGatingPolicy.can_flee(combat)
+	if not flee_policy.get("allowed", false):
+		log_message.emit(CombatGatingPolicy.flee_blocked_message())
+		trace.record("flee_attempted", {"context": "combat", "success": false, "reason": "boss_fight"})
+		return {"success": false, "reason": "boss_fight"}
+
+	# Escape token
+	var has_escape_token: bool = game_state.flags.get("escape_token", 0) > 0
+	if has_escape_token:
+		game_state.flags["escape_token"] = int(game_state.flags.get("escape_token", 0)) - 1
 		var room := get_current_room()
 		if room != null:
 			room.combat_escaped = true
-		log_message.emit("Fled successfully!")
+		var statuses: Array = game_state.flags.get("statuses", [])
+		if not statuses.is_empty():
+			game_state.flags["statuses"] = []
+		log_message.emit("Used Escape Token — fled safely without damage!")
+		trace.record("flee_attempted", {"context": "combat", "success": true, "escape_token": true})
 		_end_combat_internal(false)
+		return {"success": true, "damage": 0, "escape_token": true}
+
+	# Normal flee via CombatEngine RNG (preserves RNG ordering)
+	var success := combat.attempt_flee()
+	trace.record("flee_attempted", {"context": "combat", "success": success})
+	if success:
+		var damage := rng.rand_int(5, 15)
+		game_state.health -= damage
+		var room := get_current_room()
+		if room != null:
+			room.combat_escaped = true
+		log_message.emit("[FLEE] You fled! Lost %d HP in the escape." % damage)
+		_end_combat_internal(false)
+		return {"success": true, "damage": damage, "player_died": game_state.health <= 0}
 	else:
-		log_message.emit("Failed to flee!")
-	return success
+		log_message.emit("Can't escape! Enemy blocks the way!")
+		return {"success": false}
 
 
 func end_combat(victory: bool) -> void:

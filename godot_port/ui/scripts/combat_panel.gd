@@ -704,40 +704,19 @@ func _on_attack() -> void:
 	if result.status_tick_damage > 0:
 		GameSession.trace_status_tick("combined", result.status_tick_damage)
 
-	# Weapon durability degrades on player attack (Python parity: 3 per attack)
-	if result.player_damage > 0 and GameSession.inventory_engine != null:
-		var weapon_result := DurabilitySystem.degrade_weapon(
-			GameSession.inventory_engine, GameSession.game_state)
-		if weapon_result.get("degraded", false):
-			if weapon_result.get("broken", false):
-				_append_styled_log("%s has broken!" % weapon_result.get("item_name", ""))
-				GameSession.log_message.emit("%s has broken!" % weapon_result.get("item_name", ""))
-				GameSession.trace_durability_changed(str(weapon_result.get("item_name", "")), 0, true)
-			elif weapon_result.get("warning", false):
-				var dur_msg := "%s durability low (%d)" % [weapon_result.get("item_name", ""), weapon_result.get("durability", 0)]
-				_append_styled_log(dur_msg)
-				GameSession.log_message.emit(dur_msg)
-				GameSession.trace_durability_changed(str(weapon_result.get("item_name", "")), int(weapon_result.get("durability", 0)), false)
-			else:
-				GameSession.trace_durability_changed(str(weapon_result.get("item_name", "")), int(weapon_result.get("durability", 0)), false)
+	# Durability events are now resolved in CombatEngine core; UI just reads them
+	for dur_ev in result.durability_events:
+		var item_name: String = dur_ev.get("item_name", "")
+		var dur_val: int = int(dur_ev.get("durability", 0))
+		var broken: bool = dur_ev.get("broken", false)
+		var warning: bool = dur_ev.get("warning", false)
+		GameSession.trace_durability_changed(item_name, dur_val, broken)
+		if warning:
+			var dur_msg := "%s durability low (%d)" % [item_name, dur_val]
+			_append_styled_log(dur_msg)
+			GameSession.log_message.emit(dur_msg)
 
-	# Armor durability degrades on taking damage (Python parity: 5 per hit)
 	var player_dmg_taken := hp_before - GameSession.game_state.health
-	if player_dmg_taken > 0 and GameSession.inventory_engine != null:
-		var armor_result := DurabilitySystem.degrade_armor(
-			GameSession.inventory_engine, GameSession.game_state)
-		if armor_result.get("degraded", false):
-			if armor_result.get("broken", false):
-				_append_styled_log("%s has broken!" % armor_result.get("item_name", ""))
-				GameSession.log_message.emit("%s has broken!" % armor_result.get("item_name", ""))
-				GameSession.trace_durability_changed(str(armor_result.get("item_name", "")), 0, true)
-			elif armor_result.get("warning", false):
-				var dur_msg := "%s durability low (%d)" % [armor_result.get("item_name", ""), armor_result.get("durability", 0)]
-				_append_styled_log(dur_msg)
-				GameSession.log_message.emit(dur_msg)
-				GameSession.trace_durability_changed(str(armor_result.get("item_name", "")), int(armor_result.get("durability", 0)), false)
-			else:
-				GameSession.trace_durability_changed(str(armor_result.get("item_name", "")), int(armor_result.get("durability", 0)), false)
 
 	for log_line in result.logs:
 		_append_styled_log(log_line)
@@ -771,22 +750,29 @@ func _on_attack() -> void:
 
 func _on_flee() -> void:
 	if GameSession.is_pending_choice() and GameSession.combat == null:
-		var ok := GameSession.attempt_flee_pending()
-		if ok:
-			_append_styled_log("Fled successfully!")
+		var result := GameSession.attempt_flee_pending()
+		if result.get("success", false):
+			var dmg: int = int(result.get("damage", 0))
+			if dmg > 0:
+				_append_styled_log("[FLEE] Fled! Lost %d HP." % dmg)
+			else:
+				_append_styled_log("Fled safely!")
+		elif result.get("reason", "") == "boss_fight":
+			_append_styled_log(CombatGatingPolicy.flee_blocked_message())
 		else:
-			_append_styled_log("Failed to flee!")
+			_append_styled_log("Can't escape! Enemy blocks the way!")
 		refresh()
 		return
 	if GameSession.is_combat_active():
-		var flee_policy := CombatGatingPolicy.can_flee(GameSession.combat)
-		if not flee_policy.get("allowed", false):
+		var result := GameSession.flee_from_combat()
+		if result.get("success", false):
+			var dmg: int = int(result.get("damage", 0))
+			if dmg > 0:
+				_append_styled_log("[FLEE] Fled! Lost %d HP." % dmg)
+			else:
+				_append_styled_log("Fled safely!")
+		elif result.get("reason", "") == "boss_fight":
 			_append_styled_log(CombatGatingPolicy.flee_blocked_message())
-			GameSession.log_message.emit(CombatGatingPolicy.flee_blocked_message())
-			return
-		var ok := GameSession.flee_from_combat()
-		if ok:
-			_append_styled_log("Fled successfully!")
 		else:
-			_append_styled_log("Failed to flee!")
+			_append_styled_log("Can't escape! Enemy blocks the way!")
 		refresh()
