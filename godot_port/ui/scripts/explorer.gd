@@ -35,6 +35,7 @@ var _btn_attack: Button
 var _btn_flee: Button
 var _btn_chest: Button
 var _btn_ground: Button
+var _btn_lockpick: Button
 var _btn_inventory: Button
 var _btn_store: Button
 var _btn_rest: Button
@@ -301,7 +302,7 @@ func _build_center_panel(parent: Node) -> void:
 	_room_name_label.name = "RoomNameLabel"
 	_room_name_label.text = "---"
 	_room_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_room_name_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SUBHEADING)
+	_room_name_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_HEADING)
 	_room_name_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	room_vbox.add_child(_room_name_label)
 
@@ -317,7 +318,7 @@ func _build_center_panel(parent: Node) -> void:
 	_room_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_room_desc_label.add_theme_font_size_override("normal_font_size", DungeonTheme.FONT_BODY)
 	_room_desc_label.add_theme_font_size_override("italics_font_size", DungeonTheme.FONT_BODY)
-	_room_desc_label.add_theme_color_override("default_color", Color(0.96, 0.90, 0.83))
+	_room_desc_label.add_theme_color_override("default_color", Color(0.78, 0.73, 0.65))
 	room_vbox.add_child(_room_desc_label)
 
 	_room_flags_label = Label.new()
@@ -411,6 +412,8 @@ func _build_right_sidebar(parent: Node) -> void:
 	actions.add_child(_btn_chest)
 	_btn_ground = _make_action_btn("🔍 Ground Items", DungeonTheme.TEXT_SECONDARY)
 	actions.add_child(_btn_ground)
+	_btn_lockpick = _make_action_btn("🔓 Use Lockpick", DungeonTheme.TEXT_GOLD)
+	actions.add_child(_btn_lockpick)
 	_btn_inventory = _make_action_btn("🎒 Inventory", DungeonTheme.BTN_SECONDARY)
 	actions.add_child(_btn_inventory)
 	_btn_store = _make_action_btn("🏪 Store", DungeonTheme.BTN_SECONDARY)
@@ -597,6 +600,7 @@ func _connect_signals() -> void:
 	_btn_flee.pressed.connect(_on_flee)
 	_btn_chest.pressed.connect(_on_chest)
 	_btn_ground.pressed.connect(_on_ground_items)
+	_btn_lockpick.pressed.connect(_on_use_lockpick)
 	_btn_inventory.pressed.connect(_on_inventory)
 	_btn_store.pressed.connect(_on_store)
 	_btn_rest.pressed.connect(_on_rest)
@@ -939,24 +943,106 @@ func _on_ground_items() -> void:
 	if items.is_empty():
 		_append_log("Nothing on the ground.")
 		return
+
+	var has_gold := false
+	var has_loose_items := false
+	var has_container := false
+
 	for item in items:
 		if item.get("type") == "gold":
-			GameSession.pickup_ground_gold()
+			has_gold = true
 		elif item.get("type") == "item":
-			GameSession.pickup_ground_item(0)
+			has_loose_items = true
 		elif item.get("type") == "container":
-			var result := GameSession.exploration.search_container(room)
-			GameSession._emit_logs(GameSession.exploration.logs)
-			if result.get("locked", false):
-				_append_log("Container is locked!")
-			elif not result.is_empty():
-				var g: int = int(result.get("gold", 0))
-				if g > 0:
-					GameSession.game_state.gold += g
-				var it: String = str(result.get("item", ""))
-				if not it.is_empty():
-					GameSession.inventory_engine.add_item_to_inventory(it, "ground")
+			has_container = true
+
+	# Pick up gold
+	if has_gold:
+		GameSession.pickup_ground_gold()
+
+	# Pick up all loose ground items (Take All)
+	if has_loose_items:
+		_take_all_ground_items(room)
+
+	# Handle container
+	if has_container:
+		_handle_container(room)
+
 	GameSession.state_changed.emit()
+
+
+func _take_all_ground_items(room: RoomState) -> void:
+	var picked := 0
+	while not room.ground_items.is_empty():
+		var result := GameSession.pickup_ground_item(0)
+		if result.is_empty():
+			_append_log("Inventory full! Cannot pick up remaining items.")
+			break
+		picked += 1
+	while not room.uncollected_items.is_empty():
+		var item_name: String = room.uncollected_items[0]
+		if GameSession.inventory_engine.add_item_to_inventory(item_name, "ground"):
+			room.uncollected_items.remove_at(0)
+			picked += 1
+		else:
+			_append_log("Inventory full! Cannot pick up remaining items.")
+			break
+	while not room.dropped_items.is_empty():
+		var item_name: String = room.dropped_items[0]
+		if GameSession.inventory_engine.add_item_to_inventory(item_name, "ground"):
+			room.dropped_items.remove_at(0)
+			picked += 1
+		else:
+			_append_log("Inventory full! Cannot pick up remaining items.")
+			break
+
+
+func _handle_container(room: RoomState) -> void:
+	if room.container_locked:
+		var cname: String = room.ground_container if not room.ground_container.is_empty() else "container"
+		if GameSession.game_state.inventory.has("Lockpick Kit"):
+			_append_log("The %s is locked! You have a Lockpick Kit — use it to unlock." % cname)
+		else:
+			_append_log("The %s is locked! You need a Lockpick Kit to open it." % cname)
+		return
+
+	var result := GameSession.exploration.search_container(room)
+	GameSession._emit_logs(GameSession.exploration.logs)
+	if not result.is_empty() and not result.get("locked", false):
+		_collect_container_contents(room, result)
+
+
+func _on_use_lockpick() -> void:
+	var room := GameSession.get_current_room()
+	if room == null:
+		return
+	if not room.container_locked:
+		_append_log("No locked container here.")
+		return
+	var unlock_result := GameSession.inventory_engine.use_lockpick_on_container(room)
+	GameSession._emit_logs(GameSession.inventory_engine.logs)
+	if unlock_result.get("ok", false):
+		var search_result := GameSession.exploration.search_container(room)
+		GameSession._emit_logs(GameSession.exploration.logs)
+		_collect_container_contents(room, search_result)
+	GameSession.state_changed.emit()
+
+
+func _collect_container_contents(room: RoomState, result: Dictionary) -> void:
+	if result.is_empty():
+		return
+	var g: int = int(result.get("gold", 0))
+	if g > 0:
+		GameSession.game_state.gold += g
+		GameSession.game_state.total_gold_earned += g
+		_append_log("Found %d gold in the container!" % g)
+	var it: String = str(result.get("item", ""))
+	if not it.is_empty():
+		if GameSession.inventory_engine.add_item_to_inventory(it, "ground"):
+			_append_log("Found %s in the container!" % it)
+		else:
+			room.uncollected_items.append(it)
+			_append_log("Found %s but inventory is full!" % it)
 
 
 func _on_rest() -> void:
@@ -1098,7 +1184,8 @@ func _update_button_visibility(room: RoomState) -> void:
 	_btn_attack.visible = show_combat_buttons
 	_btn_flee.visible = pending and not active
 	_btn_chest.visible = room != null and room.has_chest and not room.chest_looted and not blocking
-	_btn_ground.visible = room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 or (not room.ground_container.is_empty() and not room.container_searched)) and not blocking
+	_btn_ground.visible = room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked))) and not blocking
+	_btn_lockpick.visible = room != null and room.container_locked and GameSession.game_state != null and GameSession.game_state.inventory.has("Lockpick Kit") and not blocking
 	_btn_store.visible = room != null and room.has_store and not blocking
 	_btn_descend.visible = room != null and room.has_stairs and not blocking
 

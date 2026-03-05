@@ -28,7 +28,6 @@ var _enemy_hp_bar: ProgressBar
 var _enemy_hp_label: Label
 var _btn_roll: Button
 var _btn_attack: Button
-var _btn_flee: Button
 var _btn_close: Button
 var _log_text: RichTextLabel
 var _dice_container: HBoxContainer
@@ -42,13 +41,10 @@ var _enemy_hp_section: HBoxContainer
 var _roll_anim_timer: float = 0.0
 var _roll_anim_frame: int = 0
 var _roll_anim_active: bool = false
-const ROLL_ANIM_FRAMES := 8
-const ROLL_ANIM_INTERVAL := 0.025  # 25ms per frame
 var _last_turn_count: int = -1
 var _active_tweens: Array[Tween] = []
 
 const COMBAT_ROLL_COLOR := Color(0.31, 0.80, 0.77)
-const COMBAT_FLEE_COLOR := Color(0.95, 0.61, 0.07)
 const COMBAT_ATTACK_COLOR := Color(0.91, 0.30, 0.24)
 
 
@@ -62,11 +58,17 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if _roll_anim_active:
+		var interval := CombatUIPacing.dice_roll_interval()
+		var max_frames := CombatUIPacing.dice_roll_frames()
+		if max_frames <= 0:
+			_roll_anim_active = false
+			_sync_dice_display()
+			return
 		_roll_anim_timer += delta
-		if _roll_anim_timer >= ROLL_ANIM_INTERVAL:
-			_roll_anim_timer -= ROLL_ANIM_INTERVAL
+		if _roll_anim_timer >= interval:
+			_roll_anim_timer -= interval
 			_roll_anim_frame += 1
-			if _roll_anim_frame >= ROLL_ANIM_FRAMES:
+			if _roll_anim_frame >= max_frames:
 				_roll_anim_active = false
 				_sync_dice_display()
 			else:
@@ -265,10 +267,6 @@ func _build_ui() -> void:
 	_btn_attack.pressed.connect(_on_attack)
 	btn_row.add_child(_btn_attack)
 
-	_btn_flee = DungeonTheme.make_styled_btn("Flee", COMBAT_FLEE_COLOR)
-	_btn_flee.pressed.connect(_on_flee)
-	btn_row.add_child(_btn_flee)
-
 	_btn_close = DungeonTheme.make_styled_btn("Close", DungeonTheme.TEXT_SECONDARY)
 	_btn_close.pressed.connect(func(): close_requested.emit())
 	btn_row.add_child(_btn_close)
@@ -445,6 +443,9 @@ func _update_damage_preview() -> void:
 func _flash_hp_bar(bar: ProgressBar, section: HBoxContainer) -> void:
 	if not is_inside_tree():
 		return
+	var duration := CombatUIPacing.hit_flash_duration()
+	if duration <= 0.01:
+		return
 	var tween := create_tween()
 	_track_tween(tween)
 	tween.tween_method(func(v: float):
@@ -455,11 +456,14 @@ func _flash_hp_bar(bar: ProgressBar, section: HBoxContainer) -> void:
 		s.border_color = DungeonTheme.BORDER
 		s.set_border_width_all(1)
 		bar.add_theme_stylebox_override("background", s),
-		0.0, 1.0, DungeonTheme.FLASH_DURATION)
+		0.0, 1.0, duration)
 
 
 func _show_floating_damage(value: int, section: HBoxContainer, color: Color) -> void:
 	if not is_inside_tree():
+		return
+	var duration := CombatUIPacing.damage_float_duration()
+	if duration <= 0.01:
 		return
 	var lbl := Label.new()
 	lbl.text = "-%d" % value if value > 0 else "+%d" % absi(value)
@@ -470,8 +474,8 @@ func _show_floating_damage(value: int, section: HBoxContainer, color: Color) -> 
 	var tween := create_tween()
 	_track_tween(tween)
 	tween.set_parallel(true)
-	tween.tween_property(lbl, "modulate:a", 0.0, 0.8)
-	tween.tween_property(lbl, "position:y", lbl.position.y - 20, 0.8)
+	tween.tween_property(lbl, "modulate:a", 0.0, duration)
+	tween.tween_property(lbl, "position:y", lbl.position.y - 20, duration)
 	tween.chain().tween_callback(lbl.queue_free)
 
 
@@ -646,8 +650,6 @@ func _sync_close_flee_visibility(combat_over: bool = false) -> void:
 	var pending := GameSession.is_pending_choice()
 	var active := GameSession.is_combat_active()
 	_btn_close.visible = combat_over or (not pending and not active)
-	_btn_flee.visible = pending or active
-	_btn_flee.disabled = combat_over
 
 
 # ------------------------------------------------------------------
@@ -748,31 +750,3 @@ func _on_attack() -> void:
 	refresh()
 
 
-func _on_flee() -> void:
-	if GameSession.is_pending_choice() and GameSession.combat == null:
-		var result := GameSession.attempt_flee_pending()
-		if result.get("success", false):
-			var dmg: int = int(result.get("damage", 0))
-			if dmg > 0:
-				_append_styled_log("[FLEE] Fled! Lost %d HP." % dmg)
-			else:
-				_append_styled_log("Fled safely!")
-		elif result.get("reason", "") == "boss_fight":
-			_append_styled_log(CombatGatingPolicy.flee_blocked_message())
-		else:
-			_append_styled_log("Can't escape! Enemy blocks the way!")
-		refresh()
-		return
-	if GameSession.is_combat_active():
-		var result := GameSession.flee_from_combat()
-		if result.get("success", false):
-			var dmg: int = int(result.get("damage", 0))
-			if dmg > 0:
-				_append_styled_log("[FLEE] Fled! Lost %d HP." % dmg)
-			else:
-				_append_styled_log("Fled safely!")
-		elif result.get("reason", "") == "boss_fight":
-			_append_styled_log(CombatGatingPolicy.flee_blocked_message())
-		else:
-			_append_styled_log("Can't escape! Enemy blocks the way!")
-		refresh()

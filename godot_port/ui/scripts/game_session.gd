@@ -300,10 +300,12 @@ func start_combat_for_room(room: RoomState) -> void:
 		combat.set_inventory_engine(inventory_engine)
 
 	var enemy_name: String = threats[0] if not threats.is_empty() else "Monster"
-	var enemy_data: Dictionary = enemy_types_db.get(enemy_name, {})
-	var base_hp: int = int(enemy_data.get("health", 20))
-	var hp: int = int(float(base_hp) * game_state.difficulty_mults.get("enemy_health_mult", 1.0))
-	var dice: int = int(enemy_data.get("num_dice", 2))
+
+	var is_mini_boss: bool = room.is_mini_boss_room
+	var is_boss: bool = room.is_boss_room
+
+	var hp: int = _calc_enemy_hp(enemy_name, game_state.floor, is_mini_boss, is_boss)
+	var dice: int = _calc_enemy_dice(game_state.floor, is_mini_boss, is_boss)
 	combat.add_enemy(enemy_name, hp, dice)
 
 	var enemy_list: Array = []
@@ -447,6 +449,75 @@ func _end_combat_internal(victory: bool) -> void:
 	state_changed.emit()
 	combat_ended.emit()
 	combat_pending_changed.emit()
+
+
+# -------------------------------------------------------------------
+# Enemy HP/dice calculation — Python parity (explorer/combat.py)
+# -------------------------------------------------------------------
+
+## Python enemy_hp_multipliers — partial-name matching (first match wins).
+const ENEMY_HP_MULTIPLIERS := {
+	"Goblin": 0.7, "Spider": 0.6, "Bat": 0.5, "Grub": 0.4,
+	"Slime": 0.8, "Sprite": 0.6, "Wisp": 0.5,
+	"Skeleton": 1.0, "Orc": 1.0, "Zombie": 1.1, "Bandit": 0.9,
+	"Troll": 1.5, "Ogre": 1.4, "Knight": 1.3, "Guard": 1.2, "Warrior": 1.1,
+	"Beast": 1.3, "Wolf": 1.1, "Bear": 1.4, "Boar": 1.2,
+	"Demon": 2.0, "Dragon": 2.5, "Lich": 1.8, "Vampire": 1.6,
+	"Phoenix": 2.0, "Titan": 2.8,
+	"Crystal Golem": 1.8,
+	"Gelatinous Slime": 1.3, "Slime Blob": 1.0,
+	"Shadow Hydra": 2.1, "Crystal Shard": 1.0,
+	"Acid Hydra": 2.3, "Void Wraith": 1.4, "Shadow Head": 1.0,
+	"Imp": 0.7, "Incense Spirit": 1.5, "Lightning Warden": 1.7,
+	"Rat Swarm": 1.375, "Angler Slime": 1.375, "Angry Swarm": 1.375,
+	"Agitated Bees": 1.375, "Ash Elemental": 1.375, "Ash Imp": 1.375,
+	"Ash Angel": 1.375, "Arrow Demon": 1.375, "Blade Angel": 1.375,
+	"Blade Demon": 1.375, "Blade Imp": 1.375, "Blood Sprite": 1.375,
+	"Bioluminescent Leech": 1.375, "Bone Worm": 1.375, "Butcher Shade": 1.375,
+	"Cave Salamander": 1.375, "Chain Beast": 1.375, "Chain Wraith": 1.375,
+	"Cinder Wraith": 1.375, "Corpse Flower": 1.375, "Dozing Slime": 1.375,
+	"Dust Wraith": 1.375, "Fire Beetle": 1.375, "Fire Elemental": 1.375,
+	"Firefly Swarm": 1.375, "Grease Ooze": 1.375, "Hellfire Imp": 1.375,
+	"Hungry Specter": 1.375, "Jailer Wraith": 1.375, "Lava Ooze": 1.375,
+	"Lava Serpent": 1.375, "Leech": 1.375, "Lurking Spider": 1.375,
+	"Pipe Rats": 1.375, "Poison Rat": 1.375, "Rope Worm": 1.375,
+	"Serpent": 1.375, "Spike Beast": 1.375, "Thorn Beast": 1.375,
+	"Thorn Creeper": 1.375, "Toxic Mushroom": 1.375, "Toxic Ooze": 1.375,
+	"Wailing Ghost Woman": 1.375, "Bitter Ghost": 1.375, "Basket Serpent": 1.375,
+	"Pack Rat": 1.375, "Crate Rat": 1.375, "Honey Ooze": 1.375,
+	"Name Leech": 1.375, "Multi Headed Serpent": 1.375, "Echo Phantom": 1.375,
+}
+
+
+func _calc_enemy_hp(enemy_name: String, floor_num: int, is_mini_boss: bool, is_boss: bool) -> int:
+	var base_hp: int = 50 + (floor_num * 10)
+
+	var multiplier: float = 1.0
+	var enemy_lower: String = enemy_name.to_lower()
+	for key in ENEMY_HP_MULTIPLIERS:
+		if enemy_lower.contains(key.to_lower()):
+			multiplier = ENEMY_HP_MULTIPLIERS[key]
+			break
+	base_hp = int(float(base_hp) * multiplier)
+
+	var enemy_hp: int = base_hp + rng.rand_int(-5, 10)
+
+	if is_boss:
+		enemy_hp = int(float(enemy_hp) * 8.0)
+	elif is_mini_boss:
+		enemy_hp = int(float(enemy_hp) * 3.0)
+
+	enemy_hp = int(float(enemy_hp) * game_state.difficulty_mults.get("enemy_health_mult", 1.0))
+	return enemy_hp
+
+
+func _calc_enemy_dice(floor_num: int, is_mini_boss: bool, is_boss: bool) -> int:
+	if is_boss:
+		return mini(5 + (floor_num / 2), 8)
+	elif is_mini_boss:
+		return mini(4 + (floor_num / 2), 7)
+	else:
+		return mini(3 + (floor_num / 2), 6)
 
 
 # -------------------------------------------------------------------

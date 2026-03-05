@@ -163,7 +163,7 @@ func _setup_combat_room() -> void:
 	GameSession.enemy_types_db["Goblin"] = {"health": 10, "num_dice": 1}
 
 
-func test_combat_pending_flee_visible_close_hidden() -> void:
+func test_combat_panel_has_no_flee_button() -> void:
 	_setup_combat_room()
 	var ex := _explorer_scene.instantiate()
 	add_child(ex)
@@ -177,7 +177,9 @@ func test_combat_pending_flee_visible_close_hidden() -> void:
 	ex._combat_panel.refresh()
 	await get_tree().process_frame
 
-	assert_true(ex._combat_panel._btn_flee.visible, "Flee visible during pending")
+	# Python parity: combat panel has no flee button.
+	# Flee is only in the explorer sidebar during pre-combat pending choice.
+	assert_false("_btn_flee" in ex._combat_panel, "No flee button in combat panel")
 
 	ex.queue_free()
 	await get_tree().process_frame
