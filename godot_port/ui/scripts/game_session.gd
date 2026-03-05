@@ -90,9 +90,10 @@ func start_new_game() -> void:
 
 func start_new_run(options: Dictionary = {}) -> void:
 	var rng_mode: String = options.get("rng_mode", "default")
-	var seed_val: int = int(options.get("seed", -1))
+	var has_seed: bool = options.has("seed")
+	var seed_val: int = int(options.get("seed", 0))
 
-	if rng_mode == "deterministic" and seed_val >= 0:
+	if rng_mode == "deterministic" and has_seed:
 		rng = DeterministicRNG.new(seed_val)
 		run_rng_mode = "deterministic"
 		run_seed = seed_val
