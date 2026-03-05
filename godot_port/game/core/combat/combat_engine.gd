@@ -93,6 +93,7 @@ var forced_dice_locks: Array = []    ## indices that are force-locked
 var enemy_burn_status: Dictionary = {}  ## int(index) -> {initial_damage, turns_remaining}
 
 var _logs: Array = []
+var _trace: SessionTrace
 
 
 func _init(p_rng: RNG, p_state: GameState, p_num_dice: int = 3,
@@ -102,6 +103,10 @@ func _init(p_rng: RNG, p_state: GameState, p_num_dice: int = 3,
 	dice = DiceRoller.new(rng, p_num_dice)
 	enemy_types_db = p_enemy_types
 	statuses_db = p_statuses
+
+
+func set_trace(trace: SessionTrace) -> void:
+	_trace = trace
 
 
 # ------------------------------------------------------------------
@@ -190,15 +195,20 @@ func player_attack(target_index: int = 0) -> TurnResult:
 
 	# --- Fumble check ---
 	var fumble_chance := _get_status_modifier("skip_chance")
-	if fumble_chance > 0.0 and rng.randf() < fumble_chance:
-		result.was_fumble = true
+	if fumble_chance > 0.0:
+		var fumble_roll := rng.randf()
+		if _trace: _trace.record_rng_roll("fumble_check", int(fumble_roll * 1000), {"threshold": fumble_chance})
+		if fumble_roll < fumble_chance:
+			result.was_fumble = true
 		result.player_damage = 0
 		result.logs.append("Fumbled! Attack missed.")
 	else:
 		# --- Crit check ---
 		var crit_chance: float = state.crit_chance + _get_temp_float("crit_bonus") + _get_status_modifier("crit_bonus")
 		crit_chance = maxf(crit_chance, 0.0)
-		result.was_crit = rng.randf() < crit_chance
+		var crit_roll := rng.randf()
+		if _trace: _trace.record_rng_roll("crit_check", int(crit_roll * 1000), {"threshold": crit_chance})
+		result.was_crit = crit_roll < crit_chance
 
 		# --- Damage ---
 		var dmg_bonus: int = state.damage_bonus + _get_temp_int("damage_bonus") + int(_get_status_modifier("damage_bonus"))
@@ -299,7 +309,9 @@ func player_attack(target_index: int = 0) -> TurnResult:
 			continue
 		var enemy_dice: Array[int] = []
 		for _d in enemy.num_dice:
-			enemy_dice.append(rng.rand_int(1, 6))
+			var die_val := rng.rand_int(1, 6)
+			enemy_dice.append(die_val)
+		if _trace: _trace.record_rng_roll("enemy_dice", 0, {"enemy": enemy.name, "dice": enemy_dice.duplicate()})
 		var enemy_dmg: int = 0
 		for d in enemy_dice:
 			enemy_dmg += d
@@ -348,7 +360,9 @@ func player_attack(target_index: int = 0) -> TurnResult:
 # ------------------------------------------------------------------
 
 func attempt_flee() -> bool:
-	return rng.randf() < 0.5
+	var roll := rng.randf()
+	if _trace: _trace.record_rng_roll("flee_attempt", int(roll * 1000), {"threshold": 0.5})
+	return roll < 0.5
 
 
 # ------------------------------------------------------------------

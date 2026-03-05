@@ -200,6 +200,5 @@ func _on_popup_close_requested(menu_key: String) -> void:
 
 
 func _track_tween(tw: Tween) -> void:
-	_active_tweens = _active_tweens.filter(func(t: Tween) -> bool:
-		return is_instance_valid(t) and t.is_running())
 	_active_tweens.append(tw)
+	tw.finished.connect(func(): _active_tweens.erase(tw))

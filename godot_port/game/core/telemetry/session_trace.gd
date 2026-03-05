@@ -97,6 +97,13 @@ func record(event_type: String, payload: Dictionary = {}) -> void:
 	})
 
 
+func record_rng_roll(context: String, value: int, details: Dictionary = {}) -> void:
+	var payload := {"context": context, "value": value}
+	if not details.is_empty():
+		payload["details"] = details
+	record("rng_roll", payload)
+
+
 # ------------------------------------------------------------------
 # Milestone snapshots
 # ------------------------------------------------------------------

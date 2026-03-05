@@ -294,6 +294,7 @@ func start_combat_for_room(room: RoomState) -> void:
 
 	game_state.in_combat = true
 	combat = CombatEngine.new(rng, game_state, game_state.num_dice, enemy_types_db)
+	combat.set_trace(trace)
 
 	var enemy_name: String = threats[0] if not threats.is_empty() else "Monster"
 	var enemy_data: Dictionary = enemy_types_db.get(enemy_name, {})
