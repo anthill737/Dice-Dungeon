@@ -62,30 +62,31 @@ func _build_ui() -> void:
 	add_child(_popup_panel)
 
 	var visual_bg := Panel.new()
+	visual_bg.name = "PanelRoot"
 	visual_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.10, 0.07, 0.05, 0.98)
 	panel_style.border_color = DungeonTheme.BORDER_GOLD
-	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(6)
+	panel_style.set_border_width_all(DungeonTheme.PANEL_BORDER_WIDTH)
+	panel_style.set_corner_radius_all(DungeonTheme.PANEL_CORNER)
 	visual_bg.add_theme_stylebox_override("panel", panel_style)
 	_popup_panel.add_child(visual_bg)
 
 	var inner := VBoxContainer.new()
+	inner.name = "InnerVBox"
 	inner.set_anchors_preset(Control.PRESET_FULL_RECT)
 	inner.add_theme_constant_override("separation", 0)
 	_popup_panel.add_child(inner)
 
-	# Title bar
 	var title_bar := PanelContainer.new()
 	title_bar.name = "TitleBar"
 	var tb_style := StyleBoxFlat.new()
 	tb_style.bg_color = Color(0.12, 0.08, 0.06, 0.95)
-	tb_style.set_content_margin_all(6)
-	tb_style.content_margin_left = 14
-	tb_style.content_margin_right = 8
-	tb_style.corner_radius_top_left = 6
-	tb_style.corner_radius_top_right = 6
+	tb_style.set_content_margin_all(8)
+	tb_style.content_margin_left = DungeonTheme.PANEL_MARGIN
+	tb_style.content_margin_right = 10
+	tb_style.corner_radius_top_left = DungeonTheme.PANEL_CORNER
+	tb_style.corner_radius_top_right = DungeonTheme.PANEL_CORNER
 	title_bar.add_theme_stylebox_override("panel", tb_style)
 	inner.add_child(title_bar)
 
@@ -130,15 +131,18 @@ func _build_ui() -> void:
 	_btn_close.pressed.connect(func(): close_requested.emit())
 	title_hbox.add_child(_btn_close)
 
-	# Content area with padding
+	var separator := DungeonTheme.make_separator(DungeonTheme.BORDER_GOLD)
+	separator.name = "TitleSeparator"
+	inner.add_child(separator)
+
 	_content_container = MarginContainer.new()
 	_content_container.name = "ContentContainer"
 	_content_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_content_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_content_container.add_theme_constant_override("margin_left", 10)
-	_content_container.add_theme_constant_override("margin_right", 10)
-	_content_container.add_theme_constant_override("margin_top", 6)
-	_content_container.add_theme_constant_override("margin_bottom", 10)
+	_content_container.add_theme_constant_override("margin_left", DungeonTheme.PANEL_MARGIN)
+	_content_container.add_theme_constant_override("margin_right", DungeonTheme.PANEL_MARGIN)
+	_content_container.add_theme_constant_override("margin_top", 8)
+	_content_container.add_theme_constant_override("margin_bottom", DungeonTheme.PANEL_MARGIN)
 	inner.add_child(_content_container)
 
 

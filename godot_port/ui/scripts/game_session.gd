@@ -21,6 +21,7 @@ var combat: CombatEngine
 var inventory_engine: InventoryEngine
 var store_engine: StoreEngine
 var lore_engine: LoreEngine
+var assets: AssetResolver
 
 var rooms_db: Array = []
 var items_db: Dictionary = {}
@@ -54,6 +55,7 @@ signal locked_room_prompt(gate_type: String, direction: String)
 
 
 func _ready() -> void:
+	assets = AssetResolver.new()
 	_load_data()
 
 
@@ -66,6 +68,7 @@ func _exit_tree() -> void:
 	game_state = null
 	rng = null
 	_content_manager = null
+	assets = null
 
 
 func _load_data() -> void:

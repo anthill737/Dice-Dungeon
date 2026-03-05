@@ -5,8 +5,10 @@ extends RefCounted
 ## Mirrors the attributes Python's PlayerAdapter expects on the game object.
 ## Game systems mutate this; MechanicsEngine reads and writes it.
 
-var health: int = 50
 var max_health: int = 50
+var health: int = 50:
+	set(v):
+		health = maxi(v, 0)
 var gold: int = 0
 var total_gold_earned: int = 0
 var multiplier: float = 1.0
@@ -94,8 +96,8 @@ var used_lore_entries: Dictionary = {}
 
 
 func reset() -> void:
-	health = 50
 	max_health = 50
+	health = 50
 	gold = 0
 	total_gold_earned = 0
 	multiplier = 1.0

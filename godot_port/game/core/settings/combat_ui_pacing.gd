@@ -51,6 +51,13 @@ const LOG_REVEAL_DELAY_MS := {
 	Preset.SLOW: 120,
 }
 
+const ENEMY_DICE_LINGER_SEC := {
+	Preset.INSTANT: 0.0,
+	Preset.FAST: 0.35,
+	Preset.NORMAL: 0.7,
+	Preset.SLOW: 1.2,
+}
+
 
 static func get_preset() -> Preset:
 	var sm = Engine.get_singleton("SettingsManager") if Engine.has_singleton("SettingsManager") else null
@@ -79,3 +86,7 @@ static func hit_flash_duration() -> float:
 
 static func log_reveal_delay_ms() -> int:
 	return LOG_REVEAL_DELAY_MS[get_preset()]
+
+
+static func enemy_dice_linger_sec() -> float:
+	return ENEMY_DICE_LINGER_SEC[get_preset()]

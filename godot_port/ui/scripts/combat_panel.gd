@@ -37,6 +37,7 @@ var _enemy_dice_labels: Array[Label] = []
 var _enemy_dice_panels: Array[PanelContainer] = []
 var _player_hp_section: HBoxContainer
 var _enemy_hp_section: HBoxContainer
+var _enemy_sprite_rect: TextureRect
 
 var _roll_anim_timer: float = 0.0
 var _roll_anim_frame: int = 0
@@ -133,15 +134,33 @@ func _build_ui() -> void:
 	root.add_child(DungeonTheme.make_separator(DungeonTheme.BORDER))
 
 	# --- Enemy section ---
+	var enemy_row := HBoxContainer.new()
+	enemy_row.add_theme_constant_override("separation", 8)
+	root.add_child(enemy_row)
+
+	# Enemy sprite area (Python parity: shows current target sprite)
+	_enemy_sprite_rect = TextureRect.new()
+	_enemy_sprite_rect.name = "EnemySpriteRect"
+	_enemy_sprite_rect.custom_minimum_size = Vector2(72, 72)
+	_enemy_sprite_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_enemy_sprite_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_enemy_sprite_rect.visible = false
+	enemy_row.add_child(_enemy_sprite_rect)
+
+	var enemy_col := VBoxContainer.new()
+	enemy_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	enemy_col.add_theme_constant_override("separation", 2)
+	enemy_row.add_child(enemy_col)
+
 	var enemy_header := DungeonTheme.make_header(
 		"Enemies", DungeonTheme.TEXT_GOLD, DungeonTheme.FONT_LABEL)
 	enemy_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	root.add_child(enemy_header)
+	enemy_col.add_child(enemy_header)
 
 	_enemy_list = DungeonTheme.make_item_list(80)
 	_enemy_list.name = "EnemyList"
 	_enemy_list.item_selected.connect(_on_enemy_selected)
-	root.add_child(_enemy_list)
+	enemy_col.add_child(_enemy_list)
 
 	_enemy_hp_section = HBoxContainer.new()
 	_enemy_hp_section.add_theme_constant_override("separation", 8)
@@ -326,13 +345,9 @@ func _on_die_clicked(event: InputEvent, index: int) -> void:
 # ------------------------------------------------------------------
 
 func _show_enemy_dice(rolls: Array) -> void:
-	for p in _enemy_dice_panels:
-		p.queue_free()
-	_enemy_dice_panels.clear()
-	_enemy_dice_labels.clear()
+	_clear_enemy_dice()
 
 	if rolls.is_empty():
-		_enemy_dice_container.visible = false
 		return
 
 	_enemy_dice_container.visible = true
@@ -555,6 +570,8 @@ func _clear_enemy_dice() -> void:
 	_enemy_dice_panels.clear()
 	_enemy_dice_labels.clear()
 	if _enemy_dice_container != null:
+		for child in _enemy_dice_container.get_children():
+			child.queue_free()
 		_enemy_dice_container.visible = false
 
 
@@ -586,6 +603,27 @@ func _refresh_enemy_hp_bar() -> void:
 	_enemy_hp_bar.value = enemy.health
 	_enemy_hp_label.text = "%d/%d (%d%%)" % [enemy.health, enemy.max_health, int(ratio * 100)]
 	DungeonTheme.style_hp_bar(_enemy_hp_bar, ratio)
+
+
+func _refresh_enemy_sprite() -> void:
+	if _enemy_sprite_rect == null:
+		return
+	var ce := GameSession.combat
+	if ce == null or GameSession.assets == null:
+		_enemy_sprite_rect.visible = false
+		return
+	var alive := ce.get_alive_enemies()
+	var selected := _enemy_list.get_selected_items()
+	if selected.is_empty() or selected[0] >= alive.size():
+		_enemy_sprite_rect.visible = false
+		return
+	var enemy = alive[selected[0]]
+	var tex = GameSession.assets.get_enemy_sprite(enemy.name)
+	if tex != null:
+		_enemy_sprite_rect.texture = tex
+		_enemy_sprite_rect.visible = true
+	else:
+		_enemy_sprite_rect.visible = false
 
 
 func refresh() -> void:
@@ -624,6 +662,7 @@ func refresh() -> void:
 		_target_label.text = ""
 
 	_refresh_enemy_hp_bar()
+	_refresh_enemy_sprite()
 
 	var statuses: Array = GameSession.game_state.flags.get("statuses", [])
 	_status_label.text = "Statuses: %s" % (", ".join(statuses) if not statuses.is_empty() else "none")
@@ -693,7 +732,6 @@ func _on_attack() -> void:
 	if target_idx < alive_before.size():
 		enemy_hp_before = alive_before[target_idx].health
 
-	# Round separator in log
 	_append_styled_log("── Round %d ──" % ce.turn_count)
 
 	var result := ce.player_attack(target_idx)
@@ -706,7 +744,6 @@ func _on_attack() -> void:
 	if result.status_tick_damage > 0:
 		GameSession.trace_status_tick("combined", result.status_tick_damage)
 
-	# Durability events are now resolved in CombatEngine core; UI just reads them
 	for dur_ev in result.durability_events:
 		var item_name: String = dur_ev.get("item_name", "")
 		var dur_val: int = int(dur_ev.get("durability", 0))
@@ -718,22 +755,43 @@ func _on_attack() -> void:
 			_append_styled_log(dur_msg)
 			GameSession.log_message.emit(dur_msg)
 
-	var player_dmg_taken := hp_before - GameSession.game_state.health
-
+	# Player attack logs (show immediately)
+	var player_logs: Array = []
+	var enemy_logs: Array = []
 	for log_line in result.logs:
+		if _is_enemy_attack_log(log_line):
+			enemy_logs.append(log_line)
+		else:
+			player_logs.append(log_line)
+
+	for log_line in player_logs:
 		_append_styled_log(log_line)
 		GameSession.log_message.emit(log_line)
 
-	# Enemy dice display
-	if not result.enemy_rolls.is_empty():
-		_show_enemy_dice(result.enemy_rolls)
-	else:
-		_enemy_dice_container.visible = false
-
-	# Damage feedback: flash bars and show floating numbers
+	# Show player damage on enemy HP bar immediately
 	if result.player_damage > 0:
 		_flash_hp_bar(_enemy_hp_bar, _enemy_hp_section)
 		_show_floating_damage(result.player_damage, _enemy_hp_section, DungeonTheme.LOG_PLAYER)
+
+	# Enemy dice reveal (before damage application)
+	if not result.enemy_rolls.is_empty():
+		_show_enemy_dice(result.enemy_rolls)
+
+	var linger := CombatUIPacing.enemy_dice_linger_sec()
+	var player_dmg_taken := hp_before - GameSession.game_state.health
+
+	if linger > 0.0 and not result.enemy_rolls.is_empty() and is_inside_tree():
+		_btn_roll.disabled = true
+		_btn_attack.disabled = true
+		refresh()
+		await get_tree().create_timer(linger).timeout
+		if not is_inside_tree():
+			return
+
+	# Enemy attack logs + damage feedback (after pacing delay)
+	for log_line in enemy_logs:
+		_append_styled_log(log_line)
+		GameSession.log_message.emit(log_line)
 
 	if player_dmg_taken > 0:
 		_flash_hp_bar(_player_hp_bar, _player_hp_section)
@@ -748,5 +806,9 @@ func _on_attack() -> void:
 		_result_label.text = "☠ Defeated... ☠"
 
 	refresh()
+
+
+static func _is_enemy_attack_log(line: String) -> bool:
+	return line.contains("rolls [") or line.contains("rolls:") or (line.contains(" for ") and line.contains(" damage"))
 
 

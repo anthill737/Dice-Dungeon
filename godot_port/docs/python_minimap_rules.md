@@ -74,16 +74,35 @@ Icons are drawn as text glyphs on top of the room square. All icons require
 - **Not implemented in Python.** The only canvas binding is `<MouseWheel>` for
   zoom. No `Enter`, `Motion`, or `Leave` events are handled.
 
-## 7. Centering and Follow
+## 7. Follow / Centering Behavior
 
-- **Default center:** The view center is `current_pos + (pan_x, pan_y)` in room
-  coordinates. Since `pan_x` and `pan_y` default to `0`, the view is centered
-  on the player by default.
-- **No auto-recenter on move:** When the player moves to a new room, the pan
-  offsets are *not* reset. The player may drift off-center if they have panned.
+The Python minimap **always follows the player**. The view center is computed
+every time `draw_minimap()` is called as:
+
+```python
+center_x = self.current_pos[0] + self.minimap_pan_x
+center_y = self.current_pos[1] + self.minimap_pan_y
+```
+
+Key behaviors:
+
+- **Always follows:** Because the center is derived from `current_pos` on every
+  redraw, moving the player automatically moves the view. The player room stays
+  at the canvas center (offset by any user pan).
+- **Pan is relative to the player**, not absolute. `minimap_pan_x/y` start at 0
+  and persist across moves. They shift the view center *from* the player, not
+  from an absolute map position.
+- **Pan offset persists across moves.** If the user pans 2 rooms east, that
+  offset is maintained as the player moves. The view follows the player but
+  stays shifted by the pan amount.
+- **No auto-recenter timeout.** The pan offset does not decay or auto-reset.
 - **Recenter button ("⊙"):** Pressing the center button resets
-  `pan_x = pan_y = 0`, re-centering on the player.
+  `pan_x = pan_y = 0`, snapping the view back to the player.
 - **Pan step:** 2 room units per button press (N/S/E/W buttons).
+- **Drag panning:** Not implemented in Python (buttons only).
+- **Floor change:** Pan is not explicitly reset on floor change in the Python
+  source, but since `current_pos` resets to `(0,0)`, the view naturally
+  recenters if pan is still `(0,0)`.
 
 ## 8. Zoom
 
@@ -115,7 +134,7 @@ the Python reference:
 | Special room icons | Text glyphs (∩, $, 💀, ✓) with color coding | Custom drawn shapes (skull, diamond, stairs, coin, chest) | Partial parity — different rendering but equivalent intent |
 | Locked rooms visible | Locked boss/mini-boss rooms drawn before visited | Only visited rooms drawn | **Missing** |
 | Hover/tooltip | Not present | Not present | Match (both absent) |
-| Auto-center on move | No auto-recenter (but default view tracks player) | No auto-recenter; floor change resets pan but doesn't center on player | **Mismatch** — should center on player by default |
+| Follow on move | View always follows player (center = player + pan) | View always follows player via relative `_user_pan` | **Fixed** — matches Python |
 | Connection lines | Dashed gray lines between open exits | Solid semi-transparent lines | Minor style difference |
 | Zoom range | 0.25 – 3.0 | 0.5 – 3.0 | Minor difference |
 | Room outline | White 1px on all rooms | White 2px only on current room | **Mismatch** |
