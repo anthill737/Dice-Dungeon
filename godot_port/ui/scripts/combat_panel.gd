@@ -2,12 +2,21 @@ extends PanelContainer
 ## Combat Panel — shows dice, enemy list, HP bars, and combat actions.
 ## Mirrors Python adventure mode combat layout.
 ## All dice/combat logic delegated to CombatEngine via GameSession.
+##
+## Improvements over initial version:
+## - Click-to-lock dice (no separate Lock button; Python parity)
+## - Roll animation on dice (8 frames, ~200ms)
+## - Enemy dice display (read-only, dark-red theme)
+## - Damage flash on HP bars (red flash for hits)
+## - Combat log color styling by message category (Python parity)
+## - Round separators in log
+## - Floating damage numbers on enemy/player HP
 
 signal close_requested()
 
 var _dice_labels: Array[Label] = []
 var _dice_panels: Array[PanelContainer] = []
-var _lock_buttons: Array[Button] = []
+var _dice_lock_icons: Array[Label] = []
 var _enemy_list: ItemList
 var _status_label: Label
 var _rolls_label: Label
@@ -24,10 +33,22 @@ var _btn_close: Button
 var _log_text: RichTextLabel
 var _dice_container: HBoxContainer
 var _target_label: Label
+var _enemy_dice_container: HBoxContainer
+var _enemy_dice_labels: Array[Label] = []
+var _enemy_dice_panels: Array[PanelContainer] = []
+var _player_hp_section: HBoxContainer
+var _enemy_hp_section: HBoxContainer
 
-const COMBAT_ROLL_COLOR := Color(0.31, 0.80, 0.77)  # #4ecdc4
-const COMBAT_FLEE_COLOR := Color(0.95, 0.61, 0.07)   # #f39c12
-const COMBAT_ATTACK_COLOR := Color(0.91, 0.30, 0.24)  # #e74c3c
+var _roll_anim_timer: float = 0.0
+var _roll_anim_frame: int = 0
+var _roll_anim_active: bool = false
+const ROLL_ANIM_FRAMES := 8
+const ROLL_ANIM_INTERVAL := 0.025  # 25ms per frame
+var _last_turn_count: int = -1
+
+const COMBAT_ROLL_COLOR := Color(0.31, 0.80, 0.77)
+const COMBAT_FLEE_COLOR := Color(0.95, 0.61, 0.07)
+const COMBAT_ATTACK_COLOR := Color(0.91, 0.30, 0.24)
 
 
 func _ready() -> void:
@@ -37,32 +58,44 @@ func _ready() -> void:
 	GameSession.combat_ended.connect(func(): close_requested.emit())
 
 
+func _process(delta: float) -> void:
+	if _roll_anim_active:
+		_roll_anim_timer += delta
+		if _roll_anim_timer >= ROLL_ANIM_INTERVAL:
+			_roll_anim_timer -= ROLL_ANIM_INTERVAL
+			_roll_anim_frame += 1
+			if _roll_anim_frame >= ROLL_ANIM_FRAMES:
+				_roll_anim_active = false
+				_sync_dice_display()
+			else:
+				_show_random_dice()
+
+
 func _build_ui() -> void:
 	var bg := DungeonTheme.make_panel_bg(
 		Color(0.07, 0.05, 0.09, 0.97), DungeonTheme.COMBAT_ACCENT)
 	add_theme_stylebox_override("panel", bg)
 
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 8)
+	root.add_theme_constant_override("separation", 6)
 	add_child(root)
 
-	# Title
 	var title := DungeonTheme.make_header(
 		"⚔ COMBAT ⚔", DungeonTheme.COMBAT_ACCENT, 24)
 	root.add_child(title)
 
 	root.add_child(DungeonTheme.make_separator(DungeonTheme.COMBAT_ACCENT))
 
-	# --- Player HP section ---
-	var player_section := HBoxContainer.new()
-	player_section.add_theme_constant_override("separation", 8)
-	root.add_child(player_section)
+	# --- Player HP ---
+	_player_hp_section = HBoxContainer.new()
+	_player_hp_section.add_theme_constant_override("separation", 8)
+	root.add_child(_player_hp_section)
 
 	var player_lbl := Label.new()
 	player_lbl.text = "Player HP:"
 	player_lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
 	player_lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_CYAN)
-	player_section.add_child(player_lbl)
+	_player_hp_section.add_child(player_lbl)
 
 	_player_hp_bar = ProgressBar.new()
 	_player_hp_bar.name = "PlayerHPBar"
@@ -72,37 +105,36 @@ func _build_ui() -> void:
 	_player_hp_bar.value = 100
 	_player_hp_bar.show_percentage = false
 	DungeonTheme.style_hp_bar(_player_hp_bar, 1.0)
-	player_section.add_child(_player_hp_bar)
+	_player_hp_section.add_child(_player_hp_bar)
 
 	_player_hp_label = Label.new()
 	_player_hp_label.text = "50/50"
 	_player_hp_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
 	_player_hp_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
-	player_section.add_child(_player_hp_label)
+	_player_hp_section.add_child(_player_hp_label)
 
 	root.add_child(DungeonTheme.make_separator(DungeonTheme.BORDER))
 
-	# Enemy section header
+	# --- Enemy section ---
 	var enemy_header := DungeonTheme.make_header(
 		"Enemies", DungeonTheme.TEXT_GOLD, DungeonTheme.FONT_LABEL)
 	enemy_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	root.add_child(enemy_header)
 
-	_enemy_list = DungeonTheme.make_item_list(90)
+	_enemy_list = DungeonTheme.make_item_list(80)
 	_enemy_list.name = "EnemyList"
 	_enemy_list.item_selected.connect(_on_enemy_selected)
 	root.add_child(_enemy_list)
 
-	# Enemy HP bar for selected enemy
-	var enemy_hp_section := HBoxContainer.new()
-	enemy_hp_section.add_theme_constant_override("separation", 8)
-	root.add_child(enemy_hp_section)
+	_enemy_hp_section = HBoxContainer.new()
+	_enemy_hp_section.add_theme_constant_override("separation", 8)
+	root.add_child(_enemy_hp_section)
 
 	var enemy_hp_lbl := Label.new()
 	enemy_hp_lbl.text = "Enemy HP:"
 	enemy_hp_lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
 	enemy_hp_lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_RED)
-	enemy_hp_section.add_child(enemy_hp_lbl)
+	_enemy_hp_section.add_child(enemy_hp_lbl)
 
 	_enemy_hp_bar = ProgressBar.new()
 	_enemy_hp_bar.name = "EnemyHPBar"
@@ -112,13 +144,21 @@ func _build_ui() -> void:
 	_enemy_hp_bar.value = 100
 	_enemy_hp_bar.show_percentage = false
 	DungeonTheme.style_hp_bar(_enemy_hp_bar, 1.0)
-	enemy_hp_section.add_child(_enemy_hp_bar)
+	_enemy_hp_section.add_child(_enemy_hp_bar)
 
 	_enemy_hp_label = Label.new()
 	_enemy_hp_label.text = ""
 	_enemy_hp_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
 	_enemy_hp_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
-	enemy_hp_section.add_child(_enemy_hp_label)
+	_enemy_hp_section.add_child(_enemy_hp_label)
+
+	# Enemy dice display (read-only, dark red theme)
+	_enemy_dice_container = HBoxContainer.new()
+	_enemy_dice_container.name = "EnemyDiceContainer"
+	_enemy_dice_container.add_theme_constant_override("separation", 4)
+	_enemy_dice_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	_enemy_dice_container.visible = false
+	root.add_child(_enemy_dice_container)
 
 	_status_label = Label.new()
 	_status_label.text = "Statuses: none"
@@ -128,12 +168,11 @@ func _build_ui() -> void:
 
 	root.add_child(DungeonTheme.make_separator(DungeonTheme.BORDER))
 
-	# Dice header
+	# --- Dice header ---
 	var dice_header := DungeonTheme.make_header(
 		"Your Dice", DungeonTheme.TEXT_GOLD, DungeonTheme.FONT_LABEL)
 	root.add_child(dice_header)
 
-	# Rolls remaining (above dice, matching Python)
 	_rolls_label = Label.new()
 	_rolls_label.name = "RollsLabel"
 	_rolls_label.text = "Rolls Remaining: 3/3"
@@ -142,7 +181,6 @@ func _build_ui() -> void:
 	_rolls_label.add_theme_color_override("font_color", DungeonTheme.TEXT_CYAN)
 	root.add_child(_rolls_label)
 
-	# Damage preview (gold, matching Python)
 	_damage_preview_label = Label.new()
 	_damage_preview_label.name = "DamagePreviewLabel"
 	_damage_preview_label.text = ""
@@ -151,26 +189,23 @@ func _build_ui() -> void:
 	_damage_preview_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	root.add_child(_damage_preview_label)
 
-	# Dice display — 72×72 cells matching Python
+	# Dice display — click-to-lock (no separate Lock button, Python parity)
 	_dice_container = HBoxContainer.new()
 	_dice_container.name = "DiceContainer"
-	_dice_container.add_theme_constant_override("separation", 12)
+	_dice_container.add_theme_constant_override("separation", 10)
 	_dice_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	root.add_child(_dice_container)
 
 	for i in 5:
 		var vbox := VBoxContainer.new()
-		vbox.add_theme_constant_override("separation", 4)
+		vbox.add_theme_constant_override("separation", 2)
 
 		var die_panel := PanelContainer.new()
 		die_panel.custom_minimum_size = Vector2(72, 72)
-		var die_style := StyleBoxFlat.new()
-		die_style.bg_color = DungeonTheme.DICE_BG
-		die_style.border_color = DungeonTheme.DICE_UNLOCKED_BORDER
-		die_style.set_border_width_all(2)
-		die_style.set_corner_radius_all(8)
-		die_style.set_content_margin_all(4)
-		die_panel.add_theme_stylebox_override("panel", die_style)
+		die_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+		die_panel.gui_input.connect(_on_die_clicked.bind(i))
+		die_panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		_apply_die_style(die_panel, false)
 		_dice_panels.append(die_panel)
 
 		var lbl := Label.new()
@@ -184,18 +219,16 @@ func _build_ui() -> void:
 
 		vbox.add_child(die_panel)
 
-		var lock_btn := DungeonTheme.make_styled_btn(
-			"Lock", DungeonTheme.DICE_UNLOCKED_BORDER, 56)
-		lock_btn.custom_minimum_size.y = 24
-		lock_btn.toggle_mode = true
-		lock_btn.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
-		lock_btn.pressed.connect(_on_lock_toggled.bind(i))
-		_lock_buttons.append(lock_btn)
-		vbox.add_child(lock_btn)
+		var lock_icon := Label.new()
+		lock_icon.text = ""
+		lock_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lock_icon.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+		lock_icon.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
+		_dice_lock_icons.append(lock_icon)
+		vbox.add_child(lock_icon)
 
 		_dice_container.add_child(vbox)
 
-	# Target selection label (for multi-enemy)
 	_target_label = Label.new()
 	_target_label.text = ""
 	_target_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -203,7 +236,7 @@ func _build_ui() -> void:
 	_target_label.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
 	root.add_child(_target_label)
 
-	# Action buttons — colors matching Python
+	# Action buttons
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 10)
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -225,7 +258,6 @@ func _build_ui() -> void:
 	_btn_close.pressed.connect(func(): close_requested.emit())
 	btn_row.add_child(_btn_close)
 
-	# Result
 	_result_label = Label.new()
 	_result_label.text = ""
 	_result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -233,7 +265,7 @@ func _build_ui() -> void:
 	_result_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	root.add_child(_result_label)
 
-	# Combat log
+	# Combat log — BBCode enabled for color styling
 	_log_text = RichTextLabel.new()
 	_log_text.name = "CombatLog"
 	_log_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -243,6 +275,242 @@ func _build_ui() -> void:
 	_log_text.add_theme_color_override("default_color", DungeonTheme.TEXT_BONE)
 	root.add_child(_log_text)
 
+
+# ------------------------------------------------------------------
+# Dice styling
+# ------------------------------------------------------------------
+
+func _apply_die_style(panel: PanelContainer, locked: bool) -> void:
+	var s := StyleBoxFlat.new()
+	s.bg_color = DungeonTheme.DICE_BG
+	s.set_corner_radius_all(8)
+	s.set_content_margin_all(4)
+	if locked:
+		s.border_color = DungeonTheme.DICE_LOCKED_BORDER
+		s.set_border_width_all(3)
+	else:
+		s.border_color = DungeonTheme.DICE_UNLOCKED_BORDER
+		s.set_border_width_all(2)
+	panel.add_theme_stylebox_override("panel", s)
+
+
+func _on_die_clicked(event: InputEvent, index: int) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var ce := GameSession.combat
+		if ce == null:
+			return
+		if not ce.dice.has_rolled():
+			return
+		ce.dice.toggle_lock(index)
+		if ce.dice.locked[index]:
+			GameSession.trace_dice_locked(index, ce.dice.values[index])
+		_sync_dice_display()
+		_update_damage_preview()
+
+
+# ------------------------------------------------------------------
+# Enemy dice
+# ------------------------------------------------------------------
+
+func _show_enemy_dice(rolls: Array) -> void:
+	for p in _enemy_dice_panels:
+		p.queue_free()
+	_enemy_dice_panels.clear()
+	_enemy_dice_labels.clear()
+
+	if rolls.is_empty():
+		_enemy_dice_container.visible = false
+		return
+
+	_enemy_dice_container.visible = true
+	for er in rolls:
+		var dice_arr: Array = er.get("dice", [])
+		var ename: String = er.get("name", "")
+
+		var group := VBoxContainer.new()
+		group.add_theme_constant_override("separation", 2)
+		var name_lbl := Label.new()
+		name_lbl.text = ename
+		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		name_lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+		name_lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_RED)
+		group.add_child(name_lbl)
+
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 3)
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		for val in dice_arr:
+			var dp := PanelContainer.new()
+			dp.custom_minimum_size = Vector2(DungeonTheme.ENEMY_DICE_SIZE, DungeonTheme.ENEMY_DICE_SIZE)
+			var ds := StyleBoxFlat.new()
+			ds.bg_color = DungeonTheme.ENEMY_DICE_BG
+			ds.border_color = DungeonTheme.ENEMY_DICE_BORDER
+			ds.set_border_width_all(2)
+			ds.set_corner_radius_all(4)
+			ds.set_content_margin_all(2)
+			dp.add_theme_stylebox_override("panel", ds)
+
+			var dl := Label.new()
+			dl.text = str(val)
+			dl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			dl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			dl.add_theme_font_size_override("font_size", DungeonTheme.ENEMY_DICE_FONT)
+			dl.add_theme_color_override("font_color", Color.WHITE)
+			dp.add_child(dl)
+
+			_enemy_dice_panels.append(dp)
+			_enemy_dice_labels.append(dl)
+			row.add_child(dp)
+
+		group.add_child(row)
+		_enemy_dice_container.add_child(group)
+
+
+# ------------------------------------------------------------------
+# Roll animation
+# ------------------------------------------------------------------
+
+func _start_roll_animation() -> void:
+	_roll_anim_active = true
+	_roll_anim_frame = 0
+	_roll_anim_timer = 0.0
+
+
+func _show_random_dice() -> void:
+	var ce := GameSession.combat
+	if ce == null:
+		return
+	for i in 5:
+		if i < ce.dice.num_dice and not ce.dice.locked[i]:
+			_dice_labels[i].text = str(randi_range(1, 6))
+
+
+func _sync_dice_display() -> void:
+	var ce := GameSession.combat
+	if ce == null:
+		return
+	var dice := ce.dice
+	for i in 5:
+		if i < dice.num_dice:
+			_dice_labels[i].text = str(dice.values[i]) if dice.values[i] > 0 else "-"
+			_dice_panels[i].visible = true
+			_apply_die_style(_dice_panels[i], dice.locked[i])
+			_dice_labels[i].add_theme_color_override(
+				"font_color", DungeonTheme.TEXT_GOLD if dice.locked[i] else Color.WHITE)
+			_dice_lock_icons[i].text = "🔒" if dice.locked[i] else ""
+		else:
+			_dice_labels[i].text = ""
+			_dice_panels[i].visible = false
+			_dice_lock_icons[i].text = ""
+
+
+func _update_damage_preview() -> void:
+	var ce := GameSession.combat
+	if ce == null:
+		return
+	var gs := GameSession.game_state
+	if ce.dice.has_rolled():
+		var base := ce.dice.calc_base_damage()
+		var combo := ce.dice.calc_combo_bonus()
+		var total := ce.dice.calc_total_damage(
+			gs.multiplier if gs != null else 1.0,
+			gs.damage_bonus if gs != null else 0)
+		if combo > 0:
+			_damage_preview_label.text = "Damage Preview: %d (base %d + combo %d)" % [total, base, combo]
+		else:
+			_damage_preview_label.text = "Damage Preview: %d" % total
+	else:
+		_damage_preview_label.text = ""
+
+
+# ------------------------------------------------------------------
+# HP flash feedback
+# ------------------------------------------------------------------
+
+func _flash_hp_bar(bar: ProgressBar, section: HBoxContainer) -> void:
+	if not is_inside_tree():
+		return
+	var tween := create_tween()
+	tween.tween_method(func(v: float):
+		var flash_color := DungeonTheme.FLASH_RED.lerp(DungeonTheme.HP_BG, v)
+		var s := StyleBoxFlat.new()
+		s.bg_color = flash_color
+		s.set_corner_radius_all(3)
+		s.border_color = DungeonTheme.BORDER
+		s.set_border_width_all(1)
+		bar.add_theme_stylebox_override("background", s),
+		0.0, 1.0, DungeonTheme.FLASH_DURATION)
+
+
+func _show_floating_damage(value: int, section: HBoxContainer, color: Color) -> void:
+	if not is_inside_tree():
+		return
+	var lbl := Label.new()
+	lbl.text = "-%d" % value if value > 0 else "+%d" % absi(value)
+	lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_SUBHEADING)
+	lbl.add_theme_color_override("font_color", color)
+	lbl.z_index = 10
+	section.add_child(lbl)
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(lbl, "modulate:a", 0.0, 0.8)
+	tween.tween_property(lbl, "position:y", lbl.position.y - 20, 0.8)
+	tween.chain().tween_callback(lbl.queue_free)
+
+
+# ------------------------------------------------------------------
+# Combat log styling — Python-parity colors
+# ------------------------------------------------------------------
+
+func _classify_log_line(line: String) -> Color:
+	if line.begins_with("="):
+		return DungeonTheme.LOG_SEPARATOR
+	if "CRIT" in line or "critical" in line.to_lower():
+		return DungeonTheme.LOG_CRIT
+	if line.begins_with("⚔️ You") or line.begins_with("Hit ") or line.begins_with("⚄ "):
+		return DungeonTheme.LOG_PLAYER
+	if line.begins_with("+") and "gold" in line:
+		return DungeonTheme.LOG_LOOT
+	if "Boss Key Fragment" in line:
+		return DungeonTheme.LOG_LOOT
+	if "defeated" in line or "DEFEATED" in line or "blocked" in line or "absorbs" in line:
+		return DungeonTheme.LOG_SUCCESS
+	if "🔥" in line or "✹" in line or "fire damage" in line:
+		return DungeonTheme.LOG_FIRE
+	if line.begins_with("⚠️") or "summons" in line or "splits" in line:
+		return DungeonTheme.LOG_ENEMY
+	if "☠" in line or "attacks for" in line or "rolls:" in line or "take" in line.to_lower():
+		return DungeonTheme.LOG_ENEMY
+	if "💚" in line:
+		return DungeonTheme.LOG_ENEMY
+	if "Rolls Remaining" in line or "dazed" in line or "Target" in line:
+		return DungeonTheme.LOG_SYSTEM
+	if "spawned" in line.to_lower() or "[SPLIT]" in line or "[SPAWNED]" in line:
+		return DungeonTheme.LOG_ENEMY
+	if "[TRANSFORMED]" in line:
+		return DungeonTheme.LOG_ENEMY
+	if "Victory" in line or "Mini-boss" in line:
+		return DungeonTheme.LOG_SUCCESS
+	return DungeonTheme.TEXT_BONE
+
+
+func _append_styled_log(line: String) -> void:
+	var color := _classify_log_line(line)
+	var hex := "#" + color.to_html(false)
+
+	var is_bold := (color == DungeonTheme.LOG_PLAYER or color == DungeonTheme.LOG_ENEMY
+		or color == DungeonTheme.LOG_CRIT or color == DungeonTheme.LOG_SUCCESS
+		or color == DungeonTheme.LOG_FIRE)
+
+	if is_bold:
+		_log_text.append_text("[color=%s][b]%s[/b][/color]\n" % [hex, line])
+	else:
+		_log_text.append_text("[color=%s]%s[/color]\n" % [hex, line])
+
+
+# ------------------------------------------------------------------
+# State sync
+# ------------------------------------------------------------------
 
 func _on_state_changed() -> void:
 	if not visible:
@@ -282,7 +550,6 @@ func refresh() -> void:
 
 	_result_label.text = ""
 
-	# Player HP
 	var gs := GameSession.game_state
 	if gs != null:
 		var hp_ratio: float = float(gs.health) / float(gs.max_health) if gs.max_health > 0 else 0.0
@@ -291,49 +558,9 @@ func refresh() -> void:
 		_player_hp_label.text = "%d/%d" % [gs.health, gs.max_health]
 		DungeonTheme.style_hp_bar(_player_hp_bar, hp_ratio)
 
-	var dice := ce.dice
-	for i in 5:
-		if i < dice.num_dice:
-			_dice_labels[i].text = str(dice.values[i]) if dice.values[i] > 0 else "-"
-			_lock_buttons[i].visible = true
-			_lock_buttons[i].button_pressed = dice.locked[i]
-			_lock_buttons[i].text = "Locked" if dice.locked[i] else "Lock"
-			_dice_panels[i].visible = true
-
-			var die_style := StyleBoxFlat.new()
-			die_style.bg_color = DungeonTheme.DICE_BG
-			die_style.set_corner_radius_all(8)
-			die_style.set_content_margin_all(4)
-			if dice.locked[i]:
-				die_style.border_color = DungeonTheme.DICE_LOCKED_BORDER
-				die_style.set_border_width_all(3)
-				_dice_labels[i].add_theme_color_override(
-					"font_color", DungeonTheme.TEXT_GOLD)
-			else:
-				die_style.border_color = DungeonTheme.DICE_UNLOCKED_BORDER
-				die_style.set_border_width_all(2)
-				_dice_labels[i].add_theme_color_override(
-					"font_color", Color.WHITE)
-			_dice_panels[i].add_theme_stylebox_override("panel", die_style)
-		else:
-			_dice_labels[i].text = ""
-			_lock_buttons[i].visible = false
-			_dice_panels[i].visible = false
-
-	_rolls_label.text = "Rolls Remaining: %d/%d" % [dice.rolls_left, dice.max_rolls]
-
-	# Damage preview (matching Python)
-	if dice.has_rolled():
-		var base := dice.calc_base_damage()
-		var combo := dice.calc_combo_bonus()
-		var total := dice.calc_total_damage(gs.multiplier if gs != null else 1.0,
-			gs.damage_bonus if gs != null else 0)
-		if combo > 0:
-			_damage_preview_label.text = "Damage Preview: %d (base %d + combo %d)" % [total, base, combo]
-		else:
-			_damage_preview_label.text = "Damage Preview: %d" % total
-	else:
-		_damage_preview_label.text = ""
+	_sync_dice_display()
+	_rolls_label.text = "Rolls Remaining: %d/%d" % [ce.dice.rolls_left, ce.dice.max_rolls]
+	_update_damage_preview()
 
 	# Enemy list
 	_enemy_list.clear()
@@ -345,7 +572,6 @@ func refresh() -> void:
 	if not alive.is_empty() and _enemy_list.is_anything_selected() == false:
 		_enemy_list.select(0)
 
-	# Target selection label for multi-enemy
 	if alive.size() > 1:
 		_target_label.text = "Select Target (click enemy above)"
 	else:
@@ -353,13 +579,11 @@ func refresh() -> void:
 
 	_refresh_enemy_hp_bar()
 
-	# Status effects
 	var statuses: Array = GameSession.game_state.flags.get("statuses", [])
 	_status_label.text = "Statuses: %s" % (", ".join(statuses) if not statuses.is_empty() else "none")
 
-	# Button states
-	_btn_roll.disabled = dice.rolls_left <= 0
-	_btn_attack.disabled = not dice.has_rolled()
+	_btn_roll.disabled = ce.dice.rolls_left <= 0
+	_btn_attack.disabled = not ce.dice.has_rolled()
 
 	var combat_over := alive.is_empty() or GameSession.game_state.health <= 0
 	if alive.is_empty():
@@ -384,6 +608,10 @@ func _sync_close_flee_visibility(combat_over: bool = false) -> void:
 	_btn_flee.disabled = not pending
 
 
+# ------------------------------------------------------------------
+# Actions
+# ------------------------------------------------------------------
+
 func _on_roll() -> void:
 	var ce := GameSession.combat
 	if ce == null:
@@ -391,6 +619,7 @@ func _on_roll() -> void:
 	ce.player_roll()
 	GameSession.trace_dice_rolled(ce.dice.values)
 	GameSession.trace_reroll_used(ce.dice.rolls_left)
+	_start_roll_animation()
 	refresh()
 
 
@@ -414,6 +643,15 @@ func _on_attack() -> void:
 	if not selected.is_empty():
 		target_idx = selected[0]
 
+	var hp_before := GameSession.game_state.health
+	var enemy_hp_before: int = 0
+	var alive_before := ce.get_alive_enemies()
+	if target_idx < alive_before.size():
+		enemy_hp_before = alive_before[target_idx].health
+
+	# Round separator in log
+	_append_styled_log("── Round %d ──" % ce.turn_count)
+
 	var result := ce.player_attack(target_idx)
 
 	GameSession.trace_attack_committed(
@@ -425,8 +663,24 @@ func _on_attack() -> void:
 		GameSession.trace_status_tick("combined", result.status_tick_damage)
 
 	for log_line in result.logs:
-		_log_text.append_text(log_line + "\n")
+		_append_styled_log(log_line)
 		GameSession.log_message.emit(log_line)
+
+	# Enemy dice display
+	if not result.enemy_rolls.is_empty():
+		_show_enemy_dice(result.enemy_rolls)
+	else:
+		_enemy_dice_container.visible = false
+
+	# Damage feedback: flash bars and show floating numbers
+	if result.player_damage > 0:
+		_flash_hp_bar(_enemy_hp_bar, _enemy_hp_section)
+		_show_floating_damage(result.player_damage, _enemy_hp_section, DungeonTheme.LOG_PLAYER)
+
+	var player_dmg_taken := hp_before - GameSession.game_state.health
+	if player_dmg_taken > 0:
+		_flash_hp_bar(_player_hp_bar, _player_hp_section)
+		_show_floating_damage(player_dmg_taken, _player_hp_section, DungeonTheme.LOG_ENEMY)
 
 	var alive := ce.get_alive_enemies()
 	if alive.is_empty():
@@ -446,7 +700,7 @@ func _on_flee() -> void:
 		return
 	var ok := GameSession.attempt_flee_pending()
 	if ok:
-		_log_text.append_text("Fled successfully!\n")
+		_append_styled_log("Fled successfully!")
 	else:
-		_log_text.append_text("Failed to flee!\n")
+		_append_styled_log("Failed to flee!")
 	refresh()

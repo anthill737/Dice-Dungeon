@@ -282,7 +282,7 @@ func test_split_on_death():
 	# Verify blob stats
 	var blob: CombatEngine.Enemy = engine.get_alive_enemies()[0]
 	assert_eq(blob.name, "Slime Blob")
-	assert_eq(blob.health, 4, "10 * 0.4 = 4")
+	assert_eq(blob.health, 10, "max(10, int(10 * 0.4)) = 10 (Python min 10)")
 	assert_eq(blob.num_dice, 2, "3 - 1 = 2")
 
 
