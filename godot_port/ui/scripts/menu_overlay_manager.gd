@@ -35,6 +35,7 @@ const SIZE_PROFILES := {
 	"lore":      {"base_w": 650, "base_h": 600, "width_pct": 0.65, "height_pct": 0.85},
 	"save_load": {"base_w": 700, "base_h": 550, "width_pct": 0.70, "height_pct": 0.80},
 	"start_adventure": {"base_w": 380, "base_h": 350, "width_pct": 0.35, "height_pct": 0.50},
+	"dev_menu": {"base_w": 400, "base_h": 450, "width_pct": 0.35, "height_pct": 0.60},
 }
 
 
