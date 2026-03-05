@@ -50,24 +50,40 @@ Extracted from: `explorer/store.py`, `explorer/inventory_display.py`, `explorer/
 
 ## D) Lockpick Workflow
 
-### Python behavior (`explorer/inventory_pickup.py`)
-1. Player enters room with a locked container.
-2. Player clicks "Search container" on the locked container.
-3. Python checks `container_locked`:
-   - If locked: logs `"The {container_name} is locked! You need a Lockpick Kit to open it."` and returns.
-4. Player must separately call `use_lockpick_on_container(container_name)`:
-   - Checks if `"Lockpick Kit"` is in inventory.
-   - If not: logs `"You don't have a Lockpick Kit!"` and returns.
-   - If yes: removes one `"Lockpick Kit"` from inventory, sets `container_locked = False`.
-   - Logs: `"Used Lockpick Kit! Container unlocked."`
-5. Player can then search the container normally.
+### Python behavior — explicit "Use Lockpick" button, NOT auto-use
+
+Source: `explorer/inventory_display.py` lines 372-397, `explorer/inventory_pickup.py` lines 23-43.
+
+Python presents a **two-step** interaction for locked containers. It does NOT auto-use the lockpick.
+
+#### Step 1: Encounter locked container
+When the player opens the ground items dialog (`show_ground_items`), a locked container is displayed with:
+- "🔒 LOCKED" label
+- If player has Lockpick Kit: a **"Use Lockpick" button** (line 382)
+- If player lacks Lockpick Kit: "Need Lockpick Kit" label (line 387)
+
+The player must **explicitly click "Use Lockpick"** to consume the kit.
+
+#### Step 2: Lockpick consumption
+`use_lockpick_on_container(container_name)` (inventory_pickup.py line 23):
+1. Checks `"Lockpick Kit" not in self.game.inventory` → logs `"You don't have a Lockpick Kit!"`, returns.
+2. Removes one `"Lockpick Kit"` from inventory.
+3. Sets `self.game.current_room.container_locked = False`.
+4. Logs: `"🔓 Used Lockpick Kit! The {container_name} is now unlocked."` (success tag).
+5. Refreshes ground items dialog — container now shows "Search" button.
+
+#### Step 3: Search
+Player clicks "Search" on the now-unlocked container → `search_container()` runs normally.
 
 ### Key rules
-- Lockpick Kit is **consumed** on use (one kit per locked container).
+- Lockpick Kit is consumed **only after explicit player click**, not on first interaction.
+- No confirmation dialog — single click on "Use Lockpick" consumes it.
 - The lockpick is a direct action on the locked container — no "disarm token" intermediate step.
-- If Python has a `disarm_token` mechanism, it is for a **different purpose** (trap disarming), not for locked containers.
 
 ### Messages (Python parity)
-- Locked container: `"The {container_name} is locked! You need a Lockpick Kit to open it."`
-- No lockpick: `"You don't have a Lockpick Kit!"`
-- Success: `"Used Lockpick Kit! Container unlocked."`
+- Locked container (attempting search): `"The {container_name} is locked! You need a Lockpick Kit to open it."`
+- No lockpick available: `"You don't have a Lockpick Kit!"`
+- Lockpick used: `"🔓 Used Lockpick Kit! The {container_name} is now unlocked."`
+
+### Godot parity status
+The Godot port must NOT auto-use the lockpick. When the player clicks Ground Items and a locked container is found, the first interaction should show the locked message. A separate action (clicking Ground Items again, or a prompt) must let the player choose to use the lockpick.

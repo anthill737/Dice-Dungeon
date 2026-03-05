@@ -5,9 +5,14 @@ Extracted from: `explorer/combat.py`, `explorer/dice.py`, `dice_dungeon_explorer
 ## A) Enemy Dice Visibility Timing
 
 - **Enemy dice are NOT shown at combat start.**
-- Enemy dice appear **only when the enemy attacks** (during `_start_enemy_turn_sequence` → `_show_and_animate_enemy_dice`).
+- **Enemy dice are NOT shown when player clicks Attack** (i.e., `start_combat_turn`).
+- Enemy dice appear **only after the player attacks** and the enemy takes its turn.
+  - Exact call chain: `attack_enemy()` → player damage resolves → `_start_enemy_turn_sequence()` → `_announce_enemy_attack()` → `_show_and_animate_enemy_dice()` (line 2317 of `explorer/combat.py`).
 - Enemy dice are **hidden** after combat ends (`enemy_defeated`, `attempt_flee`) and on exploration (`show_exploration_options` → `enemy_dice_frame.pack_forget`).
 - Enemy dice display shows only the **current** enemies' dice rolls — there is no "prior monsters list."
+
+### Godot parity status
+The Godot `combat_panel.gd` correctly shows enemy dice only in `_on_attack()` after `ce.player_attack()` returns, and clears them in `_on_combat_started_reset()`. This matches Python.
 
 ### Animation Timing (enemy dice)
 - 8 frames × 25 ms = 200 ms total roll animation.
