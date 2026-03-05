@@ -119,3 +119,31 @@ the Python reference:
 | Connection lines | Dashed gray lines between open exits | Solid semi-transparent lines | Minor style difference |
 | Zoom range | 0.25 – 3.0 | 0.5 – 3.0 | Minor difference |
 | Room outline | White 1px on all rooms | White 2px only on current room | **Mismatch** |
+
+## 10. Icon Sizing for Miniboss/Boss
+
+### Python Font Sizes (from dice_dungeon_explorer.py lines ~2500–2600)
+- Mini-boss locked: `int(16 * minimap_zoom)` — larger icon
+- Boss locked: `int(14 * minimap_zoom)`
+- Boss defeated/unlocked: `int(16 * minimap_zoom)`
+- Stairs: `int(14 * minimap_zoom)`
+- Store: `int(14 * minimap_zoom)`
+- Minimum font size: `max(10, ...)`
+
+### Godot Parity for Icon Sizing
+- Boss/miniboss icons should be **larger** than regular icons.
+- Multiply icon_size by 1.4 for boss/miniboss markers.
+- Ensure the larger icon still fits within the cell with margin.
+- Use `clampf` to prevent overflow.
+
+## 11. Label Fitting / Clipping
+
+### Python Behavior
+- Icons are text glyphs rendered with `create_text` on the canvas.
+- Text that exceeds the cell bounds simply overflows (no explicit truncation).
+- At small zooms (< 0.5), icons are hidden entirely.
+
+### Godot Implementation
+- Room labels in the tooltip should truncate with "..." if they exceed max width.
+- Labels should never overlap at normal zoom levels.
+- At zoom < 0.5, hide all icons (already implemented).

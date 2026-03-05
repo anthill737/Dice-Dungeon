@@ -74,6 +74,8 @@ var _character_status_scene := preload("res://ui/scenes/CharacterStatusPanel.tsc
 var _settings_scene := preload("res://ui/scenes/SettingsPanel.tscn")
 var _lore_codex_scene := preload("res://ui/scenes/LoreCodexPanel.tscn")
 var _pause_menu_scene := preload("res://ui/scenes/PauseMenu.tscn")
+var _dev_menu_scene := preload("res://ui/scenes/DevMenuPanel.tscn")
+var _dev_menu_panel: Control
 
 
 func _ready() -> void:
@@ -561,6 +563,13 @@ func _setup_overlay_manager() -> void:
 	_overlay_manager.register_menu("lore_codex", "📜 LORE CODEX", _lore_codex_panel, "lore")
 	_overlay_manager.register_menu("pause", "☰ PAUSED", _pause_menu, "pause")
 
+	# Dev menu (debug/editor builds only)
+	if OS.is_debug_build():
+		_dev_menu_panel = _dev_menu_scene.instantiate()
+		_overlay_manager.register_menu("dev_menu", "🛠 DEV MENU", _dev_menu_panel, "pause")
+		if _dev_menu_panel.has_signal("close_requested"):
+			_dev_menu_panel.close_requested.connect(func(): _overlay_manager.close_menu("dev_menu"))
+
 	# Wire pause menu signals
 	_pause_menu.close_requested.connect(func(): _overlay_manager.close_menu("pause"))
 	_pause_menu.open_settings_requested.connect(func():
@@ -648,7 +657,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
 
-	# ESC: close topmost popup, or toggle pause menu
+	# Tab: toggle inventory (highest priority, prevent UI focus traversal)
+	if event.keycode == KEY_TAB or event.is_action_pressed("open_inventory"):
+		_toggle_menu("inventory")
+		get_viewport().set_input_as_handled()
+		return
+
+	# ESC / open_menu: close topmost popup, or toggle pause menu
 	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("open_menu"):
 		if _overlay_manager.is_any_open():
 			_overlay_manager.close_top_menu()
@@ -657,9 +672,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	# Tab always opens inventory (even over other panels)
-	if event.keycode == KEY_TAB or event.is_action_pressed("open_inventory"):
-		_on_inventory()
+	# F10: toggle dev menu (debug/editor builds only)
+	if event.keycode == KEY_F10 and OS.is_debug_build():
+		_toggle_menu("dev_menu")
 		get_viewport().set_input_as_handled()
 		return
 
@@ -676,7 +691,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("move_east"):
 		_move("E")
 	elif event.is_action_pressed("character_status"):
-		_on_character_status()
+		_toggle_menu("character_status")
 	elif event.is_action_pressed("rest"):
 		_on_rest()
 	elif event.keycode == KEY_F3:
@@ -692,6 +707,14 @@ func _unhandled_input(event: InputEvent) -> void:
 # Menu open actions
 # -------------------------------------------------------------------
 
+## Toggle a menu: if it's already the topmost open menu, close it; else open it.
+func _toggle_menu(menu_key: String) -> void:
+	if _overlay_manager.is_menu_open(menu_key):
+		if _overlay_manager.get_top_menu_key() == menu_key:
+			_overlay_manager.close_menu(menu_key)
+			return
+	_overlay_manager.open_menu(menu_key)
+
 func _on_settings() -> void:
 	_overlay_manager.open_menu("settings")
 
@@ -699,7 +722,7 @@ func _on_pause() -> void:
 	_overlay_manager.open_menu("pause")
 
 func _on_inventory() -> void:
-	_overlay_manager.open_menu("inventory")
+	_toggle_menu("inventory")
 
 func _on_store() -> void:
 	var room := GameSession.get_current_room()

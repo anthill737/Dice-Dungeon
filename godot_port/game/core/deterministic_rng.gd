@@ -7,10 +7,12 @@ extends RNG
 ## seed always yields the same sequence of values.
 
 var _rng := RandomNumberGenerator.new()
+var initial_seed: int = 42
 
 
 func _init(seed_value: int = 42) -> void:
 	_rng.seed = seed_value
+	initial_seed = seed_value
 
 
 func rand_int(a: int, b: int) -> int:

@@ -57,6 +57,7 @@ func _ready() -> void:
 	_build_ui()
 	GameSession.state_changed.connect(_on_state_changed)
 	GameSession.combat_ended.connect(func(): close_requested.emit())
+	GameSession.combat_started.connect(_on_combat_started_reset)
 
 
 func _process(delta: float) -> void:
@@ -533,6 +534,26 @@ func _append_styled_log(line: String) -> void:
 # State sync
 # ------------------------------------------------------------------
 
+func _on_combat_started_reset() -> void:
+	# Clear stale combat log from prior encounter (Python parity)
+	if _log_text != null:
+		_log_text.clear()
+	# Clear stale enemy dice from prior encounter
+	_clear_enemy_dice()
+	_last_turn_count = -1
+	_result_label.text = ""
+
+
+func _clear_enemy_dice() -> void:
+	for p in _enemy_dice_panels:
+		if is_instance_valid(p):
+			p.queue_free()
+	_enemy_dice_panels.clear()
+	_enemy_dice_labels.clear()
+	if _enemy_dice_container != null:
+		_enemy_dice_container.visible = false
+
+
 func _on_state_changed() -> void:
 	if not visible:
 		return
@@ -625,8 +646,8 @@ func _sync_close_flee_visibility(combat_over: bool = false) -> void:
 	var pending := GameSession.is_pending_choice()
 	var active := GameSession.is_combat_active()
 	_btn_close.visible = combat_over or (not pending and not active)
-	_btn_flee.visible = pending and not active
-	_btn_flee.disabled = not pending
+	_btn_flee.visible = pending or active
+	_btn_flee.disabled = combat_over
 
 
 # ------------------------------------------------------------------
@@ -683,6 +704,20 @@ func _on_attack() -> void:
 	if result.status_tick_damage > 0:
 		GameSession.trace_status_tick("combined", result.status_tick_damage)
 
+	# Durability events are now resolved in CombatEngine core; UI just reads them
+	for dur_ev in result.durability_events:
+		var item_name: String = dur_ev.get("item_name", "")
+		var dur_val: int = int(dur_ev.get("durability", 0))
+		var broken: bool = dur_ev.get("broken", false)
+		var warning: bool = dur_ev.get("warning", false)
+		GameSession.trace_durability_changed(item_name, dur_val, broken)
+		if warning:
+			var dur_msg := "%s durability low (%d)" % [item_name, dur_val]
+			_append_styled_log(dur_msg)
+			GameSession.log_message.emit(dur_msg)
+
+	var player_dmg_taken := hp_before - GameSession.game_state.health
+
 	for log_line in result.logs:
 		_append_styled_log(log_line)
 		GameSession.log_message.emit(log_line)
@@ -698,7 +733,6 @@ func _on_attack() -> void:
 		_flash_hp_bar(_enemy_hp_bar, _enemy_hp_section)
 		_show_floating_damage(result.player_damage, _enemy_hp_section, DungeonTheme.LOG_PLAYER)
 
-	var player_dmg_taken := hp_before - GameSession.game_state.health
 	if player_dmg_taken > 0:
 		_flash_hp_bar(_player_hp_bar, _player_hp_section)
 		_show_floating_damage(player_dmg_taken, _player_hp_section, DungeonTheme.LOG_ENEMY)
@@ -715,13 +749,30 @@ func _on_attack() -> void:
 
 
 func _on_flee() -> void:
-	if not GameSession.is_pending_choice():
+	if GameSession.is_pending_choice() and GameSession.combat == null:
+		var result := GameSession.attempt_flee_pending()
+		if result.get("success", false):
+			var dmg: int = int(result.get("damage", 0))
+			if dmg > 0:
+				_append_styled_log("[FLEE] Fled! Lost %d HP." % dmg)
+			else:
+				_append_styled_log("Fled safely!")
+		elif result.get("reason", "") == "boss_fight":
+			_append_styled_log(CombatGatingPolicy.flee_blocked_message())
+		else:
+			_append_styled_log("Can't escape! Enemy blocks the way!")
+		refresh()
 		return
-	if GameSession.combat != null:
-		return
-	var ok := GameSession.attempt_flee_pending()
-	if ok:
-		_append_styled_log("Fled successfully!")
-	else:
-		_append_styled_log("Failed to flee!")
-	refresh()
+	if GameSession.is_combat_active():
+		var result := GameSession.flee_from_combat()
+		if result.get("success", false):
+			var dmg: int = int(result.get("damage", 0))
+			if dmg > 0:
+				_append_styled_log("[FLEE] Fled! Lost %d HP." % dmg)
+			else:
+				_append_styled_log("Fled safely!")
+		elif result.get("reason", "") == "boss_fight":
+			_append_styled_log(CombatGatingPolicy.flee_blocked_message())
+		else:
+			_append_styled_log("Can't escape! Enemy blocks the way!")
+		refresh()
