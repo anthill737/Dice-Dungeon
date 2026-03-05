@@ -16,6 +16,7 @@ var _btn_unequip: Button
 var _btn_drop: Button
 var _info_label: Label
 
+var _search_box: LineEdit
 var _lore_popup: PanelContainer
 var _inv_index_map: Array[int] = []
 
@@ -64,6 +65,15 @@ func _build_ui() -> void:
 	root.add_child(_equip_label)
 
 	root.add_child(DungeonTheme.make_separator(DungeonTheme.TEXT_CYAN))
+
+	# Search box
+	_search_box = LineEdit.new()
+	_search_box.name = "SearchBox"
+	_search_box.placeholder_text = "Search inventory..."
+	_search_box.clear_button_enabled = true
+	_search_box.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	_search_box.text_changed.connect(func(_t): refresh())
+	root.add_child(_search_box)
 
 	# Hint text
 	_hint_label = Label.new()
@@ -139,6 +149,7 @@ func refresh() -> void:
 
 	_item_list.clear()
 	_inv_index_map.clear()
+	var search_filter := _search_box.text.strip_edges().to_lower() if _search_box != null else ""
 	var seen: Dictionary = {}
 	for i in gs.inventory.size():
 		var item_name: String = gs.inventory[i]
@@ -146,6 +157,8 @@ func refresh() -> void:
 		if seen.has(normalized):
 			continue
 		seen[normalized] = true
+		if not search_filter.is_empty() and not normalized.to_lower().contains(search_filter):
+			continue
 		_inv_index_map.append(i)
 
 		var count := 0
