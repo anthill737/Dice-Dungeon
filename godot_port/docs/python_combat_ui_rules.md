@@ -134,3 +134,28 @@ Multiple visual themes (classic_white, obsidian_gold, bloodstone_red, etc.) with
 - Status effects use emoji prefixes: ☠ (poison), ▪ (bleed), ✹ (burn), ≋ (choke), ◆ (hunger)
 - Spawn events use `"⚠️"` prefix
 - Boss encounters use `"☠"` and `"⚔️"` emoji framing
+
+## Enemy Dice Visibility Timing
+
+### When Enemy Dice Appear
+- Enemy dice are shown when the **enemy turn** occurs, inside `_announce_enemy_attack()` (lines 2299–2357).
+- `_show_and_animate_enemy_dice()` creates and animates enemy dice.
+- Enemy dice are NOT shown at combat start — only after the first player attack completes and the enemy turn fires.
+- Each turn refreshes the enemy dice display with new values.
+
+### Stale Dice Persistence
+- Enemy dice UI is created fresh each turn in `_announce_enemy_attack()`.
+- Previous dice widgets are destroyed before new ones are created.
+- On new combat, there are no stale dice from prior encounters because the combat UI is rebuilt.
+
+## Combat Log Reset Rules
+- The adventure log (`adventure_log` list) is NOT reset when combat starts.
+- The adventure log is only cleared on:
+  - New game: `self.adventure_log = []` (line 1933)
+  - Load: `log_text` widget is cleared and repopulated from `adventure_log`
+- The **combat panel** internal log (the combat-specific log area) effectively resets because the combat UI is rebuilt for each new combat encounter.
+- Godot parity: Clear the combat panel's internal log (`_log_text`) on each new combat start.
+
+## Save During Combat
+- Save buttons show "Cannot Save During Combat" and are disabled.
+- `can_save = in_game and not self.in_combat`
