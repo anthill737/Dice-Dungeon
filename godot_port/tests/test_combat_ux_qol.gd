@@ -17,7 +17,7 @@ func _make_combat_session() -> void:
 	GameSession.enemy_types_db["Goblin"] = {"health": 10, "num_dice": 1}
 
 
-# ── Test 1: Enemy dice only appear after attack, not at combat start ──
+# ── Test 1: Enemy dice only appear after player attacks, not at combat start ──
 
 func test_enemy_dice_not_shown_at_combat_start() -> void:
 	_make_combat_session()
@@ -26,8 +26,9 @@ func test_enemy_dice_not_shown_at_combat_start() -> void:
 	GameSession.accept_combat()
 	var ce := GameSession.combat
 	assert_not_null(ce, "CombatEngine created")
-	# Enemy dice should not be populated yet (no attack has happened)
-	assert_eq(ce.turn_count, 0, "No turns executed yet")
+	assert_eq(ce.turn_count, 0, "No turns executed yet — no attack happened")
+	# Python parity: enemy dice are only shown after player_attack(),
+	# which triggers the enemy turn. Before that, no enemy_rolls exist.
 
 
 func test_enemy_dice_appear_after_attack() -> void:
@@ -40,7 +41,10 @@ func test_enemy_dice_appear_after_attack() -> void:
 
 	ce.player_roll()
 	var result := ce.player_attack(0)
+	# Python parity: _announce_enemy_attack() calls _show_and_animate_enemy_dice()
+	# after player attack resolves. The TurnResult should contain enemy_rolls.
 	assert_not_null(result.enemy_rolls, "Attack result has enemy_rolls")
+	assert_true(result.enemy_rolls.size() > 0, "Enemy rolled dice after player attack")
 
 
 # ── Test 2: Second combat clears prior state ──

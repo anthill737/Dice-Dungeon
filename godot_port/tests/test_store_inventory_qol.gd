@@ -161,9 +161,23 @@ func test_take_all_stops_when_inventory_full() -> void:
 	assert_eq(room.ground_items.size(), 1, "Item remains on ground")
 
 
-# ── Test 9: Lockpick workflow ──
+# ── Test 9: Lockpick workflow (Python parity: explicit action, not auto-use) ──
 
-func test_lockpick_on_locked_container_consumes_kit() -> void:
+func test_lockpick_not_auto_consumed_on_ground_items() -> void:
+	_make_session()
+	GameSession.game_state.inventory.append("Lockpick Kit")
+	var room := GameSession.get_current_room()
+	room.ground_container = "Old Crate"
+	room.container_locked = true
+
+	# Simulate what _handle_container does — it should NOT auto-use the lockpick
+	# (Python shows a "Use Lockpick" button, doesn't consume automatically)
+	assert_true(room.container_locked, "Container starts locked")
+	assert_true(GameSession.game_state.inventory.has("Lockpick Kit"),
+		"Lockpick Kit still in inventory after encountering locked container")
+
+
+func test_lockpick_explicit_use_consumes_kit() -> void:
 	_make_session()
 	GameSession.game_state.inventory.append("Lockpick Kit")
 	var room := GameSession.get_current_room()
@@ -173,11 +187,12 @@ func test_lockpick_on_locked_container_consumes_kit() -> void:
 	assert_true(room.container_locked, "Container starts locked")
 	assert_true(GameSession.game_state.inventory.has("Lockpick Kit"), "Has lockpick")
 
+	# Explicit use — this is what the "Use Lockpick" button triggers
 	var result := GameSession.inventory_engine.use_lockpick_on_container(room)
 	assert_true(result.get("ok", false), "Lockpick succeeded")
 	assert_false(room.container_locked, "Container now unlocked")
 	assert_false(GameSession.game_state.inventory.has("Lockpick Kit"),
-		"Lockpick Kit consumed")
+		"Lockpick Kit consumed after explicit use")
 
 
 func test_lockpick_without_kit_fails() -> void:
@@ -199,12 +214,10 @@ func test_lockpick_then_search_yields_loot() -> void:
 	room.ground_container = "Old Crate"
 	room.container_locked = true
 
-	# Unlock
 	var unlock := GameSession.inventory_engine.use_lockpick_on_container(room)
 	assert_true(unlock.get("ok", false), "Unlocked")
 	assert_false(room.container_locked, "No longer locked")
 
-	# Search
 	var result := GameSession.exploration.search_container(room)
 	assert_false(result.is_empty(), "Container search returns something")
 	assert_false(result.get("locked", false), "Not locked")
@@ -217,7 +230,6 @@ func test_lockpick_log_messages() -> void:
 	room.ground_container = "Old Crate"
 	room.container_locked = true
 
-	# Without lockpick
 	GameSession.inventory_engine.logs.clear()
 	var result1 := GameSession.inventory_engine.use_lockpick_on_container(room)
 	assert_false(result1.get("ok", false))
@@ -225,7 +237,6 @@ func test_lockpick_log_messages() -> void:
 	assert_true(GameSession.inventory_engine.logs[0].contains("No Lockpick Kit"),
 		"Log mentions missing lockpick")
 
-	# With lockpick
 	GameSession.game_state.inventory.append("Lockpick Kit")
 	GameSession.inventory_engine.logs.clear()
 	var result2 := GameSession.inventory_engine.use_lockpick_on_container(room)
@@ -233,3 +244,14 @@ func test_lockpick_log_messages() -> void:
 	assert_true(GameSession.inventory_engine.logs.size() > 0, "Success produces log")
 	assert_true(GameSession.inventory_engine.logs[0].contains("Container unlocked"),
 		"Log mentions unlocked")
+
+
+func test_unlocked_container_behavior_unchanged() -> void:
+	_make_session()
+	var room := GameSession.get_current_room()
+	room.ground_container = "Old Crate"
+	room.container_locked = false
+
+	var result := GameSession.exploration.search_container(room)
+	assert_false(result.get("locked", false), "Unlocked container works normally")
+	assert_true(room.container_searched, "Container marked searched")
