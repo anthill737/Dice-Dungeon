@@ -35,6 +35,7 @@ var _btn_attack: Button
 var _btn_flee: Button
 var _btn_chest: Button
 var _btn_ground: Button
+var _btn_lockpick: Button
 var _btn_inventory: Button
 var _btn_store: Button
 var _btn_rest: Button
@@ -411,6 +412,8 @@ func _build_right_sidebar(parent: Node) -> void:
 	actions.add_child(_btn_chest)
 	_btn_ground = _make_action_btn("🔍 Ground Items", DungeonTheme.TEXT_SECONDARY)
 	actions.add_child(_btn_ground)
+	_btn_lockpick = _make_action_btn("🔓 Use Lockpick", DungeonTheme.TEXT_GOLD)
+	actions.add_child(_btn_lockpick)
 	_btn_inventory = _make_action_btn("🎒 Inventory", DungeonTheme.BTN_SECONDARY)
 	actions.add_child(_btn_inventory)
 	_btn_store = _make_action_btn("🏪 Store", DungeonTheme.BTN_SECONDARY)
@@ -597,6 +600,7 @@ func _connect_signals() -> void:
 	_btn_flee.pressed.connect(_on_flee)
 	_btn_chest.pressed.connect(_on_chest)
 	_btn_ground.pressed.connect(_on_ground_items)
+	_btn_lockpick.pressed.connect(_on_use_lockpick)
 	_btn_inventory.pressed.connect(_on_inventory)
 	_btn_store.pressed.connect(_on_store)
 	_btn_rest.pressed.connect(_on_rest)
@@ -995,23 +999,33 @@ func _take_all_ground_items(room: RoomState) -> void:
 
 func _handle_container(room: RoomState) -> void:
 	if room.container_locked:
+		var cname: String = room.ground_container if not room.ground_container.is_empty() else "container"
 		if GameSession.game_state.inventory.has("Lockpick Kit"):
-			var unlock_result := GameSession.inventory_engine.use_lockpick_on_container(room)
-			GameSession._emit_logs(GameSession.inventory_engine.logs)
-			if unlock_result.get("ok", false):
-				var search_result := GameSession.exploration.search_container(room)
-				GameSession._emit_logs(GameSession.exploration.logs)
-				_collect_container_contents(room, search_result)
-			return
+			_append_log("The %s is locked! You have a Lockpick Kit — use it to unlock." % cname)
 		else:
-			var cname: String = room.ground_container if not room.ground_container.is_empty() else "container"
 			_append_log("The %s is locked! You need a Lockpick Kit to open it." % cname)
-			return
+		return
 
 	var result := GameSession.exploration.search_container(room)
 	GameSession._emit_logs(GameSession.exploration.logs)
 	if not result.is_empty() and not result.get("locked", false):
 		_collect_container_contents(room, result)
+
+
+func _on_use_lockpick() -> void:
+	var room := GameSession.get_current_room()
+	if room == null:
+		return
+	if not room.container_locked:
+		_append_log("No locked container here.")
+		return
+	var unlock_result := GameSession.inventory_engine.use_lockpick_on_container(room)
+	GameSession._emit_logs(GameSession.inventory_engine.logs)
+	if unlock_result.get("ok", false):
+		var search_result := GameSession.exploration.search_container(room)
+		GameSession._emit_logs(GameSession.exploration.logs)
+		_collect_container_contents(room, search_result)
+	GameSession.state_changed.emit()
 
 
 func _collect_container_contents(room: RoomState, result: Dictionary) -> void:
@@ -1170,7 +1184,8 @@ func _update_button_visibility(room: RoomState) -> void:
 	_btn_attack.visible = show_combat_buttons
 	_btn_flee.visible = pending and not active
 	_btn_chest.visible = room != null and room.has_chest and not room.chest_looted and not blocking
-	_btn_ground.visible = room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 or (not room.ground_container.is_empty() and not room.container_searched)) and not blocking
+	_btn_ground.visible = room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked))) and not blocking
+	_btn_lockpick.visible = room != null and room.container_locked and GameSession.game_state != null and GameSession.game_state.inventory.has("Lockpick Kit") and not blocking
 	_btn_store.visible = room != null and room.has_store and not blocking
 	_btn_descend.visible = room != null and room.has_stairs and not blocking
 
