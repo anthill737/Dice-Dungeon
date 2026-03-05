@@ -47,7 +47,8 @@ func test_B_flee_success_stays_in_room() -> void:
 	# Try flee up to 20 times (50 % chance each, virtually certain to hit)
 	var succeeded := false
 	for i in 20:
-		if GameSession.attempt_flee_pending():
+		var flee_result := GameSession.attempt_flee_pending()
+		if flee_result.get("success", false):
 			succeeded = true
 			break
 		GameSession.combat_pending = true
@@ -116,12 +117,14 @@ func test_E_flee_failure_stays_pending() -> void:
 	# Temporarily override with a failing stub
 	var fail_count := 0
 	for i in 20:
-		if not GameSession.attempt_flee_pending():
+		var flee_result := GameSession.attempt_flee_pending()
+		if not flee_result.get("success", false):
 			fail_count += 1
 			break
 		# If it succeeded, undo and retry
 		room.combat_escaped = false
 		GameSession.combat_pending = true
+		GameSession.game_state.health = GameSession.game_state.max_health
 
 	assert_gt(fail_count, 0, "Got at least one flee failure")
 	assert_true(GameSession.combat_pending, "still pending after fail")
@@ -141,7 +144,8 @@ func test_flee_from_active_combat_marks_escaped() -> void:
 	# Try fleeing until success (50 % chance per attempt)
 	var fled := false
 	for i in 20:
-		if GameSession.flee_from_combat():
+		var flee_result := GameSession.flee_from_combat()
+		if flee_result.get("success", false):
 			fled = true
 			break
 
