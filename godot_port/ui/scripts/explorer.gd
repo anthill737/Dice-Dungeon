@@ -63,6 +63,7 @@ var _debug_visible: bool = false
 
 var _minimap_panel: PanelContainer
 var _context: GameContext
+var _locked_room_dialog: AcceptDialog
 
 var _combat_scene := preload("res://ui/scenes/CombatPanel.tscn")
 var _inventory_scene := preload("res://ui/scenes/InventoryPanel.tscn")
@@ -91,6 +92,26 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	_check_log_scroll()
+
+
+func _exit_tree() -> void:
+	_typewriter_queue.clear()
+	_typewriter_active = false
+	if is_instance_valid(_locked_room_dialog):
+		_locked_room_dialog.queue_free()
+		_locked_room_dialog = null
+	if GameSession.state_changed.is_connected(_refresh_ui):
+		GameSession.state_changed.disconnect(_refresh_ui)
+	if GameSession.log_message.is_connected(_append_log):
+		GameSession.log_message.disconnect(_append_log)
+	if GameSession.combat_started.is_connected(_on_combat_started):
+		GameSession.combat_started.disconnect(_on_combat_started)
+	if GameSession.combat_ended.is_connected(_on_combat_ended):
+		GameSession.combat_ended.disconnect(_on_combat_ended)
+	if GameSession.combat_pending_changed.is_connected(_refresh_ui):
+		GameSession.combat_pending_changed.disconnect(_refresh_ui)
+	if GameSession.locked_room_prompt.is_connected(_on_locked_room_prompt):
+		GameSession.locked_room_prompt.disconnect(_on_locked_room_prompt)
 
 
 func _consume_pending_run_state() -> void:
@@ -763,12 +784,16 @@ func _quit_to_main_menu() -> void:
 	else:
 		GameSession.combat = null
 		GameSession.combat_pending = false
-	get_tree().change_scene_to_file("res://ui/scenes/MainMenu.tscn")
+	var tree := get_tree()
+	if tree != null:
+		tree.change_scene_to_file("res://ui/scenes/MainMenu.tscn")
 
 
 func _on_quit_requested() -> void:
 	_overlay_manager.close_all_menus()
-	get_tree().change_scene_to_file("res://ui/scenes/MainMenu.tscn")
+	var tree := get_tree()
+	if tree != null:
+		tree.change_scene_to_file("res://ui/scenes/MainMenu.tscn")
 
 
 func _connect_log_bridge() -> void:
@@ -939,7 +964,10 @@ func _on_locked_room_prompt(gate_type: String, direction: String) -> void:
 
 
 func _show_locked_room_dialog(title: String, message: String) -> void:
+	if is_instance_valid(_locked_room_dialog):
+		_locked_room_dialog.queue_free()
 	var dialog := AcceptDialog.new()
+	_locked_room_dialog = dialog
 	dialog.title = title
 	dialog.dialog_text = message
 	dialog.ok_button_text = "Unlock & Enter"
@@ -947,10 +975,12 @@ func _show_locked_room_dialog(title: String, message: String) -> void:
 	dialog.confirmed.connect(func():
 		GameSession.confirm_locked_room_entry(_pending_gate_direction)
 		_refresh_ui()
+		_locked_room_dialog = null
 		dialog.queue_free()
 	)
 	dialog.canceled.connect(func():
 		GameSession.decline_locked_room_entry(_pending_gate_type)
+		_locked_room_dialog = null
 		dialog.queue_free()
 	)
 	add_child(dialog)
@@ -1245,6 +1275,9 @@ func _check_log_scroll() -> void:
 
 
 func _process_typewriter() -> void:
+	if not is_inside_tree():
+		_typewriter_active = false
+		return
 	if _typewriter_queue.is_empty():
 		_typewriter_active = false
 		return
@@ -1264,6 +1297,9 @@ func _process_typewriter() -> void:
 
 
 func _typewrite_chars(msg: String, idx: int, has_color: bool, is_bold: bool) -> void:
+	if not is_instance_valid(self) or not is_inside_tree():
+		_typewriter_active = false
+		return
 	if _log_text == null:
 		_typewriter_active = false
 		return
@@ -1292,7 +1328,11 @@ func _typewrite_chars(msg: String, idx: int, has_color: bool, is_bold: bool) -> 
 		_process_typewriter()
 		return
 
-	get_tree().create_timer(float(delay_ms) / 1000.0).timeout.connect(
+	var tree := get_tree()
+	if tree == null:
+		_typewriter_active = false
+		return
+	tree.create_timer(float(delay_ms) / 1000.0).timeout.connect(
 		_typewrite_chars.bind(msg, idx + 1, has_color, is_bold))
 
 

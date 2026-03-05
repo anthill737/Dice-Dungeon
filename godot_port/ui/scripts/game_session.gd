@@ -57,6 +57,17 @@ func _ready() -> void:
 	_load_data()
 
 
+func _exit_tree() -> void:
+	combat = null
+	exploration = null
+	inventory_engine = null
+	store_engine = null
+	lore_engine = null
+	game_state = null
+	rng = null
+	_content_manager = null
+
+
 func _load_data() -> void:
 	if _content_manager == null:
 		_content_manager = ContentManager.new()
@@ -283,6 +294,7 @@ func start_combat_for_room(room: RoomState) -> void:
 
 	game_state.in_combat = true
 	combat = CombatEngine.new(rng, game_state, game_state.num_dice, enemy_types_db)
+	combat.set_trace(trace)
 
 	var enemy_name: String = threats[0] if not threats.is_empty() else "Monster"
 	var enemy_data: Dictionary = enemy_types_db.get(enemy_name, {})

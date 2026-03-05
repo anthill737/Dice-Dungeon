@@ -19,6 +19,7 @@ var _popups: Dictionary = {}
 var _contents: Dictionary = {}
 var _stack: Array[String] = []
 var _can_close_overrides: Dictionary = {}
+var _active_tweens: Array[Tween] = []
 
 const FADE_DURATION := 0.12
 
@@ -45,6 +46,17 @@ func _ready() -> void:
 	_popup_root.set_offsets_preset(Control.PRESET_FULL_RECT)
 	_popup_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_popup_root)
+
+
+func _exit_tree() -> void:
+	for tw in _active_tweens:
+		if is_instance_valid(tw) and tw.is_running():
+			tw.kill()
+	_active_tweens.clear()
+	_stack.clear()
+	_popups.clear()
+	_contents.clear()
+	_can_close_overrides.clear()
 
 
 func register_menu(menu_key: String, title: String, content: Control,
@@ -77,8 +89,12 @@ func open_menu(menu_key: String) -> void:
 	if frame.has_method("_apply_sizing"):
 		frame._apply_sizing()
 
-	var tween: Tween = create_tween()
-	tween.tween_property(frame, "modulate:a", 1.0, FADE_DURATION)
+	if is_inside_tree():
+		var tween: Tween = create_tween()
+		_track_tween(tween)
+		tween.tween_property(frame, "modulate:a", 1.0, FADE_DURATION)
+	else:
+		frame.modulate.a = 1.0
 	_stack.erase(menu_key)
 	_stack.push_back(menu_key)
 
@@ -98,9 +114,15 @@ func close_menu(menu_key: String) -> void:
 	if not frame.visible:
 		return
 	_stack.erase(menu_key)
-	var tween: Tween = create_tween()
-	tween.tween_property(frame, "modulate:a", 0.0, FADE_DURATION)
-	tween.tween_callback(func(): frame.visible = false)
+	if is_inside_tree():
+		var tween: Tween = create_tween()
+		_track_tween(tween)
+		tween.tween_property(frame, "modulate:a", 0.0, FADE_DURATION)
+		tween.tween_callback(func():
+			if is_instance_valid(frame):
+				frame.visible = false)
+	else:
+		frame.visible = false
 	menu_closed.emit(menu_key)
 
 
@@ -122,7 +144,7 @@ func close_all_menus() -> void:
 	for key in _popups:
 		if can_close(key):
 			var frame = _popups[key]
-			if frame.visible:
+			if is_instance_valid(frame) and frame.visible:
 				frame.visible = false
 				frame.modulate.a = 0.0
 				_stack.erase(key)
@@ -139,13 +161,17 @@ func can_close(menu_key: String) -> bool:
 
 func is_any_open() -> bool:
 	for key in _popups:
-		if _popups[key].visible:
+		var frame = _popups[key]
+		if is_instance_valid(frame) and frame.visible:
 			return true
 	return false
 
 
 func is_menu_open(menu_key: String) -> bool:
-	return _popups.has(menu_key) and _popups[menu_key].visible
+	if not _popups.has(menu_key):
+		return false
+	var frame = _popups[menu_key]
+	return is_instance_valid(frame) and frame.visible
 
 
 func get_top_menu_key() -> String:
@@ -171,3 +197,8 @@ func get_stack() -> Array[String]:
 func _on_popup_close_requested(menu_key: String) -> void:
 	if can_close(menu_key):
 		close_menu(menu_key)
+
+
+func _track_tween(tw: Tween) -> void:
+	_active_tweens.append(tw)
+	tw.finished.connect(func(): _active_tweens.erase(tw))

@@ -18,6 +18,12 @@ func _ready() -> void:
 	_build_ui()
 
 
+func _exit_tree() -> void:
+	if is_instance_valid(_confirm_panel):
+		_confirm_panel.queue_free()
+		_confirm_panel = null
+
+
 func _build_ui() -> void:
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color(0.0, 0.0, 0.0, 0.0)

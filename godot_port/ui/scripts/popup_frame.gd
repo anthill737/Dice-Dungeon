@@ -35,12 +35,14 @@ func _init() -> void:
 
 func _ready() -> void:
 	_build_ui()
-	call_deferred("_apply_sizing")
+	if is_inside_tree():
+		call_deferred("_apply_sizing")
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
-		_apply_sizing()
+		if is_inside_tree():
+			_apply_sizing()
 
 
 func _build_ui() -> void:
@@ -142,6 +144,8 @@ func _build_ui() -> void:
 
 func _apply_sizing() -> void:
 	if _popup_panel == null:
+		return
+	if not is_inside_tree():
 		return
 	var vp := get_viewport()
 	if vp == null:
