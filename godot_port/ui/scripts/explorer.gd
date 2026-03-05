@@ -657,12 +657,20 @@ func _is_combat_locking() -> bool:
 # INPUT
 # ==================================================================
 
+func _input(event: InputEvent) -> void:
+	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	if event.keycode == KEY_TAB:
+		_toggle_menu("inventory")
+		get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
 
-	# Tab: toggle inventory (highest priority, prevent UI focus traversal)
-	if event.keycode == KEY_TAB or event.is_action_pressed("open_inventory"):
+	# open_inventory action (non-Tab key, e.g. 'I')
+	if event.is_action_pressed("open_inventory"):
 		_toggle_menu("inventory")
 		get_viewport().set_input_as_handled()
 		return

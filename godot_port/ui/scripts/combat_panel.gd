@@ -326,13 +326,9 @@ func _on_die_clicked(event: InputEvent, index: int) -> void:
 # ------------------------------------------------------------------
 
 func _show_enemy_dice(rolls: Array) -> void:
-	for p in _enemy_dice_panels:
-		p.queue_free()
-	_enemy_dice_panels.clear()
-	_enemy_dice_labels.clear()
+	_clear_enemy_dice()
 
 	if rolls.is_empty():
-		_enemy_dice_container.visible = false
 		return
 
 	_enemy_dice_container.visible = true
@@ -555,6 +551,8 @@ func _clear_enemy_dice() -> void:
 	_enemy_dice_panels.clear()
 	_enemy_dice_labels.clear()
 	if _enemy_dice_container != null:
+		for child in _enemy_dice_container.get_children():
+			child.queue_free()
 		_enemy_dice_container.visible = false
 
 
@@ -693,7 +691,6 @@ func _on_attack() -> void:
 	if target_idx < alive_before.size():
 		enemy_hp_before = alive_before[target_idx].health
 
-	# Round separator in log
 	_append_styled_log("── Round %d ──" % ce.turn_count)
 
 	var result := ce.player_attack(target_idx)
@@ -706,7 +703,6 @@ func _on_attack() -> void:
 	if result.status_tick_damage > 0:
 		GameSession.trace_status_tick("combined", result.status_tick_damage)
 
-	# Durability events are now resolved in CombatEngine core; UI just reads them
 	for dur_ev in result.durability_events:
 		var item_name: String = dur_ev.get("item_name", "")
 		var dur_val: int = int(dur_ev.get("durability", 0))
@@ -718,22 +714,43 @@ func _on_attack() -> void:
 			_append_styled_log(dur_msg)
 			GameSession.log_message.emit(dur_msg)
 
-	var player_dmg_taken := hp_before - GameSession.game_state.health
-
+	# Player attack logs (show immediately)
+	var player_logs: Array = []
+	var enemy_logs: Array = []
 	for log_line in result.logs:
+		if _is_enemy_attack_log(log_line):
+			enemy_logs.append(log_line)
+		else:
+			player_logs.append(log_line)
+
+	for log_line in player_logs:
 		_append_styled_log(log_line)
 		GameSession.log_message.emit(log_line)
 
-	# Enemy dice display
-	if not result.enemy_rolls.is_empty():
-		_show_enemy_dice(result.enemy_rolls)
-	else:
-		_enemy_dice_container.visible = false
-
-	# Damage feedback: flash bars and show floating numbers
+	# Show player damage on enemy HP bar immediately
 	if result.player_damage > 0:
 		_flash_hp_bar(_enemy_hp_bar, _enemy_hp_section)
 		_show_floating_damage(result.player_damage, _enemy_hp_section, DungeonTheme.LOG_PLAYER)
+
+	# Enemy dice reveal (before damage application)
+	if not result.enemy_rolls.is_empty():
+		_show_enemy_dice(result.enemy_rolls)
+
+	var linger := CombatUIPacing.enemy_dice_linger_sec()
+	var player_dmg_taken := hp_before - GameSession.game_state.health
+
+	if linger > 0.0 and not result.enemy_rolls.is_empty() and is_inside_tree():
+		_btn_roll.disabled = true
+		_btn_attack.disabled = true
+		refresh()
+		await get_tree().create_timer(linger).timeout
+		if not is_inside_tree():
+			return
+
+	# Enemy attack logs + damage feedback (after pacing delay)
+	for log_line in enemy_logs:
+		_append_styled_log(log_line)
+		GameSession.log_message.emit(log_line)
 
 	if player_dmg_taken > 0:
 		_flash_hp_bar(_player_hp_bar, _player_hp_section)
@@ -748,5 +765,9 @@ func _on_attack() -> void:
 		_result_label.text = "☠ Defeated... ☠"
 
 	refresh()
+
+
+static func _is_enemy_attack_log(line: String) -> bool:
+	return line.contains("rolls [") or line.contains("rolls:") or (line.contains(" for ") and line.contains(" damage"))
 
 
