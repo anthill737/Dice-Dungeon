@@ -17,6 +17,8 @@ const COLOR_SCHEME_OPTIONS := ["Classic", "Dark", "Light"]
 const TEXT_SPEED_OPTIONS := ["Slow", "Normal", "Fast", "Instant"]
 const TEXT_SPEED_DELAYS := {"Slow": 15, "Normal": 13, "Fast": 7, "Instant": 0}
 
+const COMBAT_PACING_OPTIONS := ["Instant", "Fast", "Normal", "Slow"]
+
 const BINDABLE_ACTIONS := [
 	"move_north", "move_south", "move_east", "move_west",
 	"open_inventory", "open_menu", "rest", "character_status",
@@ -84,6 +86,7 @@ const DIFFICULTY_MULTIPLIERS := {
 var difficulty: String = "Normal"
 var color_scheme: String = "Classic"
 var text_speed: String = "Normal"
+var combat_pacing: String = "Normal"
 var keybindings: Dictionary = {}  # action_name -> Key enum int
 
 
@@ -114,6 +117,7 @@ func save_settings() -> void:
 	cfg.set_value("general", "difficulty", difficulty)
 	cfg.set_value("general", "color_scheme", color_scheme)
 	cfg.set_value("general", "text_speed", text_speed)
+	cfg.set_value("general", "combat_pacing", combat_pacing)
 	for action in keybindings:
 		cfg.set_value("keybindings", action, keybindings[action])
 	cfg.save(CONFIG_PATH)
@@ -128,6 +132,7 @@ func load_settings() -> void:
 	text_speed = cfg.get_value("general", "text_speed", "Normal")
 	if text_speed == "Medium":
 		text_speed = "Normal"
+	combat_pacing = cfg.get_value("general", "combat_pacing", "Normal")
 	if cfg.has_section("keybindings"):
 		for action in cfg.get_section_keys("keybindings"):
 			keybindings[action] = int(cfg.get_value("keybindings", action, 0))
@@ -165,6 +170,12 @@ func set_text_speed(value: String) -> void:
 	settings_changed.emit()
 
 
+func set_combat_pacing(value: String) -> void:
+	combat_pacing = value
+	save_settings()
+	settings_changed.emit()
+
+
 # ------------------------------------------------------------------
 # InputMap management
 # ------------------------------------------------------------------
@@ -184,7 +195,7 @@ func _apply_single_keybinding(action: String, keycode: int) -> void:
 
 
 func settings_fingerprint() -> String:
-	var parts := "%s|%s|%s" % [difficulty, text_speed, color_scheme]
+	var parts := "%s|%s|%s|%s" % [difficulty, text_speed, color_scheme, combat_pacing]
 	return "%x" % parts.hash()
 
 

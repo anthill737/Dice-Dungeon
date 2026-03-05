@@ -7,6 +7,7 @@ signal close_requested()
 var _difficulty_dropdown: OptionButton
 var _color_dropdown: OptionButton
 var _text_speed_dropdown: OptionButton
+var _combat_pacing_dropdown: OptionButton
 var _keybind_container: VBoxContainer
 var _waiting_action: String = ""
 var _waiting_button: Button = null
@@ -78,6 +79,15 @@ func _build_ui() -> void:
 	_text_speed_dropdown.item_selected.connect(_on_text_speed_changed)
 	speed_row.add_child(_text_speed_dropdown)
 
+	# Combat Pacing
+	var pacing_row := _make_row(vbox, "Combat Pacing")
+	_combat_pacing_dropdown = OptionButton.new()
+	_combat_pacing_dropdown.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for opt in SettingsManager.COMBAT_PACING_OPTIONS:
+		_combat_pacing_dropdown.add_item(opt)
+	_combat_pacing_dropdown.item_selected.connect(_on_combat_pacing_changed)
+	pacing_row.add_child(_combat_pacing_dropdown)
+
 	vbox.add_child(DungeonTheme.make_separator())
 
 	# Keybindings header
@@ -146,6 +156,7 @@ func _populate_from_settings() -> void:
 	_select_option(_difficulty_dropdown, SettingsManager.DIFFICULTY_OPTIONS, SettingsManager.difficulty)
 	_select_option(_color_dropdown, SettingsManager.COLOR_SCHEME_OPTIONS, SettingsManager.color_scheme)
 	_select_option(_text_speed_dropdown, SettingsManager.TEXT_SPEED_OPTIONS, SettingsManager.text_speed)
+	_select_option(_combat_pacing_dropdown, SettingsManager.COMBAT_PACING_OPTIONS, SettingsManager.combat_pacing)
 	_refresh_keybind_labels()
 
 
@@ -163,6 +174,10 @@ func _on_color_changed(idx: int) -> void:
 
 func _on_text_speed_changed(idx: int) -> void:
 	SettingsManager.set_text_speed(SettingsManager.TEXT_SPEED_OPTIONS[idx])
+
+
+func _on_combat_pacing_changed(idx: int) -> void:
+	SettingsManager.set_combat_pacing(SettingsManager.COMBAT_PACING_OPTIONS[idx])
 
 
 func _on_keybind_clicked(action: String, btn: Button) -> void:
