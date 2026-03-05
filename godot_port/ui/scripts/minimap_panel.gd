@@ -364,7 +364,7 @@ func _show_tooltip(mouse_pos: Vector2) -> void:
 			"defeated": text += " [Cleared]"
 			"chest": text += " [Chest]"
 			"escaped": text += " [Fled]"
-	_tooltip_label.text = text
+	_tooltip_label.text = truncate_label(text, 28)
 	_tooltip_label.visible = true
 	# Position tooltip near cursor, clamped to canvas
 	var tip_size := _tooltip_label.size
@@ -375,6 +375,15 @@ func _show_tooltip(mouse_pos: Vector2) -> void:
 	if ty < 0:
 		ty = mouse_pos.y + 16
 	_tooltip_label.position = Vector2(tx, ty)
+
+
+## Truncate a label string to a max character count, appending "..." if needed.
+static func truncate_label(text: String, max_chars: int = 28) -> String:
+	if text.length() <= max_chars:
+		return text
+	if max_chars <= 3:
+		return text.left(max_chars)
+	return text.left(max_chars - 3) + "..."
 
 
 # ------------------------------------------------------------------
@@ -501,17 +510,18 @@ func _draw_blocked_bars(room: RoomState, cx: float, cy: float, half: float) -> v
 
 func _draw_room_icon(room: RoomState, pos: Vector2i, center: Vector2,
 		half: float, fs: FloorState) -> void:
-	var icon_size := clampf(half * 0.85, MIN_ICON_SIZE, maxf(MIN_ICON_SIZE, half - ICON_MARGIN))
+	var icon_size := compute_icon_size(half)
 	var marker := _classify_room_marker(room, pos, fs)
+	var boss_icon_size := compute_boss_icon_size(half)
 	match marker:
 		"locked":
-			_draw_skull(center, icon_size, COLOR_ICON_LOCKED)
+			_draw_skull(center, boss_icon_size, COLOR_ICON_LOCKED)
 		"boss_active":
-			_draw_skull(center, icon_size, COLOR_ICON_ACTIVE)
+			_draw_skull(center, boss_icon_size, COLOR_ICON_ACTIVE)
 		"miniboss_active":
-			_draw_skull(center, icon_size, COLOR_ICON_ACTIVE)
+			_draw_skull(center, boss_icon_size, COLOR_ICON_ACTIVE)
 		"defeated":
-			_draw_checkmark(center, icon_size)
+			_draw_checkmark(center, boss_icon_size)
 		"stairs":
 			_draw_stairs_icon(center, icon_size)
 		"store":
@@ -530,6 +540,11 @@ func _draw_room_icon(room: RoomState, pos: Vector2i, center: Vector2,
 ## Ensures icon_size <= (half - ICON_MARGIN) and icon_size >= MIN_ICON_SIZE.
 static func compute_icon_size(half: float) -> float:
 	return clampf(half * 0.85, MIN_ICON_SIZE, maxf(MIN_ICON_SIZE, half - ICON_MARGIN))
+
+
+## Larger icon size for boss/miniboss markers (Python parity: uses 16*zoom vs 14*zoom).
+static func compute_boss_icon_size(half: float) -> float:
+	return clampf(half * 1.15, MIN_ICON_SIZE, maxf(MIN_ICON_SIZE, half - ICON_MARGIN * 0.5))
 
 
 # ------------------------------------------------------------------
