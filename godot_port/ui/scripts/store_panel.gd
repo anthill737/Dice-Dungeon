@@ -189,7 +189,11 @@ func _rebuild_buy_list() -> void:
 			continue
 		var price: int = int(_store_items[i][1])
 		_filtered_buy_indices.append(i)
-		_buy_list.add_item("%s — %d gold" % [item_name, price])
+		var buy_icon = GameSession.assets.get_item_icon(item_name, 24) if GameSession.assets != null else null
+		if buy_icon != null:
+			_buy_list.add_item("%s — %d gold" % [item_name, price], buy_icon)
+		else:
+			_buy_list.add_item("%s — %d gold" % [item_name, price])
 
 
 func _rebuild_sell_list() -> void:
@@ -207,7 +211,11 @@ func _rebuild_sell_list() -> void:
 		var label := "%s — %d gold" % [item_name, sell_price]
 		if count > 1:
 			label = "%s ×%d — %d gold" % [item_name, count, sell_price]
-		_sell_list.add_item(label)
+		var sell_icon = GameSession.assets.get_item_icon(item_name, 24) if GameSession.assets != null else null
+		if sell_icon != null:
+			_sell_list.add_item(label, sell_icon)
+		else:
+			_sell_list.add_item(label)
 
 
 func _on_buy_search_changed(_text: String) -> void:

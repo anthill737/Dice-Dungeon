@@ -182,7 +182,11 @@ func refresh() -> void:
 				display_text += " [%d%%]" % dur
 
 		var row_idx := _item_list.item_count
-		_item_list.add_item(display_text)
+		var item_icon_tex = GameSession.assets.get_item_icon(item_name, 24) if GameSession.assets != null else null
+		if item_icon_tex != null:
+			_item_list.add_item(display_text, item_icon_tex)
+		else:
+			_item_list.add_item(display_text)
 
 		if GameSession.inventory_engine != null:
 			var item_def := GameSession.inventory_engine.get_item_def(item_name)

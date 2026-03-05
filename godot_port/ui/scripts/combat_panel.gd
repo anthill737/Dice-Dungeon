@@ -37,6 +37,7 @@ var _enemy_dice_labels: Array[Label] = []
 var _enemy_dice_panels: Array[PanelContainer] = []
 var _player_hp_section: HBoxContainer
 var _enemy_hp_section: HBoxContainer
+var _enemy_sprite_rect: TextureRect
 
 var _roll_anim_timer: float = 0.0
 var _roll_anim_frame: int = 0
@@ -133,15 +134,33 @@ func _build_ui() -> void:
 	root.add_child(DungeonTheme.make_separator(DungeonTheme.BORDER))
 
 	# --- Enemy section ---
+	var enemy_row := HBoxContainer.new()
+	enemy_row.add_theme_constant_override("separation", 8)
+	root.add_child(enemy_row)
+
+	# Enemy sprite area (Python parity: shows current target sprite)
+	_enemy_sprite_rect = TextureRect.new()
+	_enemy_sprite_rect.name = "EnemySpriteRect"
+	_enemy_sprite_rect.custom_minimum_size = Vector2(72, 72)
+	_enemy_sprite_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_enemy_sprite_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_enemy_sprite_rect.visible = false
+	enemy_row.add_child(_enemy_sprite_rect)
+
+	var enemy_col := VBoxContainer.new()
+	enemy_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	enemy_col.add_theme_constant_override("separation", 2)
+	enemy_row.add_child(enemy_col)
+
 	var enemy_header := DungeonTheme.make_header(
 		"Enemies", DungeonTheme.TEXT_GOLD, DungeonTheme.FONT_LABEL)
 	enemy_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	root.add_child(enemy_header)
+	enemy_col.add_child(enemy_header)
 
 	_enemy_list = DungeonTheme.make_item_list(80)
 	_enemy_list.name = "EnemyList"
 	_enemy_list.item_selected.connect(_on_enemy_selected)
-	root.add_child(_enemy_list)
+	enemy_col.add_child(_enemy_list)
 
 	_enemy_hp_section = HBoxContainer.new()
 	_enemy_hp_section.add_theme_constant_override("separation", 8)
@@ -586,6 +605,27 @@ func _refresh_enemy_hp_bar() -> void:
 	DungeonTheme.style_hp_bar(_enemy_hp_bar, ratio)
 
 
+func _refresh_enemy_sprite() -> void:
+	if _enemy_sprite_rect == null:
+		return
+	var ce := GameSession.combat
+	if ce == null or GameSession.assets == null:
+		_enemy_sprite_rect.visible = false
+		return
+	var alive := ce.get_alive_enemies()
+	var selected := _enemy_list.get_selected_items()
+	if selected.is_empty() or selected[0] >= alive.size():
+		_enemy_sprite_rect.visible = false
+		return
+	var enemy = alive[selected[0]]
+	var tex = GameSession.assets.get_enemy_sprite(enemy.name)
+	if tex != null:
+		_enemy_sprite_rect.texture = tex
+		_enemy_sprite_rect.visible = true
+	else:
+		_enemy_sprite_rect.visible = false
+
+
 func refresh() -> void:
 	var ce := GameSession.combat
 	if ce == null:
@@ -622,6 +662,7 @@ func refresh() -> void:
 		_target_label.text = ""
 
 	_refresh_enemy_hp_bar()
+	_refresh_enemy_sprite()
 
 	var statuses: Array = GameSession.game_state.flags.get("statuses", [])
 	_status_label.text = "Statuses: %s" % (", ".join(statuses) if not statuses.is_empty() else "none")
