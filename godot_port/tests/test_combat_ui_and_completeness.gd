@@ -57,7 +57,7 @@ func test_ability_completeness_gate():
 		assert_true(atype in known_types,
 			"Ability type '%s' must have a handler in AbilitySystem" % atype)
 
-	# Verify AbilitySystem actually produces events for each type
+	# Verify AbilitySystem actually produces events for each known type
 	var rng := DeterministicRNG.new(42)
 	for atype in known_types:
 		var test_ability: Dictionary = {"type": atype, "trigger": "combat_start"}
@@ -115,6 +115,81 @@ func test_ability_completeness_gate():
 		var events := AbilitySystem.evaluate_abilities("TestEnemy", enemy_data, "combat_start", cs, rng)
 		assert_gt(events.size(), 0,
 			"AbilitySystem must handle '%s' and return events" % atype)
+
+
+## Feed every concrete ability definition from every enemy in
+## enemy_types.json through AbilitySystem and verify it returns at
+## least one event.  This catches real-data param combinations that a
+## synthetic-only test would miss (e.g. missing transform_into, unusual
+## trigger/type pairs).
+func test_ability_completeness_gate_real_enemy_defs():
+	var etd := EnemyTypesData.new()
+	etd.load()
+
+	var rng := DeterministicRNG.new(99)
+	var tested := 0
+
+	for enemy_name in etd.enemies:
+		var info: Dictionary = etd.enemies[enemy_name]
+		var abilities: Array = info.get("boss_abilities", [])
+		if abilities.is_empty():
+			continue
+
+		for ab in abilities:
+			var atype: String = ab.get("type", "")
+			if atype.is_empty():
+				continue
+
+			# Determine the trigger.  Some ability types are inherently
+			# death-triggered and may omit the "trigger" key entirely.
+			var trigger: String = ab.get("trigger", "")
+			if trigger.is_empty():
+				match atype:
+					"spawn_on_death", "transform_on_death":
+						trigger = "on_death"
+					_:
+						trigger = "combat_start"
+
+			# Ensure the ability dict carries the trigger so
+			# evaluate_abilities can match it.
+			var ab_copy: Dictionary = ab.duplicate()
+			if not ab_copy.has("trigger"):
+				ab_copy["trigger"] = trigger
+
+			# Build a combat-state snapshot that satisfies every trigger
+			# gate so the ability will fire:
+			#   combat_start  → always fires
+			#   hp_threshold  → hp_fraction well below any threshold
+			#   enemy_turn    → turn count satisfies any interval
+			#   on_death      → always fires
+			var cs: Dictionary = {
+				"combat_turn_count": 100,
+				"boss_ability_cooldowns": {},
+				"enemy_hp_fraction": 0.01,
+				"enemy_max_health": 200,
+				"enemy_health_mult": 1.0,
+				"floor": 5,
+				"num_dice": 5,
+				"dice_locked": [false, false, false, false, false],
+				"statuses": [],
+			}
+
+			var enemy_data := {"boss_abilities": [ab_copy]}
+			var events := AbilitySystem.evaluate_abilities(
+				enemy_name, enemy_data, trigger, cs, rng)
+
+			assert_gt(events.size(), 0,
+				"AbilitySystem must handle ability '%s' (trigger '%s') on enemy '%s'" % [
+					atype, trigger, enemy_name])
+
+			if events.size() > 0:
+				var ev: AbilitySystem.AbilityEvent = events[0]
+				assert_eq(ev.ability_type, atype,
+					"Event type must match for '%s' on '%s'" % [atype, enemy_name])
+
+			tested += 1
+
+	assert_gt(tested, 0, "Must have tested at least one real ability definition")
 
 
 ## Every status name inflicted by enemies must be handled by EffectSystem.
