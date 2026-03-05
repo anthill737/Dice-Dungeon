@@ -28,7 +28,6 @@ var _enemy_hp_bar: ProgressBar
 var _enemy_hp_label: Label
 var _btn_roll: Button
 var _btn_attack: Button
-var _btn_flee: Button
 var _btn_close: Button
 var _log_text: RichTextLabel
 var _dice_container: HBoxContainer
@@ -46,7 +45,6 @@ var _last_turn_count: int = -1
 var _active_tweens: Array[Tween] = []
 
 const COMBAT_ROLL_COLOR := Color(0.31, 0.80, 0.77)
-const COMBAT_FLEE_COLOR := Color(0.95, 0.61, 0.07)
 const COMBAT_ATTACK_COLOR := Color(0.91, 0.30, 0.24)
 
 
@@ -268,10 +266,6 @@ func _build_ui() -> void:
 	_btn_attack = DungeonTheme.make_styled_btn("ATTACK!", COMBAT_ATTACK_COLOR)
 	_btn_attack.pressed.connect(_on_attack)
 	btn_row.add_child(_btn_attack)
-
-	_btn_flee = DungeonTheme.make_styled_btn("Flee", COMBAT_FLEE_COLOR)
-	_btn_flee.pressed.connect(_on_flee)
-	btn_row.add_child(_btn_flee)
 
 	_btn_close = DungeonTheme.make_styled_btn("Close", DungeonTheme.TEXT_SECONDARY)
 	_btn_close.pressed.connect(func(): close_requested.emit())
@@ -656,8 +650,6 @@ func _sync_close_flee_visibility(combat_over: bool = false) -> void:
 	var pending := GameSession.is_pending_choice()
 	var active := GameSession.is_combat_active()
 	_btn_close.visible = combat_over or (not pending and not active)
-	_btn_flee.visible = pending or active
-	_btn_flee.disabled = combat_over
 
 
 # ------------------------------------------------------------------
@@ -758,31 +750,3 @@ func _on_attack() -> void:
 	refresh()
 
 
-func _on_flee() -> void:
-	if GameSession.is_pending_choice() and GameSession.combat == null:
-		var result := GameSession.attempt_flee_pending()
-		if result.get("success", false):
-			var dmg: int = int(result.get("damage", 0))
-			if dmg > 0:
-				_append_styled_log("[FLEE] Fled! Lost %d HP." % dmg)
-			else:
-				_append_styled_log("Fled safely!")
-		elif result.get("reason", "") == "boss_fight":
-			_append_styled_log(CombatGatingPolicy.flee_blocked_message())
-		else:
-			_append_styled_log("Can't escape! Enemy blocks the way!")
-		refresh()
-		return
-	if GameSession.is_combat_active():
-		var result := GameSession.flee_from_combat()
-		if result.get("success", false):
-			var dmg: int = int(result.get("damage", 0))
-			if dmg > 0:
-				_append_styled_log("[FLEE] Fled! Lost %d HP." % dmg)
-			else:
-				_append_styled_log("Fled safely!")
-		elif result.get("reason", "") == "boss_fight":
-			_append_styled_log(CombatGatingPolicy.flee_blocked_message())
-		else:
-			_append_styled_log("Can't escape! Enemy blocks the way!")
-		refresh()

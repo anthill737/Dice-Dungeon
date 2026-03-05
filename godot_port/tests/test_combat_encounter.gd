@@ -132,29 +132,6 @@ func test_E_flee_failure_stays_pending() -> void:
 	assert_false(room.combat_escaped, "room NOT escaped on failure")
 
 
-# ── flee from active combat marks escaped ────────────────────────────
-
-func test_flee_from_active_combat_marks_escaped() -> void:
-	_setup_combat_room()
-	var room := GameSession.get_current_room()
-	GameSession._check_combat_pending(room)
-	GameSession.accept_combat()
-	assert_not_null(GameSession.combat, "combat active")
-
-	# Try fleeing until success (50 % chance per attempt)
-	var fled := false
-	for i in 20:
-		var flee_result := GameSession.flee_from_combat()
-		if flee_result.get("success", false):
-			fled = true
-			break
-
-	assert_true(fled, "Fled from active combat")
-	assert_null(GameSession.combat, "CombatEngine cleared")
-	assert_true(room.combat_escaped, "room marked escaped")
-	assert_false(GameSession.is_combat_blocking(), "movement unblocked")
-
-
 # ── deterministic: combat rooms appear with fixed seeds ──────────────
 
 func test_deterministic_combat_encounter_seed_100() -> void:

@@ -392,7 +392,6 @@ func test_combat_panel_buttons_exist():
 
 	assert_not_null(panel._btn_roll, "Roll button exists")
 	assert_not_null(panel._btn_attack, "Attack button exists")
-	assert_not_null(panel._btn_flee, "Flee button exists")
 	assert_not_null(panel._btn_close, "Close button exists")
 
 	panel.queue_free()
