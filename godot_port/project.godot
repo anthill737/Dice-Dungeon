@@ -84,6 +84,11 @@ export_session_trace={
 ]
 }
 
+[gui]
+
+common/default_scroll_deadzone=0
+timers/tooltip_delay_sec=0.1
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

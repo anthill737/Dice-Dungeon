@@ -401,6 +401,136 @@ func test_minimap_compute_icon_size_static() -> void:
 
 
 # ==================================================================
+# 9) Newly generated locked miniboss — blocked before entry
+# ==================================================================
+
+func test_newly_generated_miniboss_blocks_entry() -> void:
+	var state := GameState.new()
+	var r := DeterministicRNG.new(80000)
+	var engine := ExplorationEngine.new(r, state, _rooms_db)
+	engine.start_floor(1)
+
+	# Force next mini-boss at room 1 so the very next room is a mini-boss
+	engine.floor.next_mini_boss_at = 1
+
+	# Ensure player has no Old Key
+	assert_false(state.inventory.has("Old Key"), "should start without key")
+
+	# Try to move East — should generate a miniboss room but block entry
+	var pos_before := engine.floor.current_pos
+	var room := engine.move("E")
+	assert_null(room, "move should return null for locked newly-generated miniboss")
+	assert_eq(engine.floor.current_pos, pos_before,
+		"player should NOT move into the locked room")
+
+	# The room should exist in floor.rooms (generated) but not visited
+	var mb_pos := pos_before + Vector2i(1, 0)
+	assert_true(engine.floor.rooms.has(mb_pos),
+		"room should be generated even though entry was blocked")
+	var mb_room: RoomState = engine.floor.rooms[mb_pos]
+	assert_false(mb_room.visited,
+		"room should not be marked visited")
+	assert_true(mb_room.is_mini_boss_room,
+		"room should be a mini-boss room")
+
+
+func test_newly_generated_miniboss_has_key_gate() -> void:
+	var state := GameState.new()
+	var r := DeterministicRNG.new(80001)
+	var engine := ExplorationEngine.new(r, state, _rooms_db)
+	engine.start_floor(1)
+
+	engine.floor.next_mini_boss_at = 1
+	state.inventory.append("Old Key")
+
+	var room := engine.move("E")
+	assert_null(room, "move returns null so caller can show dialog")
+	assert_eq(engine.last_move_gate, "has_key_mini_boss",
+		"last_move_gate should signal has_key_mini_boss")
+
+
+func test_newly_generated_miniboss_unlock_then_enter() -> void:
+	var state := GameState.new()
+	var r := DeterministicRNG.new(80002)
+	var engine := ExplorationEngine.new(r, state, _rooms_db)
+	engine.start_floor(1)
+
+	engine.floor.next_mini_boss_at = 1
+	state.inventory.append("Old Key")
+
+	var pos_before := engine.floor.current_pos
+	var room := engine.move("E")
+	assert_null(room, "first move blocked for dialog")
+
+	var mb_pos := pos_before + Vector2i(1, 0)
+	# Unlock
+	var ok := engine.use_old_key(mb_pos)
+	assert_true(ok, "unlock should succeed")
+	assert_false(state.inventory.has("Old Key"), "key consumed")
+
+	# Now move again — should enter the existing unvisited room
+	room = engine.move("E")
+	assert_not_null(room, "entry should succeed after unlock")
+	assert_eq(engine.floor.current_pos, mb_pos,
+		"player should be in miniboss room")
+	assert_true(room.visited,
+		"room should be marked visited after entry")
+
+
+func test_newly_generated_miniboss_reapproach_stays_unlocked() -> void:
+	var state := GameState.new()
+	var r := DeterministicRNG.new(80003)
+	var engine := ExplorationEngine.new(r, state, _rooms_db)
+	engine.start_floor(1)
+
+	engine.floor.next_mini_boss_at = 1
+	state.inventory.append("Old Key")
+
+	var pos_before := engine.floor.current_pos
+	var mb_pos := pos_before + Vector2i(1, 0)
+
+	engine.move("E")  # blocked for dialog
+	engine.use_old_key(mb_pos)
+	var room := engine.move("E")  # enter
+	assert_not_null(room)
+
+	# Move away (back west) — revisiting origin
+	var back := engine.move("W")
+	assert_not_null(back)
+
+	# Move east again — should enter without lock
+	var again := engine.move("E")
+	assert_not_null(again, "re-entry should succeed without key")
+	assert_eq(engine.floor.current_pos, mb_pos)
+
+
+# ==================================================================
+# 10) Save/load preserves unlocked-room state
+# ==================================================================
+
+func test_save_load_preserves_unlocked_rooms() -> void:
+	var state := GameState.new()
+	var r := DeterministicRNG.new(80010)
+	var engine := ExplorationEngine.new(r, state, _rooms_db)
+	engine.start_floor(1)
+
+	var mb_pos := Vector2i(5, 5)
+	engine.floor.special_rooms[mb_pos] = "mini_boss"
+	engine.floor.unlocked_rooms[mb_pos] = true
+
+	var save_data := SaveEngine.serialize(state, engine.floor)
+	var new_state := GameState.new()
+	var new_floor := FloorState.new()
+	SaveEngine.deserialize(save_data, new_state, new_floor)
+
+	assert_true(new_floor.unlocked_rooms.has(mb_pos),
+		"unlocked rooms should persist through save/load")
+	assert_true(new_floor.special_rooms.has(mb_pos),
+		"special rooms should persist through save/load")
+	assert_eq(new_floor.special_rooms[mb_pos], "mini_boss")
+
+
+# ==================================================================
 # Helpers
 # ==================================================================
 

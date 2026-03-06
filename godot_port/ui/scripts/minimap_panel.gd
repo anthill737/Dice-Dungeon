@@ -52,6 +52,7 @@ var _btn_zoom_in: Button
 var _btn_zoom_out: Button
 var _btn_center: Button
 var _last_floor_index: int = -1
+var _legend_panel: PanelContainer
 
 ## Tooltip state
 var _tooltip_label: Label
@@ -113,25 +114,70 @@ func _build_ui() -> void:
 	_tooltip_label.add_theme_stylebox_override("normal", tip_style)
 	_canvas.add_child(_tooltip_label)
 
-	var btn_row := HBoxContainer.new()
-	btn_row.add_theme_constant_override("separation", 4)
-	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_child(btn_row)
+	var controls_row := HBoxContainer.new()
+	controls_row.add_theme_constant_override("separation", 4)
+	controls_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(controls_row)
 
 	_btn_zoom_out = DungeonTheme.make_styled_btn("−", DungeonTheme.TEXT_SECONDARY, 28)
 	_btn_zoom_out.custom_minimum_size = Vector2(28, 24)
 	_btn_zoom_out.pressed.connect(_zoom_out)
-	btn_row.add_child(_btn_zoom_out)
+	controls_row.add_child(_btn_zoom_out)
 
 	_btn_center = DungeonTheme.make_styled_btn("◎", DungeonTheme.TEXT_GOLD, 28)
 	_btn_center.custom_minimum_size = Vector2(28, 24)
 	_btn_center.pressed.connect(_center_on_player)
-	btn_row.add_child(_btn_center)
+	controls_row.add_child(_btn_center)
 
 	_btn_zoom_in = DungeonTheme.make_styled_btn("+", DungeonTheme.TEXT_SECONDARY, 28)
 	_btn_zoom_in.custom_minimum_size = Vector2(28, 24)
 	_btn_zoom_in.pressed.connect(_zoom_in)
-	btn_row.add_child(_btn_zoom_in)
+	controls_row.add_child(_btn_zoom_in)
+
+	var legend_btn := DungeonTheme.make_styled_btn("?", DungeonTheme.TEXT_SECONDARY, 24)
+	legend_btn.custom_minimum_size = Vector2(24, 24)
+	legend_btn.tooltip_text = "Toggle Legend"
+	legend_btn.pressed.connect(_toggle_legend)
+	controls_row.add_child(legend_btn)
+
+	_legend_panel = PanelContainer.new()
+	_legend_panel.visible = false
+	var legend_style := StyleBoxFlat.new()
+	legend_style.bg_color = Color(0.06, 0.04, 0.08, 0.95)
+	legend_style.set_corner_radius_all(4)
+	legend_style.set_content_margin_all(6)
+	_legend_panel.add_theme_stylebox_override("panel", legend_style)
+	vbox.add_child(_legend_panel)
+
+	var legend_grid := GridContainer.new()
+	legend_grid.columns = 2
+	legend_grid.add_theme_constant_override("h_separation", 8)
+	legend_grid.add_theme_constant_override("v_separation", 2)
+	_legend_panel.add_child(legend_grid)
+
+	_add_legend_entry(legend_grid, COLOR_CURRENT, "Current Room")
+	_add_legend_entry(legend_grid, COLOR_VISITED, "Visited")
+	_add_legend_entry(legend_grid, COLOR_ICON_LOCKED, "Locked (Boss/Elite)")
+	_add_legend_entry(legend_grid, COLOR_ICON_ACTIVE, "Boss/Elite Active")
+	_add_legend_entry(legend_grid, COLOR_ICON_GREEN, "Cleared / Stairs / Store")
+	_add_legend_entry(legend_grid, COLOR_BLOCKED, "Blocked Exit")
+
+
+func _toggle_legend() -> void:
+	if _legend_panel != null:
+		_legend_panel.visible = not _legend_panel.visible
+
+
+func _add_legend_entry(grid: GridContainer, color: Color, text: String) -> void:
+	var swatch := ColorRect.new()
+	swatch.custom_minimum_size = Vector2(12, 12)
+	swatch.color = color
+	grid.add_child(swatch)
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 10)
+	lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
+	grid.add_child(lbl)
 
 
 func _on_state_changed() -> void:

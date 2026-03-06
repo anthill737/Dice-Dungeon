@@ -1,5 +1,8 @@
 extends Node
 ## Autoload singleton holding core engines + shared state for all UI scenes.
+
+const _ScoreResolver := preload("res://game/core/combat/score_resolver.gd")
+const _GameOverResolver := preload("res://game/services/game_over_resolver.gd")
 ## UI scripts read/write game state exclusively through this node.
 ##
 ## Combat lifecycle
@@ -56,6 +59,7 @@ signal combat_ended()
 signal combat_pending_changed()
 signal log_message(msg: String)
 signal locked_room_prompt(gate_type: String, direction: String)
+signal game_over(summary: RefCounted)
 
 
 func _ready() -> void:
@@ -199,7 +203,7 @@ func move_direction(direction: String) -> RoomState:
 		trace.record("move_attempted", {"dir": direction, "success": false, "reason": "combat_blocking"})
 		return null
 
-	# Check locked room gating before attempting move
+	# Check locked room gating before attempting move (for existing rooms)
 	var delta := RoomState.dir_delta(direction)
 	var new_pos: Vector2i = exploration.floor.current_pos + delta
 	var gate := exploration.check_room_gating(new_pos)
@@ -217,6 +221,20 @@ func move_direction(direction: String) -> RoomState:
 	_emit_logs(exploration.logs)
 
 	if room == null:
+		# Check if move() blocked because a newly generated room is locked.
+		# This handles the case where the room didn't exist before move() but
+		# was generated as a mini-boss/boss room during the call.
+		var post_gate := exploration.last_move_gate
+		if post_gate == "has_key_mini_boss" or post_gate == "has_key_boss":
+			if post_gate == "has_key_mini_boss":
+				log_message.emit("⚡ A reinforced door blocks your path! ⚡")
+				log_message.emit("The door is sealed with an ornate lock.")
+			else:
+				log_message.emit("☠ An enormous sealed door looms before you! ☠")
+				log_message.emit("Three keyhole slots glow faintly in the door.")
+			locked_room_prompt.emit(post_gate, direction)
+			state_changed.emit()
+			return null
 		trace.record("move_attempted", {"dir": direction, "success": false, "reason": "blocked"})
 	else:
 		_drain_ground_to_inventory()
@@ -443,6 +461,15 @@ func _end_combat_internal(victory: bool) -> void:
 		trace.record_milestone("combat_ended", {"result": "defeat"}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null, _ce_room_name))
 
 	if victory and room != null:
+		# Score award — Python parity
+		if room.is_boss_room:
+			game_state.run_score += _ScoreResolver.score_boss_kill(game_state.floor)
+			game_state.stats["bosses_defeated"] = int(game_state.stats.get("bosses_defeated", 0)) + 1
+		elif room.is_mini_boss_room:
+			game_state.run_score += _ScoreResolver.score_miniboss_kill(game_state.floor)
+		else:
+			game_state.run_score += _ScoreResolver.score_normal_kill(game_state.floor)
+		game_state.stats["enemies_defeated"] = int(game_state.stats.get("enemies_defeated", 0)) + 1
 		exploration.on_combat_clear(room)
 		_emit_logs(exploration.logs)
 		_drain_ground_to_inventory()
@@ -526,6 +553,40 @@ func _calc_enemy_dice(floor_num: int, is_mini_boss: bool, is_boss: bool) -> int:
 		return mini(4 + (floor_num / 2), 7)
 	else:
 		return mini(3 + (floor_num / 2), 6)
+
+
+# -------------------------------------------------------------------
+# Game Over / Run End
+# -------------------------------------------------------------------
+
+func check_game_over() -> void:
+	if game_state == null or not _GameOverResolver.is_player_dead(game_state):
+		return
+	game_state.in_combat = false
+	var summary = _GameOverResolver.build_summary(
+		game_state,
+		get_floor_state(),
+		_GameOverResolver.EndReason.DEATH)
+	game_state.flags["statuses"] = []
+	trace.record_milestone("game_over", {
+		"reason": "death",
+		"final_score": summary.final_score,
+	}, SessionTrace.make_snapshot(game_state))
+	game_over.emit(summary)
+
+
+func trigger_victory() -> void:
+	if game_state == null:
+		return
+	game_state.run_score += _ScoreResolver.score_victory()
+	var summary = _GameOverResolver.build_summary(
+		game_state,
+		get_floor_state(),
+		_GameOverResolver.EndReason.VICTORY)
+	trace.record_milestone("victory", {
+		"final_score": summary.final_score,
+	}, SessionTrace.make_snapshot(game_state))
+	game_over.emit(summary)
 
 
 # -------------------------------------------------------------------
@@ -629,6 +690,7 @@ func descend_stairs() -> RoomState:
 	var room := exploration.descend_floor()
 	_emit_logs(exploration.logs)
 	if room != null:
+		game_state.run_score += _ScoreResolver.score_floor_descent(exploration.floor.floor_index)
 		trace.record("floor_descended", {
 			"new_floor": exploration.floor.floor_index,
 		})

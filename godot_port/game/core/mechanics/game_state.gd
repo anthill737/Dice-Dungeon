@@ -54,6 +54,9 @@ var purchased_upgrades_this_floor: Dictionary = {}
 var num_dice: int = 3
 var max_dice: int = 5
 
+## Run score — mirrors Python run_score
+var run_score: int = 0
+
 ## Stats tracking
 var stats: Dictionary = {
 	"items_used": 0,
@@ -64,6 +67,9 @@ var stats: Dictionary = {
 	"gold_found": 0,
 	"gold_spent": 0,
 	"containers_searched": 0,
+	"enemies_defeated": 0,
+	"bosses_defeated": 0,
+	"chests_opened": 0,
 }
 
 ## Combat state
@@ -126,6 +132,7 @@ func reset() -> void:
 	purchased_upgrades_this_floor = {}
 	num_dice = 3
 	max_dice = 5
+	run_score = 0
 	stats = {
 		"items_used": 0,
 		"potions_used": 0,
@@ -135,6 +142,9 @@ func reset() -> void:
 		"gold_found": 0,
 		"gold_spent": 0,
 		"containers_searched": 0,
+		"enemies_defeated": 0,
+		"bosses_defeated": 0,
+		"chests_opened": 0,
 	}
 	in_combat = false
 	flags = {"disarm_token": 0, "escape_token": 0, "statuses": []}

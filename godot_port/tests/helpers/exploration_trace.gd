@@ -28,16 +28,31 @@ static func generate(seed_val: int, moves: Array, floor_num: int = 1) -> Array:
 
 		var room := engine.move(direction)
 		if room == null:
-			steps.append(_blocked_record(i + 1, direction, engine))
-		else:
-			var is_revisit := engine.floor.rooms_explored_on_floor == 0 or room.visited
-			## Actually detect revisit: if the room was already visited before this move
-			## move() sets visited=true during _on_first_visit, so for new rooms
-			## rooms_explored just incremented. We check if this was a new room by
-			## seeing if rooms_explored_on_floor was incremented for this step.
-			## A simpler approach: new rooms have their step index not yet recorded.
-			var revisit := _is_revisit(engine, room)
-			steps.append(_room_record(room, engine.floor.current_pos, i + 1, direction, revisit))
+			# If move() blocked because of a newly generated locked room,
+			# the Python trace enters the room anyway (it doesn't simulate lock
+			# dialogs). To match the Python trace's RNG ordering we must also
+			# enter the room: unlock it, then move in.
+			var gate := engine.last_move_gate
+			if gate == "has_key_mini_boss" or gate == "locked_mini_boss":
+				var delta := RoomState.dir_delta(direction)
+				var pos := engine.floor.current_pos + delta
+				if engine.floor.rooms.has(pos) and not engine.floor.rooms[pos].visited:
+					# Force-unlock and enter for trace parity
+					engine.floor.unlocked_rooms[pos] = true
+					room = engine.move(direction)
+			elif gate == "has_key_boss" or gate == "locked_boss":
+				var delta := RoomState.dir_delta(direction)
+				var pos := engine.floor.current_pos + delta
+				if engine.floor.rooms.has(pos) and not engine.floor.rooms[pos].visited:
+					engine.floor.unlocked_rooms[pos] = true
+					room = engine.move(direction)
+
+			if room == null:
+				steps.append(_blocked_record(i + 1, direction, engine))
+				continue
+
+		var revisit := _is_revisit(engine, room)
+		steps.append(_room_record(room, engine.floor.current_pos, i + 1, direction, revisit))
 
 	return steps
 

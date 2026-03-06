@@ -468,23 +468,28 @@ func test_boss_tracked_in_special_rooms():
 
 func test_boss_room_gating_blocks_entry():
 	## Entry to boss room should be blocked without 3 fragments.
+	## With the locked-room fix, newly generated boss rooms block entry
+	## immediately — move() returns null and the room exists unvisited.
 	var engine := _make_engine(38000)
 	engine.start_floor(1)
 	engine.floor.next_boss_at = 2
 	var boss_pos: Vector2i = Vector2i.ZERO
 	for i in 15:
 		var room := _force_move(engine, "E")
+		# Check if a boss room was generated but blocked
+		if engine.floor.boss_spawned:
+			for pos in engine.floor.special_rooms:
+				if engine.floor.special_rooms[pos] == "boss":
+					boss_pos = pos
+					break
+			break
 		if room != null and room.is_boss_room:
 			boss_pos = room.coords()
 			break
-	if engine.floor.boss_spawned:
-		## Move away from boss, then try to re-enter
-		## The boss room should be gated
+	if engine.floor.boss_spawned and boss_pos != Vector2i.ZERO:
 		assert_true(engine.floor.special_rooms.has(boss_pos),
 			"boss room should be in special_rooms")
 		var gate := engine.check_room_gating(boss_pos)
-		## First time entering a new boss room via move() doesn't trigger gating
-		## because special_rooms is set during _generate_room. But re-entry should.
 		if not engine.floor.unlocked_rooms.has(boss_pos):
 			assert_eq(gate, "locked_boss",
 				"boss room should be gated without fragments")

@@ -1,5 +1,7 @@
 extends Control
 ## Explorer Scene — core gameplay screen (polished UI).
+
+const _GameOverResolver := preload("res://game/services/game_over_resolver.gd")
 ## Layout: TopBar | Center (room+combat) | Right Sidebar (minimap+actions) | Bottom (log).
 ## Hosts embedded overlay panels via MenuOverlayManager for Combat, Inventory,
 ## Store, SaveLoad, CharacterStatus, LoreCodex, Settings, Pause.
@@ -125,6 +127,11 @@ func _exit_tree() -> void:
 		GameSession.combat_pending_changed.disconnect(_refresh_ui)
 	if GameSession.locked_room_prompt.is_connected(_on_locked_room_prompt):
 		GameSession.locked_room_prompt.disconnect(_on_locked_room_prompt)
+	if GameSession.game_over.is_connected(_on_game_over):
+		GameSession.game_over.disconnect(_on_game_over)
+	if is_instance_valid(_game_over_overlay):
+		_game_over_overlay.queue_free()
+		_game_over_overlay = null
 
 
 func _consume_pending_run_state() -> void:
@@ -646,6 +653,7 @@ func _connect_signals() -> void:
 	GameSession.combat_ended.connect(_on_combat_ended)
 	GameSession.combat_pending_changed.connect(_refresh_ui)
 	GameSession.locked_room_prompt.connect(_on_locked_room_prompt)
+	GameSession.game_over.connect(_on_game_over)
 
 	# Panel close_requested signals → close via overlay manager
 	if _combat_panel.has_signal("close_requested"):
@@ -681,6 +689,7 @@ func _on_combat_started() -> void:
 func _on_combat_ended() -> void:
 	_overlay_manager.close_menu("combat")
 	_refresh_ui()
+	GameSession.check_game_over()
 
 
 func _is_combat_locking() -> bool:
@@ -982,7 +991,9 @@ func _on_attack() -> void:
 
 func _on_flee() -> void:
 	if GameSession.is_pending_choice():
-		GameSession.attempt_flee_pending()
+		var result := GameSession.attempt_flee_pending()
+		if result.get("player_died", false):
+			GameSession.check_game_over()
 		return
 
 
@@ -1118,6 +1129,129 @@ func _show_locked_room_dialog(title: String, message: String) -> void:
 		_locked_room_dialog = null
 	)
 	btn_row.add_child(btn_back)
+
+	var spacer_bottom := Control.new()
+	spacer_bottom.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(spacer_bottom)
+
+
+# -------------------------------------------------------------------
+# Game Over screen — mirrors Python game_over() / show_victory()
+# -------------------------------------------------------------------
+
+var _game_over_overlay: Control
+
+func _on_game_over(summary) -> void:
+	_overlay_manager.close_all()
+	_show_game_over_screen(summary)
+
+
+func _show_game_over_screen(summary) -> void:
+	if is_instance_valid(_game_over_overlay):
+		_game_over_overlay.queue_free()
+
+	var overlay := ColorRect.new()
+	_game_over_overlay = overlay
+	overlay.color = Color(0.0, 0.0, 0.0, 0.75)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(overlay)
+
+	var panel := PanelContainer.new()
+	var style := DungeonTheme.make_panel_bg(DungeonTheme.BG_PRIMARY, DungeonTheme.BORDER_GOLD)
+	style.set_content_margin_all(40)
+	panel.add_theme_stylebox_override("panel", style)
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.anchor_left = 0.2
+	panel.anchor_top = 0.1
+	panel.anchor_right = 0.8
+	panel.anchor_bottom = 0.9
+	overlay.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+	panel.add_child(vbox)
+
+	var spacer_top := Control.new()
+	spacer_top.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(spacer_top)
+
+	var is_victory := summary.end_reason == _GameOverResolver.EndReason.VICTORY
+	var title_text := "★ VICTORY! ★" if is_victory else "☠ GAME OVER ☠"
+	var title_color := DungeonTheme.TEXT_GOLD if is_victory else DungeonTheme.TEXT_RED
+
+	var title := Label.new()
+	title.text = title_text
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", title_color)
+	vbox.add_child(title)
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	var stats_vbox := VBoxContainer.new()
+	stats_vbox.add_theme_constant_override("separation", 6)
+	vbox.add_child(stats_vbox)
+
+	var stat_lines: Array = [
+		["Floor Reached", str(summary.floor_reached)],
+		["Rooms Explored", str(summary.rooms_explored)],
+		["Enemies Defeated", str(summary.enemies_defeated)],
+		["Bosses Defeated", str(summary.bosses_defeated)],
+		["Gold Earned", str(summary.gold_earned)],
+		["Items Found", str(summary.items_found)],
+	]
+
+	for line in stat_lines:
+		var row := HBoxContainer.new()
+		stats_vbox.add_child(row)
+		var name_label := Label.new()
+		name_label.text = line[0]
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
+		name_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
+		row.add_child(name_label)
+		var val_label := Label.new()
+		val_label.text = line[1]
+		val_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
+		val_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
+		row.add_child(val_label)
+
+	var sep2 := HSeparator.new()
+	vbox.add_child(sep2)
+
+	if is_victory and summary.victory_bonus > 0:
+		var bonus_label := Label.new()
+		bonus_label.text = "Victory Bonus: +%d" % summary.victory_bonus
+		bonus_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		bonus_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
+		bonus_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GREEN)
+		vbox.add_child(bonus_label)
+
+	var score_label := Label.new()
+	score_label.text = "Final Score: %d" % summary.final_score
+	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	score_label.add_theme_font_size_override("font_size", 22)
+	score_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
+	vbox.add_child(score_label)
+
+	var spacer_mid := Control.new()
+	spacer_mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(spacer_mid)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 24)
+	vbox.add_child(btn_row)
+
+	var btn_menu := DungeonTheme.make_styled_btn("Return to Menu", DungeonTheme.BTN_SECONDARY, 200)
+	btn_menu.custom_minimum_size.y = 44
+	btn_menu.pressed.connect(func():
+		overlay.queue_free()
+		_game_over_overlay = null
+		_quit_to_main_menu()
+	)
+	btn_row.add_child(btn_menu)
 
 	var spacer_bottom := Control.new()
 	spacer_bottom.size_flags_vertical = Control.SIZE_EXPAND_FILL
