@@ -63,7 +63,7 @@ static func serialize(game: GameState, floor_st: FloorState, slot_num: int = 1, 
 		"max_inventory": game.max_inventory,
 		"armor": game.armor,
 		"floor": game.floor,
-		"run_score": 0,
+		"run_score": game.run_score,
 		"total_gold_earned": game.total_gold_earned,
 		"rooms_explored": floor_st.rooms_explored,
 		"enemies_killed": 0,
@@ -152,6 +152,7 @@ static func deserialize(save_data: Dictionary, game: GameState, floor_st: FloorS
 
 	game.max_inventory = int(save_data.get("max_inventory", 20))
 	game.armor = int(save_data.get("armor", 0))
+	game.run_score = int(save_data.get("run_score", 0))
 
 	game.flags = _dict_deep_copy(save_data.get("flags", {"disarm_token": 0, "escape_token": 0, "statuses": []}))
 	game.temp_effects = _dict_deep_copy(save_data.get("temp_effects", {}))

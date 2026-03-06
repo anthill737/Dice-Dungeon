@@ -4,6 +4,8 @@ extends RefCounted
 ## Faithful port of Python explorer/navigation.py.
 ## RNG call ordering matches Python exactly.
 
+const _AccessResolver := preload("res://game/core/exploration/room_access_resolver.gd")
+
 var rng: RNG
 var state: GameState
 var floor: FloorState
@@ -12,6 +14,9 @@ var container_db: Dictionary = {}
 var mechanics: MechanicsEngine
 var logs: Array[String] = []
 var last_move_was_revisit: bool = false
+## Set by move() when a newly generated room triggers gating.
+## Callers check this after move() returns null to decide if a dialog is needed.
+var last_move_gate: String = ""
 
 const DIRS := ["N", "S", "E", "W"]
 
@@ -149,34 +154,17 @@ func can_move(direction: String) -> bool:
 
 
 ## Check whether a locked special room at pos can be entered.
-## Returns "" if entry is allowed, otherwise a reason string.
-## "has_key_mini_boss" means the player has an Old Key and can choose to use it.
-## "has_key_boss" means the player has 3 fragments and can choose to use them.
+## Returns "" if entry is allowed, otherwise a gate_type string.
+## Delegates to RoomAccessResolver for the actual logic.
 func check_room_gating(pos: Vector2i) -> String:
-	if not floor.special_rooms.has(pos):
-		return ""
-	if floor.unlocked_rooms.has(pos):
-		return ""
-	var room_type: String = floor.special_rooms[pos]
-	if room_type == "mini_boss":
-		if state.inventory.has("Old Key"):
-			return "has_key_mini_boss"
-		else:
-			return "locked_mini_boss"
-	elif room_type == "boss":
-		if floor.key_fragments >= 3:
-			return "has_key_boss"
-		else:
-			return "locked_boss"
-	return ""
+	var ac := _AccessResolver.check_access(pos, floor, state)
+	return ac.gate_type
 
 
 ## Unlock a mini-boss room by consuming an Old Key. Returns true on success.
 func use_old_key(pos: Vector2i) -> bool:
-	if not state.inventory.has("Old Key"):
+	if not _AccessResolver.unlock_mini_boss(pos, floor, state):
 		return false
-	state.inventory.erase("Old Key")
-	floor.unlocked_rooms[pos] = true
 	logs.append("[KEY USED] The Old Key turns in the lock with a satisfying click!")
 	logs.append("The elite room door swings open!")
 	return true
@@ -184,16 +172,15 @@ func use_old_key(pos: Vector2i) -> bool:
 
 ## Unlock a boss room by consuming 3 key fragments. Returns true on success.
 func use_boss_key(pos: Vector2i) -> bool:
-	if floor.key_fragments < 3:
+	if not _AccessResolver.unlock_boss(pos, floor):
 		return false
-	floor.key_fragments = 0
-	floor.unlocked_rooms[pos] = true
 	logs.append("The 3 fragments merge into a complete key!")
 	logs.append("The massive boss door grinds open!")
 	return true
 
 
 func move(direction: String) -> RoomState:
+	last_move_gate = ""
 	if not can_move(direction):
 		return null
 
@@ -211,20 +198,40 @@ func move(direction: String) -> RoomState:
 		logs.append("You need 3 key fragments. You have %d." % floor.key_fragments)
 		return null
 	elif gate == "has_key_mini_boss" or gate == "has_key_boss":
-		# Caller (GameSession) must handle the dialog
+		last_move_gate = gate
 		return null
 
 	# Revisiting existing room — Python handles this in explore_direction
 	if floor.has_room_at(new_pos):
-		last_move_was_revisit = true
 		var existing: RoomState = floor.rooms[new_pos]
+
+		if existing.visited:
+			# Normal revisit — Python does NOT make RNG calls
+			last_move_was_revisit = true
+			floor.current_pos = new_pos
+			logs.append("==================================================")
+			logs.append("Entered: %s" % existing.data.get("name", "Room"))
+			var revisit_flavor: String = existing.data.get("flavor", "")
+			if not revisit_flavor.is_empty():
+				logs.append(revisit_flavor)
+			return existing
+
+		# Room was generated but not entered (was locked, now unlocked).
+		# Process as first visit — Python _complete_room_entry path.
+		last_move_was_revisit = false
 		floor.current_pos = new_pos
-		# Python does NOT make RNG calls when revisiting
-		logs.append("==================================================")
-		logs.append("Entered: %s" % existing.data.get("name", "Room"))
-		var revisit_flavor: String = existing.data.get("flavor", "")
-		if not revisit_flavor.is_empty():
-			logs.append(revisit_flavor)
+		floor.rooms_explored += 1
+
+		if state.rest_cooldown > 0:
+			state.rest_cooldown -= 1
+
+		if floor.floor_index == 1 and floor.rooms_explored <= 3:
+			floor.starter_rooms[new_pos] = true
+
+		if floor.starter_rooms.has(new_pos):
+			existing.has_combat = false
+
+		_on_first_visit(existing)
 		return existing
 
 	last_move_was_revisit = false
@@ -234,6 +241,21 @@ func move(direction: String) -> RoomState:
 	# Generate room (miniboss/boss checks, room selection, exits, combat roll)
 	var room := _generate_room(new_pos, direction)
 	floor.rooms[new_pos] = room
+
+	## Python: after generation, special_rooms may be set. Check gating on the
+	## newly generated room BEFORE allowing entry — mirrors Python enter_room()
+	## lock check that fires after the room is created but before entry completes.
+	var post_gate := check_room_gating(new_pos)
+	if post_gate != "":
+		last_move_gate = post_gate
+		if post_gate == "locked_mini_boss":
+			logs.append("⚡ A locked door blocks your path!")
+			logs.append("You need an Old Key to proceed.")
+		elif post_gate == "locked_boss":
+			logs.append("☠ A sealed boss door blocks your path!")
+			logs.append("You need 3 key fragments. You have %d." % floor.key_fragments)
+		return null
+
 	floor.current_pos = new_pos
 
 	# Python _complete_room_entry: is_first_visit = not room.visited (True for new rooms)

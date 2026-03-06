@@ -17,6 +17,7 @@ var _sell_search: LineEdit
 var _qty_label: Label
 var _qty_spinbox: SpinBox
 var _qty_container: HBoxContainer
+var _comparison_label: RichTextLabel
 
 var _store_items: Array = []
 var _sell_items: Array = []
@@ -112,9 +113,20 @@ func _build_ui() -> void:
 
 	_info_label = Label.new()
 	_info_label.text = ""
+	_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_info_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
 	_info_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
 	root.add_child(_info_label)
+
+	_comparison_label = RichTextLabel.new()
+	_comparison_label.bbcode_enabled = true
+	_comparison_label.fit_content = true
+	_comparison_label.scroll_active = false
+	_comparison_label.custom_minimum_size = Vector2(0, 0)
+	_comparison_label.add_theme_font_size_override("normal_font_size", DungeonTheme.FONT_SMALL)
+	_comparison_label.add_theme_color_override("default_color", DungeonTheme.TEXT_BONE)
+	_comparison_label.visible = false
+	root.add_child(_comparison_label)
 
 	# Quantity selector row
 	_qty_container = HBoxContainer.new()
@@ -258,11 +270,14 @@ func _on_buy_item_selected(display_idx: int) -> void:
 
 	_qty_container.visible = false
 	_info_label.text = "%s — %d gold" % [item_name, price]
+	_show_equipment_comparison(item_name, item_def)
 
 
 func _on_sell_item_selected(display_idx: int) -> void:
 	_buy_list.deselect_all()
 	_active_mode = "sell"
+	if _comparison_label != null:
+		_comparison_label.visible = false
 	if display_idx < 0 or display_idx >= _filtered_sell_indices.size():
 		_qty_container.visible = false
 		return
@@ -304,6 +319,71 @@ func _on_qty_changed(_value: float) -> void:
 		var price: int = int(entry["price"])
 		var total: int = price * int(_qty_spinbox.value)
 		_info_label.text = "%s — %d × %d = %d gold" % [entry["name"], int(_qty_spinbox.value), price, total]
+
+
+func _show_equipment_comparison(item_name: String, item_def: Dictionary) -> void:
+	if _comparison_label == null:
+		return
+	var item_type: String = item_def.get("type", "")
+	if item_type != "equipment":
+		_comparison_label.visible = false
+		return
+
+	var gs := GameSession.game_state
+	if gs == null:
+		_comparison_label.visible = false
+		return
+
+	var slot: String = item_def.get("slot", "")
+	if slot.is_empty():
+		for s in ["weapon", "armor", "accessory"]:
+			if item_def.has("damage_bonus") and s == "weapon":
+				slot = "weapon"
+				break
+			elif item_def.has("armor_bonus") and s == "armor":
+				slot = "armor"
+				break
+		if slot.is_empty():
+			slot = "accessory"
+
+	var current_name: String = gs.equipped_items.get(slot, "")
+	if current_name.is_empty():
+		_comparison_label.text = "[color=#aaaaaa]Slot: %s — (empty)[/color]\n%s" % [
+			slot.capitalize(), TooltipFormatter.format(item_name, item_def)]
+		_comparison_label.visible = true
+		return
+
+	var current_def: Dictionary = GameSession.items_db.get(current_name, {})
+	var lines: PackedStringArray = []
+	lines.append("[color=#ffd700]%s vs %s[/color]" % [item_name, current_name])
+
+	var stats := ["damage_bonus", "crit_bonus", "armor_bonus", "extra_rolls", "max_hp_bonus", "shield"]
+	var labels := {"damage_bonus": "Damage", "crit_bonus": "Crit", "armor_bonus": "Defense",
+		"extra_rolls": "Rerolls", "max_hp_bonus": "Max HP", "shield": "Shield"}
+
+	for stat in stats:
+		var new_val: float = float(item_def.get(stat, 0))
+		var old_val: float = float(current_def.get(stat, 0))
+		if new_val == 0.0 and old_val == 0.0:
+			continue
+		var diff := new_val - old_val
+		var label: String = labels.get(stat, stat)
+		var diff_str := ""
+		if stat == "crit_bonus":
+			new_val *= 100.0
+			old_val *= 100.0
+			diff *= 100.0
+			label += " %%"
+		if diff > 0:
+			diff_str = "[color=#00ff00]+%.0f[/color]" % diff
+		elif diff < 0:
+			diff_str = "[color=#ff4444]%.0f[/color]" % diff
+		else:
+			diff_str = "[color=#888888]0[/color]"
+		lines.append("  %s: %.0f → %.0f (%s)" % [label, old_val, new_val, diff_str])
+
+	_comparison_label.text = "\n".join(lines)
+	_comparison_label.visible = true
 
 
 func _on_buy() -> void:

@@ -8,6 +8,10 @@ extends RefCounted
 ##   3. Snapshot before save
 ##   4. Serialize via SaveEngine
 ##   5. Deserialize back
+##
+## NOTE: Uses _move_or_force_unlock() to bypass locked-room gating
+## in the same way ExplorationTrace does — see that file's header
+## comment for the full rationale on trace-mode lock bypass.
 ##   6. Snapshot after load
 ##   7. Continue exploration for remaining steps
 ##   8. Snapshot at end
@@ -47,7 +51,7 @@ static func generate(
 		var direction: String = moves[i].strip_edges().to_upper()
 		if direction.is_empty():
 			continue
-		engine.move(direction)
+		_move_or_force_unlock(engine, direction)
 		steps_done += 1
 
 	# Execute inventory actions before save
@@ -107,7 +111,7 @@ static func generate(
 		var direction: String = moves[i].strip_edges().to_upper()
 		if direction.is_empty():
 			continue
-		load_engine.move(direction)
+		_move_or_force_unlock(load_engine, direction)
 
 	# Snapshot at end
 	var snapshot_end := _make_snapshot(load_state, load_engine.floor)
@@ -120,6 +124,22 @@ static func generate(
 		"snapshot_after_load": snapshot_after_load,
 		"snapshot_end": snapshot_end,
 	}
+
+
+## Force-unlock locked rooms when move() returns null due to gating.
+## Python trace enters these rooms directly; this keeps parity.
+static func _move_or_force_unlock(engine: ExplorationEngine, direction: String) -> void:
+	var room := engine.move(direction)
+	if room != null:
+		return
+	var gate := engine.last_move_gate
+	if gate.is_empty():
+		return
+	var delta := RoomState.dir_delta(direction)
+	var pos := engine.floor.current_pos + delta
+	if engine.floor.rooms.has(pos) and not engine.floor.rooms[pos].visited:
+		engine.floor.unlocked_rooms[pos] = true
+		engine.move(direction)
 
 
 static func _make_snapshot(state: GameState, floor_st: FloorState) -> Dictionary:

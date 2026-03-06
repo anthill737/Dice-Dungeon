@@ -16,6 +16,8 @@ var _search_edit: LineEdit
 var _no_entries_label: Label
 
 var _filtered_entries: Array = []
+var _counts_label: Label
+var _seen_entry_ids: Dictionary = {}
 
 
 func _ready() -> void:
@@ -83,6 +85,12 @@ func _build_ui() -> void:
 	_no_entries_label.add_theme_color_override("font_color", DungeonTheme.TEXT_DIM)
 	_no_entries_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
 	left_box.add_child(_no_entries_label)
+
+	_counts_label = Label.new()
+	_counts_label.text = ""
+	_counts_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	_counts_label.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
+	left_box.add_child(_counts_label)
 
 	# Right pane — detail view
 	var right_box := VBoxContainer.new()
@@ -176,19 +184,37 @@ func _populate_list() -> void:
 	_no_entries_label.visible = _filtered_entries.is_empty()
 	_entry_list.visible = not _filtered_entries.is_empty()
 
+	var total_discovered := 0
+	if GameSession.lore_engine != null:
+		total_discovered = GameSession.lore_engine.get_codex().size()
+	_counts_label.text = "Discovered: %d | Showing: %d" % [total_discovered, _filtered_entries.size()]
+
 	for entry in _filtered_entries:
 		var cat_display: String = LoreEngine.CATEGORY_DISPLAY.get(entry.get("type", ""), "")
 		var uid = entry.get("unique_id", "")
-		var line := "%s #%s" % [entry.get("title", "Unknown"), str(uid)]
+		var entry_key := str(entry.get("item_key", uid))
+		var is_new := not _seen_entry_ids.has(entry_key)
+		var prefix := "★ " if is_new else ""
+		var line := "%s%s #%s" % [prefix, entry.get("title", "Unknown"), str(uid)]
 		if not cat_display.is_empty():
 			line += "  [%s]" % cat_display
+		var idx := _entry_list.item_count
 		_entry_list.add_item(line)
+		if is_new:
+			_entry_list.set_item_custom_fg_color(idx, DungeonTheme.TEXT_GOLD)
 
 
 func _on_entry_selected(idx: int) -> void:
 	if idx < 0 or idx >= _filtered_entries.size():
 		return
 	var entry: Dictionary = _filtered_entries[idx]
+	var entry_key := str(entry.get("item_key", entry.get("unique_id", "")))
+	if not _seen_entry_ids.has(entry_key):
+		_seen_entry_ids[entry_key] = true
+		_entry_list.set_item_custom_fg_color(idx, DungeonTheme.TEXT_BONE)
+		var cur_text: String = _entry_list.get_item_text(idx)
+		if cur_text.begins_with("★ "):
+			_entry_list.set_item_text(idx, cur_text.substr(2))
 	_detail_title.text = "%s #%s" % [entry.get("title", ""), str(entry.get("unique_id", ""))]
 	_detail_subtitle.text = entry.get("subtitle", "")
 	_detail_floor.text = "Discovered on Floor %s" % str(entry.get("floor_found", "?"))
