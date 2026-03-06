@@ -22,8 +22,8 @@ def load_rooms(json_path: str) -> List[Dict[str, Any]]:
 
 def pick_room_for_floor(rooms: List[Dict[str, Any]], floor: int, rng=None) -> Dict[str, Any]:
     """
-    Map floor → difficulty → random room.
-    1–3: Easy, 4–6: Medium, 7–9: Hard, 10–12: Elite, 13+: Elite with Boss chance
+    Map floor -> difficulty -> random room.
+    1-3: Easy, 4-6: Medium, 7-9: Hard, 10-12: Elite, 13+: Elite with Boss chance
     
     Reduces combat encounters by ~20% by preferring non-combat rooms when available.
     
