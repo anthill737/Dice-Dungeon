@@ -112,8 +112,8 @@ static func serialize(game: GameState, floor_st: FloorState, slot_num: int = 1, 
 		},
 		"stats": game.stats.duplicate(true),
 		"purchased_upgrades_this_floor": purchased_list,
-		"in_starter_area": false,
-		"starter_chests_opened": [],
+		"in_starter_area": game.in_starter_area,
+		"starter_chests_opened": game.threshold_chests_opened.duplicate(),
 		"signs_read": [],
 		"starter_rooms": starter_rooms,
 	}
@@ -190,6 +190,14 @@ static func deserialize(save_data: Dictionary, game: GameState, floor_st: FloorS
 			if not ik.is_empty():
 				_seen_keys[ik] = true
 	game.lore_codex = _deduped
+
+	# Threshold state
+	game.in_starter_area = bool(save_data.get("in_starter_area", false))
+	var sco = save_data.get("starter_chests_opened", [])
+	game.threshold_chests_opened = []
+	if sco is Array:
+		for chest_id in sco:
+			game.threshold_chests_opened.append(int(chest_id))
 
 	# Combat state reset on load
 	game.in_combat = false
@@ -426,6 +434,8 @@ static func _serialize_room(room: RoomState) -> Dictionary:
 		"ground_gold": room.ground_gold,
 		"container_searched": room.container_searched,
 		"container_locked": room.container_locked,
+		"container_gold": room.container_gold,
+		"container_item": room.container_item if not room.container_item.is_empty() else null,
 		"combat_escaped": room.combat_escaped,
 	}
 
@@ -469,6 +479,9 @@ static func _deserialize_room(rd: Dictionary) -> RoomState:
 
 	room.container_searched = bool(rd.get("container_searched", false))
 	room.container_locked = bool(rd.get("container_locked", false))
+	room.container_gold = int(rd.get("container_gold", 0))
+	var ci = rd.get("container_item", null)
+	room.container_item = str(ci) if ci != null else ""
 	room.combat_escaped = bool(rd.get("combat_escaped", false))
 	room.ground_gold = int(rd.get("ground_gold", 0))
 

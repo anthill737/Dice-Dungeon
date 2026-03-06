@@ -133,7 +133,7 @@
     "loot_table": ["hidden_treasure", "gold", "nothing"],
     "weights": [0.35, 0.5, 0.15],
     "loot_pools": {
-      "hidden_treasure": ["Map Fragment", "Encryption Key", "Smuggler's Note", "Hidden Stash Map", "Secret Ledger"],
+      "hidden_treasure": ["Map Fragment", "Encryption Key", "Smuggler Note", "Hidden Stash Map", "Secret Ledger"],
       "gold": {"min": 7, "max": 20}
     }
   },

@@ -211,7 +211,7 @@ func _build_ui() -> void:
 			var btn := DungeonTheme.make_styled_btn(chest_desc, DungeonTheme.BTN_SECONDARY, 400)
 			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			btn.custom_minimum_size.y = 32
-			if _threshold_svc.is_chest_opened(chest_id):
+			if _threshold_svc.is_chest_opened(chest_id, GameSession.game_state):
 				btn.disabled = true
 				btn.text = chest_desc + " (Opened)"
 			btn.pressed.connect(_on_chest_pressed.bind(chest_data, btn))

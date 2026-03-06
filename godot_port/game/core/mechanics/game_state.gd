@@ -94,6 +94,10 @@ var lore_codex: Array = []
 var lore_item_assignments: Dictionary = {}
 var used_lore_entries: Dictionary = {}
 
+## Threshold state — mirrors Python game.in_starter_area / starter_chests_opened
+var in_starter_area: bool = false
+var threshold_chests_opened: Array = []
+
 
 func reset() -> void:
 	max_health = 50
@@ -147,3 +151,5 @@ func reset() -> void:
 	lore_codex = []
 	lore_item_assignments = {}
 	used_lore_entries = {}
+	in_starter_area = false
+	threshold_chests_opened = []

@@ -118,11 +118,12 @@ func test_threshold_chest_opened_tracking():
 	var cm := ContentManager.new()
 	cm.load_all()
 	var svc := ThresholdService.new(cm.get_world_lore())
+	var gs := GameState.new()
 	var chests := svc.get_starter_chests()
 	var chest_id: int = int(chests[0].get("id", 0))
-	assert_false(svc.is_chest_opened(chest_id), "chest not opened yet")
-	svc.open_chest(chests[0], GameState.new(), null)
-	assert_true(svc.is_chest_opened(chest_id), "chest should be opened")
+	assert_false(svc.is_chest_opened(chest_id, gs), "chest not opened yet")
+	svc.open_chest(chests[0], gs, null)
+	assert_true(svc.is_chest_opened(chest_id, gs), "chest should be opened")
 
 
 # ==================================================================
