@@ -5,6 +5,24 @@ extends RefCounted
 ## Uses PortableLCG (cross-language deterministic RNG) and the real
 ## ExplorationEngine to produce step records in the same JSON schema
 ## as the Python trace_exploration.py script.
+##
+## TRACE MODE LOCK BYPASS
+## ──────────────────────
+## The Python reference trace (tools/parity/trace_exploration.py) does NOT
+## simulate lock prompts or key-usage dialogs.  When a newly-generated
+## mini-boss or boss room is encountered, the Python trace enters it
+## immediately — consuming RNG for first-visit processing (ground loot,
+## stairs, store, enemy selection) in the normal order.
+##
+## In normal gameplay the Godot port correctly blocks entry into locked
+## rooms and defers those RNG calls until the player unlocks the door.
+## But for parity-trace comparison the RNG sequences must match Python
+## exactly, so this trace helper force-unlocks newly-generated locked
+## rooms before re-attempting the move.  This keeps the RNG index
+## aligned between both sides.
+##
+## This bypass is ONLY used in parity-test helpers.  Gameplay still
+## blocks entry as designed.
 
 
 static func generate(seed_val: int, moves: Array, floor_num: int = 1) -> Array:

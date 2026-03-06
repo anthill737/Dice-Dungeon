@@ -8,6 +8,10 @@ extends RefCounted
 ##   3. Snapshot before save
 ##   4. Serialize via SaveEngine
 ##   5. Deserialize back
+##
+## NOTE: Uses _move_or_force_unlock() to bypass locked-room gating
+## in the same way ExplorationTrace does — see that file's header
+## comment for the full rationale on trace-mode lock bypass.
 ##   6. Snapshot after load
 ##   7. Continue exploration for remaining steps
 ##   8. Snapshot at end

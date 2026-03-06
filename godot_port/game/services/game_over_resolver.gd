@@ -16,6 +16,7 @@ class RunSummary extends RefCounted:
 	var gold_earned: int = 0
 	var items_found: int = 0
 	var chests_opened: int = 0
+	var lore_found: int = 0
 	var run_score: int = 0
 	var victory_bonus: int = 0
 	var final_score: int = 0
@@ -37,7 +38,8 @@ static func build_summary(state: GameState, floor_st: FloorState,
 	s.gold_earned = state.total_gold_earned
 	s.items_found = int(state.stats.get("items_found", 0))
 	s.chests_opened = int(state.stats.get("chests_opened", 0))
-	s.run_score = int(state.stats.get("run_score", 0))
+	s.lore_found = state.lore_codex.size()
+	s.run_score = state.run_score
 
 	if reason == EndReason.VICTORY:
 		s.victory_bonus = 5000

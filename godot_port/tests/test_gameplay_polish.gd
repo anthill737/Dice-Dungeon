@@ -6,6 +6,9 @@ extends GutTest
 ## - Codex display readiness
 ## - Locked room edge cases (newly generated rooms)
 
+const _ScoreResolver := preload("res://game/core/combat/score_resolver.gd")
+const _GameOverResolver := preload("res://game/services/game_over_resolver.gd")
+
 var _rooms_db: Array = []
 
 
@@ -20,40 +23,40 @@ func before_all() -> void:
 # ==================================================================
 
 func test_score_normal_kill() -> void:
-	assert_eq(ScoreResolver.score_normal_kill(1), 120)
-	assert_eq(ScoreResolver.score_normal_kill(5), 200)
+	assert_eq(_ScoreResolver.score_normal_kill(1), 120)
+	assert_eq(_ScoreResolver.score_normal_kill(5), 200)
 
 
 func test_score_miniboss_kill() -> void:
-	assert_eq(ScoreResolver.score_miniboss_kill(1), 550)
-	assert_eq(ScoreResolver.score_miniboss_kill(3), 650)
+	assert_eq(_ScoreResolver.score_miniboss_kill(1), 550)
+	assert_eq(_ScoreResolver.score_miniboss_kill(3), 650)
 
 
 func test_score_boss_kill() -> void:
-	assert_eq(ScoreResolver.score_boss_kill(1), 1200)
-	assert_eq(ScoreResolver.score_boss_kill(5), 2000)
+	assert_eq(_ScoreResolver.score_boss_kill(1), 1200)
+	assert_eq(_ScoreResolver.score_boss_kill(5), 2000)
 
 
 func test_score_floor_descent() -> void:
-	assert_eq(ScoreResolver.score_floor_descent(2), 200)
-	assert_eq(ScoreResolver.score_floor_descent(5), 500)
+	assert_eq(_ScoreResolver.score_floor_descent(2), 200)
+	assert_eq(_ScoreResolver.score_floor_descent(5), 500)
 
 
 func test_score_victory_bonus() -> void:
-	assert_eq(ScoreResolver.score_victory(), 5000)
+	assert_eq(_ScoreResolver.score_victory(), 5000)
 
 
 func test_score_deterministic() -> void:
-	var a1 := ScoreResolver.score_boss_kill(3)
-	var a2 := ScoreResolver.score_boss_kill(3)
+	var a1 := _ScoreResolver.score_boss_kill(3)
+	var a2 := _ScoreResolver.score_boss_kill(3)
 	assert_eq(a1, a2, "Score must be deterministic")
 
 
 func test_run_score_accumulates() -> void:
 	var state := GameState.new()
 	state.run_score = 0
-	state.run_score += ScoreResolver.score_normal_kill(1)
-	state.run_score += ScoreResolver.score_floor_descent(2)
+	state.run_score += _ScoreResolver.score_normal_kill(1)
+	state.run_score += _ScoreResolver.score_floor_descent(2)
 	assert_eq(state.run_score, 320, "120 + 200 = 320")
 
 
@@ -64,9 +67,9 @@ func test_run_score_accumulates() -> void:
 func test_is_player_dead() -> void:
 	var state := GameState.new()
 	state.health = 10
-	assert_false(GameOverResolver.is_player_dead(state))
+	assert_false(_GameOverResolver.is_player_dead(state))
 	state.health = 0
-	assert_true(GameOverResolver.is_player_dead(state))
+	assert_true(_GameOverResolver.is_player_dead(state))
 
 
 func test_build_death_summary() -> void:
@@ -82,7 +85,7 @@ func test_build_death_summary() -> void:
 	fs.rooms_explored = 12
 	fs.mini_bosses_defeated = 2
 
-	var summary := GameOverResolver.build_summary(state, fs, GameOverResolver.EndReason.DEATH)
+	var summary := _GameOverResolver.build_summary(state, fs, _GameOverResolver.EndReason.DEATH)
 	assert_eq(summary.floor_reached, 3)
 	assert_eq(summary.rooms_explored, 12)
 	assert_eq(summary.enemies_defeated, 5)
@@ -96,7 +99,7 @@ func test_build_victory_summary() -> void:
 	state.run_score = 1000
 
 	var fs := FloorState.new()
-	var summary := GameOverResolver.build_summary(state, fs, GameOverResolver.EndReason.VICTORY)
+	var summary := _GameOverResolver.build_summary(state, fs, _GameOverResolver.EndReason.VICTORY)
 	assert_eq(summary.victory_bonus, 5000)
 	assert_eq(summary.final_score, 6000)
 

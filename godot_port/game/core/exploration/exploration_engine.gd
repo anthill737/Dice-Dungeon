@@ -4,6 +4,8 @@ extends RefCounted
 ## Faithful port of Python explorer/navigation.py.
 ## RNG call ordering matches Python exactly.
 
+const _AccessResolver := preload("res://game/core/exploration/room_access_resolver.gd")
+
 var rng: RNG
 var state: GameState
 var floor: FloorState
@@ -152,34 +154,17 @@ func can_move(direction: String) -> bool:
 
 
 ## Check whether a locked special room at pos can be entered.
-## Returns "" if entry is allowed, otherwise a reason string.
-## "has_key_mini_boss" means the player has an Old Key and can choose to use it.
-## "has_key_boss" means the player has 3 fragments and can choose to use them.
+## Returns "" if entry is allowed, otherwise a gate_type string.
+## Delegates to RoomAccessResolver for the actual logic.
 func check_room_gating(pos: Vector2i) -> String:
-	if not floor.special_rooms.has(pos):
-		return ""
-	if floor.unlocked_rooms.has(pos):
-		return ""
-	var room_type: String = floor.special_rooms[pos]
-	if room_type == "mini_boss":
-		if state.inventory.has("Old Key"):
-			return "has_key_mini_boss"
-		else:
-			return "locked_mini_boss"
-	elif room_type == "boss":
-		if floor.key_fragments >= 3:
-			return "has_key_boss"
-		else:
-			return "locked_boss"
-	return ""
+	var ac := _AccessResolver.check_access(pos, floor, state)
+	return ac.gate_type
 
 
 ## Unlock a mini-boss room by consuming an Old Key. Returns true on success.
 func use_old_key(pos: Vector2i) -> bool:
-	if not state.inventory.has("Old Key"):
+	if not _AccessResolver.unlock_mini_boss(pos, floor, state):
 		return false
-	state.inventory.erase("Old Key")
-	floor.unlocked_rooms[pos] = true
 	logs.append("[KEY USED] The Old Key turns in the lock with a satisfying click!")
 	logs.append("The elite room door swings open!")
 	return true
@@ -187,10 +172,8 @@ func use_old_key(pos: Vector2i) -> bool:
 
 ## Unlock a boss room by consuming 3 key fragments. Returns true on success.
 func use_boss_key(pos: Vector2i) -> bool:
-	if floor.key_fragments < 3:
+	if not _AccessResolver.unlock_boss(pos, floor):
 		return false
-	floor.key_fragments = 0
-	floor.unlocked_rooms[pos] = true
 	logs.append("The 3 fragments merge into a complete key!")
 	logs.append("The massive boss door grinds open!")
 	return true

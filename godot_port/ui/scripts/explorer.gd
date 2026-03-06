@@ -85,6 +85,9 @@ var _dev_menu_panel: Control
 var _tutorial_panel: Control
 var _ground_items_panel: Control
 var _btn_tutorial: Button
+var _btn_lore_codex: Button
+var _lore_indicator: Label
+var _last_codex_count: int = 0
 
 
 func _ready() -> void:
@@ -280,6 +283,22 @@ func _build_top_bar(parent: Node) -> void:
 	_btn_tutorial = DungeonTheme.make_icon_btn("?", "How to Play")
 	_btn_tutorial.pressed.connect(_on_tutorial)
 	btn_box.add_child(_btn_tutorial)
+
+	var lore_btn_container := Control.new()
+	lore_btn_container.custom_minimum_size = DungeonTheme.ICON_BTN_SIZE
+	btn_box.add_child(lore_btn_container)
+
+	_btn_lore_codex = DungeonTheme.make_icon_btn("📜", "Lore Codex")
+	_btn_lore_codex.pressed.connect(func(): _toggle_menu("lore_codex"))
+	lore_btn_container.add_child(_btn_lore_codex)
+
+	_lore_indicator = Label.new()
+	_lore_indicator.text = "●"
+	_lore_indicator.add_theme_font_size_override("font_size", 10)
+	_lore_indicator.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
+	_lore_indicator.position = Vector2(DungeonTheme.ICON_BTN_SIZE.x - 10, 0)
+	_lore_indicator.visible = false
+	lore_btn_container.add_child(_lore_indicator)
 
 	_btn_character = DungeonTheme.make_icon_btn(DungeonTheme.ICON_CHARACTER, "Character")
 	_btn_character.pressed.connect(_on_character_status)
@@ -1175,7 +1194,7 @@ func _show_game_over_screen(summary) -> void:
 	spacer_top.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(spacer_top)
 
-	var is_victory := summary.end_reason == _GameOverResolver.EndReason.VICTORY
+	var is_victory: bool = (summary.end_reason == _GameOverResolver.EndReason.VICTORY)
 	var title_text := "★ VICTORY! ★" if is_victory else "☠ GAME OVER ☠"
 	var title_color := DungeonTheme.TEXT_GOLD if is_victory else DungeonTheme.TEXT_RED
 
@@ -1198,8 +1217,10 @@ func _show_game_over_screen(summary) -> void:
 		["Rooms Explored", str(summary.rooms_explored)],
 		["Enemies Defeated", str(summary.enemies_defeated)],
 		["Bosses Defeated", str(summary.bosses_defeated)],
-		["Gold Earned", str(summary.gold_earned)],
+		["Gold Collected", str(summary.gold_earned)],
 		["Items Found", str(summary.items_found)],
+		["Chests Opened", str(summary.chests_opened)],
+		["Lore Found", str(summary.lore_found)],
 	]
 
 	for line in stat_lines:
@@ -1244,7 +1265,7 @@ func _show_game_over_screen(summary) -> void:
 	btn_row.add_theme_constant_override("separation", 24)
 	vbox.add_child(btn_row)
 
-	var btn_menu := DungeonTheme.make_styled_btn("Return to Menu", DungeonTheme.BTN_SECONDARY, 200)
+	var btn_menu := DungeonTheme.make_styled_btn("Return to Menu", DungeonTheme.BTN_SECONDARY, 180)
 	btn_menu.custom_minimum_size.y = 44
 	btn_menu.pressed.connect(func():
 		overlay.queue_free()
@@ -1252,6 +1273,16 @@ func _show_game_over_screen(summary) -> void:
 		_quit_to_main_menu()
 	)
 	btn_row.add_child(btn_menu)
+
+	var btn_new_run := DungeonTheme.make_styled_btn("Start New Run", DungeonTheme.TEXT_GREEN, 180)
+	btn_new_run.custom_minimum_size.y = 44
+	btn_new_run.pressed.connect(func():
+		overlay.queue_free()
+		_game_over_overlay = null
+		GameSession.start_new_game()
+		_refresh_ui()
+	)
+	btn_row.add_child(btn_new_run)
 
 	var spacer_bottom := Control.new()
 	spacer_bottom.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1317,6 +1348,8 @@ func _refresh_ui() -> void:
 		_room_desc_label.clear()
 		_room_flags_label.text = ""
 
+	_refresh_lore_indicator()
+
 	_update_button_visibility(room)
 
 	# Update combat popup closable state dynamically
@@ -1326,6 +1359,19 @@ func _refresh_ui() -> void:
 
 	if _debug_visible:
 		_refresh_debug()
+
+
+func _refresh_lore_indicator() -> void:
+	if _lore_indicator == null:
+		return
+	var current_count := 0
+	if GameSession.lore_engine != null:
+		current_count = GameSession.lore_engine.get_codex().size()
+	if current_count > _last_codex_count:
+		_lore_indicator.visible = true
+	if _overlay_manager != null and _overlay_manager.is_menu_open("lore_codex"):
+		_lore_indicator.visible = false
+		_last_codex_count = current_count
 
 
 func _update_button_visibility(room: RoomState) -> void:
