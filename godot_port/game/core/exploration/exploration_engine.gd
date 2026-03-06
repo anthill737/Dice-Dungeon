@@ -8,6 +8,7 @@ var rng: RNG
 var state: GameState
 var floor: FloorState
 var rooms_db: Array = []
+var container_db: Dictionary = {}
 var mechanics: MechanicsEngine
 var logs: Array[String] = []
 var last_move_was_revisit: bool = false
@@ -24,10 +25,11 @@ const PEACEFUL_MESSAGES := [
 ]
 
 
-func _init(p_rng: RNG, p_state: GameState, p_rooms_db: Array) -> void:
+func _init(p_rng: RNG, p_state: GameState, p_rooms_db: Array, p_container_db: Dictionary = {}) -> void:
 	rng = p_rng if p_rng != null else DefaultRNG.new()
 	state = p_state
 	rooms_db = p_rooms_db
+	container_db = p_container_db
 	mechanics = MechanicsEngine.new(func(msg: String): logs.append(msg))
 	_log_room_template_diagnostics()
 
@@ -560,12 +562,19 @@ func open_chest(room: RoomState) -> Dictionary:
 
 func inspect_ground_items(room: RoomState) -> Array:
 	var items: Array = []
-	if not room.ground_container.is_empty() and not room.container_searched:
-		items.append({"type": "container", "name": room.ground_container, "locked": room.container_locked})
+	# Show container if: unsearched, locked, or has remaining loot
+	var container_has_loot := room.container_gold > 0 or not room.container_item.is_empty()
+	var show_container := not room.ground_container.is_empty() and (not room.container_searched or room.container_locked or container_has_loot)
+	if show_container:
+		items.append({"type": "container", "name": room.ground_container, "locked": room.container_locked, "searched": room.container_searched})
 	if room.ground_gold > 0:
 		items.append({"type": "gold", "amount": room.ground_gold})
 	for item_name in room.ground_items:
 		items.append({"type": "item", "name": item_name})
+	for item_name in room.uncollected_items:
+		items.append({"type": "uncollected", "name": item_name})
+	for item_name in room.dropped_items:
+		items.append({"type": "dropped", "name": item_name})
 	return items
 
 
@@ -593,29 +602,41 @@ func pickup_ground_item(room: RoomState, index: int) -> String:
 
 
 func search_container(room: RoomState) -> Dictionary:
-	if room.ground_container.is_empty() or room.container_searched:
+	if room.ground_container.is_empty():
 		return {}
 	if room.container_locked:
 		logs.append("Container is locked!")
 		return {"locked": true}
 
+	# Already searched — return persisted contents without re-rolling
+	if room.container_searched:
+		return {"gold": room.container_gold, "item": room.container_item}
+
 	room.container_searched = true
 
-	## Python container loot roll: matches inventory_pickup.py search_container()
-	var loot_roll := rng.randf()
-	var gold := 0
-	var item := ""
-
-	if loot_roll < 0.15:
-		pass  # nothing
-	elif loot_roll < 0.50:
-		gold = rng.rand_int(5, 15)
-	elif loot_roll < 0.80:
-		## Python: pick random category then item — simplified to pool choice
-		item = rng.choice(ExplorationRules.LOOSE_ITEM_POOL)
+	# Use per-container JSON definitions for loot resolution (Python parity)
+	var cdef: Dictionary = container_db.get(room.ground_container, {})
+	var result: Dictionary
+	if not cdef.is_empty():
+		result = ContainerResolver.resolve_loot(rng, cdef)
 	else:
-		gold = rng.rand_int(5, 15)
-		item = rng.choice(ExplorationRules.LOOSE_ITEM_POOL)
+		# Fallback for containers not in definitions — use hardcoded ranges
+		var loot_roll := rng.randf()
+		var gold := 0
+		var item := ""
+		if loot_roll < 0.15:
+			pass
+		elif loot_roll < 0.50:
+			gold = rng.rand_int(5, 15)
+		elif loot_roll < 0.80:
+			item = rng.choice(ExplorationRules.LOOSE_ITEM_POOL)
+		else:
+			gold = rng.rand_int(5, 15)
+			item = rng.choice(ExplorationRules.LOOSE_ITEM_POOL)
+		result = {"gold": gold, "item": item}
+
+	var gold: int = int(result.get("gold", 0))
+	var item: String = str(result.get("item", ""))
 
 	room.container_gold = gold
 	room.container_item = item
@@ -625,6 +646,80 @@ func search_container(room: RoomState) -> Dictionary:
 		else item if not item.is_empty()
 		else "empty"])
 	return {"gold": gold, "item": item}
+
+
+## Take gold from an already-searched container. Returns amount taken.
+func take_container_gold(room: RoomState) -> int:
+	var amount := room.container_gold
+	if amount > 0:
+		state.gold += amount
+		state.total_gold_earned += amount
+		room.container_gold = 0
+		logs.append("Collected %d gold!" % amount)
+	return amount
+
+
+## Take the item from an already-searched container. Returns item name or "".
+func take_container_item(room: RoomState) -> String:
+	var item_name := room.container_item
+	if item_name.is_empty():
+		return ""
+	if state.inventory.size() >= state.max_inventory:
+		room.uncollected_items.append(item_name)
+		room.container_item = ""
+		logs.append("Inventory full! %s left behind." % item_name)
+		return ""
+	state.inventory.append(item_name)
+	room.container_item = ""
+	logs.append("Picked up %s!" % item_name)
+	return item_name
+
+
+## Take all container contents at once.
+func take_all_container(room: RoomState) -> Dictionary:
+	var gold := take_container_gold(room)
+	var item := take_container_item(room)
+	return {"gold": gold, "item": item}
+
+
+## Pick up all loose ground items, gold, uncollected, and dropped. Not containers.
+## Returns count of items taken.
+func pickup_all_ground(room: RoomState) -> int:
+	var picked := 0
+
+	if room.ground_gold > 0:
+		pickup_ground_gold(room)
+		picked += 1
+
+	while not room.ground_items.is_empty():
+		var result := pickup_ground_item(room, 0)
+		if result.is_empty():
+			break
+		picked += 1
+
+	while not room.uncollected_items.is_empty():
+		var item_name: String = room.uncollected_items[0]
+		if state.inventory.size() >= state.max_inventory:
+			logs.append("Inventory full! Cannot pick up remaining items.")
+			break
+		room.uncollected_items.remove_at(0)
+		state.inventory.append(item_name)
+		logs.append("Picked up %s" % item_name)
+		picked += 1
+
+	while not room.dropped_items.is_empty():
+		var item_name: String = room.dropped_items[0]
+		if state.inventory.size() >= state.max_inventory:
+			logs.append("Inventory full! Cannot pick up remaining items.")
+			break
+		room.dropped_items.remove_at(0)
+		state.inventory.append(item_name)
+		logs.append("Picked up %s" % item_name)
+		picked += 1
+
+	if picked > 0:
+		logs.append("Collected %d item(s)." % picked)
+	return picked
 
 
 func can_use_stairs() -> bool:

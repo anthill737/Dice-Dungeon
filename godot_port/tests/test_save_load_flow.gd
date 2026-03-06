@@ -243,6 +243,7 @@ class _MockGameSessionFull:
 	var rooms_db: Array = []
 	var items_db: Dictionary = {}
 	var lore_db: Dictionary = {}
+	var container_db: Dictionary = {}
 	var trace: SessionTrace = SessionTrace.new()
 	var pending_run_state: Dictionary = {}
 	var _saves_dir: String

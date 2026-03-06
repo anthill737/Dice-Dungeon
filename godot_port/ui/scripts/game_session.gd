@@ -27,6 +27,7 @@ var rooms_db: Array = []
 var items_db: Dictionary = {}
 var enemy_types_db: Dictionary = {}
 var lore_db: Dictionary = {}
+var container_db: Dictionary = {}
 
 ## True between entering a combat room and resolving the encounter
 ## (Attack pressed or flee succeeded).  Movement is blocked while true.
@@ -83,6 +84,7 @@ func _load_data() -> void:
 	items_db = _content_manager.get_items_db()
 	enemy_types_db = _content_manager.get_enemy_types_db()
 	lore_db = _content_manager.get_lore_db()
+	container_db = _content_manager.get_container_db()
 	_data_loaded = true
 
 
@@ -115,7 +117,7 @@ func start_new_run(options: Dictionary = {}) -> void:
 
 	_apply_difficulty_settings()
 
-	exploration = ExplorationEngine.new(rng, game_state, rooms_db)
+	exploration = ExplorationEngine.new(rng, game_state, rooms_db, container_db)
 	inventory_engine = InventoryEngine.new(rng, game_state, items_db)
 	store_engine = StoreEngine.new(game_state, items_db)
 	lore_engine = LoreEngine.new(rng, game_state, lore_db)

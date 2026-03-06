@@ -1007,47 +1007,6 @@ func _on_ground_items() -> void:
 	_overlay_manager.open_menu("ground_items")
 
 
-func _take_all_ground_items(room: RoomState) -> void:
-	var picked := 0
-	while not room.ground_items.is_empty():
-		var result := GameSession.pickup_ground_item(0)
-		if result.is_empty():
-			_append_log("Inventory full! Cannot pick up remaining items.")
-			break
-		picked += 1
-	while not room.uncollected_items.is_empty():
-		var item_name: String = room.uncollected_items[0]
-		if GameSession.inventory_engine.add_item_to_inventory(item_name, "ground"):
-			room.uncollected_items.remove_at(0)
-			picked += 1
-		else:
-			_append_log("Inventory full! Cannot pick up remaining items.")
-			break
-	while not room.dropped_items.is_empty():
-		var item_name: String = room.dropped_items[0]
-		if GameSession.inventory_engine.add_item_to_inventory(item_name, "ground"):
-			room.dropped_items.remove_at(0)
-			picked += 1
-		else:
-			_append_log("Inventory full! Cannot pick up remaining items.")
-			break
-
-
-func _handle_container(room: RoomState) -> void:
-	if room.container_locked:
-		var cname: String = room.ground_container if not room.ground_container.is_empty() else "container"
-		if GameSession.game_state.inventory.has("Lockpick Kit"):
-			_append_log("The %s is locked! You have a Lockpick Kit — use it to unlock." % cname)
-		else:
-			_append_log("The %s is locked! You need a Lockpick Kit to open it." % cname)
-		return
-
-	var result := GameSession.exploration.search_container(room)
-	GameSession._emit_logs(GameSession.exploration.logs)
-	if not result.is_empty() and not result.get("locked", false):
-		_collect_container_contents(room, result)
-
-
 func _on_use_lockpick() -> void:
 	var room := GameSession.get_current_room()
 	if room == null:
@@ -1059,23 +1018,6 @@ func _on_use_lockpick() -> void:
 	if _ground_items_panel != null and _ground_items_panel.has_method("refresh"):
 		_ground_items_panel.refresh()
 	_overlay_manager.open_menu("ground_items")
-
-
-func _collect_container_contents(room: RoomState, result: Dictionary) -> void:
-	if result.is_empty():
-		return
-	var g: int = int(result.get("gold", 0))
-	if g > 0:
-		GameSession.game_state.gold += g
-		GameSession.game_state.total_gold_earned += g
-		_append_log("Found %d gold in the container!" % g)
-	var it: String = str(result.get("item", ""))
-	if not it.is_empty():
-		if GameSession.inventory_engine.add_item_to_inventory(it, "ground"):
-			_append_log("Found %s in the container!" % it)
-		else:
-			room.uncollected_items.append(it)
-			_append_log("Found %s but inventory is full!" % it)
 
 
 func _on_rest() -> void:

@@ -47,7 +47,7 @@ func start_run_from_save(slot_id: int) -> bool:
 	_game_session.game_state = gs
 	_game_session.rng = DefaultRNG.new()
 	_game_session.exploration = ExplorationEngine.new(
-		_game_session.rng, gs, _game_session.rooms_db)
+		_game_session.rng, gs, _game_session.rooms_db, _game_session.container_db)
 	_game_session.exploration.floor = fs
 	_game_session.inventory_engine = InventoryEngine.new(
 		_game_session.rng, gs, _game_session.items_db)

@@ -6,9 +6,7 @@ extends Control
 signal enter_dungeon_requested()
 signal show_tutorial_requested()
 
-var _content_manager: ContentManager
-var _signs_opened: Dictionary = {}
-var _chests_opened: Dictionary = {}
+var _threshold_svc: ThresholdService
 var _sign_popup: Control
 var _chest_popup: Control
 var _tutorial_overlay: Control
@@ -16,8 +14,9 @@ var _tutorial_scene := preload("res://ui/scenes/TutorialPanel.tscn")
 
 
 func _ready() -> void:
-	_content_manager = ContentManager.new()
-	_content_manager.load_all()
+	var cm := ContentManager.new()
+	cm.load_all()
+	_threshold_svc = ThresholdService.new(cm.get_world_lore())
 	_build_ui()
 	enter_dungeon_requested.connect(_on_enter_dungeon)
 	show_tutorial_requested.connect(_on_show_tutorial)
@@ -97,13 +96,11 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	var world_lore := _content_manager.get_world_lore()
-	var starter_data: Dictionary = world_lore.get("starting_area", {})
-	var area_name: String = starter_data.get("name", "The Threshold Chamber")
-	var description: String = starter_data.get("description", "")
-	var ambient: Array = starter_data.get("ambient_details", [])
-	var signs: Array = starter_data.get("signs", [])
-	var chests: Array = starter_data.get("starter_chests", [])
+	var area_name: String = _threshold_svc.get_area_name()
+	var description: String = _threshold_svc.get_description()
+	var ambient: Array = _threshold_svc.get_ambient_details()
+	var signs: Array = _threshold_svc.get_signs()
+	var chests: Array = _threshold_svc.get_starter_chests()
 
 	var root_scroll := ScrollContainer.new()
 	root_scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -214,7 +211,7 @@ func _build_ui() -> void:
 			var btn := DungeonTheme.make_styled_btn(chest_desc, DungeonTheme.BTN_SECONDARY, 400)
 			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			btn.custom_minimum_size.y = 32
-			if _chests_opened.has(chest_id):
+			if _threshold_svc.is_chest_opened(chest_id):
 				btn.disabled = true
 				btn.text = chest_desc + " (Opened)"
 			btn.pressed.connect(_on_chest_pressed.bind(chest_data, btn))
@@ -295,28 +292,13 @@ func _on_sign_pressed(sign_data: Dictionary) -> void:
 
 
 func _on_chest_pressed(chest_data: Dictionary, btn: Button) -> void:
-	var chest_id: int = int(chest_data.get("id", 0))
-	if _chests_opened.has(chest_id):
+	var result := _threshold_svc.open_chest(chest_data, GameSession.game_state, GameSession.inventory_engine)
+	if result.is_empty():
 		return
-	_chests_opened[chest_id] = true
 	btn.disabled = true
 	btn.text = chest_data.get("description", "Chest") + " (Opened)"
-
-	var items: Array = chest_data.get("items", [])
-	var gold: int = int(chest_data.get("gold", 0))
-	var lore_text: String = chest_data.get("lore", "")
-
-	if GameSession.game_state != null:
-		GameSession.game_state.gold += gold
-		GameSession.game_state.total_gold_earned += gold
-		for item_name in items:
-			if GameSession.inventory_engine != null:
-				GameSession.inventory_engine.add_item_to_inventory(str(item_name), "chest")
-			else:
-				GameSession.game_state.inventory.append(str(item_name))
-		GameSession.state_changed.emit()
-
-	_show_chest_popup(chest_data, items, gold, lore_text)
+	GameSession.state_changed.emit()
+	_show_chest_popup(chest_data, result.get("items", []), int(result.get("gold", 0)), result.get("lore", ""))
 
 
 func _show_chest_popup(chest_data: Dictionary, items: Array, gold: int, lore_text: String) -> void:

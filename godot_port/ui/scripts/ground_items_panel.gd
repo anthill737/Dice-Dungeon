@@ -1,8 +1,7 @@
 extends PanelContainer
-## Ground Items Panel — shows items on ground, containers, and gold.
-## Ported from Python inventory_display.py show_ground_items flow.
-## Containers show "Search" button; locked ones show "Use Lockpick".
-## Includes Take All for multiple pickable items.
+## Ground Items Panel — renders room ground loot state and dispatches actions.
+## All gameplay logic lives in ExplorationEngine / GameSession.
+## This panel only reads state and requests actions.
 
 signal close_requested()
 
@@ -63,29 +62,25 @@ func refresh() -> void:
 		_btn_take_all.visible = false
 		return
 
-	var has_container := not room.ground_container.is_empty() and not room.container_searched
-	var has_gold := room.ground_gold > 0
-	var has_items := not room.ground_items.is_empty()
-	var has_uncollected := not room.uncollected_items.is_empty()
-	var has_dropped := not room.dropped_items.is_empty()
-	var has_container_loot := room.container_searched and (room.container_gold > 0 or not room.container_item.is_empty())
+	var container_has_loot := room.container_gold > 0 or not room.container_item.is_empty()
+	var show_container := not room.ground_container.is_empty() and (not room.container_searched or room.container_locked or container_has_loot)
 
-	if has_container or room.container_locked:
+	if show_container:
 		_add_container_section(room)
 
-	if has_gold:
+	if room.ground_gold > 0:
 		_add_gold_section(room)
 
-	if has_items:
-		_add_items_section(room, "Items:", room.ground_items, "_pickup_ground_item")
+	if not room.ground_items.is_empty():
+		_add_items_section("Items:", room.ground_items, "_pickup_ground_item")
 
-	if has_uncollected:
-		_add_items_section(room, "Left Behind:", room.uncollected_items, "_pickup_uncollected_item")
+	if not room.uncollected_items.is_empty():
+		_add_items_section("Left Behind:", room.uncollected_items, "_pickup_uncollected_item")
 
-	if has_dropped:
-		_add_items_section(room, "Dropped:", room.dropped_items, "_pickup_dropped_item")
+	if not room.dropped_items.is_empty():
+		_add_items_section("Dropped:", room.dropped_items, "_pickup_dropped_item")
 
-	var pickable_count := (1 if has_gold else 0) + room.ground_items.size() + room.uncollected_items.size() + room.dropped_items.size()
+	var pickable_count := (1 if room.ground_gold > 0 else 0) + room.ground_items.size() + room.uncollected_items.size() + room.dropped_items.size()
 	_btn_take_all.visible = pickable_count >= 2
 
 
@@ -96,13 +91,8 @@ func _add_container_section(room: RoomState) -> void:
 	header.add_theme_color_override("font_color", DungeonTheme.TEXT_CYAN)
 	_content_vbox.add_child(header)
 
-	var container_db: Dictionary = {}
-	var cm := ContentManager.new()
-	cm.load_all()
-	container_db = cm.get_container_db()
-
 	var cname: String = room.ground_container
-	var cdef: Dictionary = container_db.get(cname, {})
+	var cdef: Dictionary = GameSession.container_db.get(cname, {})
 	var cdesc: String = cdef.get("description", "")
 
 	var row := HBoxContainer.new()
@@ -150,6 +140,10 @@ func _add_container_section(room: RoomState) -> void:
 		var btn := DungeonTheme.make_styled_btn("Search", DungeonTheme.BTN_SECONDARY, 100)
 		btn.pressed.connect(_on_search_container)
 		row.add_child(btn)
+	elif room.container_gold > 0 or not room.container_item.is_empty():
+		var btn := DungeonTheme.make_styled_btn("Open", DungeonTheme.BTN_SECONDARY, 100)
+		btn.pressed.connect(_on_open_searched_container)
+		row.add_child(btn)
 
 
 func _add_gold_section(room: RoomState) -> void:
@@ -183,7 +177,7 @@ func _add_gold_section(room: RoomState) -> void:
 	row.add_child(btn)
 
 
-func _add_items_section(room: RoomState, section_title: String, items: Array, callback_name: String) -> void:
+func _add_items_section(section_title: String, items: Array, callback_name: String) -> void:
 	var header := Label.new()
 	header.text = section_title
 	header.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
@@ -222,12 +216,10 @@ func _setup_tooltip(control: Control, item_name: String) -> void:
 	var item_def: Dictionary = {}
 	if GameSession.inventory_engine != null:
 		item_def = GameSession.inventory_engine.get_item_def(item_name)
-	var desc: String = item_def.get("desc", "")
-	if not desc.is_empty():
-		control.tooltip_text = "%s\n%s" % [item_name, desc]
-	else:
-		control.tooltip_text = item_name
+	control.tooltip_text = TooltipFormatter.format(item_name, item_def)
 
+
+# --- Action handlers — delegate to engine, then re-render from state ---
 
 func _on_pickup_gold() -> void:
 	GameSession.pickup_ground_gold()
@@ -276,9 +268,16 @@ func _on_search_container() -> void:
 	var result := GameSession.exploration.search_container(room)
 	GameSession._emit_logs(GameSession.exploration.logs)
 	if not result.is_empty() and not result.get("locked", false):
-		_show_container_contents(room, result)
+		_show_container_contents(room)
 	GameSession.state_changed.emit()
 	refresh()
+
+
+func _on_open_searched_container() -> void:
+	var room := GameSession.get_current_room()
+	if room == null:
+		return
+	_show_container_contents(room)
 
 
 func _on_use_lockpick() -> void:
@@ -291,76 +290,40 @@ func _on_use_lockpick() -> void:
 		var search_result := GameSession.exploration.search_container(room)
 		GameSession._emit_logs(GameSession.exploration.logs)
 		if not search_result.is_empty() and not search_result.get("locked", false):
-			_show_container_contents(room, search_result)
+			_show_container_contents(room)
 	GameSession.state_changed.emit()
 	refresh()
 
 
 func _on_take_all() -> void:
+	if GameSession.exploration == null:
+		return
 	var room := GameSession.get_current_room()
 	if room == null:
 		return
-
-	if room.ground_gold > 0:
-		GameSession.pickup_ground_gold()
-
-	var picked := 0
-	while not room.ground_items.is_empty():
-		var result := GameSession.pickup_ground_item(0)
-		if result.is_empty():
-			GameSession.log_message.emit("Inventory full! Cannot pick up remaining items.")
-			break
-		picked += 1
-
-	while not room.uncollected_items.is_empty():
-		var item_name: String = room.uncollected_items[0]
-		if GameSession.inventory_engine.add_item_to_inventory(item_name, "ground"):
-			room.uncollected_items.remove_at(0)
-			picked += 1
-		else:
-			GameSession.log_message.emit("Inventory full! Cannot pick up remaining items.")
-			break
-
-	while not room.dropped_items.is_empty():
-		var item_name: String = room.dropped_items[0]
-		if GameSession.inventory_engine.add_item_to_inventory(item_name, "ground"):
-			room.dropped_items.remove_at(0)
-			picked += 1
-		else:
-			GameSession.log_message.emit("Inventory full! Cannot pick up remaining items.")
-			break
-
-	if picked > 0:
-		GameSession.log_message.emit("Collected %d item(s)." % picked)
-
+	GameSession.exploration.pickup_all_ground(room)
+	GameSession._emit_logs(GameSession.exploration.logs)
 	GameSession.state_changed.emit()
 	refresh()
 
 
-func _show_container_contents(room: RoomState, result: Dictionary) -> void:
+# --- Container contents popup ---
+
+func _show_container_contents(room: RoomState) -> void:
 	if is_instance_valid(_container_popup):
 		_container_popup.queue_free()
 
-	var gold: int = int(result.get("gold", 0))
-	var item: String = str(result.get("item", ""))
+	var gold: int = room.container_gold
+	var item: String = room.container_item
 	var cname: String = room.ground_container
-
-	var container_db: Dictionary = {}
-	var cm := ContentManager.new()
-	cm.load_all()
-	container_db = cm.get_container_db()
-	var cdef: Dictionary = container_db.get(cname, {})
+	var cdef: Dictionary = GameSession.container_db.get(cname, {})
 	var cdesc: String = cdef.get("description", "")
 
 	var overlay := ColorRect.new()
 	overlay.color = Color(0.0, 0.0, 0.0, 0.5)
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	var parent := get_parent()
-	while parent != null and not (parent is Control and parent.get_parent() == parent.get_tree().root):
-		parent = parent.get_parent()
-	if parent == null:
-		parent = self
-	(parent as Control).add_child(overlay)
+	var root_node := get_tree().root if get_tree() != null else self
+	(root_node as Node).add_child(overlay)
 	_container_popup = overlay
 
 	var panel := PanelContainer.new()
@@ -416,116 +379,100 @@ func _show_container_contents(room: RoomState, result: Dictionary) -> void:
 
 	if gold <= 0 and item.is_empty():
 		var empty_lbl := Label.new()
-		empty_lbl.text = "Nothing of value..."
+		empty_lbl.text = "The container is empty."
 		empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty_lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
 		empty_lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
 		c_vbox.add_child(empty_lbl)
 
 	if gold > 0:
-		var gold_row := HBoxContainer.new()
-		gold_row.add_theme_constant_override("separation", 8)
-		c_vbox.add_child(gold_row)
-		var g_panel := PanelContainer.new()
-		g_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var gs := StyleBoxFlat.new()
-		gs.bg_color = DungeonTheme.BG_PANEL.lightened(0.05)
-		gs.set_corner_radius_all(4)
-		gs.set_content_margin_all(8)
-		g_panel.add_theme_stylebox_override("panel", gs)
-		gold_row.add_child(g_panel)
-		var g_lbl := Label.new()
-		g_lbl.text = "◆ %d Gold" % gold
-		g_lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
-		g_lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
-		g_panel.add_child(g_lbl)
-		var g_btn := DungeonTheme.make_styled_btn("Take", DungeonTheme.BTN_PRIMARY, 80)
-		g_btn.pressed.connect(func():
-			if room.container_gold > 0:
-				GameSession.game_state.gold += room.container_gold
-				GameSession.game_state.total_gold_earned += room.container_gold
-				GameSession.log_message.emit("Collected %d gold!" % room.container_gold)
-				room.container_gold = 0
-				GameSession.state_changed.emit()
-				_refresh_container_popup(overlay, room, item)
-		)
-		gold_row.add_child(g_btn)
+		_add_container_gold_row(c_vbox, room, gold)
 
 	if not item.is_empty():
-		var item_row := HBoxContainer.new()
-		item_row.add_theme_constant_override("separation", 8)
-		c_vbox.add_child(item_row)
-		var i_panel := PanelContainer.new()
-		i_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var i_s := StyleBoxFlat.new()
-		i_s.bg_color = DungeonTheme.BG_PANEL.lightened(0.05)
-		i_s.set_corner_radius_all(4)
-		i_s.set_content_margin_all(8)
-		i_panel.add_theme_stylebox_override("panel", i_s)
-		item_row.add_child(i_panel)
-		var i_lbl := Label.new()
-		i_lbl.text = "⚡ %s" % item
-		i_lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
-		i_lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
-		i_panel.add_child(i_lbl)
-		var i_btn := DungeonTheme.make_styled_btn("Take", DungeonTheme.BTN_SECONDARY, 80)
-		i_btn.pressed.connect(func():
-			if not room.container_item.is_empty():
-				if GameSession.inventory_engine.add_item_to_inventory(room.container_item, "container"):
-					GameSession.log_message.emit("Picked up %s!" % room.container_item)
-					room.container_item = ""
-				else:
-					room.uncollected_items.append(room.container_item)
-					GameSession.log_message.emit("Inventory full! %s left behind." % room.container_item)
-					room.container_item = ""
-				GameSession.state_changed.emit()
-				_refresh_container_popup(overlay, room, "")
-		)
-		item_row.add_child(i_btn)
+		_add_container_item_row(c_vbox, room, item)
 
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(spacer)
 
-	var footer := HBoxContainer.new()
-	footer.alignment = BoxContainer.ALIGNMENT_CENTER
-	footer.add_theme_constant_override("separation", 12)
-	vbox.add_child(footer)
+	var btn_footer := HBoxContainer.new()
+	btn_footer.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_footer.add_theme_constant_override("separation", 12)
+	vbox.add_child(btn_footer)
 
 	if gold > 0 and not item.is_empty():
 		var take_all_btn := DungeonTheme.make_styled_btn("Take All", DungeonTheme.TEXT_GREEN, 120)
 		take_all_btn.custom_minimum_size.y = 36
 		take_all_btn.pressed.connect(func():
-			if room.container_gold > 0:
-				GameSession.game_state.gold += room.container_gold
-				GameSession.game_state.total_gold_earned += room.container_gold
-				GameSession.log_message.emit("Collected %d gold!" % room.container_gold)
-				room.container_gold = 0
-			if not room.container_item.is_empty():
-				if GameSession.inventory_engine.add_item_to_inventory(room.container_item, "container"):
-					GameSession.log_message.emit("Picked up %s!" % room.container_item)
-				else:
-					room.uncollected_items.append(room.container_item)
-					GameSession.log_message.emit("Inventory full! %s left behind." % room.container_item)
-				room.container_item = ""
+			GameSession.exploration.take_all_container(room)
+			GameSession._emit_logs(GameSession.exploration.logs)
 			GameSession.state_changed.emit()
-			overlay.queue_free()
-			_container_popup = null
-			refresh()
+			_dismiss_container_popup()
 		)
-		footer.add_child(take_all_btn)
+		btn_footer.add_child(take_all_btn)
 
 	var close_btn := DungeonTheme.make_styled_btn("Close", DungeonTheme.BTN_SECONDARY, 120)
 	close_btn.custom_minimum_size.y = 36
-	close_btn.pressed.connect(func():
-		overlay.queue_free()
-		_container_popup = null
-		refresh()
+	close_btn.pressed.connect(_dismiss_container_popup)
+	btn_footer.add_child(close_btn)
+
+
+func _add_container_gold_row(parent: VBoxContainer, room: RoomState, gold: int) -> void:
+	var gold_row := HBoxContainer.new()
+	gold_row.add_theme_constant_override("separation", 8)
+	parent.add_child(gold_row)
+	var g_panel := PanelContainer.new()
+	g_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var gs := StyleBoxFlat.new()
+	gs.bg_color = DungeonTheme.BG_PANEL.lightened(0.05)
+	gs.set_corner_radius_all(4)
+	gs.set_content_margin_all(8)
+	g_panel.add_theme_stylebox_override("panel", gs)
+	gold_row.add_child(g_panel)
+	var g_lbl := Label.new()
+	g_lbl.text = "◆ %d Gold" % gold
+	g_lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
+	g_lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
+	g_panel.add_child(g_lbl)
+	var g_btn := DungeonTheme.make_styled_btn("Take", DungeonTheme.BTN_PRIMARY, 80)
+	g_btn.pressed.connect(func():
+		GameSession.exploration.take_container_gold(room)
+		GameSession._emit_logs(GameSession.exploration.logs)
+		GameSession.state_changed.emit()
+		_dismiss_container_popup()
 	)
-	footer.add_child(close_btn)
+	gold_row.add_child(g_btn)
 
 
-func _refresh_container_popup(overlay: Control, _room: RoomState, _remaining_item: String) -> void:
-	overlay.queue_free()
+func _add_container_item_row(parent: VBoxContainer, room: RoomState, item: String) -> void:
+	var item_row := HBoxContainer.new()
+	item_row.add_theme_constant_override("separation", 8)
+	parent.add_child(item_row)
+	var i_panel := PanelContainer.new()
+	i_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var i_s := StyleBoxFlat.new()
+	i_s.bg_color = DungeonTheme.BG_PANEL.lightened(0.05)
+	i_s.set_corner_radius_all(4)
+	i_s.set_content_margin_all(8)
+	i_panel.add_theme_stylebox_override("panel", i_s)
+	item_row.add_child(i_panel)
+	var i_lbl := Label.new()
+	i_lbl.text = "⚡ %s" % item
+	i_lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
+	i_lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
+	i_panel.add_child(i_lbl)
+	var i_btn := DungeonTheme.make_styled_btn("Take", DungeonTheme.BTN_SECONDARY, 80)
+	i_btn.pressed.connect(func():
+		GameSession.exploration.take_container_item(room)
+		GameSession._emit_logs(GameSession.exploration.logs)
+		GameSession.state_changed.emit()
+		_dismiss_container_popup()
+	)
+	item_row.add_child(i_btn)
+
+
+func _dismiss_container_popup() -> void:
+	if is_instance_valid(_container_popup):
+		_container_popup.queue_free()
 	_container_popup = null
 	refresh()
