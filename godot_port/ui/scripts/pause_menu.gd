@@ -5,11 +5,13 @@ extends PanelContainer
 signal close_requested()
 signal open_settings_requested()
 signal open_save_load_requested()
+signal open_tutorial_requested()
 signal quit_to_menu_requested()
 
 var _btn_resume: Button
 var _btn_save_load: Button
 var _btn_settings: Button
+var _btn_tutorial: Button
 var _btn_quit: Button
 var _confirm_panel: PanelContainer
 
@@ -61,6 +63,12 @@ func _build_ui() -> void:
 	_btn_settings.custom_minimum_size.y = 36
 	_btn_settings.pressed.connect(func(): open_settings_requested.emit())
 	btn_container.add_child(_btn_settings)
+
+	_btn_tutorial = DungeonTheme.make_styled_btn("📜 How to Play", DungeonTheme.TEXT_BONE, 220)
+	_btn_tutorial.name = "BtnTutorial"
+	_btn_tutorial.custom_minimum_size.y = 36
+	_btn_tutorial.pressed.connect(func(): open_tutorial_requested.emit())
+	btn_container.add_child(_btn_tutorial)
 
 	_btn_quit = DungeonTheme.make_styled_btn("Quit to Main Menu", DungeonTheme.TEXT_RED, 220)
 	_btn_quit.name = "BtnQuit"

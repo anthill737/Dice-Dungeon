@@ -38,6 +38,7 @@ var _btn_ground: Button
 var _btn_lockpick: Button
 var _btn_inventory: Button
 var _btn_store: Button
+var _btn_fast_travel: Button
 var _btn_rest: Button
 var _btn_descend: Button
 var _btn_settings: Button
@@ -64,7 +65,7 @@ var _debug_visible: bool = false
 
 var _minimap_panel: PanelContainer
 var _context: GameContext
-var _locked_room_dialog: AcceptDialog
+var _locked_room_dialog: Control
 
 var _combat_scene := preload("res://ui/scenes/CombatPanel.tscn")
 var _inventory_scene := preload("res://ui/scenes/InventoryPanel.tscn")
@@ -76,7 +77,12 @@ var _settings_scene := preload("res://ui/scenes/SettingsPanel.tscn")
 var _lore_codex_scene := preload("res://ui/scenes/LoreCodexPanel.tscn")
 var _pause_menu_scene := preload("res://ui/scenes/PauseMenu.tscn")
 var _dev_menu_scene := preload("res://ui/scenes/DevMenuPanel.tscn")
+var _tutorial_scene := preload("res://ui/scenes/TutorialPanel.tscn")
+var _ground_items_scene := preload("res://ui/scenes/GroundItemsPanel.tscn")
 var _dev_menu_panel: Control
+var _tutorial_panel: Control
+var _ground_items_panel: Control
+var _btn_tutorial: Button
 
 
 func _ready() -> void:
@@ -101,7 +107,11 @@ func _exit_tree() -> void:
 	_typewriter_queue.clear()
 	_typewriter_active = false
 	if is_instance_valid(_locked_room_dialog):
-		_locked_room_dialog.queue_free()
+		var parent_overlay := _locked_room_dialog.get_parent()
+		if parent_overlay != null and is_instance_valid(parent_overlay):
+			parent_overlay.queue_free()
+		else:
+			_locked_room_dialog.queue_free()
 		_locked_room_dialog = null
 	if GameSession.state_changed.is_connected(_refresh_ui):
 		GameSession.state_changed.disconnect(_refresh_ui)
@@ -260,6 +270,10 @@ func _build_top_bar(parent: Node) -> void:
 	btn_box.add_theme_constant_override("separation", 4)
 	hbox.add_child(btn_box)
 
+	_btn_tutorial = DungeonTheme.make_icon_btn("?", "How to Play")
+	_btn_tutorial.pressed.connect(_on_tutorial)
+	btn_box.add_child(_btn_tutorial)
+
 	_btn_character = DungeonTheme.make_icon_btn(DungeonTheme.ICON_CHARACTER, "Character")
 	_btn_character.pressed.connect(_on_character_status)
 	btn_box.add_child(_btn_character)
@@ -417,6 +431,8 @@ func _build_right_sidebar(parent: Node) -> void:
 	actions.add_child(_btn_inventory)
 	_btn_store = _make_action_btn("🏪 Store", DungeonTheme.BTN_SECONDARY)
 	actions.add_child(_btn_store)
+	_btn_fast_travel = _make_action_btn("→ Store", DungeonTheme.TEXT_CYAN)
+	actions.add_child(_btn_fast_travel)
 	_btn_rest = _make_action_btn("💤 Rest", DungeonTheme.TEXT_GREEN)
 	actions.add_child(_btn_rest)
 	_btn_descend = _make_action_btn("⬇ Descend", DungeonTheme.TEXT_CYAN)
@@ -565,6 +581,19 @@ func _setup_overlay_manager() -> void:
 	_overlay_manager.register_menu("lore_codex", "📜 LORE CODEX", _lore_codex_panel, "lore")
 	_overlay_manager.register_menu("pause", "☰ PAUSED", _pause_menu, "pause")
 
+	_tutorial_panel = _tutorial_scene.instantiate()
+	_overlay_manager.register_menu("tutorial", "📜 HOW TO PLAY", _tutorial_panel, "tutorial")
+	if _tutorial_panel.has_signal("close_requested"):
+		_tutorial_panel.close_requested.connect(func(): _overlay_manager.close_menu("tutorial"))
+
+	_ground_items_panel = _ground_items_scene.instantiate()
+	_overlay_manager.register_menu("ground_items", "▢ ITEMS ON GROUND ▢", _ground_items_panel, "inventory")
+	if _ground_items_panel.has_signal("close_requested"):
+		_ground_items_panel.close_requested.connect(func():
+			_overlay_manager.close_menu("ground_items")
+			_refresh_ui()
+		)
+
 	# Dev menu (debug/editor builds only)
 	if OS.is_debug_build():
 		_dev_menu_panel = _dev_menu_scene.instantiate()
@@ -578,6 +607,11 @@ func _setup_overlay_manager() -> void:
 		_overlay_manager.close_menu("pause")
 		_overlay_manager.open_menu("settings")
 	)
+	if _pause_menu.has_signal("open_tutorial_requested"):
+		_pause_menu.open_tutorial_requested.connect(func():
+			_overlay_manager.close_menu("pause")
+			_overlay_manager.open_menu("tutorial")
+		)
 	_pause_menu.open_save_load_requested.connect(func():
 		_overlay_manager.close_menu("pause")
 		_overlay_manager.open_menu("save_load")
@@ -602,6 +636,7 @@ func _connect_signals() -> void:
 	_btn_lockpick.pressed.connect(_on_use_lockpick)
 	_btn_inventory.pressed.connect(_on_inventory)
 	_btn_store.pressed.connect(_on_store)
+	_btn_fast_travel.pressed.connect(_on_fast_travel_store)
 	_btn_rest.pressed.connect(_on_rest)
 	_btn_descend.pressed.connect(_on_descend)
 
@@ -741,6 +776,21 @@ func _on_store() -> void:
 		_append_log("No store here.")
 		return
 	_overlay_manager.open_menu("store")
+
+
+func _on_fast_travel_store() -> void:
+	if _any_panel_open():
+		return
+	if GameSession.is_combat_blocking():
+		_append_log("Cannot travel during combat!")
+		return
+	var room := GameSession.travel_to_store()
+	if room != null:
+		_refresh_ui()
+		_overlay_manager.open_menu("store")
+
+func _on_tutorial() -> void:
+	_toggle_menu("tutorial")
 
 func _on_character_status() -> void:
 	_overlay_manager.open_menu("character_status")
@@ -946,36 +996,15 @@ func _on_ground_items() -> void:
 	var room := GameSession.get_current_room()
 	if room == null:
 		return
-	var items := GameSession.exploration.inspect_ground_items(room)
-	if items.is_empty():
+
+	var has_anything := room.ground_gold > 0 or not room.ground_items.is_empty() or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked)) or not room.uncollected_items.is_empty() or not room.dropped_items.is_empty()
+	if not has_anything:
 		_append_log("Nothing on the ground.")
 		return
 
-	var has_gold := false
-	var has_loose_items := false
-	var has_container := false
-
-	for item in items:
-		if item.get("type") == "gold":
-			has_gold = true
-		elif item.get("type") == "item":
-			has_loose_items = true
-		elif item.get("type") == "container":
-			has_container = true
-
-	# Pick up gold
-	if has_gold:
-		GameSession.pickup_ground_gold()
-
-	# Pick up all loose ground items (Take All)
-	if has_loose_items:
-		_take_all_ground_items(room)
-
-	# Handle container
-	if has_container:
-		_handle_container(room)
-
-	GameSession.state_changed.emit()
+	if _ground_items_panel != null and _ground_items_panel.has_method("refresh"):
+		_ground_items_panel.refresh()
+	_overlay_manager.open_menu("ground_items")
 
 
 func _take_all_ground_items(room: RoomState) -> void:
@@ -1026,13 +1055,10 @@ func _on_use_lockpick() -> void:
 	if not room.container_locked:
 		_append_log("No locked container here.")
 		return
-	var unlock_result := GameSession.inventory_engine.use_lockpick_on_container(room)
-	GameSession._emit_logs(GameSession.inventory_engine.logs)
-	if unlock_result.get("ok", false):
-		var search_result := GameSession.exploration.search_container(room)
-		GameSession._emit_logs(GameSession.exploration.logs)
-		_collect_container_contents(room, search_result)
-	GameSession.state_changed.emit()
+	# Open ground items panel which handles the lockpick flow directly
+	if _ground_items_panel != null and _ground_items_panel.has_method("refresh"):
+		_ground_items_panel.refresh()
+	_overlay_manager.open_menu("ground_items")
 
 
 func _collect_container_contents(room: RoomState, result: Dictionary) -> void:
@@ -1082,25 +1108,78 @@ func _on_locked_room_prompt(gate_type: String, direction: String) -> void:
 func _show_locked_room_dialog(title: String, message: String) -> void:
 	if is_instance_valid(_locked_room_dialog):
 		_locked_room_dialog.queue_free()
-	var dialog := AcceptDialog.new()
-	_locked_room_dialog = dialog
-	dialog.title = title
-	dialog.dialog_text = message
-	dialog.ok_button_text = "Unlock & Enter"
-	dialog.add_cancel_button("Turn Back")
-	dialog.confirmed.connect(func():
+
+	var overlay := ColorRect.new()
+	overlay.color = Color(0.0, 0.0, 0.0, 0.6)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(overlay)
+
+	var panel := PanelContainer.new()
+	_locked_room_dialog = panel
+	var style := DungeonTheme.make_panel_bg(DungeonTheme.BG_PRIMARY, DungeonTheme.BORDER_GOLD)
+	style.set_content_margin_all(32)
+	panel.add_theme_stylebox_override("panel", style)
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.anchor_left = 0.2
+	panel.anchor_top = 0.2
+	panel.anchor_right = 0.8
+	panel.anchor_bottom = 0.8
+	overlay.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+	panel.add_child(vbox)
+
+	var spacer_top := Control.new()
+	spacer_top.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(spacer_top)
+
+	var header := Label.new()
+	header.text = title
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header.add_theme_font_size_override("font_size", DungeonTheme.FONT_HEADING)
+	header.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
+	vbox.add_child(header)
+
+	var msg_label := Label.new()
+	msg_label.text = message
+	msg_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	msg_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	msg_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
+	msg_label.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
+	vbox.add_child(msg_label)
+
+	var spacer_mid := Control.new()
+	spacer_mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(spacer_mid)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 24)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(btn_row)
+
+	var btn_unlock := DungeonTheme.make_styled_btn("Unlock & Enter", DungeonTheme.BTN_SECONDARY, 180)
+	btn_unlock.custom_minimum_size.y = 40
+	btn_unlock.pressed.connect(func():
 		GameSession.confirm_locked_room_entry(_pending_gate_direction)
 		_refresh_ui()
+		overlay.queue_free()
 		_locked_room_dialog = null
-		dialog.queue_free()
 	)
-	dialog.canceled.connect(func():
+	btn_row.add_child(btn_unlock)
+
+	var btn_back := DungeonTheme.make_styled_btn("Turn Back", DungeonTheme.TEXT_RED, 180)
+	btn_back.custom_minimum_size.y = 40
+	btn_back.pressed.connect(func():
 		GameSession.decline_locked_room_entry(_pending_gate_type)
+		overlay.queue_free()
 		_locked_room_dialog = null
-		dialog.queue_free()
 	)
-	add_child(dialog)
-	dialog.popup_centered()
+	btn_row.add_child(btn_back)
+
+	var spacer_bottom := Control.new()
+	spacer_bottom.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(spacer_bottom)
 
 
 # -------------------------------------------------------------------
@@ -1191,9 +1270,12 @@ func _update_button_visibility(room: RoomState) -> void:
 	_btn_attack.visible = show_combat_buttons
 	_btn_flee.visible = pending and not active
 	_btn_chest.visible = room != null and room.has_chest and not room.chest_looted and not blocking
-	_btn_ground.visible = room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked))) and not blocking
+	var has_ground_content := room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked)) or not room.uncollected_items.is_empty() or not room.dropped_items.is_empty())
+	_btn_ground.visible = has_ground_content and not blocking
 	_btn_lockpick.visible = room != null and room.container_locked and GameSession.game_state != null and GameSession.game_state.inventory.has("Lockpick Kit") and not blocking
 	_btn_store.visible = room != null and room.has_store and not blocking
+	var fs := GameSession.get_floor_state()
+	_btn_fast_travel.visible = not blocking and fs != null and fs.store_found and (room == null or not room.has_store)
 	_btn_descend.visible = room != null and room.has_stairs and not blocking
 
 

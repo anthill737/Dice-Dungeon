@@ -139,13 +139,10 @@ func _on_start() -> void:
 
 func _on_start_run(options: Dictionary) -> void:
 	_overlay_manager.close_all_menus()
-	if _context.session:
-		_context.session.start_new_run(options)
-	else:
-		GameSession.start_new_run(options)
+	GameSession.pending_run_options = options
 	var tree := get_tree()
 	if tree != null:
-		tree.change_scene_to_file("res://ui/scenes/Explorer.tscn")
+		tree.change_scene_to_file("res://ui/scenes/IntroCinematic.tscn")
 
 
 func _on_save_load() -> void:

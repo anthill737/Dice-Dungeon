@@ -191,13 +191,24 @@ func refresh() -> void:
 		if GameSession.inventory_engine != null:
 			var item_def := GameSession.inventory_engine.get_item_def(item_name)
 			var tooltip_lines: PackedStringArray = [item_name]
-			var item_type: String = item_def.get("type", "")
-			if not item_type.is_empty():
-				tooltip_lines.append("Type: %s" % item_type)
 			var desc: String = item_def.get("desc", "")
 			if not desc.is_empty():
 				tooltip_lines.append(desc)
+			var effect_parts: PackedStringArray = []
+			if item_def.has("heal"):
+				effect_parts.append("Heals %s HP" % str(item_def["heal"]))
+			if item_def.has("damage_bonus"):
+				effect_parts.append("+%s Damage" % str(item_def["damage_bonus"]))
+			if item_def.has("crit_bonus"):
+				effect_parts.append("+%s%% Crit" % str(int(float(item_def["crit_bonus"]) * 100)))
+			if item_def.has("shield"):
+				effect_parts.append("+%s Shield" % str(item_def["shield"]))
+			if item_def.has("extra_rolls"):
+				effect_parts.append("+%s Rerolls" % str(item_def["extra_rolls"]))
+			if not effect_parts.is_empty():
+				tooltip_lines.append(", ".join(effect_parts))
 			_item_list.set_item_tooltip(row_idx, "\n".join(tooltip_lines))
+		_item_list.set_item_tooltip_enabled(row_idx, true)
 
 	var statuses: Array = gs.flags.get("statuses", [])
 	if not statuses.is_empty():

@@ -46,6 +46,9 @@ var pending_run_state: Dictionary = {}
 var run_rng_mode: String = "default"
 var run_seed: int = -1
 
+## Pending run options — set by MainMenu before scene change to intro.
+var pending_run_options: Dictionary = {}
+
 signal state_changed()
 signal combat_started()
 signal combat_ended()
@@ -601,6 +604,21 @@ func pickup_ground_item(index: int) -> String:
 		})
 	state_changed.emit()
 	return item
+
+
+func travel_to_store() -> RoomState:
+	if exploration == null:
+		return null
+	if is_combat_blocking():
+		log_message.emit("Cannot travel during combat!")
+		return null
+	var room := exploration.travel_to_store()
+	_emit_logs(exploration.logs)
+	if room != null:
+		_trace_sync_position()
+		trace.record("fast_travel", {"destination": "store"})
+		state_changed.emit()
+	return room
 
 
 func descend_stairs() -> RoomState:

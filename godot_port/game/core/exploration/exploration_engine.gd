@@ -385,19 +385,22 @@ func _on_first_visit(room: RoomState) -> void:
 
 	## STEP 4: store check
 	## Python: rng.random() consumed only when rooms >= 2, !store_found, and rooms < 15
+	## Prevent store from spawning in the same room as stairs.
 	if not floor.store_found and floor.rooms_explored >= ExplorationRules.STORE_MIN_ROOMS:
 		if floor.rooms_explored >= ExplorationRules.STORE_GUARANTEE_ROOMS:
-			room.has_store = true
-			floor.store_found = true
-			floor.store_pos = room.coords()
-			logs.append("Discovered a mysterious shop!")
-		else:
-			var chance := ExplorationRules.store_chance_for_floor(floor.floor_index)
-			if rng.randf() < chance:
+			if not room.has_stairs:
 				room.has_store = true
 				floor.store_found = true
 				floor.store_pos = room.coords()
 				logs.append("Discovered a mysterious shop!")
+		else:
+			var chance := ExplorationRules.store_chance_for_floor(floor.floor_index)
+			if rng.randf() < chance:
+				if not room.has_stairs:
+					room.has_store = true
+					floor.store_found = true
+					floor.store_pos = room.coords()
+					logs.append("Discovered a mysterious shop!")
 
 	## STEP 5: chest check — DEAD CODE in Python
 	## Python line 393: `not room.visited` is always False because room.visited
@@ -660,6 +663,23 @@ func unlock_boss_room(pos: Vector2i) -> bool:
 func enter_store(_room: RoomState) -> Array:
 	logs.append("Browsing store...")
 	return ["Health Potion", "Repair Kit", "Lockpick Kit"]
+
+
+## Fast travel to the store if discovered on current floor.
+## Returns the store RoomState or null if unavailable.
+func travel_to_store() -> RoomState:
+	if not floor.store_found or floor.store_pos == Vector2i(-999, -999):
+		logs.append("No store found on this floor yet!")
+		return null
+	if floor.current_pos == floor.store_pos:
+		logs.append("You are already at the store!")
+		return null
+	var old_room := floor.get_current_room()
+	var old_name: String = old_room.data.get("name", "Unknown Location") if old_room else "Unknown"
+	floor.current_pos = floor.store_pos
+	var store_room := floor.get_current_room()
+	logs.append("Traveled to the store from %s!" % old_name)
+	return store_room
 
 
 # ------------------------------------------------------------------
