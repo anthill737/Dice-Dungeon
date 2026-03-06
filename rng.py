@@ -1,99 +1,79 @@
 """
-Injectable RNG system for Dice Dungeon.
+RNG (Random Number Generator) abstraction layer for Dice Dungeon.
 
-Provides a unified interface for all randomness so that gameplay can be made
-deterministic (same seed → same results) without changing any probabilities.
-
-Usage:
-    from rng import DefaultRNG, DeterministicRNG
-
-    # Normal gameplay (indistinguishable from bare `random` module):
-    rng = DefaultRNG()
-
-    # Repeatable test run:
-    rng = DeterministicRNG(seed=42)
-
-    rng.randint(1, 6)
-    rng.choice(["a", "b", "c"])
-    rng.random()
-    rng.shuffle(some_list)
-    rng.sample(population, k)
+Provides an injectable RNG interface so that game logic can be run
+deterministically (same seed → same outcome) for testing and replay,
+while defaulting to standard Python randomness in normal play.
 """
 
-from abc import ABC, abstractmethod
 import random as _random
-from typing import Any, List, MutableSequence, Sequence, TypeVar
-
-T = TypeVar("T")
+from abc import ABC, abstractmethod
 
 
 class RNG(ABC):
-    """Abstract interface that every RNG implementation must satisfy."""
+    """Abstract RNG interface used by all game subsystems."""
 
     @abstractmethod
     def randint(self, a: int, b: int) -> int:
         """Return random int N such that a <= N <= b (inclusive)."""
 
     @abstractmethod
-    def choice(self, seq: Sequence[T]) -> T:
-        """Return a random element from non-empty *seq*."""
-
-    @abstractmethod
-    def shuffle(self, seq: MutableSequence) -> None:
-        """Shuffle *seq* in-place."""
+    def choice(self, seq):
+        """Return a random element from non-empty sequence *seq*."""
 
     @abstractmethod
     def random(self) -> float:
-        """Return a float in [0.0, 1.0)."""
+        """Return a random float in [0.0, 1.0)."""
 
     @abstractmethod
-    def sample(self, population: Sequence[T], k: int) -> List[T]:
+    def shuffle(self, seq) -> None:
+        """Shuffle sequence *seq* in place."""
+
+    @abstractmethod
+    def sample(self, population, k: int) -> list:
         """Return *k* unique elements chosen from *population*."""
 
 
 class DefaultRNG(RNG):
-    """Wraps Python's module-level ``random`` functions.
-
-    Produces the same statistical behaviour the game shipped with.
-    """
+    """Wraps Python's module-level ``random`` functions (non-deterministic)."""
 
     def randint(self, a: int, b: int) -> int:
         return _random.randint(a, b)
 
-    def choice(self, seq: Sequence[T]) -> T:
+    def choice(self, seq):
         return _random.choice(seq)
-
-    def shuffle(self, seq: MutableSequence) -> None:
-        _random.shuffle(seq)
 
     def random(self) -> float:
         return _random.random()
 
-    def sample(self, population: Sequence[T], k: int) -> List[T]:
+    def shuffle(self, seq) -> None:
+        _random.shuffle(seq)
+
+    def sample(self, population, k: int) -> list:
         return _random.sample(population, k)
 
 
 class DeterministicRNG(RNG):
     """Seeded RNG that produces repeatable sequences.
 
-    Backed by its own ``random.Random`` instance so it never interferes
-    with the global random state.
+    Uses an independent ``random.Random`` instance so it never
+    interferes with the module-level PRNG.
     """
 
-    def __init__(self, seed: int = 0):
+    def __init__(self, seed: int = 42):
         self._rng = _random.Random(seed)
 
     def randint(self, a: int, b: int) -> int:
         return self._rng.randint(a, b)
 
-    def choice(self, seq: Sequence[T]) -> T:
+    def choice(self, seq):
         return self._rng.choice(seq)
-
-    def shuffle(self, seq: MutableSequence) -> None:
-        self._rng.shuffle(seq)
 
     def random(self) -> float:
         return self._rng.random()
 
-    def sample(self, population: Sequence[T], k: int) -> List[T]:
+    def shuffle(self, seq) -> None:
+        self._rng.shuffle(seq)
+
+    def sample(self, population, k: int) -> list:
         return self._rng.sample(population, k)

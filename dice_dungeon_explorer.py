@@ -12,6 +12,7 @@ import sys
 import copy
 from collections import Counter
 from debug_logger import get_logger
+from rng import RNG, DefaultRNG
 from explorer import ui_character_menu
 from explorer.color_schemes import COLOR_SCHEMES, DEFAULT_SCHEME, ColorManager
 from explorer.item_icons import get_item_icon_path, slugify as icon_slugify

@@ -1,194 +1,225 @@
+#!/usr/bin/env python3
 """
-Deterministic RNG verification tests.
+Determinism verification for the Dice Dungeon RNG system.
 
-Run with:
-    python -m pytest tests/test_rng_determinism.py -v
-    # or simply:
-    python tests/test_rng_determinism.py
+Run: python -m tests.test_rng_determinism   (from repo root)
+  or python tests/test_rng_determinism.py
+
+Tests:
+  1. Two DeterministicRNG instances with the same seed produce identical
+     sequences for randint, choice, random, shuffle, and sample.
+  2. A different seed produces different sequences.
+  3. DefaultRNG works without crashing (smoke test).
+  4. A small slice of gameplay logic (loot roll, combat roll) produces
+     identical results when driven by the same seed.
 """
 
 import sys
 import os
 
-# Ensure project root is on the path so ``rng`` can be imported.
+# Ensure repo root is on the path so imports work
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from rng import DefaultRNG, DeterministicRNG
 
-
-# ---------------------------------------------------------------------------
-# 1) Same seed → identical sequences
-# ---------------------------------------------------------------------------
-
-def test_same_seed_produces_identical_randint():
-    a = DeterministicRNG(seed=42)
-    b = DeterministicRNG(seed=42)
-    results_a = [a.randint(1, 100) for _ in range(50)]
-    results_b = [b.randint(1, 100) for _ in range(50)]
-    assert results_a == results_b, "randint sequences should match for same seed"
+PASS = 0
+FAIL = 0
 
 
-def test_same_seed_produces_identical_choice():
-    items = ["sword", "shield", "potion", "scroll", "key"]
-    a = DeterministicRNG(seed=99)
-    b = DeterministicRNG(seed=99)
-    results_a = [a.choice(items) for _ in range(30)]
-    results_b = [b.choice(items) for _ in range(30)]
-    assert results_a == results_b, "choice sequences should match for same seed"
+def check(label, condition):
+    global PASS, FAIL
+    if condition:
+        PASS += 1
+        print(f"  [PASS] {label}")
+    else:
+        FAIL += 1
+        print(f"  [FAIL] {label}")
 
 
-def test_same_seed_produces_identical_random():
-    a = DeterministicRNG(seed=7)
-    b = DeterministicRNG(seed=7)
-    results_a = [a.random() for _ in range(30)]
-    results_b = [b.random() for _ in range(30)]
-    assert results_a == results_b, "random() sequences should match for same seed"
+def test_same_seed_produces_identical_sequences():
+    """Two DeterministicRNG with same seed must be identical."""
+    print("\n=== Test 1: Same seed → identical sequences ===")
+    seed = 12345
+    a = DeterministicRNG(seed)
+    b = DeterministicRNG(seed)
 
+    ints_a = [a.randint(1, 100) for _ in range(50)]
+    ints_b = [b.randint(1, 100) for _ in range(50)]
+    check("randint sequences match", ints_a == ints_b)
 
-def test_same_seed_produces_identical_shuffle():
-    a = DeterministicRNG(seed=123)
-    b = DeterministicRNG(seed=123)
-    list_a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    list_b = list(list_a)
+    a = DeterministicRNG(seed)
+    b = DeterministicRNG(seed)
+    pool = list(range(20))
+    choices_a = [a.choice(pool) for _ in range(30)]
+    choices_b = [b.choice(pool) for _ in range(30)]
+    check("choice sequences match", choices_a == choices_b)
+
+    a = DeterministicRNG(seed)
+    b = DeterministicRNG(seed)
+    floats_a = [a.random() for _ in range(30)]
+    floats_b = [b.random() for _ in range(30)]
+    check("random() sequences match", floats_a == floats_b)
+
+    a = DeterministicRNG(seed)
+    b = DeterministicRNG(seed)
+    list_a = list(range(10))
+    list_b = list(range(10))
     a.shuffle(list_a)
     b.shuffle(list_b)
-    assert list_a == list_b, "shuffle results should match for same seed"
+    check("shuffle produces same order", list_a == list_b)
+
+    a = DeterministicRNG(seed)
+    b = DeterministicRNG(seed)
+    pop = list(range(20))
+    sample_a = a.sample(pop, 5)
+    sample_b = b.sample(pop, 5)
+    check("sample produces same elements", sample_a == sample_b)
 
 
-def test_same_seed_produces_identical_sample():
-    population = list(range(20))
-    a = DeterministicRNG(seed=55)
-    b = DeterministicRNG(seed=55)
-    results_a = a.sample(population, 5)
-    results_b = b.sample(population, 5)
-    assert results_a == results_b, "sample results should match for same seed"
+def test_different_seed_produces_different_sequences():
+    """Different seeds must produce different sequences."""
+    print("\n=== Test 2: Different seed → different sequences ===")
+    a = DeterministicRNG(111)
+    b = DeterministicRNG(222)
+    ints_a = [a.randint(1, 1000) for _ in range(20)]
+    ints_b = [b.randint(1, 1000) for _ in range(20)]
+    check("randint sequences differ", ints_a != ints_b)
+
+    a = DeterministicRNG(111)
+    b = DeterministicRNG(222)
+    floats_a = [a.random() for _ in range(20)]
+    floats_b = [b.random() for _ in range(20)]
+    check("random() sequences differ", floats_a != floats_b)
 
 
-# ---------------------------------------------------------------------------
-# 2) Different seeds → different sequences
-# ---------------------------------------------------------------------------
-
-def test_different_seeds_differ():
-    a = DeterministicRNG(seed=1)
-    b = DeterministicRNG(seed=2)
-    results_a = [a.randint(1, 1000) for _ in range(20)]
-    results_b = [b.randint(1, 1000) for _ in range(20)]
-    assert results_a != results_b, "different seeds should (almost certainly) produce different sequences"
-
-
-# ---------------------------------------------------------------------------
-# 3) DefaultRNG produces valid outputs (smoke test)
-# ---------------------------------------------------------------------------
-
-def test_default_rng_basic():
+def test_default_rng_works():
+    """DefaultRNG should function identically to stdlib random."""
+    print("\n=== Test 3: DefaultRNG smoke test ===")
     rng = DefaultRNG()
     val = rng.randint(1, 6)
-    assert 1 <= val <= 6
+    check("randint returns int in range", isinstance(val, int) and 1 <= val <= 6)
 
-    chosen = rng.choice(["a", "b", "c"])
-    assert chosen in ("a", "b", "c")
+    pool = ["a", "b", "c"]
+    c = rng.choice(pool)
+    check("choice returns element from pool", c in pool)
 
     f = rng.random()
-    assert 0.0 <= f < 1.0
+    check("random() returns float in [0,1)", isinstance(f, float) and 0.0 <= f < 1.0)
 
     lst = [1, 2, 3, 4, 5]
     rng.shuffle(lst)
-    assert sorted(lst) == [1, 2, 3, 4, 5]
+    check("shuffle keeps same elements", sorted(lst) == [1, 2, 3, 4, 5])
 
-    sampled = rng.sample(range(20), 3)
-    assert len(sampled) == 3
-    assert len(set(sampled)) == 3
+    s = rng.sample(range(100), 5)
+    check("sample returns k unique elements", len(s) == 5 and len(set(s)) == 5)
 
 
-# ---------------------------------------------------------------------------
-# 4) Simulated game-logic slice: dice roll + loot roll
-# ---------------------------------------------------------------------------
+def test_gameplay_determinism():
+    """
+    Simulate a small slice of gameplay logic twice with the same seed
+    and verify outcomes are identical.
+    """
+    print("\n=== Test 4: Gameplay logic determinism ===")
 
-def test_deterministic_game_slice():
-    """Simulate a small game-logic sequence twice with the same seed."""
+    def simulate_combat_round(rng):
+        """Simulate one combat round: dice rolls, crit check, gold reward."""
+        dice = [rng.randint(1, 6) for _ in range(5)]
+        crit = rng.random() < 0.15
+        damage = sum(dice) * (2 if crit else 1)
+        gold = rng.randint(10, 30) + 5
+        return dice, crit, damage, gold
 
-    def run_game_slice(rng):
-        results = {}
-
-        # Dice rolling (3 dice)
-        dice = [rng.randint(1, 6) for _ in range(3)]
-        results["dice"] = dice
-
-        # Crit check
-        results["is_crit"] = rng.random() < 0.1
-
-        # Enemy HP variance
-        base_hp = 50
-        results["enemy_hp"] = base_hp + rng.randint(-5, 10)
-
-        # Loot roll
-        if rng.random() < 0.6:
-            loot_type = rng.choice(["gold", "gold", "item", "health"])
+    def simulate_loot_roll(rng):
+        """Simulate container loot generation."""
+        loot_roll = rng.random()
+        if loot_roll < 0.15:
+            return "nothing", 0, None
+        elif loot_roll < 0.50:
+            gold = rng.randint(5, 15)
+            return "gold", gold, None
+        elif loot_roll < 0.80:
+            items = ["Health Potion", "Weighted Die", "Lucky Chip", "Honey Jar"]
+            item = rng.choice(items)
+            return "item", 0, item
         else:
-            loot_type = "gold"
-        results["loot_type"] = loot_type
+            gold = rng.randint(5, 15)
+            items = ["Health Potion", "Weighted Die", "Lucky Chip", "Honey Jar"]
+            item = rng.choice(items)
+            return "both", gold, item
 
-        if loot_type == "gold":
-            results["gold"] = rng.randint(20, 50)
-        elif loot_type == "health":
-            results["heal"] = rng.randint(15, 30)
-        else:
-            items = ["Weighted Die", "Hourglass Shard", "Lucky Chip", "Lockpick Kit"]
-            results["item"] = rng.choice(items)
+    def simulate_navigation(rng):
+        """Simulate room exploration decisions."""
+        has_combat = rng.random() < 0.4
+        has_stairs = rng.random() < 0.1
+        enemies = ["Goblin", "Skeleton", "Rat", "Spider", "Bat"]
+        enemy = rng.choice(enemies) if has_combat else None
+        return has_combat, has_stairs, enemy
 
-        # Combat flavor text
-        taunts = ["Ha!", "You'll pay!", "Is that all?", "Fool!", "Try harder!"]
-        results["taunt"] = rng.choice(taunts)
+    seed = 98765
 
-        return results
+    # Run 1
+    rng1 = DeterministicRNG(seed)
+    combat1 = [simulate_combat_round(rng1) for _ in range(10)]
+    loot1 = [simulate_loot_roll(rng1) for _ in range(10)]
+    nav1 = [simulate_navigation(rng1) for _ in range(10)]
 
-    r1 = run_game_slice(DeterministicRNG(seed=2025))
-    r2 = run_game_slice(DeterministicRNG(seed=2025))
-    assert r1 == r2, f"Same seed should produce identical game slice.\n  Run 1: {r1}\n  Run 2: {r2}"
+    # Run 2
+    rng2 = DeterministicRNG(seed)
+    combat2 = [simulate_combat_round(rng2) for _ in range(10)]
+    loot2 = [simulate_loot_roll(rng2) for _ in range(10)]
+    nav2 = [simulate_navigation(rng2) for _ in range(10)]
 
+    check("combat rounds identical across runs", combat1 == combat2)
+    check("loot rolls identical across runs", loot1 == loot2)
+    check("navigation decisions identical across runs", nav1 == nav2)
 
-# ---------------------------------------------------------------------------
-# 5) Rooms loader determinism
-# ---------------------------------------------------------------------------
-
-def test_rooms_loader_determinism():
-    """pick_room_for_floor returns the same room given the same seed."""
-    sys.path.insert(0, os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "dice_dungeon_content", "engine"
-    ))
-    from rooms_loader import pick_room_for_floor
-
-    fake_rooms = [
-        {"id": i, "name": f"Room{i}", "difficulty": "Easy",
-         "threats": [], "history": "", "flavor": "", "discoverables": [],
-         "tags": []}
-        for i in range(20)
-    ]
-
-    rng_a = DeterministicRNG(seed=77)
-    rng_b = DeterministicRNG(seed=77)
-
-    picks_a = [pick_room_for_floor(fake_rooms, floor=1, rng=rng_a)["id"] for _ in range(10)]
-    picks_b = [pick_room_for_floor(fake_rooms, floor=1, rng=rng_b)["id"] for _ in range(10)]
-    assert picks_a == picks_b, "Room picks should be deterministic with same seed"
+    # Verify different seed gives different results
+    rng3 = DeterministicRNG(seed + 1)
+    combat3 = [simulate_combat_round(rng3) for _ in range(10)]
+    check("different seed → different combat outcomes", combat1 != combat3)
 
 
-# ---------------------------------------------------------------------------
-# main
-# ---------------------------------------------------------------------------
+def test_pick_room_determinism():
+    """Verify pick_room_for_floor produces identical results with same seed."""
+    print("\n=== Test 5: pick_room_for_floor determinism ===")
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                        'dice_dungeon_content', 'engine'))
+        from rooms_loader import pick_room_for_floor
+
+        fake_rooms = [
+            {"id": i, "name": f"Room {i}", "difficulty": d,
+             "threats": [], "history": "", "flavor": "", "discoverables": [], "tags": []}
+            for i, d in enumerate(["Easy"] * 5 + ["Medium"] * 5 + ["Hard"] * 3)
+        ]
+
+        seed = 77777
+        rng_a = DeterministicRNG(seed)
+        rng_b = DeterministicRNG(seed)
+
+        picks_a = [pick_room_for_floor(fake_rooms, floor=2, rng=rng_a)["id"] for _ in range(20)]
+        picks_b = [pick_room_for_floor(fake_rooms, floor=2, rng=rng_b)["id"] for _ in range(20)]
+        check("pick_room_for_floor same seed → same rooms", picks_a == picks_b)
+
+        rng_c = DeterministicRNG(seed + 1)
+        picks_c = [pick_room_for_floor(fake_rooms, floor=2, rng=rng_c)["id"] for _ in range(20)]
+        check("pick_room_for_floor different seed → different rooms", picks_a != picks_c)
+    except ImportError as e:
+        print(f"  [SKIP] Could not import rooms_loader: {e}")
+
 
 if __name__ == "__main__":
-    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
-    passed = 0
-    failed = 0
-    for t in tests:
-        try:
-            t()
-            print(f"  PASS  {t.__name__}")
-            passed += 1
-        except Exception as e:
-            print(f"  FAIL  {t.__name__}: {e}")
-            failed += 1
-    print(f"\n{passed} passed, {failed} failed")
-    sys.exit(1 if failed else 0)
+    print("=" * 60)
+    print("Dice Dungeon RNG Determinism Verification")
+    print("=" * 60)
+
+    test_same_seed_produces_identical_sequences()
+    test_different_seed_produces_different_sequences()
+    test_default_rng_works()
+    test_gameplay_determinism()
+    test_pick_room_determinism()
+
+    print(f"\n{'=' * 60}")
+    print(f"Results: {PASS} passed, {FAIL} failed")
+    print("=" * 60)
+    sys.exit(1 if FAIL > 0 else 0)

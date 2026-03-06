@@ -1,0 +1,36 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "note": "Reusable mechanic templates. You can reference these names inside content tooling or copy them into room mechanics."
+  },
+
+  "heal_small": { "heal": 5 },
+  "heal_medium": { "heal": 12 },
+  "heal_large": { "heal": 25 },
+
+  "reroll_one": { "extra_rolls": 1, "duration": "combat" },
+  "reroll_two": { "extra_rolls": 2, "duration": "combat" },
+
+  "crit_tiny": { "crit_bonus": 0.01, "duration": "combat" },
+  "crit_small": { "crit_bonus": 0.02, "duration": "combat" },
+  "crit_large": { "crit_bonus": 0.05, "duration": "combat" },
+
+  "damage_small": { "damage_bonus": 1, "duration": "combat" },
+  "damage_medium": { "damage_bonus": 3, "duration": "combat" },
+  "damage_large": { "damage_bonus": 5, "duration": "combat" },
+
+  "shield_small": { "shield": 4, "duration": "combat" },
+  "shield_medium": { "shield": 8, "duration": "combat" },
+  "shield_large": { "shield": 15, "duration": "combat" },
+
+  "gold_bonus_small": { "gold_flat": 5 },
+  "gold_bonus_medium": { "gold_flat": 10 },
+  "gold_multiplier_small": { "gold_mult": 0.10, "duration": "combat" },
+  "gold_multiplier_large": { "gold_mult": 0.30, "duration": "combat" },
+
+  "shop_discount_small": { "shop_discount": 0.10, "duration": "floor" },
+
+  "trap_disarm": { "disarm_token": true },
+  "escape": { "escape_token": true },
+  "cleanse": { "cleanse": true }
+}

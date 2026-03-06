@@ -1,0 +1,68 @@
+name: Godot Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  GODOT_VERSION: "4.3"
+  GODOT_RELEASE: "stable"
+
+jobs:
+  gut-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Python dependencies for parity tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk
+          pip install Pillow
+
+      - name: Cache Godot binary
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}-linux-x86_64
+
+      - name: Download Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot
+          wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64.zip -O /tmp/godot.zip
+          unzip -o /tmp/godot.zip -d ~/godot
+          chmod +x ~/godot/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64
+
+      - name: Verify Godot binary
+        run: ~/godot/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64 --version
+
+      - name: Import Godot resources
+        run: |
+          cd godot_port
+          ~/godot/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64 --headless --import 2>/dev/null || true
+
+      - name: Run GUT tests
+        run: |
+          cd godot_port
+          ~/godot/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64 --headless \
+            -s res://addons/gut/gut_cmdln.gd \
+            -gdir=res://tests/ \
+            -gprefix=test_ \
+            -gsuffix=.gd \
+            -gexit
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gut-test-logs
+          path: |
+            godot_port/**/*.log
+            godot_port/user://*.log
+          retention-days: 7

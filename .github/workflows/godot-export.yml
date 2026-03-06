@@ -1,0 +1,93 @@
+name: Godot Export
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+env:
+  GODOT_VERSION: "4.3"
+  GODOT_RELEASE: "stable"
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk mingw-w64
+          pip install Pillow
+
+      - name: Cache Godot binary
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}-linux-x86_64
+
+      - name: Download Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot
+          wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64.zip -O /tmp/godot.zip
+          unzip -o /tmp/godot.zip -d ~/godot
+          chmod +x ~/godot/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64
+
+      - name: Verify Godot binary
+        run: ~/godot/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64 --version
+
+      - name: Install Godot export templates
+        run: |
+          TEMPLATES_DIR=~/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}
+          mkdir -p "$TEMPLATES_DIR"
+          wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz -O /tmp/templates.tpz
+          unzip -o /tmp/templates.tpz -d /tmp/templates
+          mv /tmp/templates/templates/* "$TEMPLATES_DIR/"
+
+      - name: Write build_info.json
+        run: |
+          python3 -c "
+          import json, datetime
+          info = {
+              'git_sha': '${{ github.sha }}',
+              'build_time_utc': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+              'ref': '${{ github.ref }}',
+          }
+          with open('godot_port/build_info.json', 'w') as f:
+              json.dump(info, f, indent=2)
+          "
+          echo "build_info.json:"
+          cat godot_port/build_info.json
+
+      - name: Import Godot resources
+        run: |
+          cd godot_port
+          ~/godot/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64 --headless --import 2>/dev/null || true
+
+      - name: Export builds
+        run: |
+          export GODOT_BIN=~/godot/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64
+          ./scripts/export_builds.sh
+
+      - name: Upload build artifacts (manual run)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dice-dungeon-builds
+          path: godot_port/exports/
+          retention-days: 7
+
+      - name: Upload build artifacts (tag release)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: dice-dungeon-builds-${{ github.ref_name }}
+          path: godot_port/exports/
+          retention-days: 30
