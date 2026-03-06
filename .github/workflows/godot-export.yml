@@ -3,8 +3,8 @@ name: Godot Export
 on:
   workflow_dispatch:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
 
 env:
   GODOT_VERSION: "4.3"
