@@ -493,12 +493,16 @@ func _show_floating_damage(value: int, section: HBoxContainer, color: Color) -> 
 	lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_SUBHEADING)
 	lbl.add_theme_color_override("font_color", color)
 	lbl.z_index = 10
-	section.add_child(lbl)
+	# Add to the panel itself (not the HBox) so it doesn't affect layout.
+	# Position it over the section using global coordinates converted to local.
+	add_child(lbl)
+	var start_pos := to_local(section.global_position)
+	lbl.position = start_pos
 	var tween := create_tween()
 	_track_tween(tween)
 	tween.set_parallel(true)
 	tween.tween_property(lbl, "modulate:a", 0.0, duration)
-	tween.tween_property(lbl, "position:y", lbl.position.y - 20, duration)
+	tween.tween_property(lbl, "position:y", start_pos.y - 20, duration)
 	tween.chain().tween_callback(lbl.queue_free)
 
 
@@ -737,16 +741,20 @@ func _on_attack() -> void:
 	if not selected.is_empty():
 		target_idx = selected[0]
 
+	# Snapshot player HP before the engine mutates state.
 	var hp_before := GameSession.game_state.health
-	var enemy_hp_before: int = 0
-	var alive_before := ce.get_alive_enemies()
-	if target_idx < alive_before.size():
-		enemy_hp_before = alive_before[target_idx].health
+
+	# Disable controls for the full duration of the sequence.
+	_btn_roll.disabled = true
+	_btn_attack.disabled = true
 
 	_append_styled_log("── Round %d ──" % ce.turn_count)
 
+	# Engine resolves everything synchronously; we only control when the UI
+	# reveals each phase of the result.
 	var result := ce.player_attack(target_idx)
 
+	# --- Telemetry ---
 	GameSession.trace_attack_committed(
 		result.target_name, result.player_damage,
 		ce.dice.calc_combo_bonus())
@@ -754,7 +762,6 @@ func _on_attack() -> void:
 		GameSession.trace_enemy_attack(str(er.get("name", "")), int(er.get("damage", 0)))
 	if result.status_tick_damage > 0:
 		GameSession.trace_status_tick("combined", result.status_tick_damage)
-
 	for dur_ev in result.durability_events:
 		var item_name: String = dur_ev.get("item_name", "")
 		var dur_val: int = int(dur_ev.get("durability", 0))
@@ -766,7 +773,7 @@ func _on_attack() -> void:
 			_append_styled_log(dur_msg)
 			GameSession.log_message.emit(dur_msg)
 
-	# Player attack logs (show immediately)
+	# Partition logs: player-side vs enemy-side.
 	var player_logs: Array = []
 	var enemy_logs: Array = []
 	for log_line in result.logs:
@@ -775,39 +782,73 @@ func _on_attack() -> void:
 		else:
 			player_logs.append(log_line)
 
+	# ================================================================
+	# PHASE 1 — Player attacks: show log immediately.
+	# ================================================================
 	for log_line in player_logs:
 		_append_styled_log(log_line)
 		GameSession.log_message.emit(log_line)
 
-	# Show player damage on enemy HP bar immediately
+	# Beat before impact shows on enemy.
+	await _combat_pause(CombatUIPacing.phase_pause_sec())
+	if not is_inside_tree():
+		return
+
+	# ================================================================
+	# PHASE 2 — Enemy hit: update HP bar, flash, floating number.
+	# ================================================================
+	_refresh_enemy_hp_bar()
 	if result.player_damage > 0:
 		_flash_hp_bar(_enemy_hp_bar, _enemy_hp_section)
 		_show_floating_damage(result.player_damage, _enemy_hp_section, DungeonTheme.LOG_PLAYER)
 
-	# Enemy dice reveal (before damage application)
+	# Hold long enough for the hit animation to settle.
+	await _combat_pause(CombatUIPacing.post_hit_pause_sec())
+	if not is_inside_tree():
+		return
+
+	# ================================================================
+	# PHASE 3 — Enemy rolls dice (display + linger).
+	# ================================================================
 	if not result.enemy_rolls.is_empty():
 		_show_enemy_dice(result.enemy_rolls)
-
-	var linger := CombatUIPacing.enemy_dice_linger_sec()
-	var player_dmg_taken := hp_before - GameSession.game_state.health
-
-	if linger > 0.0 and not result.enemy_rolls.is_empty() and is_inside_tree():
-		_btn_roll.disabled = true
-		_btn_attack.disabled = true
-		refresh()
-		await get_tree().create_timer(linger).timeout
+		await _combat_pause(CombatUIPacing.enemy_dice_linger_sec())
 		if not is_inside_tree():
 			return
 
-	# Enemy attack logs + damage feedback (after pacing delay)
+	# ================================================================
+	# PHASE 4 — Enemy attacks revealed one line at a time.
+	# ================================================================
+	var stagger := CombatUIPacing.enemy_attack_stagger_sec()
 	for log_line in enemy_logs:
 		_append_styled_log(log_line)
 		GameSession.log_message.emit(log_line)
+		await _combat_pause(stagger)
+		if not is_inside_tree():
+			return
 
+	# Brief beat before player takes damage.
+	await _combat_pause(CombatUIPacing.phase_pause_sec())
+	if not is_inside_tree():
+		return
+
+	# ================================================================
+	# PHASE 5 — Player hit: update HP bar, flash, floating number.
+	# ================================================================
+	var player_dmg_taken := hp_before - GameSession.game_state.health
+	_refresh_player_hp_bar()
 	if player_dmg_taken > 0:
 		_flash_hp_bar(_player_hp_bar, _player_hp_section)
 		_show_floating_damage(player_dmg_taken, _player_hp_section, DungeonTheme.LOG_ENEMY)
 
+	# Hold for player hit animation.
+	await _combat_pause(CombatUIPacing.post_hit_pause_sec())
+	if not is_inside_tree():
+		return
+
+	# ================================================================
+	# PHASE 6 — Resolve combat end, then full UI refresh.
+	# ================================================================
 	var alive := ce.get_alive_enemies()
 	if alive.is_empty():
 		GameSession.end_combat(true)
@@ -817,6 +858,26 @@ func _on_attack() -> void:
 		_result_label.text = "☠ Defeated... ☠"
 
 	refresh()
+
+
+## Awaitable pause helper. Returns immediately when seconds <= 0 so callers
+## don't need to guard every await site against the Instant pacing preset.
+func _combat_pause(seconds: float) -> void:
+	if seconds > 0.0:
+		await get_tree().create_timer(seconds).timeout
+
+
+## Targeted player HP bar refresh used mid-sequence to avoid re-enabling
+## buttons or resetting other UI state that refresh() would touch.
+func _refresh_player_hp_bar() -> void:
+	var gs := GameSession.game_state
+	if gs == null:
+		return
+	var ratio: float = float(gs.health) / float(gs.max_health) if gs.max_health > 0 else 0.0
+	_player_hp_bar.max_value = gs.max_health
+	_player_hp_bar.value = gs.health
+	_player_hp_label.text = "%d/%d" % [gs.health, gs.max_health]
+	DungeonTheme.style_hp_bar(_player_hp_bar, ratio)
 
 
 static func _is_enemy_attack_log(line: String) -> bool:
