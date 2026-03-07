@@ -494,9 +494,10 @@ func _show_floating_damage(value: int, section: HBoxContainer, color: Color) -> 
 	lbl.add_theme_color_override("font_color", color)
 	lbl.z_index = 10
 	# Add to the panel itself (not the HBox) so it doesn't affect layout.
-	# Position it over the section using global coordinates converted to local.
+	# Convert section's screen position to local coordinates (Control nodes
+	# don't have to_local(); subtract global origins instead).
 	add_child(lbl)
-	var start_pos := to_local(section.global_position)
+	var start_pos := section.global_position - global_position
 	lbl.position = start_pos
 	var tween := create_tween()
 	_track_tween(tween)
