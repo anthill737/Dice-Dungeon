@@ -176,6 +176,7 @@ func _build_ui() -> void:
 	content_hbox.add_child(left_vbox)
 
 	_build_center_panel(left_vbox)
+	_build_inline_combat(left_vbox)
 	_build_adventure_log(left_vbox)
 
 	_build_right_sidebar(content_hbox)
@@ -370,6 +371,14 @@ func _build_center_panel(parent: Node) -> void:
 	var action_spacer := Control.new()
 	action_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	center.add_child(action_spacer)
+
+
+func _build_inline_combat(parent: Node) -> void:
+	_combat_panel = _combat_scene.instantiate()
+	_combat_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_combat_panel.size_flags_stretch_ratio = 2.0
+	_combat_panel.visible = false
+	parent.add_child(_combat_panel)
 
 
 func _build_right_sidebar(parent: Node) -> void:
@@ -586,8 +595,7 @@ func _setup_overlay_manager() -> void:
 	_overlay_manager.name = "MenuOverlayManager"
 	add_child(_overlay_manager)
 
-	# Instantiate content panels
-	_combat_panel = _combat_scene.instantiate()
+	# Instantiate content panels (combat is inline, not a popup — see _build_inline_combat)
 	_inventory_panel = _inventory_scene.instantiate()
 	_store_panel = _store_scene.instantiate()
 	_save_load_panel = _save_load_scene.instantiate()
@@ -597,8 +605,6 @@ func _setup_overlay_manager() -> void:
 	_pause_menu = _pause_menu_scene.instantiate()
 
 	# Register menus — size profiles defined in MenuOverlayManager.SIZE_PROFILES
-	_overlay_manager.register_menu("combat", "⚔ COMBAT ⚔", _combat_panel,
-		"combat", func() -> bool: return not _is_combat_locking())
 	_overlay_manager.register_menu("inventory", "🎒 INVENTORY", _inventory_panel, "inventory")
 	_overlay_manager.register_menu("store", "🏪 STORE", _store_panel, "store")
 	_overlay_manager.register_menu("save_load", "💾 SAVE / LOAD", _save_load_panel, "save_load")
@@ -698,15 +704,17 @@ func _connect_signals() -> void:
 func _on_combat_close_requested() -> void:
 	if _is_combat_locking():
 		return
-	_overlay_manager.close_menu("combat")
+	_combat_panel.visible = false
 
 
 func _on_combat_started() -> void:
-	_overlay_manager.open_menu("combat")
+	_combat_panel.visible = true
+	if _combat_panel.has_method("refresh"):
+		_combat_panel.refresh()
 
 
 func _on_combat_ended() -> void:
-	_overlay_manager.close_menu("combat")
+	_combat_panel.visible = false
 	_refresh_ui()
 	GameSession.check_game_over()
 
@@ -841,15 +849,12 @@ func _close_topmost_panel() -> bool:
 
 func _close_all_panels() -> void:
 	_overlay_manager.close_all_menus()
-	# Re-show combat if it was locking
-	if _is_combat_locking() and _combat_panel != null:
-		_overlay_manager.open_menu("combat")
 
 
 func _show_panel(panel: Control) -> void:
 	# Legacy helper for tests that call _show_panel/_hide_panel directly
 	if panel == _combat_panel:
-		_overlay_manager.open_menu("combat")
+		_combat_panel.visible = true
 	elif panel == _inventory_panel:
 		_overlay_manager.open_menu("inventory")
 	elif panel == _store_panel:
@@ -868,7 +873,7 @@ func _show_panel(panel: Control) -> void:
 
 func _hide_panel(panel: Control) -> void:
 	if panel == _combat_panel:
-		_overlay_manager.close_menu("combat")
+		_combat_panel.visible = false
 	elif panel == _inventory_panel:
 		_overlay_manager.close_menu("inventory")
 	elif panel == _store_panel:
@@ -1005,7 +1010,9 @@ func _on_attack() -> void:
 	if room.has_combat and not room.enemies_defeated:
 		if GameSession.combat == null:
 			GameSession.start_combat_for_room(room)
-		_overlay_manager.open_menu("combat")
+		_combat_panel.visible = true
+		if _combat_panel.has_method("refresh"):
+			_combat_panel.refresh()
 
 
 func _on_flee() -> void:
@@ -1161,7 +1168,8 @@ func _show_locked_room_dialog(title: String, message: String) -> void:
 var _game_over_overlay: Control
 
 func _on_game_over(summary) -> void:
-	_overlay_manager.close_all()
+	_overlay_manager.close_all_menus()
+	_combat_panel.visible = false
 	_show_game_over_screen(summary)
 
 
