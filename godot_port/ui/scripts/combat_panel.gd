@@ -98,13 +98,24 @@ func _exit_tree() -> void:
 
 
 func _build_ui() -> void:
-	var bg := DungeonTheme.make_panel_bg(
-		Color(0.07, 0.05, 0.09, 0.97), DungeonTheme.COMBAT_ACCENT)
+	# Transparent background — PopupFrame already provides the bordered panel.
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+	bg.set_content_margin_all(0)
+	bg.set_border_width_all(0)
 	add_theme_stylebox_override("panel", bg)
 
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(scroll)
+
 	var root := VBoxContainer.new()
+	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.add_theme_constant_override("separation", 6)
-	add_child(root)
+	scroll.add_child(root)
 
 	var title := DungeonTheme.make_header(
 		"⚔ COMBAT ⚔", DungeonTheme.COMBAT_ACCENT, 24)
@@ -149,7 +160,7 @@ func _build_ui() -> void:
 	# Enemy sprite area (Python parity: shows current target sprite)
 	_enemy_sprite_rect = TextureRect.new()
 	_enemy_sprite_rect.name = "EnemySpriteRect"
-	_enemy_sprite_rect.custom_minimum_size = Vector2(192, 192)
+	_enemy_sprite_rect.custom_minimum_size = Vector2(96, 96)
 	_enemy_sprite_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_enemy_sprite_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_enemy_sprite_rect.visible = false
@@ -809,8 +820,12 @@ func _on_attack() -> void:
 		return
 
 	# ================================================================
-	# PHASE 3 — Enemy rolls dice (display + linger).
+	# PHASE 3 — Enemy turn begins: hide player dice, show enemy dice.
 	# ================================================================
+	_dice_container.visible = false
+	_rolls_label.visible = false
+	_damage_preview_label.visible = false
+
 	if not result.enemy_rolls.is_empty():
 		_show_enemy_dice(result.enemy_rolls)
 		await _combat_pause(CombatUIPacing.enemy_dice_linger_sec())
@@ -848,8 +863,12 @@ func _on_attack() -> void:
 		return
 
 	# ================================================================
-	# PHASE 6 — Resolve combat end, then full UI refresh.
+	# PHASE 6 — Enemy turn ends: clear enemy dice, restore player dice.
 	# ================================================================
+	_clear_enemy_dice()
+	_dice_container.visible = true
+	_rolls_label.visible = true
+	_damage_preview_label.visible = true
 	var alive := ce.get_alive_enemies()
 	if alive.is_empty():
 		GameSession.end_combat(true)
