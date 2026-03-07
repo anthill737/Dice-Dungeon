@@ -57,6 +57,14 @@ func _ready() -> void:
 	GameSession.combat_started.connect(_on_combat_started_reset)
 
 
+func _notification(what: int) -> void:
+	# Refresh sprite whenever this panel becomes visible — fixes the timing bug
+	# where state_changed fires before the panel is shown (guard `if not visible`
+	# causes the sprite to never load on first open).
+	if what == NOTIFICATION_VISIBILITY_CHANGED and visible:
+		_refresh_enemy_sprite()
+
+
 func _process(delta: float) -> void:
 	if _roll_anim_active:
 		var interval := CombatUIPacing.dice_roll_interval()
@@ -141,7 +149,7 @@ func _build_ui() -> void:
 	# Enemy sprite area (Python parity: shows current target sprite)
 	_enemy_sprite_rect = TextureRect.new()
 	_enemy_sprite_rect.name = "EnemySpriteRect"
-	_enemy_sprite_rect.custom_minimum_size = Vector2(72, 72)
+	_enemy_sprite_rect.custom_minimum_size = Vector2(192, 192)
 	_enemy_sprite_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_enemy_sprite_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_enemy_sprite_rect.visible = false
@@ -561,6 +569,9 @@ func _on_combat_started_reset() -> void:
 	_clear_enemy_dice()
 	_last_turn_count = -1
 	_result_label.text = ""
+	# Load the sprite for the new encounter immediately rather than waiting for
+	# the next state_changed (which may fire before the panel is visible).
+	call_deferred("_refresh_enemy_sprite")
 
 
 func _clear_enemy_dice() -> void:

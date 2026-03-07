@@ -32,13 +32,27 @@ func _init() -> void:
 # ------------------------------------------------------------------
 
 static func _find_assets_dir() -> String:
-	var project_dir := ProjectSettings.globalize_path("res://").rstrip("/")
+	# 1. Next to the executable — how exported/Steam builds find assets.
+	#    Ship the `assets/` folder alongside DiceDungeon.exe.
+	var exe_dir := OS.get_executable_path().get_base_dir()
+	var exe_candidate := exe_dir.path_join("assets")
+	if DirAccess.dir_exists_absolute(exe_candidate):
+		return exe_candidate
+
+	# 2. Sibling of the Godot project directory — standard dev layout where
+	#    `godot_port/` and `assets/` sit next to each other.
+	#    Strip both / and \ to handle Windows paths correctly.
+	var project_dir := ProjectSettings.globalize_path("res://").rstrip("/").rstrip("\\")
 	var parent := project_dir.get_base_dir()
-	var candidate := parent.path_join("assets")
-	if DirAccess.dir_exists_absolute(candidate):
-		return candidate
-	if DirAccess.dir_exists_absolute(project_dir.path_join("assets")):
-		return project_dir.path_join("assets")
+	var dev_candidate := parent.path_join("assets")
+	if DirAccess.dir_exists_absolute(dev_candidate):
+		return dev_candidate
+
+	# 3. Inside the project directory — if assets were copied into res://.
+	var internal_candidate := project_dir.path_join("assets")
+	if DirAccess.dir_exists_absolute(internal_candidate):
+		return internal_candidate
+
 	return ""
 
 

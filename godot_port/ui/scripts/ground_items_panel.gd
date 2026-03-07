@@ -190,6 +190,17 @@ func _add_items_section(section_title: String, items: Array, callback_name: Stri
 		row.add_theme_constant_override("separation", 8)
 		_content_vbox.add_child(row)
 
+		# Item icon
+		if GameSession.assets != null:
+			var icon_tex = GameSession.assets.get_item_icon(item_name, 32)
+			if icon_tex != null:
+				var icon_rect := TextureRect.new()
+				icon_rect.texture = icon_tex
+				icon_rect.custom_minimum_size = Vector2(32, 32)
+				icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				row.add_child(icon_rect)
+
 		var item_panel := PanelContainer.new()
 		item_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var ip_style := StyleBoxFlat.new()
