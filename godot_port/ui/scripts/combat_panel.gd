@@ -29,7 +29,6 @@ var _enemy_hp_label: Label
 var _btn_roll: Button
 var _btn_attack: Button
 var _btn_close: Button
-var _log_text: RichTextLabel
 var _dice_container: HBoxContainer
 var _target_label: Label
 var _enemy_dice_container: HBoxContainer
@@ -50,7 +49,6 @@ const COMBAT_ATTACK_COLOR := Color(0.91, 0.30, 0.24)
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_build_ui()
 	GameSession.state_changed.connect(_on_state_changed)
 	GameSession.combat_ended.connect(func(): close_requested.emit())
@@ -98,15 +96,16 @@ func _exit_tree() -> void:
 
 
 func _build_ui() -> void:
-	# Transparent background — PopupFrame already provides the bordered panel.
+	# Inline panel — styled with its own background and border.
 	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.0, 0.0, 0.0, 0.0)
-	bg.set_content_margin_all(0)
-	bg.set_border_width_all(0)
+	bg.bg_color = Color(0.14, 0.08, 0.06)
+	bg.border_color = DungeonTheme.COMBAT_ACCENT
+	bg.set_border_width_all(2)
+	bg.set_corner_radius_all(0)
+	bg.set_content_margin_all(8)
 	add_theme_stylebox_override("panel", bg)
 
 	var scroll := ScrollContainer.new()
-	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -114,14 +113,12 @@ func _build_ui() -> void:
 
 	var root := VBoxContainer.new()
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.add_theme_constant_override("separation", 6)
+	root.add_theme_constant_override("separation", 4)
 	scroll.add_child(root)
 
 	var title := DungeonTheme.make_header(
-		"⚔ COMBAT ⚔", DungeonTheme.COMBAT_ACCENT, 24)
+		"⚔ COMBAT ⚔", DungeonTheme.COMBAT_ACCENT, 18)
 	root.add_child(title)
-
-	root.add_child(DungeonTheme.make_separator(DungeonTheme.COMBAT_ACCENT))
 
 	# --- Player HP ---
 	_player_hp_section = HBoxContainer.new()
@@ -160,7 +157,7 @@ func _build_ui() -> void:
 	# Enemy sprite area (Python parity: shows current target sprite)
 	_enemy_sprite_rect = TextureRect.new()
 	_enemy_sprite_rect.name = "EnemySpriteRect"
-	_enemy_sprite_rect.custom_minimum_size = Vector2(96, 96)
+	_enemy_sprite_rect.custom_minimum_size = Vector2(64, 64)
 	_enemy_sprite_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_enemy_sprite_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_enemy_sprite_rect.visible = false
@@ -176,7 +173,7 @@ func _build_ui() -> void:
 	enemy_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	enemy_col.add_child(enemy_header)
 
-	_enemy_list = DungeonTheme.make_item_list(80)
+	_enemy_list = DungeonTheme.make_item_list(60)
 	_enemy_list.name = "EnemyList"
 	_enemy_list.item_selected.connect(_on_enemy_selected)
 	enemy_col.add_child(_enemy_list)
@@ -256,7 +253,7 @@ func _build_ui() -> void:
 		vbox.add_theme_constant_override("separation", 2)
 
 		var die_panel := PanelContainer.new()
-		die_panel.custom_minimum_size = Vector2(72, 72)
+		die_panel.custom_minimum_size = Vector2(56, 56)
 		die_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 		die_panel.gui_input.connect(_on_die_clicked.bind(i))
 		die_panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -315,16 +312,6 @@ func _build_ui() -> void:
 	_result_label.add_theme_font_size_override("font_size", DungeonTheme.FONT_SUBHEADING)
 	_result_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
 	root.add_child(_result_label)
-
-	# Combat log — BBCode enabled for color styling
-	_log_text = RichTextLabel.new()
-	_log_text.name = "CombatLog"
-	_log_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_log_text.bbcode_enabled = true
-	_log_text.scroll_following = true
-	_log_text.add_theme_font_size_override("normal_font_size", DungeonTheme.FONT_BODY)
-	_log_text.add_theme_color_override("default_color", DungeonTheme.TEXT_BONE)
-	root.add_child(_log_text)
 
 
 # ------------------------------------------------------------------
@@ -527,50 +514,10 @@ func _track_tween(tw: Tween) -> void:
 # Combat log styling — Python-parity colors
 # ------------------------------------------------------------------
 
-func _classify_log_line(line: String) -> Color:
-	if line.begins_with("="):
-		return DungeonTheme.LOG_SEPARATOR
-	if "CRIT" in line or "critical" in line.to_lower():
-		return DungeonTheme.LOG_CRIT
-	if line.begins_with("⚔️ You") or line.begins_with("Hit ") or line.begins_with("⚄ "):
-		return DungeonTheme.LOG_PLAYER
-	if line.begins_with("+") and "gold" in line:
-		return DungeonTheme.LOG_LOOT
-	if "Boss Key Fragment" in line:
-		return DungeonTheme.LOG_LOOT
-	if "defeated" in line or "DEFEATED" in line or "blocked" in line or "absorbs" in line:
-		return DungeonTheme.LOG_SUCCESS
-	if "🔥" in line or "✹" in line or "fire damage" in line:
-		return DungeonTheme.LOG_FIRE
-	if line.begins_with("⚠️") or "summons" in line or "splits" in line:
-		return DungeonTheme.LOG_ENEMY
-	if "☠" in line or "attacks for" in line or "rolls:" in line or "take" in line.to_lower():
-		return DungeonTheme.LOG_ENEMY
-	if "💚" in line:
-		return DungeonTheme.LOG_ENEMY
-	if "Rolls Remaining" in line or "dazed" in line or "Target" in line:
-		return DungeonTheme.LOG_SYSTEM
-	if "spawned" in line.to_lower() or "[SPLIT]" in line or "[SPAWNED]" in line:
-		return DungeonTheme.LOG_ENEMY
-	if "[TRANSFORMED]" in line:
-		return DungeonTheme.LOG_ENEMY
-	if "Victory" in line or "Mini-boss" in line:
-		return DungeonTheme.LOG_SUCCESS
-	return DungeonTheme.TEXT_BONE
-
-
-func _append_styled_log(line: String) -> void:
-	var color := _classify_log_line(line)
-	var hex := "#" + color.to_html(false)
-
-	var is_bold := (color == DungeonTheme.LOG_PLAYER or color == DungeonTheme.LOG_ENEMY
-		or color == DungeonTheme.LOG_CRIT or color == DungeonTheme.LOG_SUCCESS
-		or color == DungeonTheme.LOG_FIRE)
-
-	if is_bold:
-		_log_text.append_text("[color=%s][b]%s[/b][/color]\n" % [hex, line])
-	else:
-		_log_text.append_text("[color=%s]%s[/color]\n" % [hex, line])
+func _append_styled_log(_line: String) -> void:
+	# Combat log is no longer embedded in the panel — all messages go to the
+	# adventure log via GameSession.log_message.emit() at the call sites.
+	pass
 
 
 # ------------------------------------------------------------------
@@ -578,9 +525,6 @@ func _append_styled_log(line: String) -> void:
 # ------------------------------------------------------------------
 
 func _on_combat_started_reset() -> void:
-	# Clear stale combat log from prior encounter (Python parity)
-	if _log_text != null:
-		_log_text.clear()
 	# Clear stale enemy dice from prior encounter
 	_clear_enemy_dice()
 	_last_turn_count = -1
