@@ -1360,11 +1360,6 @@ func _refresh_ui() -> void:
 
 	_update_button_visibility(room)
 
-	# Update combat popup closable state dynamically
-	var combat_frame = _overlay_manager.get_frame("combat")
-	if combat_frame != null:
-		combat_frame.closable = not _is_combat_locking()
-
 	if _debug_visible:
 		_refresh_debug()
 
