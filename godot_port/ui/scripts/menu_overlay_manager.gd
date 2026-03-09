@@ -13,6 +13,17 @@ signal menu_opened(menu_key: String)
 signal menu_closed(menu_key: String)
 
 var PopupFrameScript := preload("res://ui/scripts/popup_frame.gd")
+const _SfxService := preload("res://game/services/sfx_service.gd")
+const MENU_SFX_KEYS := {
+	"inventory": true,
+	"settings": true,
+	"save_load": true,
+	"character_status": true,
+	"lore_codex": true,
+	"pause": true,
+	"tutorial": true,
+	"start_adventure": true,
+}
 
 var _popup_root: Control
 var _popups: Dictionary = {}
@@ -106,6 +117,8 @@ func open_menu(menu_key: String) -> void:
 	if content != null and content.has_method("refresh"):
 		content.refresh()
 
+	if MENU_SFX_KEYS.has(menu_key):
+		_SfxService.play_for(self, "menu_open")
 	menu_opened.emit(menu_key)
 
 
@@ -125,6 +138,8 @@ func close_menu(menu_key: String) -> void:
 				frame.visible = false)
 	else:
 		frame.visible = false
+	if MENU_SFX_KEYS.has(menu_key):
+		_SfxService.play_for(self, "menu_close")
 	menu_closed.emit(menu_key)
 
 

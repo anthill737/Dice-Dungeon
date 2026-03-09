@@ -6,6 +6,7 @@ extends Control
 signal intro_finished()
 
 var _threshold_scene := preload("res://ui/scenes/ThresholdArea.tscn")
+const _SfxService := preload("res://game/services/sfx_service.gd")
 
 const INTRO_TEXT := """Your eyes snap open.
 
@@ -25,6 +26,7 @@ Somewhere deeper within the structure, stone grinds against stone. A passage ope
 
 
 func _ready() -> void:
+	_SfxService.ensure_for(self)
 	intro_finished.connect(_on_intro_finished)
 	var options: Dictionary = GameSession.pending_run_options
 	if not options.is_empty():

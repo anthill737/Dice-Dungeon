@@ -5,6 +5,8 @@ extends PanelContainer
 
 signal close_requested()
 
+const _SfxService := preload("res://game/services/sfx_service.gd")
+
 var _content_vbox: VBoxContainer
 var _scroll: ScrollContainer
 var _btn_close: Button
@@ -242,7 +244,9 @@ func _pickup_uncollected_item(index: int) -> void:
 	var item_name: String = room.uncollected_items[index]
 	if GameSession.inventory_engine != null and GameSession.inventory_engine.add_item_to_inventory(item_name, "ground"):
 		room.uncollected_items.remove_at(index)
+		_SfxService.play_for(self, "item_pickup")
 	else:
+		_SfxService.play_for(self, "inventory_full")
 		GameSession.log_message.emit("Inventory full! Cannot pick up %s." % item_name)
 	GameSession.state_changed.emit()
 	refresh()
@@ -255,7 +259,9 @@ func _pickup_dropped_item(index: int) -> void:
 	var item_name: String = room.dropped_items[index]
 	if GameSession.inventory_engine != null and GameSession.inventory_engine.add_item_to_inventory(item_name, "ground"):
 		room.dropped_items.remove_at(index)
+		_SfxService.play_for(self, "item_pickup")
 	else:
+		_SfxService.play_for(self, "inventory_full")
 		GameSession.log_message.emit("Inventory full! Cannot pick up %s." % item_name)
 	GameSession.state_changed.emit()
 	refresh()
@@ -268,6 +274,7 @@ func _on_search_container() -> void:
 	var result := GameSession.exploration.search_container(room)
 	GameSession._emit_logs(GameSession.exploration.logs)
 	if not result.is_empty() and not result.get("locked", false):
+		_SfxService.play_container_for(self, room.ground_container)
 		_show_container_contents(room)
 	GameSession.state_changed.emit()
 	refresh()
@@ -277,6 +284,7 @@ func _on_open_searched_container() -> void:
 	var room := GameSession.get_current_room()
 	if room == null:
 		return
+	_SfxService.play_container_for(self, room.ground_container)
 	_show_container_contents(room)
 
 
@@ -287,10 +295,14 @@ func _on_use_lockpick() -> void:
 	var unlock_result := GameSession.inventory_engine.use_lockpick_on_container(room)
 	GameSession._emit_logs(GameSession.inventory_engine.logs)
 	if unlock_result.get("ok", false):
+		_SfxService.play_for(self, "puzzle_success")
 		var search_result := GameSession.exploration.search_container(room)
 		GameSession._emit_logs(GameSession.exploration.logs)
 		if not search_result.is_empty() and not search_result.get("locked", false):
+			_SfxService.play_container_for(self, room.ground_container)
 			_show_container_contents(room)
+	else:
+		_SfxService.play_for(self, "puzzle_fail")
 	GameSession.state_changed.emit()
 	refresh()
 
@@ -301,8 +313,14 @@ func _on_take_all() -> void:
 	var room := GameSession.get_current_room()
 	if room == null:
 		return
+	var had_gold := room.ground_gold > 0
+	var had_items := not room.ground_items.is_empty() or not room.uncollected_items.is_empty() or not room.dropped_items.is_empty()
 	GameSession.exploration.pickup_all_ground(room)
 	GameSession._emit_logs(GameSession.exploration.logs)
+	if had_gold:
+		_SfxService.play_for(self, "gold_pickup")
+	if had_items:
+		_SfxService.play_for(self, "item_pickup")
 	GameSession.state_changed.emit()
 	refresh()
 
@@ -404,8 +422,12 @@ func _show_container_contents(room: RoomState) -> void:
 		var take_all_btn := DungeonTheme.make_styled_btn("Take All", DungeonTheme.TEXT_GREEN, 120)
 		take_all_btn.custom_minimum_size.y = 36
 		take_all_btn.pressed.connect(func():
-			GameSession.exploration.take_all_container(room)
+			var result := GameSession.exploration.take_all_container(room)
 			GameSession._emit_logs(GameSession.exploration.logs)
+			if int(result.get("gold", 0)) > 0:
+				_SfxService.play_for(self, "gold_pickup")
+			if not str(result.get("item", "")).is_empty():
+				_SfxService.play_for(self, "item_pickup")
 			GameSession.state_changed.emit()
 			_dismiss_container_popup()
 		)
@@ -436,8 +458,10 @@ func _add_container_gold_row(parent: VBoxContainer, room: RoomState, gold: int) 
 	g_panel.add_child(g_lbl)
 	var g_btn := DungeonTheme.make_styled_btn("Take", DungeonTheme.BTN_PRIMARY, 80)
 	g_btn.pressed.connect(func():
-		GameSession.exploration.take_container_gold(room)
+		var amount := GameSession.exploration.take_container_gold(room)
 		GameSession._emit_logs(GameSession.exploration.logs)
+		if amount > 0:
+			_SfxService.play_for(self, "gold_pickup")
 		GameSession.state_changed.emit()
 		_dismiss_container_popup()
 	)
@@ -478,8 +502,12 @@ func _add_container_item_row(parent: VBoxContainer, room: RoomState, item: Strin
 	item_content.add_child(i_lbl)
 	var i_btn := DungeonTheme.make_styled_btn("Take", DungeonTheme.BTN_SECONDARY, 80)
 	i_btn.pressed.connect(func():
-		GameSession.exploration.take_container_item(room)
+		var taken_item := GameSession.exploration.take_container_item(room)
 		GameSession._emit_logs(GameSession.exploration.logs)
+		if not taken_item.is_empty():
+			_SfxService.play_for(self, "item_pickup")
+		else:
+			_SfxService.play_for(self, "inventory_full")
 		GameSession.state_changed.emit()
 		_dismiss_container_popup()
 	)

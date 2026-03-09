@@ -86,6 +86,58 @@ godot_port/
 └── README.md              # This file
 ```
 
+## Sound effects pipeline
+
+Generate sound effects from the repository root with:
+
+```bash
+python scripts/generate_sfx.py
+```
+
+### Setup
+
+1. Copy the repository root `.env.example` to `.env`
+2. Set `ELEVENLABS_API_KEY` in that local `.env`
+3. Optionally change `ELEVENLABS_OUTPUT_FORMAT` if you want to prefer a different ElevenLabs output
+
+### Output location
+
+Generated files are written to:
+
+```text
+godot_port/assets/audio/sfx/
+```
+
+The prompt manifest lives at:
+
+```text
+godot_port/assets/audio/sfx_manifest.json
+```
+
+### Useful flags
+
+```bash
+# Preview work without calling the API
+python scripts/generate_sfx.py --dry-run
+
+# Regenerate everything even if files already exist
+python scripts/generate_sfx.py --overwrite
+```
+
+The generator skips existing sound files by default, logs per-sound success or failure to the console and `logs/sfx_generation.log`, retries rate-limit and transient failures with backoff, and tries `pcm_44100` first so it can produce `.wav` files when the account supports PCM. If ElevenLabs rejects PCM for the account, it automatically falls back to MP3.
+
+### Adding more sound effects
+
+Add another object to `godot_port/assets/audio/sfx_manifest.json` with:
+
+- `id`: stable logical name
+- `file_stem`: deterministic filename stem such as `sfx_new_effect`
+- `prompt`: the ElevenLabs sound prompt
+- `duration_seconds`: optional duration hint between 0.5 and 30
+- `prompt_influence`: optional value between 0 and 1
+
+Then rerun `python scripts/generate_sfx.py`.
+
 ## What's next
 
 Gameplay porting will add scenes, scripts, and assets under this directory. The original Python/Tkinter game lives in the repository root — see the top-level `README.md` for details.

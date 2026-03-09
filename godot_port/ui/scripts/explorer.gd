@@ -2,6 +2,7 @@ extends Control
 ## Explorer Scene — core gameplay screen (polished UI).
 
 const _GameOverResolver := preload("res://game/services/game_over_resolver.gd")
+const _SfxService := preload("res://game/services/sfx_service.gd")
 ## Layout: TopBar | Center (room+combat) | Right Sidebar (minimap+actions) | Bottom (log).
 ## Hosts embedded overlay panels via MenuOverlayManager for Combat, Inventory,
 ## Store, SaveLoad, CharacterStatus, LoreCodex, Settings, Pause.
@@ -91,6 +92,7 @@ var _last_codex_count: int = 0
 
 
 func _ready() -> void:
+	_SfxService.ensure_for(self)
 	_context = GameContext.new()
 	_build_ui()
 	_build_debug_overlay()
@@ -803,6 +805,7 @@ func _on_store() -> void:
 	if room == null or not room.has_store:
 		_append_log("No store here.")
 		return
+	_SfxService.play_for(self, "shop_enter")
 	_overlay_manager.open_menu("store")
 
 
@@ -815,6 +818,7 @@ func _on_fast_travel_store() -> void:
 	var room := GameSession.travel_to_store()
 	if room != null:
 		_refresh_ui()
+		_SfxService.play_for(self, "shop_enter")
 		_overlay_manager.open_menu("store")
 
 func _on_tutorial() -> void:

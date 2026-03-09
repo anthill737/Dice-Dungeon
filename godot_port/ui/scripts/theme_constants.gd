@@ -2,6 +2,8 @@ class_name DungeonTheme
 ## Shared color palette, font sizes, and helper methods for the dungeon UI.
 ## All panels reference this to stay consistent.
 
+const _SfxService := preload("res://game/services/sfx_service.gd")
+
 # --- Font sizes ---
 const FONT_TITLE := 24
 const FONT_HEADING := 20
@@ -152,6 +154,7 @@ static func make_styled_btn(text: String, accent: Color, min_width: int = 100) -
 	disabled.set_content_margin_all(6)
 	btn.add_theme_stylebox_override("disabled", disabled)
 	btn.add_theme_color_override("font_disabled_color", BTN_DISABLED_TEXT)
+	btn.pressed.connect(func(): _SfxService.play_for(btn, "button_click"))
 
 	return btn
 
@@ -233,6 +236,7 @@ static func make_icon_btn(icon_text: String, tooltip: String) -> Button:
 	disabled.set_content_margin_all(ICON_BTN_PADDING)
 	btn.add_theme_stylebox_override("disabled", disabled)
 	btn.add_theme_color_override("font_disabled_color", BTN_DISABLED_TEXT)
+	btn.pressed.connect(func(): _SfxService.play_for(btn, "button_click"))
 
 	return btn
 

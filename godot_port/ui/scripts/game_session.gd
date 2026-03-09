@@ -3,6 +3,7 @@ extends Node
 
 const _ScoreResolver := preload("res://game/core/combat/score_resolver.gd")
 const _GameOverResolver := preload("res://game/services/game_over_resolver.gd")
+const _SfxService := preload("res://game/services/sfx_service.gd")
 ## UI scripts read/write game state exclusively through this node.
 ##
 ## Combat lifecycle
@@ -190,6 +191,17 @@ func _drain_ground_to_inventory() -> void:
 			break
 
 
+func _play_room_entry_sfx(room: RoomState) -> void:
+	if exploration == null or room == null:
+		return
+	if room.is_boss_room and not exploration.last_move_was_revisit:
+		_SfxService.play_for(self, "boss_spawn")
+	elif exploration.last_move_was_revisit:
+		_SfxService.play_for(self, "move_room")
+	else:
+		_SfxService.play_for(self, "discover_room")
+
+
 # -------------------------------------------------------------------
 # Movement
 # -------------------------------------------------------------------
@@ -242,6 +254,7 @@ func move_direction(direction: String) -> RoomState:
 		trace.record("move_attempted", {"dir": direction, "success": true})
 		_trace_room_entered(room)
 		_log_room_enter(room)
+		_play_room_entry_sfx(room)
 		_check_combat_pending(room)
 
 	state_changed.emit()
@@ -255,11 +268,13 @@ func confirm_locked_room_entry(direction: String) -> RoomState:
 	var new_pos: Vector2i = exploration.floor.current_pos + delta
 	var gate := exploration.check_room_gating(new_pos)
 	if gate == "has_key_mini_boss":
-		exploration.use_old_key(new_pos)
-		_emit_logs(exploration.logs)
+		if exploration.use_old_key(new_pos):
+			_emit_logs(exploration.logs)
+			_SfxService.play_for(self, "elite_unlock")
 	elif gate == "has_key_boss":
-		exploration.use_boss_key(new_pos)
-		_emit_logs(exploration.logs)
+		if exploration.use_boss_key(new_pos):
+			_emit_logs(exploration.logs)
+			_SfxService.play_for(self, "elite_unlock")
 	var room := exploration.move(direction)
 	_emit_logs(exploration.logs)
 	if room != null:
@@ -268,6 +283,7 @@ func confirm_locked_room_entry(direction: String) -> RoomState:
 		trace.record("move_attempted", {"dir": direction, "success": true})
 		_trace_room_entered(room)
 		_log_room_enter(room)
+		_play_room_entry_sfx(room)
 		_check_combat_pending(room)
 	state_changed.emit()
 	return room
@@ -461,6 +477,8 @@ func _end_combat_internal(victory: bool) -> void:
 		trace.record_milestone("combat_ended", {"result": "defeat"}, SessionTrace.make_snapshot(game_state, exploration.floor if exploration else null, _ce_room_name))
 
 	if victory and room != null:
+		if room.is_boss_room:
+			_SfxService.play_for(self, "boss_defeat")
 		# Score award — Python parity
 		if room.is_boss_room:
 			game_state.run_score += _ScoreResolver.score_boss_kill(game_state.floor)
@@ -619,6 +637,7 @@ func open_chest() -> Dictionary:
 	var result := exploration.open_chest(room)
 	_emit_logs(exploration.logs)
 	if not result.is_empty():
+		_SfxService.play_for(self, "chest_open")
 		chest_item_name = str(result.get("item", ""))
 		if not chest_item_name.is_empty():
 			var after_count: int = game_state.inventory.count(chest_item_name)
@@ -639,6 +658,7 @@ func pickup_ground_gold() -> int:
 	var amount := exploration.pickup_ground_gold(room)
 	_emit_logs(exploration.logs)
 	if amount > 0:
+		_SfxService.play_for(self, "gold_pickup")
 		trace.record("item_picked_up", {
 			"source": "ground",
 			"gold": amount,
@@ -657,6 +677,7 @@ func pickup_ground_item(index: int) -> String:
 	var item := exploration.pickup_ground_item(room, index)
 	_emit_logs(exploration.logs)
 	if not item.is_empty():
+		_SfxService.play_for(self, "item_pickup")
 		var after_count: int = game_state.inventory.count(item)
 		trace_inventory_qty_changed(item, before_count, after_count, "pickup")
 		trace.record("item_picked_up", {
@@ -665,6 +686,8 @@ func pickup_ground_item(index: int) -> String:
 			"name": item,
 			"qty": 1,
 		})
+	elif game_state != null and game_state.inventory.size() >= game_state.max_inventory:
+		_SfxService.play_for(self, "inventory_full")
 	state_changed.emit()
 	return item
 
@@ -690,6 +713,7 @@ func descend_stairs() -> RoomState:
 	var room := exploration.descend_floor()
 	_emit_logs(exploration.logs)
 	if room != null:
+		_SfxService.play_for(self, "stairs_down")
 		game_state.run_score += _ScoreResolver.score_floor_descent(exploration.floor.floor_index)
 		trace.record("floor_descended", {
 			"new_floor": exploration.floor.floor_index,
@@ -717,6 +741,7 @@ func attempt_rest() -> void:
 	if heal > 0:
 		game_state.health += heal
 		game_state.rest_cooldown = 3
+		_SfxService.play_for(self, "heal")
 		log_message.emit("Rested and recovered %d HP. Must explore 3 rooms before resting again." % heal)
 	else:
 		log_message.emit("Already at full health.")

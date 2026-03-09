@@ -1,0 +1,211 @@
+{
+  "defaults": {
+    "prompt_influence": 0.45
+  },
+  "sounds": [
+    {
+      "id": "dice_roll",
+      "file_stem": "sfx_dice_roll",
+      "duration_seconds": 1.2,
+      "prompt": "three wooden dice rolling quickly across a stone tabletop, sharp clicks, crisp tabletop game sound, short fantasy RPG sound effect, clean and punchy, no ambience"
+    },
+    {
+      "id": "dice_lock",
+      "file_stem": "sfx_dice_lock",
+      "duration_seconds": 0.8,
+      "prompt": "single wooden die snapping into place on a stone table with a small magical sparkle chime, crisp tabletop game sound, short clean UI style sound effect"
+    },
+    {
+      "id": "attack",
+      "file_stem": "sfx_attack",
+      "duration_seconds": 0.9,
+      "prompt": "bright metallic sword strike with sharp impact, fantasy weapon hit, crisp and punchy, short combat sound effect, no ambience"
+    },
+    {
+      "id": "crit",
+      "file_stem": "sfx_crit",
+      "duration_seconds": 1.2,
+      "prompt": "powerful magical critical strike impact with bright crystalline burst and metallic ring, fantasy RPG critical hit sound, sharp and energetic"
+    },
+    {
+      "id": "enemy_hit",
+      "file_stem": "sfx_enemy_hit",
+      "duration_seconds": 1.0,
+      "prompt": "monster being struck with weapon impact and brief creature grunt, sharp combat hit sound, fantasy dungeon combat"
+    },
+    {
+      "id": "enemy_die",
+      "file_stem": "sfx_enemy_die",
+      "duration_seconds": 1.6,
+      "prompt": "monster collapsing and dissolving with dark magical burst and echoing impact, fantasy creature death sound, short dramatic finish"
+    },
+    {
+      "id": "shield_block",
+      "file_stem": "sfx_shield_block",
+      "duration_seconds": 0.9,
+      "prompt": "metal shield blocking weapon strike with ringing metallic clang, sharp fantasy combat defense sound"
+    },
+    {
+      "id": "armor_break",
+      "file_stem": "sfx_armor_break",
+      "duration_seconds": 1.2,
+      "prompt": "metal armor cracking and breaking apart with sharp fragments and impact, fantasy combat armor break sound"
+    },
+    {
+      "id": "legendary_hit",
+      "file_stem": "sfx_legendary_hit",
+      "duration_seconds": 1.5,
+      "prompt": "massive fantasy attack impact with magical energy burst, heavy strike with bright spark effects, powerful critical combat sound"
+    },
+    {
+      "id": "enemy_dice_roll",
+      "file_stem": "sfx_enemy_dice_roll",
+      "duration_seconds": 1.2,
+      "prompt": "three rough bone dice rolling across stone with hollow clacking sound, darker tabletop dice roll"
+    },
+    {
+      "id": "move_room",
+      "file_stem": "sfx_move",
+      "duration_seconds": 0.8,
+      "prompt": "leather boots stepping across stone dungeon floor with subtle echo, grounded fantasy movement sound"
+    },
+    {
+      "id": "discover_room",
+      "file_stem": "sfx_discover_room",
+      "duration_seconds": 2.2,
+      "prompt": "deep stone door opening with heavy mechanism and faint magical resonance, dungeon exploration reveal sound"
+    },
+    {
+      "id": "stairs_down",
+      "file_stem": "sfx_stairs_down",
+      "duration_seconds": 1.5,
+      "prompt": "descending stone stairs footsteps with deep echo, short dungeon transition sound"
+    },
+    {
+      "id": "chest_open",
+      "file_stem": "sfx_chest_open",
+      "duration_seconds": 1.6,
+      "prompt": "heavy wooden chest opening with deep creak and solid thunk, medieval container sound"
+    },
+    {
+      "id": "barrel_open",
+      "file_stem": "sfx_barrel_open",
+      "duration_seconds": 1.4,
+      "prompt": "wooden barrel lid sliding open with hollow wood movement and soft rummaging"
+    },
+    {
+      "id": "lockbox_open",
+      "file_stem": "sfx_lockbox_open",
+      "duration_seconds": 1.2,
+      "prompt": "iron lock clicking open and metal lid lifting, small treasure container sound"
+    },
+    {
+      "id": "item_pickup",
+      "file_stem": "sfx_item_pickup",
+      "duration_seconds": 0.8,
+      "prompt": "soft magical pickup chime with light sparkle tone, fantasy item collection sound"
+    },
+    {
+      "id": "gold_pickup",
+      "file_stem": "sfx_gold_pickup",
+      "duration_seconds": 0.8,
+      "prompt": "small pile of coins clinking together with metallic jingle, fantasy gold pickup sound"
+    },
+    {
+      "id": "inventory_full",
+      "file_stem": "sfx_inventory_full",
+      "duration_seconds": 0.8,
+      "prompt": "short dull wooden thud with subtle negative tone, game UI warning sound"
+    },
+    {
+      "id": "shop_enter",
+      "file_stem": "sfx_shop_enter",
+      "duration_seconds": 2.0,
+      "prompt": "wooden tavern door opening with warm room ambience hit and faint coin jingle, fantasy merchant shop sound"
+    },
+    {
+      "id": "purchase",
+      "file_stem": "sfx_purchase",
+      "duration_seconds": 0.8,
+      "prompt": "coins exchanging hands with satisfying metallic clink and small success chime"
+    },
+    {
+      "id": "sell",
+      "file_stem": "sfx_sell",
+      "duration_seconds": 0.8,
+      "prompt": "coins dropping into a pouch with soft metallic clinking, fantasy trading sound"
+    },
+    {
+      "id": "drink_potion",
+      "file_stem": "sfx_drink_potion",
+      "duration_seconds": 1.1,
+      "prompt": "glass vial uncorking and liquid drinking with magical shimmer, fantasy potion use sound"
+    },
+    {
+      "id": "heal",
+      "file_stem": "sfx_heal",
+      "duration_seconds": 1.1,
+      "prompt": "soft magical healing energy pulse with gentle chime, warm fantasy healing sound"
+    },
+    {
+      "id": "shield_gain",
+      "file_stem": "sfx_shield_gain",
+      "duration_seconds": 1.2,
+      "prompt": "magical barrier forming with metallic resonance and shimmering energy sound"
+    },
+    {
+      "id": "button_click",
+      "file_stem": "sfx_button_click",
+      "duration_seconds": 0.5,
+      "prompt": "small wooden button click with subtle magical sparkle, fantasy RPG interface sound"
+    },
+    {
+      "id": "menu_open",
+      "file_stem": "sfx_menu_open",
+      "duration_seconds": 0.7,
+      "prompt": "soft parchment page opening with magical shimmer, fantasy UI menu open sound"
+    },
+    {
+      "id": "menu_close",
+      "file_stem": "sfx_menu_close",
+      "duration_seconds": 0.7,
+      "prompt": "parchment page closing with gentle thud and subtle magical fade"
+    },
+    {
+      "id": "trap_trigger",
+      "file_stem": "sfx_trap_trigger",
+      "duration_seconds": 1.0,
+      "prompt": "sudden mechanical trap snap with metal springs and sharp impact, dungeon trap sound"
+    },
+    {
+      "id": "puzzle_success",
+      "file_stem": "sfx_puzzle_success",
+      "duration_seconds": 2.0,
+      "prompt": "ancient stone mechanism activating with deep rumble and magical resonance"
+    },
+    {
+      "id": "puzzle_fail",
+      "file_stem": "sfx_puzzle_fail",
+      "duration_seconds": 1.2,
+      "prompt": "stone mechanism grinding and stopping with dull failure tone"
+    },
+    {
+      "id": "elite_unlock",
+      "file_stem": "sfx_elite_unlock",
+      "duration_seconds": 1.8,
+      "prompt": "heavy ornate lock turning and reinforced dungeon door unlocking with deep metallic click"
+    },
+    {
+      "id": "boss_spawn",
+      "file_stem": "sfx_boss_spawn",
+      "duration_seconds": 2.8,
+      "prompt": "deep magical energy surge with rumbling stone and dark fantasy power rising"
+    },
+    {
+      "id": "boss_defeat",
+      "file_stem": "sfx_boss_defeat",
+      "duration_seconds": 2.6,
+      "prompt": "large monster collapsing with magical explosion and deep echoing victory impact"
+    }
+  ]
+}

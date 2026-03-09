@@ -3,6 +3,8 @@ extends Control
 ## Ported from Python navigation.py show_starter_area.
 ## Loads content from world_lore.json starting_area.
 
+const _SfxService := preload("res://game/services/sfx_service.gd")
+
 signal enter_dungeon_requested()
 signal show_tutorial_requested()
 
@@ -14,6 +16,7 @@ var _tutorial_scene := preload("res://ui/scenes/TutorialPanel.tscn")
 
 
 func _ready() -> void:
+	_SfxService.ensure_for(self)
 	var cm := ContentManager.new()
 	cm.load_all()
 	_threshold_svc = ThresholdService.new(cm.get_world_lore())
@@ -29,6 +32,7 @@ func _on_enter_dungeon() -> void:
 
 
 func _on_show_tutorial() -> void:
+	_SfxService.play_for(self, "menu_open")
 	if is_instance_valid(_tutorial_overlay):
 		_tutorial_overlay.queue_free()
 	var overlay := ColorRect.new()
@@ -232,6 +236,7 @@ func _build_ui() -> void:
 
 
 func _on_sign_pressed(sign_data: Dictionary) -> void:
+	_SfxService.play_for(self, "menu_open")
 	if is_instance_valid(_sign_popup):
 		_sign_popup.queue_free()
 
@@ -303,6 +308,11 @@ func _on_chest_pressed(chest_data: Dictionary, btn: Button) -> void:
 		return
 	btn.disabled = true
 	btn.text = chest_data.get("description", "Chest") + " (Opened)"
+	_SfxService.play_for(self, "chest_open")
+	if int(result.get("gold", 0)) > 0:
+		_SfxService.play_for(self, "gold_pickup")
+	if not (result.get("items", []) as Array).is_empty():
+		_SfxService.play_for(self, "item_pickup")
 	GameSession.state_changed.emit()
 	_show_chest_popup(chest_data, result.get("items", []), int(result.get("gold", 0)), result.get("lore", ""))
 

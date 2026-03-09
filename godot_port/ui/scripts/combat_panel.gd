@@ -14,6 +14,8 @@ extends PanelContainer
 
 signal close_requested()
 
+const _SfxService := preload("res://game/services/sfx_service.gd")
+
 var _dice_labels: Array[Label] = []
 var _dice_panels: Array[PanelContainer] = []
 var _dice_lock_icons: Array[Label] = []
@@ -336,6 +338,7 @@ func _on_die_clicked(event: InputEvent, index: int) -> void:
 		ce.dice.toggle_lock(index)
 		if ce.dice.locked[index]:
 			GameSession.trace_dice_locked(index, ce.dice.values[index])
+			_SfxService.play_for(self, "dice_lock")
 		_sync_dice_display()
 		_update_damage_preview()
 
@@ -699,7 +702,9 @@ func _on_roll() -> void:
 	var ce := GameSession.combat
 	if ce == null:
 		return
-	ce.player_roll()
+	if not ce.player_roll():
+		return
+	_SfxService.play_for(self, "dice_roll")
 	GameSession.trace_dice_rolled(ce.dice.values)
 	GameSession.trace_reroll_used(ce.dice.rolls_left)
 	_start_roll_animation()
@@ -727,8 +732,10 @@ func _on_attack() -> void:
 		target_idx = selected[0]
 
 	var hp_before := GameSession.game_state.health
+	var shield_before := GameSession.game_state.temp_shield
 	var enemy_hp_before: int = 0
 	var alive_before := ce.get_alive_enemies()
+	var combo_bonus := ce.dice.calc_combo_bonus()
 	if target_idx < alive_before.size():
 		enemy_hp_before = alive_before[target_idx].health
 
@@ -770,11 +777,22 @@ func _on_attack() -> void:
 
 	# Show player damage on enemy HP bar immediately
 	if result.player_damage > 0:
+		if result.target_killed:
+			_SfxService.play_for(self, "enemy_die")
+		else:
+			if result.was_crit and (result.player_damage >= 30 or combo_bonus >= 10):
+				_SfxService.play_for(self, "legendary_hit")
+			elif result.was_crit:
+				_SfxService.play_for(self, "crit")
+			else:
+				_SfxService.play_for(self, "attack")
+			_SfxService.play_for(self, "enemy_hit")
 		_flash_hp_bar(_enemy_hp_bar, _enemy_hp_section)
 		_show_floating_damage(result.player_damage, _enemy_hp_section, DungeonTheme.LOG_PLAYER)
 
 	# Enemy dice reveal (before damage application)
 	if not result.enemy_rolls.is_empty():
+		_SfxService.play_for(self, "enemy_dice_roll")
 		_show_enemy_dice(result.enemy_rolls)
 
 	var linger := CombatUIPacing.enemy_dice_linger_sec()
@@ -796,6 +814,13 @@ func _on_attack() -> void:
 	if player_dmg_taken > 0:
 		_flash_hp_bar(_player_hp_bar, _player_hp_section)
 		_show_floating_damage(player_dmg_taken, _player_hp_section, DungeonTheme.LOG_ENEMY)
+
+	if shield_before > GameSession.game_state.temp_shield:
+		_SfxService.play_for(self, "shield_block")
+	for dur_ev in result.durability_events:
+		if bool(dur_ev.get("broken", false)) and str(dur_ev.get("slot", "")) == "armor":
+			_SfxService.play_for(self, "armor_break")
+			break
 
 	var alive := ce.get_alive_enemies()
 	if alive.is_empty():
