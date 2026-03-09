@@ -9,7 +9,7 @@ var _content_vbox: VBoxContainer
 var _scroll: ScrollContainer
 var _btn_close: Button
 var _btn_take_all: Button
-var _container_popup: Control
+var _container_popup: Node
 
 
 func _ready() -> void:
@@ -54,7 +54,12 @@ func _build_ui() -> void:
 
 
 func refresh() -> void:
+	# Guard: _build_ui() must have run first (e.g. panel not yet in tree)
+	if _content_vbox == null:
+		return
+
 	for child in _content_vbox.get_children():
+		_content_vbox.remove_child(child)
 		child.queue_free()
 
 	var room := GameSession.get_current_room()
@@ -334,8 +339,8 @@ func _show_container_contents(room: RoomState) -> void:
 	# popup appears on top of the ground-items panel, not behind it.
 	var canvas_layer := CanvasLayer.new()
 	canvas_layer.layer = 110
-	var root_node := get_tree().root if get_tree() != null else self
-	(root_node as Node).add_child(canvas_layer)
+	var root_node: Node = get_tree().root if get_tree() != null else self
+	root_node.add_child(canvas_layer)
 	_container_popup = canvas_layer
 
 	# CanvasLayer is a Node, not a Control, so child Controls need a root
