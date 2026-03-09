@@ -89,6 +89,7 @@ var _btn_tutorial: Button
 var _btn_lore_codex: Button
 var _lore_indicator: Label
 var _last_codex_count: int = 0
+var _game_over_music_context: String = ""
 
 
 func _ready() -> void:
@@ -137,6 +138,7 @@ func _exit_tree() -> void:
 	if is_instance_valid(_game_over_overlay):
 		_game_over_overlay.queue_free()
 		_game_over_overlay = null
+	_game_over_music_context = ""
 
 
 func _consume_pending_run_state() -> void:
@@ -690,6 +692,8 @@ func _connect_signals() -> void:
 		_settings_panel.close_requested.connect(func(): _overlay_manager.close_menu("settings"))
 	if _lore_codex_panel.has_signal("close_requested"):
 		_lore_codex_panel.close_requested.connect(func(): _overlay_manager.close_menu("lore_codex"))
+	_overlay_manager.menu_opened.connect(_on_overlay_music_state_changed)
+	_overlay_manager.menu_closed.connect(_on_overlay_music_state_changed)
 
 
 # ==================================================================
@@ -704,6 +708,7 @@ func _on_combat_close_requested() -> void:
 
 func _on_combat_started() -> void:
 	_overlay_manager.open_menu("combat")
+	_sync_music_context()
 
 
 func _on_combat_ended() -> void:
@@ -932,6 +937,56 @@ func _on_quit_requested() -> void:
 	var tree := get_tree()
 	if tree != null:
 		tree.change_scene_to_file("res://ui/scenes/MainMenu.tscn")
+
+
+func _on_overlay_music_state_changed(_menu_key: String) -> void:
+	_sync_music_context()
+
+
+func _sync_music_context(immediate: bool = false) -> void:
+	if _game_over_music_context != "":
+		MusicService.set_context(_game_over_music_context, {"immediate": immediate})
+		return
+
+	var room: RoomState = GameSession.get_current_room()
+	var phase: String = "combat" if GameSession.is_pending_choice() or GameSession.is_combat_active() else "exploration"
+	var fallback_context: String = "combat" if phase == "combat" else "exploration"
+	var options := {"immediate": immediate}
+	var top_menu: String = _overlay_manager.get_top_menu_key() if _overlay_manager != null else ""
+
+	match top_menu:
+		"pause":
+			MusicService.set_overlay_context("pause", room, phase, fallback_context, options)
+			return
+		"store":
+			MusicService.set_room_context(room, "store", "shop", options)
+			return
+		"settings":
+			MusicService.set_overlay_context("settings", room, phase, fallback_context, options)
+			return
+		"save_load":
+			MusicService.set_overlay_context("save_load", room, phase, fallback_context, options)
+			return
+		"inventory", "ground_items":
+			MusicService.set_overlay_context("inventory", room, phase, fallback_context, options)
+			return
+		"character_status":
+			MusicService.set_overlay_context("character_status", room, phase, fallback_context, options)
+			return
+		"lore_codex":
+			MusicService.set_overlay_context("lore_codex", room, phase, fallback_context, options)
+			return
+		"tutorial":
+			MusicService.set_overlay_context("tutorial", room, phase, fallback_context, options)
+			return
+		"dev_menu":
+			MusicService.set_overlay_context("pause", room, phase, fallback_context, options)
+			return
+
+	if phase == "combat":
+		MusicService.set_room_context(room, "combat", "combat", options)
+	else:
+		MusicService.set_room_context(room, "exploration", "exploration", options)
 
 
 func _connect_log_bridge() -> void:
@@ -1191,7 +1246,10 @@ func _show_locked_room_dialog(title: String, message: String) -> void:
 var _game_over_overlay: Control
 
 func _on_game_over(summary) -> void:
-	_overlay_manager.close_all()
+	var is_victory: bool = (summary.end_reason == _GameOverResolver.EndReason.VICTORY)
+	_game_over_music_context = "victory" if is_victory else "game_over"
+	_sync_music_context()
+	_overlay_manager.close_all_menus()
 	_show_game_over_screen(summary)
 
 
@@ -1300,6 +1358,7 @@ func _show_game_over_screen(summary) -> void:
 	btn_menu.pressed.connect(func():
 		overlay.queue_free()
 		_game_over_overlay = null
+		_game_over_music_context = ""
 		_quit_to_main_menu()
 	)
 	btn_row.add_child(btn_menu)
@@ -1309,6 +1368,7 @@ func _show_game_over_screen(summary) -> void:
 	btn_new_run.pressed.connect(func():
 		overlay.queue_free()
 		_game_over_overlay = null
+		_game_over_music_context = ""
 		GameSession.start_new_game()
 		_refresh_ui()
 	)
@@ -1393,6 +1453,7 @@ func _refresh_ui() -> void:
 
 	if _debug_visible:
 		_refresh_debug()
+	_sync_music_context()
 
 
 func _refresh_lore_indicator() -> void:

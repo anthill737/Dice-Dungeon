@@ -87,6 +87,8 @@ var difficulty: String = "Normal"
 var color_scheme: String = "Classic"
 var text_speed: String = "Normal"
 var combat_pacing: String = "Normal"
+var music_enabled: bool = true
+var music_volume: float = 0.65
 var keybindings: Dictionary = {}  # action_name -> Key enum int
 
 
@@ -118,6 +120,8 @@ func save_settings() -> void:
 	cfg.set_value("general", "color_scheme", color_scheme)
 	cfg.set_value("general", "text_speed", text_speed)
 	cfg.set_value("general", "combat_pacing", combat_pacing)
+	cfg.set_value("audio", "music_enabled", music_enabled)
+	cfg.set_value("audio", "music_volume", music_volume)
 	for action in keybindings:
 		cfg.set_value("keybindings", action, keybindings[action])
 	cfg.save(CONFIG_PATH)
@@ -133,6 +137,8 @@ func load_settings() -> void:
 	if text_speed == "Medium":
 		text_speed = "Normal"
 	combat_pacing = cfg.get_value("general", "combat_pacing", "Normal")
+	music_enabled = bool(cfg.get_value("audio", "music_enabled", true))
+	music_volume = clampf(float(cfg.get_value("audio", "music_volume", 0.65)), 0.0, 1.0)
 	if cfg.has_section("keybindings"):
 		for action in cfg.get_section_keys("keybindings"):
 			keybindings[action] = int(cfg.get_value("keybindings", action, 0))
@@ -176,6 +182,18 @@ func set_combat_pacing(value: String) -> void:
 	settings_changed.emit()
 
 
+func set_music_enabled(value: bool) -> void:
+	music_enabled = value
+	save_settings()
+	settings_changed.emit()
+
+
+func set_music_volume(value: float) -> void:
+	music_volume = clampf(value, 0.0, 1.0)
+	save_settings()
+	settings_changed.emit()
+
+
 # ------------------------------------------------------------------
 # InputMap management
 # ------------------------------------------------------------------
@@ -195,7 +213,14 @@ func _apply_single_keybinding(action: String, keycode: int) -> void:
 
 
 func settings_fingerprint() -> String:
-	var parts := "%s|%s|%s|%s" % [difficulty, text_speed, color_scheme, combat_pacing]
+	var parts := "%s|%s|%s|%s|%s|%.3f" % [
+		difficulty,
+		text_speed,
+		color_scheme,
+		combat_pacing,
+		str(music_enabled),
+		music_volume,
+	]
 	return "%x" % parts.hash()
 
 
