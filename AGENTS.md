@@ -24,3 +24,10 @@ This codebase has **no automated test suite** and **no linter configuration** (n
 ### Architecture
 
 The codebase follows a manager pattern. Game logic lives in `explorer/` module files, not in the main `dice_dungeon_explorer.py`. See `docs/ARCHITECTURE_RULES.md` for the full pattern and rules.
+
+## Git workflow
+
+- For any new feature branch that is expected to become a PR, always `git fetch origin` first and branch from `origin/main`, not from an older feature branch or a local branch that predates recent merges.
+- Prefer creating a fresh `git worktree` from `origin/main` for larger features, especially when touching many Godot assets or generated binary files, so the new branch has a clean base and does not inherit unrelated local changes.
+- Publish the branch early with `git push -u origin <branch>` so GitHub tracks the correct branch tip from the start.
+- If earlier work on the same topic was already merged to `main` by squash/merge, do not branch from the old feature branch again. Start a new branch from `origin/main` and reapply only the new commits there to avoid massive add/add and content conflicts in the PR.
