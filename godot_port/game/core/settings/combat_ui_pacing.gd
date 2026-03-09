@@ -58,6 +58,30 @@ const ENEMY_DICE_LINGER_SEC := {
 	Preset.SLOW: 1.2,
 }
 
+## Brief beat between phases (e.g. after logging player attack, before impact shows).
+const PHASE_PAUSE_SEC := {
+	Preset.INSTANT: 0.0,
+	Preset.FAST: 0.2,
+	Preset.NORMAL: 0.5,
+	Preset.SLOW: 0.8,
+}
+
+## Pause after a hit animation finishes before the next phase begins.
+const POST_HIT_PAUSE_SEC := {
+	Preset.INSTANT: 0.0,
+	Preset.FAST: 0.6,
+	Preset.NORMAL: 1.2,
+	Preset.SLOW: 2.0,
+}
+
+## Delay between each enemy attack line being revealed in the log.
+const ENEMY_ATTACK_STAGGER_SEC := {
+	Preset.INSTANT: 0.0,
+	Preset.FAST: 0.2,
+	Preset.NORMAL: 0.5,
+	Preset.SLOW: 0.8,
+}
+
 
 static func get_preset() -> Preset:
 	var sm = Engine.get_singleton("SettingsManager") if Engine.has_singleton("SettingsManager") else null
@@ -90,3 +114,15 @@ static func log_reveal_delay_ms() -> int:
 
 static func enemy_dice_linger_sec() -> float:
 	return ENEMY_DICE_LINGER_SEC[get_preset()]
+
+
+static func phase_pause_sec() -> float:
+	return PHASE_PAUSE_SEC[get_preset()]
+
+
+static func post_hit_pause_sec() -> float:
+	return POST_HIT_PAUSE_SEC[get_preset()]
+
+
+static func enemy_attack_stagger_sec() -> float:
+	return ENEMY_ATTACK_STAGGER_SEC[get_preset()]

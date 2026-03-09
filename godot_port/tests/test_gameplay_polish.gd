@@ -179,7 +179,7 @@ func test_boss_special_attacks_from_json() -> void:
 	assert_true(etd.load(), "enemy_types must load")
 	var db := etd.enemies
 
-	var demon := db.get("Demon Lord", {})
+	var demon: Dictionary = db.get("Demon Lord", {})
 	assert_true(demon.has("boss_abilities"), "Demon Lord should have abilities")
 	var ability_types: Array = []
 	for ab in demon.get("boss_abilities", []):
