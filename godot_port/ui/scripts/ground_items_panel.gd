@@ -335,23 +335,37 @@ func _show_container_contents(room: RoomState) -> void:
 	var cdef: Dictionary = GameSession.container_db.get(cname, {})
 	var cdesc: String = cdef.get("description", "")
 
+	# Use a CanvasLayer above the MenuOverlayManager (layer 100) so this
+	# popup appears on top of the ground-items panel, not behind it.
+	var canvas_layer := CanvasLayer.new()
+	canvas_layer.layer = 110
+	var root_node := get_tree().root if get_tree() != null else self
+	(root_node as Node).add_child(canvas_layer)
+	_container_popup = canvas_layer
+
+	# CanvasLayer is a Node, not a Control, so child Controls need a root
+	# Control to anchor against.  Add one that fills the viewport.
+	var popup_root := Control.new()
+	popup_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	popup_root.set_offsets_preset(Control.PRESET_FULL_RECT)
+	popup_root.mouse_filter = Control.MOUSE_FILTER_STOP
+	canvas_layer.add_child(popup_root)
+
 	var overlay := ColorRect.new()
 	overlay.color = Color(0.0, 0.0, 0.0, 0.5)
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	var root_node := get_tree().root if get_tree() != null else self
-	(root_node as Node).add_child(overlay)
-	_container_popup = overlay
+	popup_root.add_child(overlay)
 
 	var panel := PanelContainer.new()
 	var style := DungeonTheme.make_panel_bg(DungeonTheme.BG_PRIMARY, DungeonTheme.BORDER_GOLD)
 	style.set_content_margin_all(24)
 	panel.add_theme_stylebox_override("panel", style)
-	panel.set_anchors_preset(Control.PRESET_CENTER)
 	panel.anchor_left = 0.2
 	panel.anchor_top = 0.15
 	panel.anchor_right = 0.8
 	panel.anchor_bottom = 0.85
-	overlay.add_child(panel)
+	panel.set_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 0)
+	popup_root.add_child(panel)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)

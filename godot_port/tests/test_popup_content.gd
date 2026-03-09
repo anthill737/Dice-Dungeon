@@ -205,8 +205,8 @@ func test_combat_victory_clears() -> void:
 	assert_false(GameSession.is_combat_blocking(), "Movement unblocked")
 
 	await get_tree().create_timer(0.3).timeout
-	assert_false(ex._overlay_manager.is_menu_open("combat"),
-		"Combat popup hidden after victory")
+	assert_false(ex._combat_panel.visible,
+		"Combat panel hidden after victory")
 
 	ex.queue_free()
 	await get_tree().process_frame

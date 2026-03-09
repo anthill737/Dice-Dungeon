@@ -30,7 +30,6 @@ var _enemy_hp_label: Label
 var _btn_roll: Button
 var _btn_attack: Button
 var _btn_close: Button
-var _log_text: RichTextLabel
 var _dice_container: HBoxContainer
 var _target_label: Label
 var _enemy_dice_container: HBoxContainer
@@ -56,7 +55,6 @@ const COMBAT_ATTACK_COLOR := Color(0.91, 0.30, 0.24)
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_build_ui()
 	GameSession.state_changed.connect(_on_state_changed)
 	GameSession.combat_ended.connect(func(): close_requested.emit())
@@ -121,9 +119,20 @@ func _exit_tree() -> void:
 
 
 func _build_ui() -> void:
-	var bg := DungeonTheme.make_panel_bg(
-		Color(0.07, 0.05, 0.09, 0.97), DungeonTheme.COMBAT_ACCENT)
+	# Inline panel — styled with its own background and border.
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.14, 0.08, 0.06)
+	bg.border_color = DungeonTheme.COMBAT_ACCENT
+	bg.set_border_width_all(2)
+	bg.set_corner_radius_all(0)
+	bg.set_content_margin_all(8)
 	add_theme_stylebox_override("panel", bg)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(scroll)
 
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 4)
@@ -588,50 +597,10 @@ func _track_tween(tw: Tween) -> void:
 # Combat log styling — Python-parity colors
 # ------------------------------------------------------------------
 
-func _classify_log_line(line: String) -> Color:
-	if line.begins_with("="):
-		return DungeonTheme.LOG_SEPARATOR
-	if "CRIT" in line or "critical" in line.to_lower():
-		return DungeonTheme.LOG_CRIT
-	if line.begins_with("⚔️ You") or line.begins_with("Hit ") or line.begins_with("⚄ "):
-		return DungeonTheme.LOG_PLAYER
-	if line.begins_with("+") and "gold" in line:
-		return DungeonTheme.LOG_LOOT
-	if "Boss Key Fragment" in line:
-		return DungeonTheme.LOG_LOOT
-	if "defeated" in line or "DEFEATED" in line or "blocked" in line or "absorbs" in line:
-		return DungeonTheme.LOG_SUCCESS
-	if "🔥" in line or "✹" in line or "fire damage" in line:
-		return DungeonTheme.LOG_FIRE
-	if line.begins_with("⚠️") or "summons" in line or "splits" in line:
-		return DungeonTheme.LOG_ENEMY
-	if "☠" in line or "attacks for" in line or "rolls:" in line or "take" in line.to_lower():
-		return DungeonTheme.LOG_ENEMY
-	if "💚" in line:
-		return DungeonTheme.LOG_ENEMY
-	if "Rolls Remaining" in line or "dazed" in line or "Target" in line:
-		return DungeonTheme.LOG_SYSTEM
-	if "spawned" in line.to_lower() or "[SPLIT]" in line or "[SPAWNED]" in line:
-		return DungeonTheme.LOG_ENEMY
-	if "[TRANSFORMED]" in line:
-		return DungeonTheme.LOG_ENEMY
-	if "Victory" in line or "Mini-boss" in line:
-		return DungeonTheme.LOG_SUCCESS
-	return DungeonTheme.TEXT_BONE
-
-
-func _append_styled_log(line: String) -> void:
-	var color := _classify_log_line(line)
-	var hex := "#" + color.to_html(false)
-
-	var is_bold := (color == DungeonTheme.LOG_PLAYER or color == DungeonTheme.LOG_ENEMY
-		or color == DungeonTheme.LOG_CRIT or color == DungeonTheme.LOG_SUCCESS
-		or color == DungeonTheme.LOG_FIRE)
-
-	if is_bold:
-		_log_text.append_text("[color=%s][b]%s[/b][/color]\n" % [hex, line])
-	else:
-		_log_text.append_text("[color=%s]%s[/color]\n" % [hex, line])
+func _append_styled_log(_line: String) -> void:
+	# Combat log is no longer embedded in the panel — all messages go to the
+	# adventure log via GameSession.log_message.emit() at the call sites.
+	pass
 
 
 # ------------------------------------------------------------------
@@ -639,9 +608,6 @@ func _append_styled_log(line: String) -> void:
 # ------------------------------------------------------------------
 
 func _on_combat_started_reset() -> void:
-	# Clear stale combat log from prior encounter (Python parity)
-	if _log_text != null:
-		_log_text.clear()
 	# Clear stale enemy dice from prior encounter
 	_clear_enemy_dice()
 	_last_turn_count = -1
@@ -881,8 +847,12 @@ func _on_attack() -> void:
 		return
 
 	# ================================================================
-	# PHASE 3 — Enemy rolls dice (display + linger).
+	# PHASE 3 — Enemy turn begins: hide player dice, show enemy dice.
 	# ================================================================
+	_dice_container.visible = false
+	_rolls_label.visible = false
+	_damage_preview_label.visible = false
+
 	if not result.enemy_rolls.is_empty():
 		_show_enemy_dice(result.enemy_rolls)
 		await _combat_pause(CombatUIPacing.enemy_dice_linger_sec())
@@ -920,8 +890,12 @@ func _on_attack() -> void:
 		return
 
 	# ================================================================
-	# PHASE 6 — Resolve combat end, then full UI refresh.
+	# PHASE 6 — Enemy turn ends: clear enemy dice, restore player dice.
 	# ================================================================
+	_clear_enemy_dice()
+	_dice_container.visible = true
+	_rolls_label.visible = true
+	_damage_preview_label.visible = true
 	var alive := ce.get_alive_enemies()
 	if alive.is_empty():
 		GameSession.end_combat(true)
