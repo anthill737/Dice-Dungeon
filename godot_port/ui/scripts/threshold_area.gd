@@ -267,15 +267,21 @@ func _on_sign_pressed(sign_data: Dictionary) -> void:
 	vbox.add_child(sep)
 
 	var text_scroll := ScrollContainer.new()
+	text_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	text_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	vbox.add_child(text_scroll)
 
-	var text := Label.new()
+	var text := RichTextLabel.new()
 	text.text = sign_data.get("text", "")
+	text.bbcode_enabled = false
+	text.fit_content = true
+	text.scroll_active = false
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	text.add_theme_font_size_override("font_size", DungeonTheme.FONT_BODY)
-	text.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
+	text.add_theme_font_size_override("normal_font_size", DungeonTheme.FONT_BODY)
+	text.add_theme_color_override("default_color", DungeonTheme.TEXT_BONE)
 	text_scroll.add_child(text)
 
 	var btn_row := HBoxContainer.new()
