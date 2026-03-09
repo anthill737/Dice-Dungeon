@@ -59,6 +59,7 @@ func refresh() -> void:
 		return
 
 	for child in _content_vbox.get_children():
+		_content_vbox.remove_child(child)
 		child.queue_free()
 
 	var room := GameSession.get_current_room()

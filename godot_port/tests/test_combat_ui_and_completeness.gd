@@ -362,7 +362,6 @@ func test_combat_panel_no_crash():
 
 	assert_not_null(panel.find_child("DiceContainer", true, false), "DiceContainer exists")
 	assert_not_null(panel.find_child("RollsLabel", true, false), "RollsLabel exists")
-	assert_not_null(panel.find_child("PlayerHPBar", true, false), "PlayerHPBar exists")
 	assert_not_null(panel.find_child("EnemyHPBar", true, false), "EnemyHPBar exists")
 	assert_not_null(panel.find_child("CombatLog", true, false), "CombatLog exists")
 	assert_not_null(panel.find_child("EnemyList", true, false), "EnemyList exists")

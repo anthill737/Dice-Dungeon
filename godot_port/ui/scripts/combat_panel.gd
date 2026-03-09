@@ -13,6 +13,7 @@ extends PanelContainer
 ## - Floating damage numbers on enemy/player HP
 
 signal close_requested()
+signal player_hit(damage: int, hp_before: int)
 
 var _dice_labels: Array[Label] = []
 var _dice_panels: Array[PanelContainer] = []
@@ -905,11 +906,12 @@ func _on_attack() -> void:
 		return
 
 	# ================================================================
-	# PHASE 5 — Player hit: update main top-bar HP bar via state_changed.
+	# PHASE 5 — Player hit: signal top bar to flash HP.
 	# ================================================================
 	var player_dmg_taken := hp_before - GameSession.game_state.health
 	_refresh_player_hp_bar()
-	# Emit state_changed so the main top-bar HP bar updates visually
+	player_hit.emit(player_dmg_taken, hp_before)
+	# Also emit state_changed so the main top-bar HP bar updates visually
 	GameSession.state_changed.emit()
 
 	# Hold for player hit animation.

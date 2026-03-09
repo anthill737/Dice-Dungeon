@@ -674,6 +674,8 @@ func _connect_signals() -> void:
 	# Panel close_requested signals → close via overlay manager
 	if _combat_panel.has_signal("close_requested"):
 		_combat_panel.close_requested.connect(_on_combat_close_requested)
+	if _combat_panel.has_signal("player_hit"):
+		_combat_panel.player_hit.connect(_on_combat_player_hit)
 	if _inventory_panel.has_signal("close_requested"):
 		_inventory_panel.close_requested.connect(func(): _overlay_manager.close_menu("inventory"))
 	if _store_panel.has_signal("close_requested"):
@@ -706,6 +708,29 @@ func _on_combat_ended() -> void:
 	_overlay_manager.close_menu("combat")
 	_refresh_ui()
 	GameSession.check_game_over()
+
+
+func _on_combat_player_hit(damage: int, _hp_before: int) -> void:
+	var gs := GameSession.game_state
+	if gs == null:
+		return
+	var hp_ratio: float = float(gs.health) / float(gs.max_health) if gs.max_health > 0 else 0.0
+	_hp_bar.max_value = gs.max_health
+	_hp_bar.value = gs.health
+	_hp_label.text = "%d / %d" % [gs.health, gs.max_health]
+	DungeonTheme.style_hp_bar(_hp_bar, hp_ratio)
+	var duration := CombatUIPacing.hit_flash_duration()
+	if duration > 0.01 and is_inside_tree():
+		var tween := create_tween()
+		tween.tween_method(func(v: float):
+			var flash_color := DungeonTheme.FLASH_RED.lerp(DungeonTheme.HP_BG, v)
+			var s := StyleBoxFlat.new()
+			s.bg_color = flash_color
+			s.set_corner_radius_all(3)
+			s.border_color = DungeonTheme.BORDER
+			s.set_border_width_all(1)
+			_hp_bar.add_theme_stylebox_override("background", s),
+			0.0, 1.0, duration)
 
 
 func _is_combat_locking() -> bool:

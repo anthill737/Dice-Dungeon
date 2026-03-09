@@ -28,7 +28,7 @@ func before_each() -> void:
 var _scene_nodes := {
 	"combat": {
 		"scene": "res://ui/scenes/CombatPanel.tscn",
-		"nodes": ["DiceContainer", "RollsLabel", "PlayerHPBar", "EnemyHPBar", "CombatLog", "EnemyList"],
+		"nodes": ["DiceContainer", "RollsLabel", "EnemyHPBar", "CombatLog", "EnemyList"],
 	},
 	"inventory": {
 		"scene": "res://ui/scenes/InventoryPanel.tscn",
