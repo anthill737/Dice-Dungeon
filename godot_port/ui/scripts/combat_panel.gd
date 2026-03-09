@@ -501,6 +501,8 @@ func _sync_dice_display() -> void:
 	var ce := GameSession.combat
 	if ce == null:
 		return
+	if _dice_labels.size() < 5 or _dice_panels.size() < 5 or _dice_lock_icons.size() < 5:
+		return
 	var dice := ce.dice
 	for i in 5:
 		if i < dice.num_dice:
@@ -591,6 +593,35 @@ func _track_tween(tw: Tween) -> void:
 # ------------------------------------------------------------------
 # Combat log styling — Python-parity colors
 # ------------------------------------------------------------------
+
+func _classify_log_line(line: String) -> Color:
+	var lower := line.to_lower()
+	if line.begins_with("="):
+		return DungeonTheme.LOG_SEPARATOR
+	if "crit" in lower or "critical" in lower:
+		return DungeonTheme.LOG_CRIT
+	if "you attack" in lower or line.begins_with("Hit "):
+		return DungeonTheme.LOG_PLAYER
+	if line.begins_with("+") and "gold" in lower:
+		return DungeonTheme.LOG_LOOT
+	if "boss key fragment" in lower:
+		return DungeonTheme.LOG_LOOT
+	if "defeated" in lower or "blocked" in lower or "absorbs" in lower:
+		return DungeonTheme.LOG_SUCCESS
+	if "burn damage" in lower or "fire damage" in lower:
+		return DungeonTheme.LOG_FIRE
+	if "summons" in lower or "splits" in lower or "spawned" in lower:
+		return DungeonTheme.LOG_ENEMY
+	if "attacks for" in lower or "rolls:" in lower or " takes " in lower:
+		return DungeonTheme.LOG_ENEMY
+	if "rolls remaining" in lower or "dazed" in lower or "target" in lower:
+		return DungeonTheme.LOG_SYSTEM
+	if "[split]" in lower or "[spawned]" in lower or "[transformed]" in lower:
+		return DungeonTheme.LOG_ENEMY
+	if "victory" in lower or "mini-boss" in lower:
+		return DungeonTheme.LOG_SUCCESS
+	return DungeonTheme.TEXT_BONE
+
 
 func _append_styled_log(_line: String) -> void:
 	# Combat log is no longer embedded in the panel — all messages go to the
