@@ -92,7 +92,7 @@ func _process(delta: float) -> void:
 
 	if _enemy_roll_anim_active:
 		var interval := CombatUIPacing.dice_roll_interval() * 1.5  # Slightly slower for enemy
-		var max_frames := max(CombatUIPacing.dice_roll_frames() / 2, 4)
+		var max_frames: int = maxi(CombatUIPacing.dice_roll_frames() / 2, 4)
 		if max_frames <= 0:
 			_enemy_roll_anim_active = false
 			_reveal_enemy_dice_final()

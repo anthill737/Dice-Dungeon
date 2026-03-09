@@ -23,6 +23,7 @@ func _ready() -> void:
 	_build_ui()
 	enter_dungeon_requested.connect(_on_enter_dungeon)
 	show_tutorial_requested.connect(_on_show_tutorial)
+	_sync_music_context()
 
 
 func _on_enter_dungeon() -> void:
@@ -40,6 +41,7 @@ func _on_show_tutorial() -> void:
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(overlay)
 	_tutorial_overlay = overlay
+	_sync_music_context()
 
 	var frame := PanelContainer.new()
 	var style := DungeonTheme.make_panel_bg(DungeonTheme.BG_PRIMARY, DungeonTheme.BORDER_GOLD)
@@ -82,6 +84,7 @@ func _on_show_tutorial() -> void:
 	close_btn.pressed.connect(func():
 		overlay.queue_free()
 		_tutorial_overlay = null
+		_sync_music_context()
 	)
 	header_row.add_child(close_btn)
 
@@ -90,8 +93,18 @@ func _on_show_tutorial() -> void:
 	tutorial.close_requested.connect(func():
 		overlay.queue_free()
 		_tutorial_overlay = null
+		_sync_music_context()
 	)
 	frame_vbox.add_child(tutorial)
+
+
+func _sync_music_context(immediate: bool = false) -> void:
+	var options := {"immediate": immediate}
+	if is_instance_valid(_tutorial_overlay):
+		options["fallback_context"] = "threshold_area"
+		MusicService.set_context("tutorial", options)
+		return
+	MusicService.set_context("threshold_area", options)
 
 
 func _build_ui() -> void:

@@ -34,6 +34,7 @@ func _ready() -> void:
 		GameSession.start_new_run(options)
 	elif GameSession.game_state == null:
 		GameSession.start_new_game()
+	MusicService.set_context("intro_cinematic")
 	_build_ui()
 
 

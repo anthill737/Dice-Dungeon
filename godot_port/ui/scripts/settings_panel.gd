@@ -8,6 +8,9 @@ var _difficulty_dropdown: OptionButton
 var _color_dropdown: OptionButton
 var _text_speed_dropdown: OptionButton
 var _combat_pacing_dropdown: OptionButton
+var _music_enabled_check: CheckBox
+var _music_volume_slider: HSlider
+var _music_volume_value: Label
 var _keybind_container: VBoxContainer
 var _waiting_action: String = ""
 var _waiting_button: Button = null
@@ -90,6 +93,39 @@ func _build_ui() -> void:
 
 	vbox.add_child(DungeonTheme.make_separator())
 
+	var audio_header := DungeonTheme.make_header(
+		"AUDIO", DungeonTheme.TEXT_BONE, DungeonTheme.FONT_SUBHEADING)
+	vbox.add_child(audio_header)
+
+	var music_toggle_row := _make_row(vbox, "Music")
+	_music_enabled_check = CheckBox.new()
+	_music_enabled_check.text = "Enabled"
+	_music_enabled_check.toggled.connect(_on_music_enabled_toggled)
+	music_toggle_row.add_child(_music_enabled_check)
+
+	var music_volume_row := _make_row(vbox, "Music Volume")
+	var music_volume_box := HBoxContainer.new()
+	music_volume_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	music_volume_box.add_theme_constant_override("separation", 8)
+	music_volume_row.add_child(music_volume_box)
+
+	_music_volume_slider = HSlider.new()
+	_music_volume_slider.min_value = 0
+	_music_volume_slider.max_value = 100
+	_music_volume_slider.step = 1
+	_music_volume_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_music_volume_slider.value_changed.connect(_on_music_volume_changed)
+	music_volume_box.add_child(_music_volume_slider)
+
+	_music_volume_value = Label.new()
+	_music_volume_value.custom_minimum_size = Vector2(52, 0)
+	_music_volume_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_music_volume_value.add_theme_font_size_override("font_size", DungeonTheme.FONT_SMALL)
+	_music_volume_value.add_theme_color_override("font_color", DungeonTheme.TEXT_SECONDARY)
+	music_volume_box.add_child(_music_volume_value)
+
+	vbox.add_child(DungeonTheme.make_separator())
+
 	# Keybindings header
 	var kb_header := DungeonTheme.make_header(
 		"KEYBINDINGS", DungeonTheme.TEXT_BONE, DungeonTheme.FONT_SUBHEADING)
@@ -157,6 +193,10 @@ func _populate_from_settings() -> void:
 	_select_option(_color_dropdown, SettingsManager.COLOR_SCHEME_OPTIONS, SettingsManager.color_scheme)
 	_select_option(_text_speed_dropdown, SettingsManager.TEXT_SPEED_OPTIONS, SettingsManager.text_speed)
 	_select_option(_combat_pacing_dropdown, SettingsManager.COMBAT_PACING_OPTIONS, SettingsManager.combat_pacing)
+	_music_enabled_check.button_pressed = SettingsManager.music_enabled
+	_music_volume_slider.value = roundi(SettingsManager.music_volume * 100.0)
+	_music_volume_slider.editable = SettingsManager.music_enabled
+	_update_music_volume_label()
 	_refresh_keybind_labels()
 
 
@@ -178,6 +218,16 @@ func _on_text_speed_changed(idx: int) -> void:
 
 func _on_combat_pacing_changed(idx: int) -> void:
 	SettingsManager.set_combat_pacing(SettingsManager.COMBAT_PACING_OPTIONS[idx])
+
+
+func _on_music_enabled_toggled(enabled: bool) -> void:
+	_music_volume_slider.editable = enabled
+	SettingsManager.set_music_enabled(enabled)
+
+
+func _on_music_volume_changed(value: float) -> void:
+	_update_music_volume_label()
+	SettingsManager.set_music_volume(value / 100.0)
 
 
 func _on_keybind_clicked(action: String, btn: Button) -> void:
@@ -215,6 +265,12 @@ func _refresh_keybind_labels() -> void:
 	for action in _keybind_buttons:
 		var btn: Button = _keybind_buttons[action]
 		btn.text = SettingsManager.key_name(SettingsManager.get_key_for_action(action))
+
+
+func _update_music_volume_label() -> void:
+	if _music_volume_value == null or _music_volume_slider == null:
+		return
+	_music_volume_value.text = "%d%%" % int(_music_volume_slider.value)
 
 
 func _make_row(parent: Node, label_text: String) -> HBoxContainer:
