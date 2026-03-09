@@ -60,6 +60,8 @@ class AppConfig:
     api_key: str | None
     model_id: str
     output_format: str
+    only_ids: frozenset[str] | None
+    exclude_ids: frozenset[str]
     overwrite: bool
     dry_run: bool
     timeout_seconds: float
@@ -101,6 +103,18 @@ def parse_args() -> argparse.Namespace:
         "--output-format",
         default=None,
         help="Preferred ElevenLabs output format. Defaults to pcm_44100 with mp3 fallback.",
+    )
+    parser.add_argument(
+        "--only-ids",
+        action="append",
+        default=[],
+        help="Comma-separated list of sound ids to process.",
+    )
+    parser.add_argument(
+        "--exclude-ids",
+        action="append",
+        default=[],
+        help="Comma-separated list of sound ids to skip.",
     )
     parser.add_argument(
         "--overwrite",
@@ -156,6 +170,8 @@ def load_env_file(path: Path) -> None:
 def build_config(args: argparse.Namespace) -> AppConfig:
     env_file = Path(args.env_file).resolve()
     load_env_file(env_file)
+    only_ids = parse_id_filters(args.only_ids)
+    exclude_ids = parse_id_filters(args.exclude_ids) or frozenset()
 
     return AppConfig(
         env_file=env_file,
@@ -166,12 +182,28 @@ def build_config(args: argparse.Namespace) -> AppConfig:
         api_key=os.getenv("ELEVENLABS_API_KEY"),
         model_id=args.model_id or os.getenv("ELEVENLABS_MODEL_ID") or DEFAULT_MODEL_ID,
         output_format=args.output_format or os.getenv("ELEVENLABS_OUTPUT_FORMAT") or DEFAULT_OUTPUT_FORMAT,
+        only_ids=only_ids,
+        exclude_ids=exclude_ids,
         overwrite=args.overwrite,
         dry_run=args.dry_run,
         timeout_seconds=max(args.timeout, 1.0),
         max_retries=max(args.max_retries, 0),
         base_backoff_seconds=max(args.base_backoff, 0.1),
     )
+
+
+def parse_id_filters(raw_values: list[str]) -> frozenset[str] | None:
+    ids: set[str] = set()
+    for raw_value in raw_values:
+        if not isinstance(raw_value, str):
+            continue
+        for token in raw_value.split(","):
+            sound_id = token.strip()
+            if sound_id:
+                ids.add(sound_id)
+    if not ids:
+        return None
+    return frozenset(ids)
 
 
 def setup_logging(log_file: Path) -> None:
@@ -244,6 +276,19 @@ def load_manifest(path: Path) -> list[SoundEffectSpec]:
         )
 
     return specs
+
+
+def filter_sounds(
+    sounds: list[SoundEffectSpec],
+    only_ids: frozenset[str] | None,
+    exclude_ids: frozenset[str],
+) -> list[SoundEffectSpec]:
+    filtered = sounds
+    if only_ids:
+        filtered = [sound for sound in filtered if sound.sound_id in only_ids]
+    if exclude_ids:
+        filtered = [sound for sound in filtered if sound.sound_id not in exclude_ids]
+    return filtered
 
 
 def expect_string(data: dict[str, Any], key: str, index: int) -> str:
@@ -548,11 +593,20 @@ def main() -> int:
     ensure_api_key(config)
 
     sounds = load_manifest(config.manifest_path)
+    sounds = filter_sounds(sounds, config.only_ids, config.exclude_ids)
     output_format_chain = build_output_format_chain(config.output_format)
+
+    if not sounds:
+        logging.error("No sounds matched the provided manifest and id filters.")
+        return 1
 
     logging.info("Using manifest: %s", config.manifest_path)
     logging.info("Output directory: %s", config.output_dir)
     logging.info("Requested output format chain: %s", ", ".join(output_format_chain))
+    if config.only_ids:
+        logging.info("Only ids: %s", ", ".join(sorted(config.only_ids)))
+    if config.exclude_ids:
+        logging.info("Excluded ids: %s", ", ".join(sorted(config.exclude_ids)))
     if config.overwrite:
         logging.info("Overwrite mode enabled")
     if config.dry_run:

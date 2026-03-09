@@ -778,7 +778,7 @@ func _on_attack() -> void:
 	# Show player damage on enemy HP bar immediately
 	if result.player_damage > 0:
 		if result.target_killed:
-			_SfxService.play_for(self, "enemy_die")
+			_SfxService.play_enemy_event_for(self, result.target_name, "die")
 		else:
 			if result.was_crit and (result.player_damage >= 30 or combo_bonus >= 10):
 				_SfxService.play_for(self, "legendary_hit")
@@ -786,13 +786,14 @@ func _on_attack() -> void:
 				_SfxService.play_for(self, "crit")
 			else:
 				_SfxService.play_for(self, "attack")
-			_SfxService.play_for(self, "enemy_hit")
+			_SfxService.play_enemy_event_for(self, result.target_name, "hit")
 		_flash_hp_bar(_enemy_hp_bar, _enemy_hp_section)
 		_show_floating_damage(result.player_damage, _enemy_hp_section, DungeonTheme.LOG_PLAYER)
 
 	# Enemy dice reveal (before damage application)
 	if not result.enemy_rolls.is_empty():
-		_SfxService.play_for(self, "enemy_dice_roll")
+		var first_enemy_name := str(result.enemy_rolls[0].get("name", ""))
+		_SfxService.play_enemy_event_for(self, first_enemy_name, "dice_roll")
 		_show_enemy_dice(result.enemy_rolls)
 
 	var linger := CombatUIPacing.enemy_dice_linger_sec()
