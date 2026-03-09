@@ -261,22 +261,12 @@ func _on_use() -> void:
 	var before_count: int = gs.inventory.count(used_name) if not used_name.is_empty() else 0
 	var result := GameSession.inventory_engine.use_item(idx)
 	if result.get("ok", false) and not used_name.is_empty():
-		GameSession.trace_item_used(used_name, str(result.get("type", "")))
+		var effect_type := str(result.get("type", ""))
+		GameSession.trace_item_used(used_name, effect_type)
 		var after_count: int = gs.inventory.count(used_name)
 		if after_count != before_count:
 			GameSession.trace_inventory_qty_changed(used_name, before_count, after_count, "use")
-		match str(result.get("type", "")):
-			"heal", "consumable_heal":
-				_SfxService.play_for(self, "drink_potion")
-				if int(result.get("healed", 0)) > 0:
-					_SfxService.play_for(self, "heal")
-			"shield":
-				_SfxService.play_for(self, "drink_potion")
-				_SfxService.play_for(self, "shield_gain")
-			"buff", "cleanse", "consumable_light", "blessing":
-				_SfxService.play_for(self, "drink_potion")
-			"escape_token", "disarm_token", "tool_disarm", "upgrade":
-				_SfxService.play_for(self, "item_pickup")
+		_SfxService.play_item_use_for(self, used_name, effect_type)
 	if result.get("type", "") == "readable_lore":
 		_handle_readable_lore(result)
 	GameSession._emit_logs(GameSession.inventory_engine.logs)
@@ -294,16 +284,18 @@ func _on_read() -> void:
 	var item_type: String = item_def.get("type", "")
 
 	if item_type == "lore":
+		_SfxService.play_for(self, "read_lore")
 		var desc: String = item_def.get("desc", "An old document.")
 		GameSession.log_message.emit("%s: %s" % [item_name, desc])
 	elif item_type == "readable_lore":
 		var result := GameSession.lore_engine.read_lore_item(item_name, idx)
 		GameSession._emit_logs(GameSession.lore_engine.logs)
 		if result.get("ok", false):
+			_SfxService.play_for(self, "read_lore")
 			_show_lore_popup(result["entry"])
-		GameSession.state_changed.emit()
 	else:
 		GameSession.log_message.emit("Nothing to read on %s." % item_name)
+	GameSession.state_changed.emit()
 
 
 func _handle_readable_lore(use_result: Dictionary) -> void:
@@ -386,6 +378,7 @@ func _on_equip() -> void:
 	var result := GameSession.inventory_engine.equip_item(item_name, slot)
 	if result.get("ok", false):
 		GameSession.trace_item_equipped(item_name, slot)
+		_SfxService.play_equipment_action_for(self, slot, "equip")
 	GameSession._emit_logs(GameSession.inventory_engine.logs)
 	GameSession.state_changed.emit()
 	refresh()
@@ -401,6 +394,7 @@ func _on_unequip() -> void:
 		if sel >= 0 and sel < gs.inventory.size() and gs.inventory[sel] == item_name:
 			GameSession.inventory_engine.unequip_item(slot)
 			GameSession.trace_item_unequipped(item_name, slot)
+			_SfxService.play_equipment_action_for(self, slot, "unequip")
 			GameSession._emit_logs(GameSession.inventory_engine.logs)
 			GameSession.state_changed.emit()
 			refresh()
@@ -420,6 +414,7 @@ func _on_drop() -> void:
 		GameSession.trace_item_dropped(dropped)
 		var after_count: int = gs.inventory.count(dropped)
 		GameSession.trace_inventory_qty_changed(dropped, before_count, after_count, "drop")
+		_SfxService.play_for(self, "drop_item")
 		GameSession.log_message.emit("Dropped %s." % dropped)
 	GameSession.state_changed.emit()
 	refresh()
