@@ -456,11 +456,26 @@ func _add_container_item_row(parent: VBoxContainer, room: RoomState, item: Strin
 	i_s.set_content_margin_all(8)
 	i_panel.add_theme_stylebox_override("panel", i_s)
 	item_row.add_child(i_panel)
+	var item_content := HBoxContainer.new()
+	item_content.add_theme_constant_override("separation", 8)
+	i_panel.add_child(item_content)
+
+	var item_icon = GameSession.assets.get_item_icon(item, 24) if GameSession.assets != null else null
+	if item_icon != null:
+		var icon_rect := TextureRect.new()
+		icon_rect.texture = item_icon
+		icon_rect.custom_minimum_size = Vector2(24, 24)
+		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		item_content.add_child(icon_rect)
+
 	var i_lbl := Label.new()
-	i_lbl.text = "⚡ %s" % item
+	i_lbl.text = item
 	i_lbl.add_theme_font_size_override("font_size", DungeonTheme.FONT_LABEL)
 	i_lbl.add_theme_color_override("font_color", DungeonTheme.TEXT_BONE)
-	i_panel.add_child(i_lbl)
+	i_lbl.mouse_filter = Control.MOUSE_FILTER_PASS
+	_setup_tooltip(i_lbl, item)
+	item_content.add_child(i_lbl)
 	var i_btn := DungeonTheme.make_styled_btn("Take", DungeonTheme.BTN_SECONDARY, 80)
 	i_btn.pressed.connect(func():
 		GameSession.exploration.take_container_item(room)
