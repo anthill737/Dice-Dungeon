@@ -39,6 +39,7 @@ var _player_hp_section: HBoxContainer
 var _enemy_hp_section: HBoxContainer
 var _enemy_sprite_rect: TextureRect
 var _player_sprite_placeholder: PanelContainer
+var _log_text: RichTextLabel
 
 var _roll_anim_timer: float = 0.0
 var _roll_anim_frame: int = 0
@@ -127,12 +128,6 @@ func _build_ui() -> void:
 	bg.set_corner_radius_all(0)
 	bg.set_content_margin_all(8)
 	add_theme_stylebox_override("panel", bg)
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(scroll)
 
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 4)
