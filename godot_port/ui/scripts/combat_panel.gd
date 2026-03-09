@@ -15,6 +15,8 @@ extends PanelContainer
 signal close_requested()
 signal player_hit(damage: int, hp_before: int)
 
+const _SfxService := preload("res://game/services/sfx_service.gd")
+
 var _dice_labels: Array[Label] = []
 var _dice_panels: Array[PanelContainer] = []
 var _dice_lock_icons: Array[Label] = []
@@ -379,6 +381,7 @@ func _on_die_clicked(event: InputEvent, index: int) -> void:
 		ce.dice.toggle_lock(index)
 		if ce.dice.locked[index]:
 			GameSession.trace_dice_locked(index, ce.dice.values[index])
+			_SfxService.play_for(self, "dice_lock")
 		_sync_dice_display()
 		_update_damage_preview()
 
@@ -779,7 +782,9 @@ func _on_roll() -> void:
 	var ce := GameSession.combat
 	if ce == null:
 		return
-	ce.player_roll()
+	if not ce.player_roll():
+		return
+	_SfxService.play_for(self, "dice_roll")
 	GameSession.trace_dice_rolled(ce.dice.values)
 	GameSession.trace_reroll_used(ce.dice.rolls_left)
 	_start_roll_animation()
@@ -808,6 +813,8 @@ func _on_attack() -> void:
 
 	# Snapshot player HP before the engine mutates state.
 	var hp_before := GameSession.game_state.health
+	var shield_before := GameSession.game_state.temp_shield
+	var combo_bonus := ce.dice.calc_combo_bonus()
 
 	# Disable controls for the full duration of the sequence.
 	_btn_roll.disabled = true
@@ -864,6 +871,16 @@ func _on_attack() -> void:
 	# ================================================================
 	_refresh_enemy_hp_bar()
 	if result.player_damage > 0:
+		if result.target_killed:
+			_SfxService.play_for(self, "enemy_die")
+		else:
+			if result.was_crit and (result.player_damage >= 30 or combo_bonus >= 10):
+				_SfxService.play_for(self, "legendary_hit")
+			elif result.was_crit:
+				_SfxService.play_for(self, "crit")
+			else:
+				_SfxService.play_for(self, "attack")
+			_SfxService.play_for(self, "enemy_hit")
 		_flash_hp_bar(_enemy_hp_bar, _enemy_hp_section)
 		_show_floating_damage(result.player_damage, _enemy_hp_section, DungeonTheme.LOG_PLAYER)
 
@@ -880,6 +897,7 @@ func _on_attack() -> void:
 	_damage_preview_label.visible = false
 
 	if not result.enemy_rolls.is_empty():
+		_SfxService.play_for(self, "enemy_dice_roll")
 		_show_enemy_dice(result.enemy_rolls)
 		await _combat_pause(CombatUIPacing.enemy_dice_linger_sec())
 		if not is_inside_tree():
@@ -905,6 +923,12 @@ func _on_attack() -> void:
 	# PHASE 5 — Player hit: signal top bar to flash HP.
 	# ================================================================
 	var player_dmg_taken := hp_before - GameSession.game_state.health
+	if shield_before > GameSession.game_state.temp_shield:
+		_SfxService.play_for(self, "shield_block")
+	for dur_ev in result.durability_events:
+		if bool(dur_ev.get("broken", false)) and str(dur_ev.get("slot", "")) == "armor":
+			_SfxService.play_for(self, "armor_break")
+			break
 	_refresh_player_hp_bar()
 	player_hit.emit(player_dmg_taken, hp_before)
 	# Also emit state_changed so the main top-bar HP bar updates visually

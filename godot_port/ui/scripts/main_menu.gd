@@ -4,6 +4,8 @@ extends Control
 ## Settings and Save/Load open as proper modal popups using the same
 ## MenuOverlayManager + PopupFrame system as the Explorer scene.
 
+const _SfxService := preload("res://game/services/sfx_service.gd")
+
 var _btn_start: Button
 var _btn_save_load: Button
 var _btn_settings: Button
@@ -21,6 +23,7 @@ var _start_adventure_scene := preload("res://ui/scenes/StartAdventurePanel.tscn"
 
 
 func _ready() -> void:
+	_SfxService.ensure_for(self)
 	_context = GameContext.new()
 	_build_ui()
 	_setup_overlay_manager()

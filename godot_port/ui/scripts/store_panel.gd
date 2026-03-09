@@ -4,6 +4,8 @@ extends PanelContainer
 
 signal close_requested()
 
+const _SfxService := preload("res://game/services/sfx_service.gd")
+
 var _buy_list: ItemList
 var _sell_list: ItemList
 var _gold_label: Label
@@ -404,6 +406,7 @@ func _on_buy() -> void:
 	var result := GameSession.store_engine.buy_item(item_name, price, quantity)
 	GameSession._emit_logs(GameSession.store_engine.logs)
 	if result.get("ok", false):
+		_SfxService.play_for(self, "purchase")
 		if quantity > 1:
 			_info_label.text = "Purchased %d× %s!" % [quantity, item_name]
 		else:
@@ -442,6 +445,7 @@ func _on_sell() -> void:
 	var result := GameSession.store_engine.sell_item(item_name, price, quantity)
 	GameSession._emit_logs(GameSession.store_engine.logs)
 	if result.get("ok", false):
+		_SfxService.play_for(self, "sell")
 		var gained: int = int(result.get("gold_gained", 0))
 		if quantity > 1:
 			_info_label.text = "Sold %d× %s for %d gold!" % [quantity, item_name, gained]

@@ -5,6 +5,8 @@ extends PanelContainer
 
 signal close_requested()
 
+const _SfxService := preload("res://game/services/sfx_service.gd")
+
 var _item_list: ItemList
 var _equip_label: RichTextLabel
 var _slots_label: Label
@@ -263,6 +265,18 @@ func _on_use() -> void:
 		var after_count: int = gs.inventory.count(used_name)
 		if after_count != before_count:
 			GameSession.trace_inventory_qty_changed(used_name, before_count, after_count, "use")
+		match str(result.get("type", "")):
+			"heal", "consumable_heal":
+				_SfxService.play_for(self, "drink_potion")
+				if int(result.get("healed", 0)) > 0:
+					_SfxService.play_for(self, "heal")
+			"shield":
+				_SfxService.play_for(self, "drink_potion")
+				_SfxService.play_for(self, "shield_gain")
+			"buff", "cleanse", "consumable_light", "blessing":
+				_SfxService.play_for(self, "drink_potion")
+			"escape_token", "disarm_token", "tool_disarm", "upgrade":
+				_SfxService.play_for(self, "item_pickup")
 	if result.get("type", "") == "readable_lore":
 		_handle_readable_lore(result)
 	GameSession._emit_logs(GameSession.inventory_engine.logs)
