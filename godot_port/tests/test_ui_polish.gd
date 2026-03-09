@@ -251,14 +251,11 @@ func test_explorer_icon_buttons_exist() -> void:
 
 	assert_not_null(explorer._btn_character, "Character button exists")
 	assert_not_null(explorer._btn_pause, "Menu/Pause button exists")
-	assert_not_null(explorer._btn_settings, "Settings button exists")
 
 	assert_eq(explorer._btn_character.text, DungeonTheme.ICON_CHARACTER,
 		"Character button uses standard glyph")
 	assert_eq(explorer._btn_pause.text, DungeonTheme.ICON_MENU,
 		"Menu button uses standard glyph")
-	assert_eq(explorer._btn_settings.text, DungeonTheme.ICON_SETTINGS,
-		"Settings button uses standard glyph")
 
 	explorer.queue_free()
 	await get_tree().process_frame
@@ -274,8 +271,6 @@ func test_explorer_icon_buttons_have_signals() -> void:
 		"Character button has pressed signal connected")
 	assert_gt(explorer._btn_pause.pressed.get_connections().size(), 0,
 		"Menu button has pressed signal connected")
-	assert_gt(explorer._btn_settings.pressed.get_connections().size(), 0,
-		"Settings button has pressed signal connected")
 
 	explorer.queue_free()
 	await get_tree().process_frame

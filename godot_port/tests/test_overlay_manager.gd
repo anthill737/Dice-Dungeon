@@ -193,7 +193,7 @@ func test_all_frames_have_close_button() -> void:
 # Combat gating through overlay
 # ------------------------------------------------------------------
 
-func test_combat_popup_blocked_during_active() -> void:
+func test_combat_inline_visible_during_active() -> void:
 	GameSession.start_new_game()
 	var ex := _explorer_scene.instantiate()
 	add_child(ex)
@@ -208,15 +208,12 @@ func test_combat_popup_blocked_during_active() -> void:
 	GameSession._check_combat_pending(room)
 	GameSession.accept_combat()
 
-	ex._overlay_manager.open_menu("combat")
-	assert_true(ex._overlay_manager.is_menu_open("combat"), "Combat open")
-
-	ex._overlay_manager.close_top_menu()
-	assert_true(ex._overlay_manager.is_menu_open("combat"),
-		"Combat stays open — close blocked")
+	# Combat panel is inline, not in overlay manager
+	assert_true(ex._combat_panel.visible, "Combat panel visible during active combat")
 
 	GameSession.end_combat(true)
 	await get_tree().process_frame
+	assert_false(ex._combat_panel.visible, "Combat panel hidden after combat ends")
 	ex.queue_free()
 	await get_tree().process_frame
 
