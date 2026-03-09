@@ -85,6 +85,7 @@ func register_menu(menu_key: String, title: String, content: Control,
 	frame.close_requested.connect(_on_popup_close_requested.bind(menu_key))
 	_popup_root.add_child(frame)
 	_popups[menu_key] = frame
+	content.visible = false
 	_contents[menu_key] = content
 	if can_close_fn.is_valid():
 		_can_close_overrides[menu_key] = can_close_fn
@@ -98,6 +99,10 @@ func open_menu(menu_key: String) -> void:
 		return
 	frame.visible = true
 	frame.modulate.a = 0.0
+	var content = _contents.get(menu_key)
+	if content != null:
+		content.visible = true
+
 
 	if frame.has_method("_apply_sizing"):
 		frame._apply_sizing()
@@ -113,7 +118,6 @@ func open_menu(menu_key: String) -> void:
 
 	frame.closable = can_close(menu_key)
 
-	var content = _contents.get(menu_key)
 	if content != null and content.has_method("refresh"):
 		content.refresh()
 
@@ -129,13 +133,17 @@ func close_menu(menu_key: String) -> void:
 	if not frame.visible:
 		return
 	_stack.erase(menu_key)
+	var content = _contents.get(menu_key)
+	if content != null and is_instance_valid(content):
+		content.visible = false
 	if is_inside_tree():
 		var tween: Tween = create_tween()
 		_track_tween(tween)
 		tween.tween_property(frame, "modulate:a", 0.0, FADE_DURATION)
 		tween.tween_callback(func():
 			if is_instance_valid(frame):
-				frame.visible = false)
+				frame.visible = false
+		)
 	else:
 		frame.visible = false
 	if MENU_SFX_KEYS.has(menu_key):
@@ -164,6 +172,9 @@ func close_all_menus() -> void:
 			if is_instance_valid(frame) and frame.visible:
 				frame.visible = false
 				frame.modulate.a = 0.0
+				var content = _contents.get(key)
+				if content != null:
+					content.visible = false
 				_stack.erase(key)
 				menu_closed.emit(key)
 
