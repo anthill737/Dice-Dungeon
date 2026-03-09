@@ -307,10 +307,7 @@ func _build_top_bar(parent: Node) -> void:
 	_btn_pause = DungeonTheme.make_icon_btn(DungeonTheme.ICON_MENU, "Menu")
 	_btn_pause.pressed.connect(_on_pause)
 	btn_box.add_child(_btn_pause)
-
-	_btn_settings = DungeonTheme.make_icon_btn(DungeonTheme.ICON_SETTINGS, "Settings")
-	_btn_settings.pressed.connect(_on_settings)
-	btn_box.add_child(_btn_settings)
+	# Settings are accessible via the Menu button — no separate settings button needed
 
 
 func _build_center_panel(parent: Node) -> void:
@@ -1027,13 +1024,17 @@ func _on_ground_items() -> void:
 	if room == null:
 		return
 
-	var has_anything := room.ground_gold > 0 or not room.ground_items.is_empty() or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked)) or not room.uncollected_items.is_empty() or not room.dropped_items.is_empty()
+	var container_has_loot := room.container_gold > 0 or not room.container_item.is_empty()
+	var has_anything := room.ground_gold > 0 \
+		or not room.ground_items.is_empty() \
+		or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked or container_has_loot)) \
+		or not room.uncollected_items.is_empty() \
+		or not room.dropped_items.is_empty()
 	if not has_anything:
 		_append_log("Nothing on the ground.")
 		return
 
-	if _ground_items_panel != null and _ground_items_panel.has_method("refresh"):
-		_ground_items_panel.refresh()
+	# open_menu calls refresh() on the panel — no redundant pre-call needed
 	_overlay_manager.open_menu("ground_items")
 
 
@@ -1332,7 +1333,11 @@ func _refresh_ui() -> void:
 			flags.append("⚔ COMBAT")
 		if room.has_chest and not room.chest_looted:
 			flags.append("📦 CHEST")
-		if room.ground_items.size() > 0 or room.ground_gold > 0:
+		var room_container_loot := room.container_gold > 0 or not room.container_item.is_empty()
+		var room_has_ground := room.ground_items.size() > 0 or room.ground_gold > 0 \
+			or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked or room_container_loot)) \
+			or not room.uncollected_items.is_empty() or not room.dropped_items.is_empty()
+		if room_has_ground:
 			flags.append("🔍 GROUND ITEMS")
 		if room.has_store:
 			flags.append("🏪 STORE")
@@ -1392,7 +1397,10 @@ func _update_button_visibility(room: RoomState) -> void:
 	_btn_attack.visible = show_combat_buttons
 	_btn_flee.visible = pending and not active
 	_btn_chest.visible = room != null and room.has_chest and not room.chest_looted and not blocking
-	var has_ground_content := room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked)) or not room.uncollected_items.is_empty() or not room.dropped_items.is_empty())
+	var gc_loot := room != null and (room.container_gold > 0 or not room.container_item.is_empty())
+	var has_ground_content := room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 \
+		or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked or gc_loot)) \
+		or not room.uncollected_items.is_empty() or not room.dropped_items.is_empty())
 	_btn_ground.visible = has_ground_content and not blocking
 	_btn_lockpick.visible = room != null and room.container_locked and GameSession.game_state != null and GameSession.game_state.inventory.has("Lockpick Kit") and not blocking
 	_btn_store.visible = room != null and room.has_store and not blocking

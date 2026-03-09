@@ -54,6 +54,10 @@ func _build_ui() -> void:
 
 
 func refresh() -> void:
+	# Guard: _build_ui() must have run first (e.g. panel not yet in tree)
+	if _content_vbox == null:
+		return
+
 	for child in _content_vbox.get_children():
 		child.queue_free()
 
