@@ -120,6 +120,9 @@ func close_menu(menu_key: String) -> void:
 	if not frame.visible:
 		return
 	_stack.erase(menu_key)
+	var content = _contents.get(menu_key)
+	if content != null and is_instance_valid(content):
+		content.visible = false
 	if is_inside_tree():
 		var tween: Tween = create_tween()
 		_track_tween(tween)
@@ -127,14 +130,9 @@ func close_menu(menu_key: String) -> void:
 		tween.tween_callback(func():
 			if is_instance_valid(frame):
 				frame.visible = false
-			var content = _contents.get(menu_key)
-			if content != null and is_instance_valid(content):
-				content.visible = false)
+		)
 	else:
 		frame.visible = false
-		var content = _contents.get(menu_key)
-		if content != null:
-			content.visible = false
 	menu_closed.emit(menu_key)
 
 
