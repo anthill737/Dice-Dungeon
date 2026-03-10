@@ -626,6 +626,276 @@
       "file_stem": "sfx_boss_defeat_collapse",
       "duration_seconds": 2.7,
       "prompt": "realistic giant foe collapse, heavy body and debris crashing onto stone with lingering gear scatter, grounded and dry, no explosion, no triumph sting"
+    },
+    {
+      "id": "step_stone_leather_medium",
+      "file_stem": "sfx_step_stone_leather_medium",
+      "duration_seconds": 0.8,
+      "prompt": "Single medium leather boot step on worn interior stone floor, realistic sole contact, soft grit, weighty heel then toe, close dry recording, grounded medieval dungeon material sound, natural low-mid body, short clean tail, no music, no voice, no plastic clicking, no exaggerated echo"
+    },
+    {
+      "id": "step_stair_stone_down",
+      "file_stem": "sfx_step_stair_stone_down",
+      "duration_seconds": 1.1,
+      "prompt": "Short descending sequence of leather boots on old stone stairs, two to three steps, slightly deeper resonance than flat floor, enclosed masonry space, realistic foot placement, close dry capture, controlled low end, no music, no voice, no UI sound, no cavern boom"
+    },
+    {
+      "id": "room_enter_threshold_stone",
+      "file_stem": "sfx_room_enter_threshold_stone",
+      "duration_seconds": 1.1,
+      "prompt": "Subtle room entry threshold sound in a stone dungeon: soft boot step over stone lip, slight air shift, faint room-tone bloom, tactile and grounded, no melody, no magic chime, just realistic movement into a new chamber, close dry recording, restrained resonance"
+    },
+    {
+      "id": "blocked_path_stone",
+      "file_stem": "sfx_blocked_path_stone",
+      "duration_seconds": 0.8,
+      "prompt": "Player bumps against blocked stone passage or sealed obstruction, dull boot stop and light hand or shoulder contact on stone, compact low-mid thud, realistic and understated, no cartoony bonk, no UI beep, no metallic clang unless the surface is iron"
+    },
+    {
+      "id": "stairs_found_reveal",
+      "file_stem": "sfx_stairs_found_reveal",
+      "duration_seconds": 1.8,
+      "prompt": "Subtle discovery reveal of hidden stone stairs in an ancient dungeon: a small grind of shifting masonry, a whisper of dust, slight hollow opening beneath, restrained and realistic, no magical sparkle, no giant rockslide, no music, just believable stone movement"
+    },
+    {
+      "id": "dice_roll_player_wood_stone_short",
+      "file_stem": "sfx_dice_roll_player_wood_stone_short",
+      "duration_seconds": 1.2,
+      "prompt": "Three small carved wooden dice rolled across a stone tabletop, realistic wood-on-stone contact, dense tactile clatter, crisp but warm transients, no plastic, no casino sound, no excessive clicks, close dry recording, tabletop fantasy feel, short controlled stop"
+    },
+    {
+      "id": "dice_lock_soft_hold",
+      "file_stem": "sfx_dice_lock_soft_hold",
+      "duration_seconds": 0.7,
+      "prompt": "One carved wooden die gently but decisively set and held in place on stone, tactile fingertip contact, soft wood tap with weight, intimate close-mic detail, no UI click, no magic chime, no metal, short and satisfying"
+    },
+    {
+      "id": "dice_unlock_soft_release",
+      "file_stem": "sfx_dice_unlock_soft_release",
+      "duration_seconds": 0.6,
+      "prompt": "One carved wooden die lightly released and shifted on stone surface, subtle wood scrape and tiny contact tap, tactile fingertip realism, understated, dry, no clicky UI sound, no synthetic texture"
+    },
+    {
+      "id": "attack_player_blade_medium",
+      "file_stem": "sfx_attack_player_blade_medium",
+      "duration_seconds": 0.9,
+      "prompt": "Medium one-handed fantasy weapon hit, realistic steel edge striking living target with cloth and flesh resistance, grounded impact, sharp but not tinny, no giant anime slash, no whoosh emphasis, close dry recording, clear attack read with natural body"
+    },
+    {
+      "id": "attack_player_critical_heavy",
+      "file_stem": "sfx_attack_player_critical_heavy",
+      "duration_seconds": 1.2,
+      "prompt": "Powerful critical melee strike, realistic heavy weapon impact with stronger force, deeper body hit, slight secondary rattle from armor or gear, intense but believable, no cinematic boom, no magical sparkle unless extremely subtle, no trailer hit, dry and punchy"
+    },
+    {
+      "id": "player_hit_flesh_armor",
+      "file_stem": "sfx_player_hit_flesh_armor",
+      "duration_seconds": 1.0,
+      "prompt": "Player takes a solid hit while wearing light adventuring gear, body impact with cloth, leather and small gear jostle, realistic pain implied through impact only, no voice, no grunt, no cartoon thump, grounded and weighty, close dry capture"
+    },
+    {
+      "id": "armor_block_leather_chain_small",
+      "file_stem": "sfx_armor_block_leather_chain_small",
+      "duration_seconds": 0.8,
+      "prompt": "Light armor damage reduction sound, soft leather and small metal reinforcement taking force, muted impact, restrained chain or buckle movement, realistic protection cue, not a shield bash, not a big clang, no tinny ring"
+    },
+    {
+      "id": "armor_break_or_durability_fail",
+      "file_stem": "sfx_armor_break_or_durability_fail",
+      "duration_seconds": 1.1,
+      "prompt": "Worn armor finally failing under impact: leather tear with strap snap and small metal hardware drop, compact destructive texture, believable equipment failure, no giant explosion, no exaggerated videogame crunch, dry and readable"
+    },
+    {
+      "id": "enemy_hit_flesh_small",
+      "file_stem": "sfx_enemy_hit_flesh_small",
+      "duration_seconds": 0.8,
+      "prompt": "Small enemy struck by a melee weapon, realistic flesh-and-cloth impact with a little body collapse, tight and readable, no voice, no monster roar, no exaggerated gore, no squish cartoon, dry and natural"
+    },
+    {
+      "id": "enemy_hit_chitin",
+      "file_stem": "sfx_enemy_hit_chitin",
+      "duration_seconds": 0.8,
+      "prompt": "Blade or blunt impact against chitinous insect body, realistic shell crack with fibrous inner body resistance, dry close recording, sharp but not glassy, no metallic ring, no clicky insect toy sound, grounded biological texture"
+    },
+    {
+      "id": "enemy_hit_spectral",
+      "file_stem": "sfx_enemy_hit_spectral",
+      "duration_seconds": 0.9,
+      "prompt": "Melee strike disturbing a spectral enemy, airy resistance with slight low-frequency pull and torn presence texture, restrained supernatural behavior, not a sci-fi zap, not a bright magic shimmer, eerie but grounded, short and dry"
+    },
+    {
+      "id": "enemy_hit_stone_crystal",
+      "file_stem": "sfx_enemy_hit_stone_crystal",
+      "duration_seconds": 0.9,
+      "prompt": "Weapon impact on crystal-stone creature, dense mineral strike with small fracture detail, realistic hard-body resistance, not glass-window breaking, not metal clang, controlled brittle overtones with solid rocky core, close dry recording"
+    },
+    {
+      "id": "enemy_death_flesh_small",
+      "file_stem": "sfx_enemy_death_flesh_small",
+      "duration_seconds": 1.2,
+      "prompt": "Small enemy collapse on dungeon floor, body drop with fabric and light gear movement, short finality, realistic weight, no vocalization, no giant splat, no melodrama, dry room, clean finish"
+    },
+    {
+      "id": "enemy_death_spectral_unravel",
+      "file_stem": "sfx_enemy_death_spectral_unravel",
+      "duration_seconds": 1.2,
+      "prompt": "Spectral enemy defeat: presence tears apart and thins into empty air, restrained supernatural unraveling, no choir, no voice, no bright magic sparkle, no sci-fi energy fade, eerie but subtle, short clean tail"
+    },
+    {
+      "id": "enemy_death_crystal_break",
+      "file_stem": "sfx_enemy_death_crystal_break",
+      "duration_seconds": 1.3,
+      "prompt": "Crystalline enemy destroyed: dense crystal body fractures and collapses into smaller mineral pieces on stone floor, believable hard-material breakup, not glass window smash, not glitter sparkle, short, punchy, controlled debris tail"
+    },
+    {
+      "id": "enemy_split_crystal",
+      "file_stem": "sfx_enemy_split_crystal",
+      "duration_seconds": 1.6,
+      "prompt": "Large crystal construct ruptures and splits into several smaller crystal bodies, internal fracture burst, hard mineral shearing, falling shard fragments on stone, powerful but believable, no magic beam, no explosion trailer boom"
+    },
+    {
+      "id": "container_old_crate_open",
+      "file_stem": "sfx_container_old_crate_open",
+      "duration_seconds": 1.3,
+      "prompt": "Old wooden crate being opened by hand, dry aged boards, rough wood friction, simple lid or panel shift, small rusted hinge complaint, dusty enclosed interior, realistic and tactile, no treasure fanfare, no exaggerated squeak"
+    },
+    {
+      "id": "container_dusty_chest_open",
+      "file_stem": "sfx_container_dusty_chest_open",
+      "duration_seconds": 1.5,
+      "prompt": "Small dusty wooden chest opened in an old dungeon, hand on old lid, hinge strain, trapped air release, dust movement, solid wood body and low thunk at full open, realistic medieval container sound, dry capture, no reward sting"
+    },
+    {
+      "id": "container_wooden_barrel_open",
+      "file_stem": "sfx_container_wooden_barrel_open",
+      "duration_seconds": 1.3,
+      "prompt": "Sturdy oak barrel opened by hand, wood hoop tension, lid or stopper movement, hollow barrel body resonance, realistic storage container handling, grounded and warm, no cartoon cork pop, no comedy bounce"
+    },
+    {
+      "id": "container_iron_lockbox_open",
+      "file_stem": "sfx_container_iron_lockbox_open",
+      "duration_seconds": 1.3,
+      "prompt": "Heavy iron lockbox being unlocked and opened, simple old latch release, dense metal lid movement with small interior cavity resonance, realistic iron weight, restrained mechanism detail, no safe dial clicks, no shiny modern lock sound"
+    },
+    {
+      "id": "container_hidden_nook_reveal",
+      "file_stem": "sfx_container_hidden_nook_reveal",
+      "duration_seconds": 1.5,
+      "prompt": "Loose stone or concealed wall nook being revealed by hand, gritty masonry scrape, dust sift, small hollow chamber opening, realistic secret compartment in ancient stonework, subtle and satisfying, no magical reveal tone"
+    },
+    {
+      "id": "pickup_gold_small_handful",
+      "file_stem": "sfx_pickup_gold_small_handful",
+      "duration_seconds": 0.9,
+      "prompt": "Small handful of old mixed coins gathered from stone floor into palm or pouch, realistic metal-on-stone then metal-in-hand contact, satisfying but not flashy, no slot machine sound, no magical jingle, controlled and grounded"
+    },
+    {
+      "id": "pickup_item_soft_general",
+      "file_stem": "sfx_pickup_item_soft_general",
+      "duration_seconds": 0.7,
+      "prompt": "Small soft item picked up from dungeon floor by hand, light cloth-paper-organic handling sound, intimate close recording, realistic fingers and material contact, understated success cue, no magic sparkle, no UI click"
+    },
+    {
+      "id": "pickup_item_hard_general",
+      "file_stem": "sfx_pickup_item_hard_general",
+      "duration_seconds": 0.7,
+      "prompt": "Small hard item picked up from stone floor by hand, realistic finger contact and object lift, subtle stone release with compact metal or mineral body, tactile and grounded, no bright treasure ping, no cheap click"
+    },
+    {
+      "id": "key_old_iron_turn",
+      "file_stem": "sfx_key_old_iron_turn",
+      "duration_seconds": 1.1,
+      "prompt": "Old iron key turning in a heavy aged lock, gritty internal resistance, deliberate torque, worn mechanism finally giving way, realistic old hardware, satisfying but grounded, no modern door lock sound, no fantasy chime"
+    },
+    {
+      "id": "elite_door_unlock_heavy",
+      "file_stem": "sfx_elite_door_unlock_heavy",
+      "duration_seconds": 2.0,
+      "prompt": "Reinforced heavy dungeon door unlocking and opening slightly, deep timber and iron movement, dense hinge strain, heavy seal breaking, authoritative but realistic, no castle gate bombast, no musical sting"
+    },
+    {
+      "id": "store_enter_door_wood_safe",
+      "file_stem": "sfx_store_enter_door_wood_safe",
+      "duration_seconds": 1.7,
+      "prompt": "Entering a small safe merchant room in a dungeon: wooden door open with gentle hinge movement, slight interior warmth, quiet cloth and wood presence, maybe a faint coin or shelf detail, no crowd, no tavern, no music, grounded and welcoming"
+    },
+    {
+      "id": "store_buy_confirm_coin_pouch",
+      "file_stem": "sfx_store_buy_confirm_coin_pouch",
+      "duration_seconds": 0.8,
+      "prompt": "Coins paid into a merchant pouch, small leather bag movement and believable coin transfer, satisfying transaction, understated, no cash register, no bright success chime, medieval material realism"
+    },
+    {
+      "id": "store_sell_confirm_coin_return",
+      "file_stem": "sfx_store_sell_confirm_coin_return",
+      "duration_seconds": 0.8,
+      "prompt": "Merchant pays out a modest stack of coins into the player’s hand or pouch, soft leather handling with realistic coin movement, grounded and clear, no jackpot sound, no modern register, dry and tactile"
+    },
+    {
+      "id": "item_potion_glass_pickup",
+      "file_stem": "sfx_item_potion_glass_pickup",
+      "duration_seconds": 0.7,
+      "prompt": "Small glass potion vial handled in the hand, subtle glass contact, liquid body movement inside, cork and finger texture, close dry recording, realistic fantasy alchemy item, no magic sparkle, no bright chime"
+    },
+    {
+      "id": "item_potion_drink",
+      "file_stem": "sfx_item_potion_drink",
+      "duration_seconds": 1.1,
+      "prompt": "Quick healing consumable use: small corked vial or flask opened and drunk, realistic glass and liquid swallow, intimate close sound, grounded medicinal feel, no magical choir, no sparkle bell, no comedy gulp"
+    },
+    {
+      "id": "heal_soft_resolve",
+      "file_stem": "sfx_heal_soft_resolve",
+      "duration_seconds": 1.0,
+      "prompt": "Subtle healing confirmation built from breath, cloth settling, and gentle body recovery sensation rather than magic sparkle; warm, grounded, intimate, short, no choir, no bright fantasy chime, no synthetic pad"
+    },
+    {
+      "id": "rest_sit_bedroll_or_stone",
+      "file_stem": "sfx_rest_sit_bedroll_or_stone",
+      "duration_seconds": 1.4,
+      "prompt": "Short realistic rest action in a dungeon: gear settling, cloth shift, body weight lowering onto bedroll or stone edge, quiet exhale implied through movement only, grounded recovery moment, no snore, no campfire, no music"
+    },
+    {
+      "id": "ui_menu_open_parchment_wood",
+      "file_stem": "sfx_ui_menu_open_parchment_wood",
+      "duration_seconds": 0.7,
+      "prompt": "Fantasy menu opening as a physical object: parchment and wood handling with light leather movement, subtle and refined, no digital beep, no page-flip cliché, grounded handcrafted UI confirmation"
+    },
+    {
+      "id": "ui_menu_close_parchment_wood",
+      "file_stem": "sfx_ui_menu_close_parchment_wood",
+      "duration_seconds": 0.6,
+      "prompt": "Fantasy menu close as a physical interface object settling shut, light parchment and wood closure, short, understated, tactile, no digital beep, no book slam, dry and clean"
+    },
+    {
+      "id": "ui_button_press_wood_brass",
+      "file_stem": "sfx_ui_button_press_wood_brass",
+      "duration_seconds": 0.5,
+      "prompt": "Physical fantasy UI button press using wood and small brass detail, tactile and premium, short confirm sound, no mouse click, no arcade UI, no digital tick, grounded handcrafted feel"
+    },
+    {
+      "id": "ui_warning_dull",
+      "file_stem": "sfx_ui_warning_dull",
+      "duration_seconds": 0.6,
+      "prompt": "Subtle negative feedback for a fantasy dungeon UI using muted wood and dull material resistance, short and clear, not harsh, no buzzer, no digital error tone, no cartoon fail sound"
+    },
+    {
+      "id": "save_confirm_secure",
+      "file_stem": "sfx_save_confirm_secure",
+      "duration_seconds": 0.8,
+      "prompt": "Save confirmation for a dark fantasy interface, tactile and trustworthy, small parchment-leather-wood close with quiet finality, no modern computer sound, no magical sparkle, understated and premium"
+    },
+    {
+      "id": "miniboss_intro_guardian_heavy",
+      "file_stem": "sfx_miniboss_intro_guardian_heavy",
+      "duration_seconds": 1.9,
+      "prompt": "Short guardian introduction sting built from physical environment only: deep stone presence, armor or mineral mass shifting into readiness, controlled menace, no music, no choir, no trailer boom, no cinematic riser, just grounded dangerous arrival"
+    },
+    {
+      "id": "miniboss_defeat_heavy_resolve",
+      "file_stem": "sfx_miniboss_defeat_heavy_resolve",
+      "duration_seconds": 1.9,
+      "prompt": "Short heavy defeat resolution for a dungeon guardian, body or structure collapse with satisfying finality, grounded triumph through material release rather than music, no choir, no fanfare, no sparkle, dry and weighty"
     }
   ],
   "cue_groups": {
