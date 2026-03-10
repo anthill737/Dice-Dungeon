@@ -631,321 +631,503 @@
       "id": "step_stone_leather_medium",
       "file_stem": "sfx_step_stone_leather_medium",
       "duration_seconds": 0.8,
-      "prompt": "Single medium leather boot step on worn interior stone floor, realistic sole contact, soft grit, weighty heel then toe, close dry recording, grounded medieval dungeon material sound, natural low-mid body, short clean tail, no music, no voice, no plastic clicking, no exaggerated echo"
+      "prompt": "single worn leather boot step on dusty interior stone, heel then toe, soft grit, close Foley, dead room, muted highs, low-mid weight, short natural decay, no bright click, no reverb wash"
     },
     {
       "id": "step_stair_stone_down",
       "file_stem": "sfx_step_stair_stone_down",
       "duration_seconds": 1.1,
-      "prompt": "Short descending sequence of leather boots on old stone stairs, two to three steps, slightly deeper resonance than flat floor, enclosed masonry space, realistic foot placement, close dry capture, controlled low end, no music, no voice, no UI sound, no cavern boom"
+      "prompt": "two or three leather boot steps descending old stone stairs, close stairwell Foley, slightly deeper stone resonance but still dry, muted highs, low-mid body, no cavern boom, no airy tail"
     },
     {
       "id": "room_enter_threshold_stone",
       "file_stem": "sfx_room_enter_threshold_stone",
       "duration_seconds": 1.1,
-      "prompt": "Subtle room entry threshold sound in a stone dungeon: soft boot step over stone lip, slight air shift, faint room-tone bloom, tactile and grounded, no melody, no magic chime, just realistic movement into a new chamber, close dry recording, restrained resonance"
+      "prompt": "soft leather boot crossing a low stone threshold into a new chamber, slight air movement, subtle room change, close Foley, dead room, restrained resonance, no magical layer, no bright tail"
     },
     {
       "id": "blocked_path_stone",
       "file_stem": "sfx_blocked_path_stone",
       "duration_seconds": 0.8,
-      "prompt": "Player bumps against blocked stone passage or sealed obstruction, dull boot stop and light hand or shoulder contact on stone, compact low-mid thud, realistic and understated, no cartoony bonk, no UI beep, no metallic clang unless the surface is iron"
+      "prompt": "abrupt stop against blocked stone passage with a dull boot plant and light shoulder or palm contact on masonry, close dry Foley, muted top end, compact stone thud, no comedy bonk, no metallic ring"
     },
     {
       "id": "stairs_found_reveal",
       "file_stem": "sfx_stairs_found_reveal",
       "duration_seconds": 1.8,
-      "prompt": "Subtle discovery reveal of hidden stone stairs in an ancient dungeon: a small grind of shifting masonry, a whisper of dust, slight hollow opening beneath, restrained and realistic, no magical sparkle, no giant rockslide, no music, just believable stone movement"
+      "prompt": "small section of old masonry shifting to reveal hidden stone stairs, gritty scrape, dust sift, brief hollow opening, close dry Foley, controlled low-mid movement, no big collapse, no shimmer"
     },
     {
       "id": "dice_roll_player_wood_stone_short",
       "file_stem": "sfx_dice_roll_player_wood_stone_short",
       "duration_seconds": 1.2,
-      "prompt": "Three small carved wooden dice rolled across a stone tabletop, realistic wood-on-stone contact, dense tactile clatter, crisp but warm transients, no plastic, no casino sound, no excessive clicks, close dry recording, tabletop fantasy feel, short controlled stop"
+      "prompt": "three small carved wooden dice rolled over a stone tabletop, rounded wood-on-stone clatter, damped transients, warm low-mid body, close tabletop Foley, short stop, no plastic, no sharp clickiness"
     },
     {
       "id": "dice_lock_soft_hold",
       "file_stem": "sfx_dice_lock_soft_hold",
       "duration_seconds": 0.7,
-      "prompt": "One carved wooden die gently but decisively set and held in place on stone, tactile fingertip contact, soft wood tap with weight, intimate close-mic detail, no UI click, no magic chime, no metal, short and satisfying"
+      "prompt": "single carved wooden die placed and held on stone with fingertip contact, muted wood tap, tiny scrape, close dead-room Foley, soft top end, no UI click, no chime"
     },
     {
       "id": "dice_unlock_soft_release",
       "file_stem": "sfx_dice_unlock_soft_release",
       "duration_seconds": 0.6,
-      "prompt": "One carved wooden die lightly released and shifted on stone surface, subtle wood scrape and tiny contact tap, tactile fingertip realism, understated, dry, no clicky UI sound, no synthetic texture"
+      "prompt": "single carved wooden die gently released and nudged on stone, subtle fingertip shift, small wood scrape, tiny soft tap, close dry Foley, muted highs, no clicky texture"
     },
     {
       "id": "attack_player_blade_medium",
       "file_stem": "sfx_attack_player_blade_medium",
       "duration_seconds": 0.9,
-      "prompt": "Medium one-handed fantasy weapon hit, realistic steel edge striking living target with cloth and flesh resistance, grounded impact, sharp but not tinny, no giant anime slash, no whoosh emphasis, close dry recording, clear attack read with natural body"
+      "prompt": "one-handed steel blade striking a living target through cloth and flesh, firm impact with body and resistance, close combat Foley, dry room, muted highs, no anime slash, no whoosh emphasis"
     },
     {
       "id": "attack_player_critical_heavy",
       "file_stem": "sfx_attack_player_critical_heavy",
       "duration_seconds": 1.2,
-      "prompt": "Powerful critical melee strike, realistic heavy weapon impact with stronger force, deeper body hit, slight secondary rattle from armor or gear, intense but believable, no cinematic boom, no magical sparkle unless extremely subtle, no trailer hit, dry and punchy"
+      "prompt": "heavier committed melee strike landing hard, deeper body impact with brief gear rattle, realistic force, close dry Foley, controlled top end, no trailer boom, no sparkle, no ring"
     },
     {
       "id": "player_hit_flesh_armor",
       "file_stem": "sfx_player_hit_flesh_armor",
       "duration_seconds": 1.0,
-      "prompt": "Player takes a solid hit while wearing light adventuring gear, body impact with cloth, leather and small gear jostle, realistic pain implied through impact only, no voice, no grunt, no cartoon thump, grounded and weighty, close dry capture"
+      "prompt": "player taking a body hit through cloth and light leather gear, solid impact with strap and kit jostle, close dry Foley, weighty low mids, no voice, no cartoon thump"
     },
     {
       "id": "armor_block_leather_chain_small",
       "file_stem": "sfx_armor_block_leather_chain_small",
       "duration_seconds": 0.8,
-      "prompt": "Light armor damage reduction sound, soft leather and small metal reinforcement taking force, muted impact, restrained chain or buckle movement, realistic protection cue, not a shield bash, not a big clang, no tinny ring"
+      "prompt": "light leather armor and small chain reinforcement absorbing part of a hit, muted impact, restrained hardware movement, close dry Foley, dull top end, no shield clang, no tinny ring"
     },
     {
       "id": "armor_break_or_durability_fail",
       "file_stem": "sfx_armor_break_or_durability_fail",
       "duration_seconds": 1.1,
-      "prompt": "Worn armor finally failing under impact: leather tear with strap snap and small metal hardware drop, compact destructive texture, believable equipment failure, no giant explosion, no exaggerated videogame crunch, dry and readable"
+      "prompt": "worn leather armor finally giving out under force, strap snap, tear, small buckle drop, compact failure texture, close dry Foley, no arcade crunch, no bright metal ring"
     },
     {
       "id": "enemy_hit_flesh_small",
       "file_stem": "sfx_enemy_hit_flesh_small",
       "duration_seconds": 0.8,
-      "prompt": "Small enemy struck by a melee weapon, realistic flesh-and-cloth impact with a little body collapse, tight and readable, no voice, no monster roar, no exaggerated gore, no squish cartoon, dry and natural"
+      "prompt": "small foe struck, tight flesh-and-cloth hit with slight body buckle, close dry Foley, muted highs, grounded weight, no gore exaggeration, no roar"
     },
     {
       "id": "enemy_hit_chitin",
       "file_stem": "sfx_enemy_hit_chitin",
       "duration_seconds": 0.8,
-      "prompt": "Blade or blunt impact against chitinous insect body, realistic shell crack with fibrous inner body resistance, dry close recording, sharp but not glassy, no metallic ring, no clicky insect toy sound, grounded biological texture"
+      "prompt": "weapon hit on insect chitin, dull shell crack with fibrous resistance underneath, close dry Foley, hard but not glassy, no metallic ring, no toy click"
     },
     {
       "id": "enemy_hit_spectral",
       "file_stem": "sfx_enemy_hit_spectral",
       "duration_seconds": 0.9,
-      "prompt": "Melee strike disturbing a spectral enemy, airy resistance with slight low-frequency pull and torn presence texture, restrained supernatural behavior, not a sci-fi zap, not a bright magic shimmer, eerie but grounded, short and dry"
+      "prompt": "weapon disturbing a spectral body with a soft pressure drop and torn presence texture, subdued supernatural tone, close dry capture, dark and short, no zap, no shimmer, no airy wash"
     },
     {
       "id": "enemy_hit_stone_crystal",
       "file_stem": "sfx_enemy_hit_stone_crystal",
       "duration_seconds": 0.9,
-      "prompt": "Weapon impact on crystal-stone creature, dense mineral strike with small fracture detail, realistic hard-body resistance, not glass-window breaking, not metal clang, controlled brittle overtones with solid rocky core, close dry recording"
+      "prompt": "weapon striking a crystal-stone creature, dense rocky body with a small mineral fracture, close dry Foley, solid core, controlled brittle edge, no glass smash, no clang"
     },
     {
       "id": "enemy_death_flesh_small",
       "file_stem": "sfx_enemy_death_flesh_small",
       "duration_seconds": 1.2,
-      "prompt": "Small enemy collapse on dungeon floor, body drop with fabric and light gear movement, short finality, realistic weight, no vocalization, no giant splat, no melodrama, dry room, clean finish"
+      "prompt": "small body dropping onto stone with cloth and light kit movement, short final collapse, close dry room, grounded weight, no splat, no vocalization"
     },
     {
       "id": "enemy_death_spectral_unravel",
       "file_stem": "sfx_enemy_death_spectral_unravel",
       "duration_seconds": 1.2,
-      "prompt": "Spectral enemy defeat: presence tears apart and thins into empty air, restrained supernatural unraveling, no choir, no voice, no bright magic sparkle, no sci-fi energy fade, eerie but subtle, short clean tail"
+      "prompt": "spectral presence collapsing inward and thinning out, restrained low-pressure unravel, close dry capture, subtle and short, no choir, no bright fade, no sci-fi tone"
     },
     {
       "id": "enemy_death_crystal_break",
       "file_stem": "sfx_enemy_death_crystal_break",
       "duration_seconds": 1.3,
-      "prompt": "Crystalline enemy destroyed: dense crystal body fractures and collapses into smaller mineral pieces on stone floor, believable hard-material breakup, not glass window smash, not glitter sparkle, short, punchy, controlled debris tail"
+      "prompt": "dense crystal body breaking apart and dropping smaller mineral pieces onto stone, short punchy breakup, close dry Foley, no glitter, no window-glass crash"
     },
     {
       "id": "enemy_split_crystal",
       "file_stem": "sfx_enemy_split_crystal",
       "duration_seconds": 1.6,
-      "prompt": "Large crystal construct ruptures and splits into several smaller crystal bodies, internal fracture burst, hard mineral shearing, falling shard fragments on stone, powerful but believable, no magic beam, no explosion trailer boom"
+      "prompt": "large mineral construct rupturing into several smaller hard bodies, internal crack, shard fall on stone, close dry capture, powerful but controlled, no magic beam, no explosion"
     },
     {
       "id": "container_old_crate_open",
       "file_stem": "sfx_container_old_crate_open",
       "duration_seconds": 1.3,
-      "prompt": "Old wooden crate being opened by hand, dry aged boards, rough wood friction, simple lid or panel shift, small rusted hinge complaint, dusty enclosed interior, realistic and tactile, no treasure fanfare, no exaggerated squeak"
+      "prompt": "aged wooden crate panel shifted by hand, rough dry boards, dusty friction, small worn hinge complaint, close dead-room Foley, no treasure sting, no squeaky cartoon tone"
     },
     {
       "id": "container_dusty_chest_open",
       "file_stem": "sfx_container_dusty_chest_open",
       "duration_seconds": 1.5,
-      "prompt": "Small dusty wooden chest opened in an old dungeon, hand on old lid, hinge strain, trapped air release, dust movement, solid wood body and low thunk at full open, realistic medieval container sound, dry capture, no reward sting"
+      "prompt": "small dusty wooden chest opened by hand, old hinge strain, trapped air and dust, solid lid weight, close dry Foley, muted wood body, no reward sting"
     },
     {
       "id": "container_wooden_barrel_open",
       "file_stem": "sfx_container_wooden_barrel_open",
       "duration_seconds": 1.3,
-      "prompt": "Sturdy oak barrel opened by hand, wood hoop tension, lid or stopper movement, hollow barrel body resonance, realistic storage container handling, grounded and warm, no cartoon cork pop, no comedy bounce"
+      "prompt": "oak barrel lid or stopper worked loose by hand, hoop tension, hollow body resonance kept short, close dry Foley, warm dull wood, no cork pop, no bounce"
     },
     {
       "id": "container_iron_lockbox_open",
       "file_stem": "sfx_container_iron_lockbox_open",
       "duration_seconds": 1.3,
-      "prompt": "Heavy iron lockbox being unlocked and opened, simple old latch release, dense metal lid movement with small interior cavity resonance, realistic iron weight, restrained mechanism detail, no safe dial clicks, no shiny modern lock sound"
+      "prompt": "old iron lockbox latch released and heavy lid opened, dense metal weight, worn mechanism, small cavity resonance kept short, close dry Foley, no modern lock clicks"
     },
     {
       "id": "container_hidden_nook_reveal",
       "file_stem": "sfx_container_hidden_nook_reveal",
       "duration_seconds": 1.5,
-      "prompt": "Loose stone or concealed wall nook being revealed by hand, gritty masonry scrape, dust sift, small hollow chamber opening, realistic secret compartment in ancient stonework, subtle and satisfying, no magical reveal tone"
+      "prompt": "loose stone slid aside by hand to reveal a small wall nook, gritty scrape, dust fall, brief hollow opening, close dry masonry Foley, no magical cue"
     },
     {
       "id": "pickup_gold_small_handful",
       "file_stem": "sfx_pickup_gold_small_handful",
       "duration_seconds": 0.9,
-      "prompt": "Small handful of old mixed coins gathered from stone floor into palm or pouch, realistic metal-on-stone then metal-in-hand contact, satisfying but not flashy, no slot machine sound, no magical jingle, controlled and grounded"
+      "prompt": "a few old coins gathered off stone into palm or pouch, muted metal contacts with a bit of leather touch, close dry Foley, satisfying but subdued, no slot machine tone"
     },
     {
       "id": "pickup_item_soft_general",
       "file_stem": "sfx_pickup_item_soft_general",
       "duration_seconds": 0.7,
-      "prompt": "Small soft item picked up from dungeon floor by hand, light cloth-paper-organic handling sound, intimate close recording, realistic fingers and material contact, understated success cue, no magic sparkle, no UI click"
+      "prompt": "small soft object lifted from the floor by fingers, cloth or paper handling, intimate close Foley, muted and dry, no sparkle, no UI tone"
     },
     {
       "id": "pickup_item_hard_general",
       "file_stem": "sfx_pickup_item_hard_general",
       "duration_seconds": 0.7,
-      "prompt": "Small hard item picked up from stone floor by hand, realistic finger contact and object lift, subtle stone release with compact metal or mineral body, tactile and grounded, no bright treasure ping, no cheap click"
+      "prompt": "small hard object lifted from stone by fingers, slight release from the floor, compact dense body, close dry Foley, muted highs, no treasure ping"
     },
     {
       "id": "key_old_iron_turn",
       "file_stem": "sfx_key_old_iron_turn",
       "duration_seconds": 1.1,
-      "prompt": "Old iron key turning in a heavy aged lock, gritty internal resistance, deliberate torque, worn mechanism finally giving way, realistic old hardware, satisfying but grounded, no modern door lock sound, no fantasy chime"
+      "prompt": "old iron key turned in a stubborn aged lock, gritty resistance, slow torque, mechanism finally gives way, close dry hardware Foley, dull worn metal, no modern latch click"
     },
     {
       "id": "elite_door_unlock_heavy",
       "file_stem": "sfx_elite_door_unlock_heavy",
       "duration_seconds": 2.0,
-      "prompt": "Reinforced heavy dungeon door unlocking and opening slightly, deep timber and iron movement, dense hinge strain, heavy seal breaking, authoritative but realistic, no castle gate bombast, no musical sting"
+      "prompt": "reinforced timber-and-iron dungeon door unlocking and easing open a little, heavy bolt movement, hinge strain, seal break, close controlled room, no grand hall boom, no sting"
     },
     {
       "id": "store_enter_door_wood_safe",
       "file_stem": "sfx_store_enter_door_wood_safe",
       "duration_seconds": 1.7,
-      "prompt": "Entering a small safe merchant room in a dungeon: wooden door open with gentle hinge movement, slight interior warmth, quiet cloth and wood presence, maybe a faint coin or shelf detail, no crowd, no tavern, no music, grounded and welcoming"
+      "prompt": "small secure merchant room door opening, soft wood and hinge movement, one step in, faint shelf or cloth detail, close warm dry room, no crowd, no tavern, no music"
     },
     {
       "id": "store_buy_confirm_coin_pouch",
       "file_stem": "sfx_store_buy_confirm_coin_pouch",
       "duration_seconds": 0.8,
-      "prompt": "Coins paid into a merchant pouch, small leather bag movement and believable coin transfer, satisfying transaction, understated, no cash register, no bright success chime, medieval material realism"
+      "prompt": "small number of coins paid into a leather pouch, believable coin transfer and bag movement, close dry Foley, muted metal, no register, no chime"
     },
     {
       "id": "store_sell_confirm_coin_return",
       "file_stem": "sfx_store_sell_confirm_coin_return",
       "duration_seconds": 0.8,
-      "prompt": "Merchant pays out a modest stack of coins into the player’s hand or pouch, soft leather handling with realistic coin movement, grounded and clear, no jackpot sound, no modern register, dry and tactile"
+      "prompt": "merchant returning a modest stack of coins into hand or pouch, soft leather handling, close dry metal movement, grounded and restrained, no jackpot tone, no register"
     },
     {
       "id": "item_potion_glass_pickup",
       "file_stem": "sfx_item_potion_glass_pickup",
       "duration_seconds": 0.7,
-      "prompt": "Small glass potion vial handled in the hand, subtle glass contact, liquid body movement inside, cork and finger texture, close dry recording, realistic fantasy alchemy item, no magic sparkle, no bright chime"
+      "prompt": "small glass potion vial handled in one hand, light liquid shift, cork and finger texture, close dry Foley, soft glass detail, no sparkle, no bright ping"
     },
     {
       "id": "item_potion_drink",
       "file_stem": "sfx_item_potion_drink",
       "duration_seconds": 1.1,
-      "prompt": "Quick healing consumable use: small corked vial or flask opened and drunk, realistic glass and liquid swallow, intimate close sound, grounded medicinal feel, no magical choir, no sparkle bell, no comedy gulp"
+      "prompt": "small corked vial opened and drunk quickly, glass, liquid, and swallow, close dry medicinal Foley, restrained and intimate, no choir, no comedy gulp, no chime"
     },
     {
       "id": "heal_soft_resolve",
       "file_stem": "sfx_heal_soft_resolve",
       "duration_seconds": 1.0,
-      "prompt": "Subtle healing confirmation built from breath, cloth settling, and gentle body recovery sensation rather than magic sparkle; warm, grounded, intimate, short, no choir, no bright fantasy chime, no synthetic pad"
+      "prompt": "subtle physical recovery cue made from cloth settling, steadier body movement, and gear easing back into place, close dry Foley, warm low mids, no chime, no synth"
     },
     {
       "id": "rest_sit_bedroll_or_stone",
       "file_stem": "sfx_rest_sit_bedroll_or_stone",
       "duration_seconds": 1.4,
-      "prompt": "Short realistic rest action in a dungeon: gear settling, cloth shift, body weight lowering onto bedroll or stone edge, quiet exhale implied through movement only, grounded recovery moment, no snore, no campfire, no music"
+      "prompt": "body lowering onto a bedroll or stone edge with gear settle and cloth shift, short rest posture change, close dry Foley, grounded and quiet, no camp ambience, no music"
     },
     {
       "id": "ui_menu_open_parchment_wood",
       "file_stem": "sfx_ui_menu_open_parchment_wood",
       "duration_seconds": 0.7,
-      "prompt": "Fantasy menu opening as a physical object: parchment and wood handling with light leather movement, subtle and refined, no digital beep, no page-flip cliché, grounded handcrafted UI confirmation"
+      "prompt": "handmade parchment-and-wood interface opening, soft material movement, close dry tactile Foley, muted highs, no digital tick, no page-flip flourish"
     },
     {
       "id": "ui_menu_close_parchment_wood",
       "file_stem": "sfx_ui_menu_close_parchment_wood",
       "duration_seconds": 0.6,
-      "prompt": "Fantasy menu close as a physical interface object settling shut, light parchment and wood closure, short, understated, tactile, no digital beep, no book slam, dry and clean"
+      "prompt": "handmade parchment-and-wood interface closing and settling shut, short material movement, close dry tactile Foley, muted highs, no digital tick, no slam"
     },
     {
       "id": "ui_button_press_wood_brass",
       "file_stem": "sfx_ui_button_press_wood_brass",
       "duration_seconds": 0.5,
-      "prompt": "Physical fantasy UI button press using wood and small brass detail, tactile and premium, short confirm sound, no mouse click, no arcade UI, no digital tick, grounded handcrafted feel"
+      "prompt": "small wood-and-brass control pressed with a short muted mechanical confirmation, close dry tactile Foley, premium but subdued, no mouse click, no arcade tick"
     },
     {
       "id": "ui_warning_dull",
       "file_stem": "sfx_ui_warning_dull",
       "duration_seconds": 0.6,
-      "prompt": "Subtle negative feedback for a fantasy dungeon UI using muted wood and dull material resistance, short and clear, not harsh, no buzzer, no digital error tone, no cartoon fail sound"
+      "prompt": "short muted resistance cue from wood and dull material stop, close dry tactile Foley, restrained negative feedback, no buzzer, no digital error"
     },
     {
       "id": "save_confirm_secure",
       "file_stem": "sfx_save_confirm_secure",
       "duration_seconds": 0.8,
-      "prompt": "Save confirmation for a dark fantasy interface, tactile and trustworthy, small parchment-leather-wood close with quiet finality, no modern computer sound, no magical sparkle, understated and premium"
+      "prompt": "small parchment, leather, and wood settle landing with quiet finality, close dry tactile Foley, trustworthy and subdued, no computer sound, no sparkle"
     },
     {
       "id": "miniboss_intro_guardian_heavy",
       "file_stem": "sfx_miniboss_intro_guardian_heavy",
       "duration_seconds": 1.9,
-      "prompt": "Short guardian introduction sting built from physical environment only: deep stone presence, armor or mineral mass shifting into readiness, controlled menace, no music, no choir, no trailer boom, no cinematic riser, just grounded dangerous arrival"
+      "prompt": "heavy guardian shifting to readiness inside a stone room, dense stone or armor mass moving once, close controlled room, low-mid menace, no riser, no boom, no music"
     },
     {
       "id": "miniboss_defeat_heavy_resolve",
       "file_stem": "sfx_miniboss_defeat_heavy_resolve",
       "duration_seconds": 1.9,
-      "prompt": "Short heavy defeat resolution for a dungeon guardian, body or structure collapse with satisfying finality, grounded triumph through material release rather than music, no choir, no fanfare, no sparkle, dry and weighty"
+      "prompt": "heavy guardian collapsing or slumping with stone-adjacent mass and final settle, close dry Foley, weighty release, no fanfare, no boom, no sparkle"
     }
   ],
   "cue_groups": {
-    "dice_roll": ["dice_roll", "dice_roll_hard", "dice_roll_short"],
-    "dice_lock": ["dice_lock", "dice_lock_soft", "dice_lock_heavy"],
-    "attack": ["attack", "attack_heavy", "attack_blunt"],
-    "crit": ["crit", "crit_blade", "crit_blunt"],
-    "legendary_hit": ["legendary_hit", "legendary_hit_heavy", "crit_blunt"],
-    "enemy_hit": ["enemy_hit", "enemy_hit_humanoid", "enemy_hit_beast", "enemy_hit_undead", "enemy_hit_spirit", "enemy_hit_insect", "enemy_hit_ooze"],
-    "enemy_die": ["enemy_die", "enemy_die_humanoid", "enemy_die_beast", "enemy_die_undead", "enemy_die_spirit", "enemy_die_insect", "enemy_die_ooze"],
-    "enemy_dice_roll": ["enemy_dice_roll", "enemy_dice_roll_humanoid", "enemy_dice_roll_beast", "enemy_dice_roll_undead", "enemy_dice_roll_spirit", "enemy_dice_roll_insect", "enemy_dice_roll_ooze"],
-    "enemy_hit_humanoid": ["enemy_hit_humanoid", "enemy_hit"],
-    "enemy_die_humanoid": ["enemy_die_humanoid", "enemy_die"],
-    "enemy_dice_roll_humanoid": ["enemy_dice_roll_humanoid", "enemy_dice_roll"],
-    "enemy_hit_beast": ["enemy_hit_beast", "enemy_hit"],
-    "enemy_die_beast": ["enemy_die_beast", "enemy_die"],
-    "enemy_dice_roll_beast": ["enemy_dice_roll_beast", "enemy_dice_roll"],
-    "enemy_hit_ooze": ["enemy_hit_ooze", "enemy_hit"],
-    "enemy_die_ooze": ["enemy_die_ooze", "enemy_die"],
-    "enemy_dice_roll_ooze": ["enemy_dice_roll_ooze", "enemy_dice_roll"],
-    "enemy_hit_undead": ["enemy_hit_undead", "enemy_hit"],
-    "enemy_die_undead": ["enemy_die_undead", "enemy_die"],
-    "enemy_dice_roll_undead": ["enemy_dice_roll_undead", "enemy_dice_roll"],
-    "enemy_hit_spirit": ["enemy_hit_spirit", "enemy_hit"],
-    "enemy_die_spirit": ["enemy_die_spirit", "enemy_die"],
-    "enemy_dice_roll_spirit": ["enemy_dice_roll_spirit", "enemy_dice_roll"],
-    "enemy_hit_insect": ["enemy_hit_insect", "enemy_hit"],
-    "enemy_die_insect": ["enemy_die_insect", "enemy_die"],
-    "enemy_dice_roll_insect": ["enemy_dice_roll_insect", "enemy_dice_roll"],
-    "shield_block": ["shield_block", "shield_block_heavy"],
-    "armor_break": ["armor_break", "armor_break_hard"],
-    "discover_room": ["discover_room", "discover_room_heavy"],
-    "stairs_down": ["stairs_down", "stairs_down_long"],
-    "chest_open": ["chest_open", "chest_open_rummage"],
-    "barrel_open": ["barrel_open", "barrel_open_rummage"],
-    "lockbox_open": ["lockbox_open", "lockbox_open_snap"],
-    "item_pickup": ["item_pickup", "item_pickup_leather", "item_pickup_metal"],
-    "gold_pickup": ["gold_pickup", "gold_pickup_small", "gold_pickup_pouch", "purchase", "purchase_counter", "sell", "sell_pouch"],
-    "purchase": ["purchase", "purchase_counter", "gold_pickup", "gold_pickup_small", "gold_pickup_pouch", "sell", "sell_pouch"],
-    "sell": ["sell", "sell_pouch", "gold_pickup", "gold_pickup_small", "gold_pickup_pouch", "purchase", "purchase_counter"],
-    "shop_enter": ["shop_enter", "shop_enter_counter"],
-    "drink_potion": ["drink_potion", "drink_potion_bitter", "drink_potion_heavy"],
-    "heal": ["heal", "rest_recover"],
-    "button_click": ["button_click", "button_click_soft"],
-    "menu_open": ["menu_open", "menu_open_book"],
-    "menu_close": ["menu_close", "menu_close_book"],
-    "puzzle_success": ["puzzle_success", "puzzle_success_deep"],
-    "puzzle_fail": ["puzzle_fail", "puzzle_fail_lock"],
-    "elite_unlock": ["elite_unlock", "elite_unlock_bolt", "key_turn_small"],
-    "boss_spawn": ["boss_spawn", "boss_spawn_gate"],
-    "boss_defeat": ["boss_defeat", "boss_defeat_collapse"]
+    "dice_roll": [
+      "dice_roll",
+      "dice_roll_hard",
+      "dice_roll_short"
+    ],
+    "dice_lock": [
+      "dice_lock",
+      "dice_lock_soft",
+      "dice_lock_heavy"
+    ],
+    "attack": [
+      "attack",
+      "attack_heavy",
+      "attack_blunt"
+    ],
+    "crit": [
+      "crit",
+      "crit_blade",
+      "crit_blunt"
+    ],
+    "legendary_hit": [
+      "legendary_hit",
+      "legendary_hit_heavy",
+      "crit_blunt"
+    ],
+    "enemy_hit": [
+      "enemy_hit",
+      "enemy_hit_humanoid",
+      "enemy_hit_beast",
+      "enemy_hit_undead",
+      "enemy_hit_spirit",
+      "enemy_hit_insect",
+      "enemy_hit_ooze"
+    ],
+    "enemy_die": [
+      "enemy_die",
+      "enemy_die_humanoid",
+      "enemy_die_beast",
+      "enemy_die_undead",
+      "enemy_die_spirit",
+      "enemy_die_insect",
+      "enemy_die_ooze"
+    ],
+    "enemy_dice_roll": [
+      "enemy_dice_roll",
+      "enemy_dice_roll_humanoid",
+      "enemy_dice_roll_beast",
+      "enemy_dice_roll_undead",
+      "enemy_dice_roll_spirit",
+      "enemy_dice_roll_insect",
+      "enemy_dice_roll_ooze"
+    ],
+    "enemy_hit_humanoid": [
+      "enemy_hit_humanoid",
+      "enemy_hit"
+    ],
+    "enemy_die_humanoid": [
+      "enemy_die_humanoid",
+      "enemy_die"
+    ],
+    "enemy_dice_roll_humanoid": [
+      "enemy_dice_roll_humanoid",
+      "enemy_dice_roll"
+    ],
+    "enemy_hit_beast": [
+      "enemy_hit_beast",
+      "enemy_hit"
+    ],
+    "enemy_die_beast": [
+      "enemy_die_beast",
+      "enemy_die"
+    ],
+    "enemy_dice_roll_beast": [
+      "enemy_dice_roll_beast",
+      "enemy_dice_roll"
+    ],
+    "enemy_hit_ooze": [
+      "enemy_hit_ooze",
+      "enemy_hit"
+    ],
+    "enemy_die_ooze": [
+      "enemy_die_ooze",
+      "enemy_die"
+    ],
+    "enemy_dice_roll_ooze": [
+      "enemy_dice_roll_ooze",
+      "enemy_dice_roll"
+    ],
+    "enemy_hit_undead": [
+      "enemy_hit_undead",
+      "enemy_hit"
+    ],
+    "enemy_die_undead": [
+      "enemy_die_undead",
+      "enemy_die"
+    ],
+    "enemy_dice_roll_undead": [
+      "enemy_dice_roll_undead",
+      "enemy_dice_roll"
+    ],
+    "enemy_hit_spirit": [
+      "enemy_hit_spirit",
+      "enemy_hit"
+    ],
+    "enemy_die_spirit": [
+      "enemy_die_spirit",
+      "enemy_die"
+    ],
+    "enemy_dice_roll_spirit": [
+      "enemy_dice_roll_spirit",
+      "enemy_dice_roll"
+    ],
+    "enemy_hit_insect": [
+      "enemy_hit_insect",
+      "enemy_hit"
+    ],
+    "enemy_die_insect": [
+      "enemy_die_insect",
+      "enemy_die"
+    ],
+    "enemy_dice_roll_insect": [
+      "enemy_dice_roll_insect",
+      "enemy_dice_roll"
+    ],
+    "shield_block": [
+      "shield_block",
+      "shield_block_heavy"
+    ],
+    "armor_break": [
+      "armor_break",
+      "armor_break_hard"
+    ],
+    "discover_room": [
+      "discover_room",
+      "discover_room_heavy"
+    ],
+    "stairs_down": [
+      "stairs_down",
+      "stairs_down_long"
+    ],
+    "chest_open": [
+      "chest_open",
+      "chest_open_rummage"
+    ],
+    "barrel_open": [
+      "barrel_open",
+      "barrel_open_rummage"
+    ],
+    "lockbox_open": [
+      "lockbox_open",
+      "lockbox_open_snap"
+    ],
+    "item_pickup": [
+      "item_pickup",
+      "item_pickup_leather",
+      "item_pickup_metal"
+    ],
+    "gold_pickup": [
+      "gold_pickup",
+      "gold_pickup_small",
+      "gold_pickup_pouch",
+      "purchase",
+      "purchase_counter",
+      "sell",
+      "sell_pouch"
+    ],
+    "purchase": [
+      "purchase",
+      "purchase_counter",
+      "gold_pickup",
+      "gold_pickup_small",
+      "gold_pickup_pouch",
+      "sell",
+      "sell_pouch"
+    ],
+    "sell": [
+      "sell",
+      "sell_pouch",
+      "gold_pickup",
+      "gold_pickup_small",
+      "gold_pickup_pouch",
+      "purchase",
+      "purchase_counter"
+    ],
+    "shop_enter": [
+      "shop_enter",
+      "shop_enter_counter"
+    ],
+    "drink_potion": [
+      "drink_potion",
+      "drink_potion_bitter",
+      "drink_potion_heavy"
+    ],
+    "heal": [
+      "heal",
+      "rest_recover"
+    ],
+    "button_click": [
+      "button_click",
+      "button_click_soft"
+    ],
+    "menu_open": [
+      "menu_open",
+      "menu_open_book"
+    ],
+    "menu_close": [
+      "menu_close",
+      "menu_close_book"
+    ],
+    "puzzle_success": [
+      "puzzle_success",
+      "puzzle_success_deep"
+    ],
+    "puzzle_fail": [
+      "puzzle_fail",
+      "puzzle_fail_lock"
+    ],
+    "elite_unlock": [
+      "elite_unlock",
+      "elite_unlock_bolt",
+      "key_turn_small"
+    ],
+    "boss_spawn": [
+      "boss_spawn",
+      "boss_spawn_gate"
+    ],
+    "boss_defeat": [
+      "boss_defeat",
+      "boss_defeat_collapse"
+    ]
   }
 }
