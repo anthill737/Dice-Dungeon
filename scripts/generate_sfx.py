@@ -73,6 +73,9 @@ class AppConfig:
     base_backoff_seconds: float
     post_mono: bool
     post_low_pass_hz: float | None
+    post_low_pass_passes: int
+    post_fade_in_ms: float
+    post_fade_out_ms: float
 
 
 def parse_args() -> argparse.Namespace:
@@ -167,6 +170,24 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Apply a gentle low-pass filter to generated PCM WAV output at this cutoff frequency.",
     )
+    parser.add_argument(
+        "--post-low-pass-passes",
+        type=int,
+        default=2,
+        help="Number of low-pass passes to apply when --post-low-pass-hz is set.",
+    )
+    parser.add_argument(
+        "--post-fade-in-ms",
+        type=float,
+        default=0.0,
+        help="Apply a short fade-in to generated PCM WAV output.",
+    )
+    parser.add_argument(
+        "--post-fade-out-ms",
+        type=float,
+        default=0.0,
+        help="Apply a short fade-out to generated PCM WAV output.",
+    )
     return parser.parse_args()
 
 
@@ -201,6 +222,10 @@ def build_config(args: argparse.Namespace) -> AppConfig:
     post_low_pass_hz = args.post_low_pass_hz
     if post_low_pass_hz is not None and post_low_pass_hz <= 0:
         raise SystemExit("--post-low-pass-hz must be greater than 0.")
+    if args.post_low_pass_passes < 1:
+        raise SystemExit("--post-low-pass-passes must be at least 1.")
+    if args.post_fade_in_ms < 0 or args.post_fade_out_ms < 0:
+        raise SystemExit("--post-fade-in-ms and --post-fade-out-ms must be non-negative.")
 
     return AppConfig(
         env_file=env_file,
@@ -221,6 +246,9 @@ def build_config(args: argparse.Namespace) -> AppConfig:
         base_backoff_seconds=max(args.base_backoff, 0.1),
         post_mono=args.post_mono,
         post_low_pass_hz=post_low_pass_hz,
+        post_low_pass_passes=args.post_low_pass_passes,
+        post_fade_in_ms=args.post_fade_in_ms,
+        post_fade_out_ms=args.post_fade_out_ms,
     )
 
 
@@ -570,6 +598,30 @@ def apply_low_pass_filter(samples: array, sample_rate: int, cutoff_hz: float) ->
     return filtered
 
 
+def apply_edge_fades(samples: array, sample_rate: int, fade_in_ms: float, fade_out_ms: float) -> array:
+    if not samples:
+        return array("h")
+
+    faded = array("h", samples)
+    total_samples = len(faded)
+
+    fade_in_samples = min(int(sample_rate * (fade_in_ms / 1000.0)), total_samples)
+    fade_out_samples = min(int(sample_rate * (fade_out_ms / 1000.0)), total_samples)
+
+    if fade_in_samples > 1:
+        for index in range(fade_in_samples):
+            gain = index / float(fade_in_samples - 1)
+            faded[index] = int(faded[index] * gain)
+
+    if fade_out_samples > 1:
+        start_index = total_samples - fade_out_samples
+        for offset, index in enumerate(range(start_index, total_samples)):
+            gain = (fade_out_samples - 1 - offset) / float(fade_out_samples - 1)
+            faded[index] = int(faded[index] * gain)
+
+    return faded
+
+
 def build_processed_pcm_frames(
     config: AppConfig,
     output_format: str,
@@ -587,9 +639,16 @@ def build_processed_pcm_frames(
         if processed_channels != 1:
             samples = fold_samples_to_mono(samples, processed_channels)
             processed_channels = 1
-        # Run the filter twice for a steeper but still natural-sounding rolloff.
-        samples = apply_low_pass_filter(samples, sample_rate, config.post_low_pass_hz)
-        samples = apply_low_pass_filter(samples, sample_rate, config.post_low_pass_hz)
+        for _ in range(config.post_low_pass_passes):
+            samples = apply_low_pass_filter(samples, sample_rate, config.post_low_pass_hz)
+
+    if config.post_fade_in_ms > 0 or config.post_fade_out_ms > 0:
+        samples = apply_edge_fades(
+            samples,
+            sample_rate,
+            config.post_fade_in_ms,
+            config.post_fade_out_ms,
+        )
 
     return sample_rate, processed_channels, sample_width, samples.tobytes()
 
@@ -736,7 +795,15 @@ def main() -> int:
     if config.post_mono:
         logging.info("PCM post-process: mono fold-down enabled")
     if config.post_low_pass_hz is not None:
-        logging.info("PCM post-process: low-pass enabled at %.0f Hz", config.post_low_pass_hz)
+        logging.info(
+            "PCM post-process: low-pass enabled at %.0f Hz (%d passes)",
+            config.post_low_pass_hz,
+            config.post_low_pass_passes,
+        )
+    if config.post_fade_in_ms > 0:
+        logging.info("PCM post-process: fade-in enabled at %.1f ms", config.post_fade_in_ms)
+    if config.post_fade_out_ms > 0:
+        logging.info("PCM post-process: fade-out enabled at %.1f ms", config.post_fade_out_ms)
 
     results = {"generated": 0, "skipped": 0, "dry-run": 0, "failed": 0}
 
