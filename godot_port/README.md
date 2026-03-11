@@ -126,8 +126,8 @@ python scripts/generate_sfx.py --overwrite
 # Regenerate everything except one cue you want to keep
 python scripts/generate_sfx.py --overwrite --exclude-ids move_room
 
-# Regenerate with stronger prompt adherence and darker/mono PCM cleanup
-python scripts/generate_sfx.py --overwrite --prompt-influence-override 0.7 --post-mono --post-low-pass-hz 3800
+# Regenerate with stronger prompt adherence, darker PCM cleanup, and edge-click control
+python scripts/generate_sfx.py --overwrite --prompt-influence-override 0.75 --post-mono --post-low-pass-hz 2800 --post-low-pass-passes 4 --post-fade-in-ms 4 --post-fade-out-ms 30
 ```
 
 The generator skips existing sound files by default, logs per-sound success or failure to the console and `logs/sfx_generation.log`, retries rate-limit and transient failures with backoff, and tries `pcm_44100` first so it can produce `.wav` files when the account supports PCM. If ElevenLabs rejects PCM for the account, it automatically falls back to MP3.
