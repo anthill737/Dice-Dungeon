@@ -1,901 +1,901 @@
 {
   "defaults": {
-    "prompt_influence": 0.35
+    "prompt_influence": 0.75
   },
   "sounds": [
     {
       "id": "dice_roll",
       "file_stem": "sfx_dice_roll",
       "duration_seconds": 1.2,
-      "prompt": "realistic close foley of three wooden dice rolling across a worn stone tabletop, tight wood clicks and short scrape, dry room, grounded tabletop sound, no music, no magic, no bright sparkle, no high ringing"
+      "prompt": "Three wooden dice rolling across a worn stone tabletop. Short warm wood clatter."
     },
     {
       "id": "dice_lock",
       "file_stem": "sfx_dice_lock",
       "duration_seconds": 0.8,
-      "prompt": "realistic single wooden die stopping sharply on stone with a small final tap and scrape, close dry tabletop foley, no chime, no sparkle, no synth, restrained high end"
+      "prompt": "A single wooden die stopping on stone. Small wood tap and scrape."
     },
     {
       "id": "attack",
       "file_stem": "sfx_attack",
       "duration_seconds": 0.9,
-      "prompt": "realistic short steel weapon impact on armor or shield edge, weighty midrange body, controlled transient, close dry combat foley, no fantasy magic, no bright ring"
+      "prompt": "A steel weapon hit landing on armor or a shield. Short heavy impact."
     },
     {
       "id": "crit",
       "file_stem": "sfx_crit",
       "duration_seconds": 1.2,
-      "prompt": "realistic heavy weapon strike stronger than a normal hit, deeper metal body and blunt force, brief gear rattle, close dry combat foley, no crystal burst, no magic, no sharp high ring"
+      "prompt": "A heavier weapon strike landing harder than a normal hit. Deep impact and brief gear rattle."
     },
     {
       "id": "enemy_hit",
       "file_stem": "sfx_enemy_hit",
       "duration_seconds": 1.0,
-      "prompt": "realistic body hit from a weapon with a short strained grunt, impact on flesh and light armor, close and dry, grounded combat sound, no monster roar, no synthetic tail"
+      "prompt": "A weapon hitting flesh through light armor. Body impact and a short pain breath."
     },
     {
       "id": "enemy_die",
       "file_stem": "sfx_enemy_die",
       "duration_seconds": 1.6,
-      "prompt": "realistic enemy death, heavy body collapsing onto stone with gear rattle and final thud, grounded combat foley, short and dry, no dissolve, no magic burst, no victory sting"
+      "prompt": "An enemy body collapsing onto stone. Gear rattle and a final thud."
     },
     {
       "id": "shield_block",
       "file_stem": "sfx_shield_block",
       "duration_seconds": 0.9,
-      "prompt": "realistic shield block, muted metal strike with solid defensive thump, close dry resonance, no long ring, no bright clang, grounded medieval combat"
+      "prompt": "A shield blocking a weapon hit. Leather strap strain and a muted metal impact."
     },
     {
       "id": "armor_break",
       "file_stem": "sfx_armor_break",
       "duration_seconds": 1.2,
-      "prompt": "realistic armor failure, plate or buckle snapping with a hard metal crack, small fragments falling, close and weighty, no glassy sparkle, no magic"
+      "prompt": "Armor giving way under a heavy hit. Strap snap, plate crack, small pieces falling."
     },
     {
       "id": "legendary_hit",
       "file_stem": "sfx_legendary_hit",
       "duration_seconds": 1.5,
-      "prompt": "realistic devastating combat hit, brutal steel impact with deep body and brief debris, larger than crit, close dry foley, no magic burst, no bright sparks, no high sting"
+      "prompt": "A devastating finishing hit. Very heavy steel and body impact with a little debris."
     },
     {
       "id": "enemy_dice_roll",
       "file_stem": "sfx_enemy_dice_roll",
       "duration_seconds": 1.1,
-      "prompt": "realistic rough bone dice or knucklebones clattering over stone, hollow natural clacks, darker low-mid tone, dry room, tense but grounded, no fantasy sheen"
+      "prompt": "Rough bone dice thrown onto stone. Hollow clatter and a fast stop."
     },
     {
       "id": "move_room",
       "file_stem": "sfx_move",
       "duration_seconds": 0.8,
-      "prompt": "leather boots stepping across stone dungeon floor with subtle echo, grounded fantasy movement sound"
+      "prompt": "Leather boots walking across a stone dungeon floor. One or two grounded steps."
     },
     {
       "id": "discover_room",
       "file_stem": "sfx_discover_room",
       "duration_seconds": 2.2,
-      "prompt": "realistic heavy stone or wood door opening into another room, low mechanism rumble, hinge or track movement, dry enclosed space, grounded exploration foley, no magical resonance, no dramatic swell"
+      "prompt": "A heavy dungeon door opening into another room. Hinge movement and a low wood or stone body."
     },
     {
       "id": "stairs_down",
       "file_stem": "sfx_stairs_down",
       "duration_seconds": 1.5,
-      "prompt": "realistic boots descending a few stone steps, close footsteps with restrained enclosed reverb, grounded and low-mid, no cinematic rise"
+      "prompt": "Boots going down a few stone steps. Close footsteps and a short stairwell resonance."
     },
     {
       "id": "chest_open",
       "file_stem": "sfx_chest_open",
       "duration_seconds": 1.6,
-      "prompt": "realistic old wooden chest opening, dry hinge creak, wood strain, lid lift and solid knock at the end, close container foley, no fantasy layer"
+      "prompt": "An old wooden chest opened by hand. Heavy lid lift, hinge creak, hollow chest body."
     },
     {
       "id": "barrel_open",
       "file_stem": "sfx_barrel_open",
       "duration_seconds": 1.4,
-      "prompt": "realistic wooden barrel lid shifting open, rough wood scrape, hollow barrel resonance, light rummage, close and dry, no tonal elements"
+      "prompt": "A wooden barrel lid worked loose by hand. Wood scrape and short hollow barrel body."
     },
     {
       "id": "lockbox_open",
       "file_stem": "sfx_lockbox_open",
       "duration_seconds": 1.2,
-      "prompt": "realistic small metal lockbox opening, latch click, short bolt release, lid lift with muted metal movement, close dry foley, no treasure sparkle"
+      "prompt": "A small metal lockbox opened by hand. Latch click, lid lift, muted iron body."
     },
     {
       "id": "item_pickup",
       "file_stem": "sfx_item_pickup",
       "duration_seconds": 0.8,
-      "prompt": "realistic small object pickup from stone, hand grab with light leather or cloth movement and a soft object tap, close dry foley, no chime, no sparkle, no synth"
+      "prompt": "A small object picked up from stone by hand. Soft hand contact and a short object tap."
     },
     {
       "id": "gold_pickup",
       "file_stem": "sfx_gold_pickup",
       "duration_seconds": 0.8,
-      "prompt": "realistic handful of coins scooped up and gathered into a palm or leather pouch, short muted metallic clinks, close and grounded, no bright jingle"
+      "prompt": "A few old coins scooped up from stone into a hand or pouch. Muted coin clinks."
     },
     {
       "id": "inventory_full",
       "file_stem": "sfx_inventory_full",
       "duration_seconds": 0.8,
-      "prompt": "realistic overfilled bag foley, dull pack thump with strap tension and a muted failed shove, short dry negative feedback, no synth tone"
+      "prompt": "An overfilled pack refusing one more item. Dull bag thump and strap strain."
     },
     {
       "id": "shop_enter",
       "file_stem": "sfx_shop_enter",
       "duration_seconds": 2.0,
-      "prompt": "realistic shop entrance, wooden door opening, one or two steps onto timber floor, subtle indoor room tone, grounded and dry, no coin jingle, no tavern music, no fantasy shimmer"
+      "prompt": "A wooden shop door opening and one step onto a timber floor."
     },
     {
       "id": "purchase",
       "file_stem": "sfx_purchase",
       "duration_seconds": 0.8,
-      "prompt": "realistic purchase sound, a few coins counted onto a wooden counter or into a hand, short muted metal clinks, close and dry, no success chime"
+      "prompt": "A few coins counted onto a wooden counter. Short muted coin clinks."
     },
     {
       "id": "sell",
       "file_stem": "sfx_sell",
       "duration_seconds": 0.8,
-      "prompt": "realistic sale sound, a few coins dropped into a leather pouch with soft metal clinks and light leather movement, close and dry, no bright jingle"
+      "prompt": "A few coins dropped into a leather pouch. Soft coin movement and leather rustle."
     },
     {
       "id": "drink_potion",
       "file_stem": "sfx_drink_potion",
       "duration_seconds": 1.1,
-      "prompt": "realistic glass vial uncork, short liquid swig and swallow, bottle movement in hand, close foley, no magical shimmer, no tonal tail"
+      "prompt": "A small glass vial uncorked and drunk. Short liquid swig and swallow."
     },
     {
       "id": "heal",
       "file_stem": "sfx_heal",
       "duration_seconds": 1.1,
-      "prompt": "realistic recovery cue, quiet cloth adjustment with a relieved breath and subtle body movement, close dry foley, grounded and understated, no chime, no magic pulse"
+      "prompt": "A practical recovery cue. Cloth adjustment, steadier breath, gear settling."
     },
     {
       "id": "shield_gain",
       "file_stem": "sfx_shield_gain",
       "duration_seconds": 1.1,
-      "prompt": "realistic defensive ready sound, shield lifted into guard with leather strap tension and muted metal settle, close dry foley, no shimmer, no energy effect"
+      "prompt": "A shield lifted into guard. Leather straps tighten and metal settles."
     },
     {
       "id": "button_click",
       "file_stem": "sfx_button_click",
       "duration_seconds": 0.5,
-      "prompt": "realistic tactile button or latch click, short muted wood or metal mechanism, dry close interface foley, no sparkle, no synth"
+      "prompt": "A small wood and brass button pressed once. Short muted mechanical click."
     },
     {
       "id": "menu_open",
       "file_stem": "sfx_menu_open",
       "duration_seconds": 0.7,
-      "prompt": "realistic folio or parchment opening, short paper and leather movement, close dry menu foley, no shimmer, no magic, no high-pitched tone"
+      "prompt": "A parchment folio opened by hand. Thick old paper and wood backing moving."
     },
     {
       "id": "menu_close",
       "file_stem": "sfx_menu_close",
       "duration_seconds": 0.7,
-      "prompt": "realistic folio or parchment closing, soft paper movement and muted thud, close dry foley, no magical fade, no tonal tail"
+      "prompt": "A parchment folio closed by hand. Thick paper fold and a soft cover settle."
     },
     {
       "id": "trap_trigger",
       "file_stem": "sfx_trap_trigger",
       "duration_seconds": 1.0,
-      "prompt": "realistic trap mechanism firing, sudden metal spring snap with short chain or tooth impact, dry stone room foley, no cinematic sting"
+      "prompt": "A trap mechanism firing in a stone room. Spring snap and a short metal strike."
     },
     {
       "id": "puzzle_success",
       "file_stem": "sfx_puzzle_success",
       "duration_seconds": 2.0,
-      "prompt": "realistic stone or metal lock mechanism disengaging, heavy internal movement, low scrape and final thunk, grounded and dry, no magical resonance"
+      "prompt": "An ancient lock mechanism disengaging. Heavy internal movement and a final thunk."
     },
     {
       "id": "puzzle_fail",
       "file_stem": "sfx_puzzle_fail",
       "duration_seconds": 1.2,
-      "prompt": "realistic mechanism failure, rough stone or metal grind that catches and stops abruptly, short dry jam sound, no synthetic error tone"
+      "prompt": "A lock mechanism jamming. Short grind and a dull stop."
     },
     {
       "id": "elite_unlock",
       "file_stem": "sfx_elite_unlock",
       "duration_seconds": 1.8,
-      "prompt": "realistic heavy reinforced door unlock, thick key turn or bolt mechanism with deep metal clicks and bar retraction, grounded low-mid sound, dry, no ornamental fantasy layer"
+      "prompt": "A reinforced dungeon door unlocking. Thick key turn, bolt movement, heavy iron mechanism."
     },
     {
       "id": "boss_spawn",
       "file_stem": "sfx_boss_spawn",
       "duration_seconds": 2.8,
-      "prompt": "realistic ominous boss entrance, massive door or gate moving with stone rumble and one heavy approaching footstep, grounded tension, low-end weight, no magic surge, no musical rise"
+      "prompt": "A massive gate opening and one huge approaching footstep. Heavy stone and iron movement."
     },
     {
       "id": "boss_defeat",
       "file_stem": "sfx_boss_defeat",
       "duration_seconds": 2.6,
-      "prompt": "realistic large enemy defeat, huge body collapsing onto stone with debris, gear scatter and a final heavy impact, grounded and dry, no explosion, no victory sting, no magic"
+      "prompt": "A huge enemy collapsing onto stone. Heavy body fall, debris, and a final impact."
     },
     {
       "id": "dice_roll_hard",
       "file_stem": "sfx_dice_roll_hard",
       "duration_seconds": 1.2,
-      "prompt": "realistic close foley of three wooden dice rolled harder across stone, denser clacks with a brief skid, dry room, grounded tabletop sound, no bright highs"
+      "prompt": "Three wooden dice thrown harder across stone. Denser clatter and a short skid."
     },
     {
       "id": "dice_roll_short",
       "file_stem": "sfx_dice_roll_short",
       "duration_seconds": 0.9,
-      "prompt": "realistic short wooden dice toss on stone, compact clatter with fast stop, close dry tabletop sound, no magic, no sparkle"
+      "prompt": "A short toss of wooden dice onto stone. Compact clatter and a fast stop."
     },
     {
       "id": "dice_lock_soft",
       "file_stem": "sfx_dice_lock_soft",
       "duration_seconds": 0.7,
-      "prompt": "realistic single die settling softly on stone, short wood tap and tiny scrape, close dry tabletop foley, muted and grounded"
+      "prompt": "A single wooden die settling softly on stone. Light tap and tiny scrape."
     },
     {
       "id": "dice_lock_heavy",
       "file_stem": "sfx_dice_lock_heavy",
       "duration_seconds": 0.8,
-      "prompt": "realistic single wooden die landing with firmer weight on stone, short low-mid knock and scrape, dry close tabletop sound, no chime"
+      "prompt": "A single wooden die landing with more weight on stone. Firmer tap and short scrape."
     },
     {
       "id": "attack_heavy",
       "file_stem": "sfx_attack_heavy",
       "duration_seconds": 1.0,
-      "prompt": "realistic heavy blade or axe strike into armor, thick midrange metal body, short impact decay, close dry combat foley, no bright ring"
+      "prompt": "A heavy blade or axe hit landing on armor. Thick metal body and a heavy impact."
     },
     {
       "id": "attack_blunt",
       "file_stem": "sfx_attack_blunt",
       "duration_seconds": 0.9,
-      "prompt": "realistic blunt weapon hit, dense impact against armor or bone with minimal ring, close dry combat sound, grounded and forceful"
+      "prompt": "A blunt weapon hit landing on armor or bone. Dense body impact with almost no ring."
     },
     {
       "id": "crit_blade",
       "file_stem": "sfx_crit_blade",
       "duration_seconds": 1.2,
-      "prompt": "realistic severe blade hit, deep metal contact and sharper body impact with a brief gear rattle, close dry foley, no fantasy flare"
+      "prompt": "A severe blade strike landing cleanly. Deep impact and brief gear rattle."
     },
     {
       "id": "crit_blunt",
       "file_stem": "sfx_crit_blunt",
       "duration_seconds": 1.2,
-      "prompt": "realistic crushing critical hit from a heavy weapon, deep blunt force, short debris and armor movement, close and dry, no bright tone"
+      "prompt": "A crushing critical hit from a heavy blunt weapon. Dense force and a short debris shake."
     },
     {
       "id": "legendary_hit_heavy",
       "file_stem": "sfx_legendary_hit_heavy",
       "duration_seconds": 1.6,
-      "prompt": "realistic massive finishing strike, very heavy steel and body impact with debris, low-end weight, close combat foley, no magic burst, no victory sting"
+      "prompt": "A massive finishing blow. Huge steel and body impact with low-end weight."
     },
     {
       "id": "shield_block_heavy",
       "file_stem": "sfx_shield_block_heavy",
       "duration_seconds": 1.0,
-      "prompt": "realistic heavy shield block, dense metal impact with leather strap strain and a shorter darker ring, close and grounded"
+      "prompt": "A heavy shield stopping a hard weapon hit. Thick impact and strap strain."
     },
     {
       "id": "armor_break_hard",
       "file_stem": "sfx_armor_break_hard",
       "duration_seconds": 1.3,
-      "prompt": "realistic severe armor break, hard buckle failure and plate crack with fragments dropping onto stone, close dry impact, grounded"
+      "prompt": "Armor breaking badly under force. Hard buckle failure, plate crack, fragments on stone."
     },
     {
       "id": "enemy_hit_humanoid",
       "file_stem": "sfx_enemy_hit_humanoid",
       "duration_seconds": 1.0,
-      "prompt": "realistic humanoid enemy hit, weapon impact with a short pained breath and light gear movement, close dry combat sound, grounded and restrained"
+      "prompt": "A humanoid enemy hit by a weapon. Flesh, cloth, and light gear impact."
     },
     {
       "id": "enemy_die_humanoid",
       "file_stem": "sfx_enemy_die_humanoid",
       "duration_seconds": 1.5,
-      "prompt": "realistic humanoid enemy death, body dropping to stone with light armor settle and one final breath, close dry foley, no dramatic sting"
+      "prompt": "A humanoid enemy collapsing onto stone. Light armor settle and a final breath."
     },
     {
       "id": "enemy_dice_roll_humanoid",
       "file_stem": "sfx_enemy_dice_roll_humanoid",
       "duration_seconds": 1.1,
-      "prompt": "realistic tense enemy preparation, rough knucklebones or small bone dice rattled in a hand and cast onto stone, dry and grounded"
+      "prompt": "Humanoid enemy attack prep. Knucklebones rattled in a hand and thrown onto stone."
     },
     {
       "id": "enemy_hit_beast",
       "file_stem": "sfx_enemy_hit_beast",
       "duration_seconds": 1.0,
-      "prompt": "realistic beast hit, weapon impact on hide and muscle with a short animal pain bark or grunt, close dry combat sound, no monster roar"
+      "prompt": "A beast hit by a weapon. Hide and muscle impact with a short pain bark."
     },
     {
       "id": "enemy_die_beast",
       "file_stem": "sfx_enemy_die_beast",
       "duration_seconds": 1.6,
-      "prompt": "realistic beast death, heavy animal collapse onto stone with claws scraping and a final breath, grounded dry foley, no supernatural tail"
+      "prompt": "A beast collapsing onto stone. Claw scrape, body fall, final breath."
     },
     {
       "id": "enemy_dice_roll_beast",
       "file_stem": "sfx_enemy_dice_roll_beast",
       "duration_seconds": 1.0,
-      "prompt": "realistic beast attack windup, claws skittering on stone and a short low growl, tight dry threat cue, grounded and natural"
+      "prompt": "A beast readying an attack. Claws skitter on stone and a short low growl."
     },
     {
       "id": "enemy_hit_ooze",
       "file_stem": "sfx_enemy_hit_ooze",
       "duration_seconds": 1.0,
-      "prompt": "realistic ooze hit, wet gelatinous impact with a heavy splat and dull body slap on stone, close and low-mid, no cartoony squish"
+      "prompt": "A weapon hitting a heavy ooze body. Wet splat and dull slap on stone."
     },
     {
       "id": "enemy_die_ooze",
       "file_stem": "sfx_enemy_die_ooze",
       "duration_seconds": 1.5,
-      "prompt": "realistic ooze death, collapsing wet mass spreading over stone with thick slosh and final slump, grounded and restrained, no bubbly cartoon sound"
+      "prompt": "An ooze collapsing and spreading across stone. Thick slosh and a final wet slump."
     },
     {
       "id": "enemy_dice_roll_ooze",
       "file_stem": "sfx_enemy_dice_roll_ooze",
       "duration_seconds": 1.0,
-      "prompt": "realistic ooze attack windup, sticky wet movement and a heavier slop against stone, close and tense, grounded and low"
+      "prompt": "An ooze attack windup. Sticky wet movement and a heavier slop on stone."
     },
     {
       "id": "enemy_hit_undead",
       "file_stem": "sfx_enemy_hit_undead",
       "duration_seconds": 1.0,
-      "prompt": "realistic undead hit, weapon strike with dry bone rattle and a short hollow body impact, close and grounded, no ghostly synth"
+      "prompt": "A weapon striking an undead body. Dry bone rattle and hollow body impact."
     },
     {
       "id": "enemy_die_undead",
       "file_stem": "sfx_enemy_die_undead",
       "duration_seconds": 1.5,
-      "prompt": "realistic undead death, brittle bones and scraps of gear collapsing onto stone with a final clatter, close dry foley, no magical vanish"
+      "prompt": "Undead bones and scraps of gear collapsing onto stone. Brittle clatter."
     },
     {
       "id": "enemy_dice_roll_undead",
       "file_stem": "sfx_enemy_dice_roll_undead",
       "duration_seconds": 1.0,
-      "prompt": "realistic undead attack windup, dry bone rattle and scraping movement over stone, tight tense cue, grounded and low-mid"
+      "prompt": "Undead attack prep. Bone rattle and scraping movement over stone."
     },
     {
       "id": "enemy_hit_spirit",
       "file_stem": "sfx_enemy_hit_spirit",
       "duration_seconds": 1.0,
-      "prompt": "grounded spirit hit, airy body disruption with a low rushing breath and muted impact, restrained and dark, no bright magic sparkle, no synth lead"
+      "prompt": "A weapon passing through a dark spirit body. Low air pull and a muted tear."
     },
     {
       "id": "enemy_die_spirit",
       "file_stem": "sfx_enemy_die_spirit",
       "duration_seconds": 1.5,
-      "prompt": "grounded spirit death, low air collapse and fading body loss with a soft dark drop in pressure, restrained, no bright chime, no triumphant tail"
+      "prompt": "A dark spirit collapsing inward and fading out. Low air drop and soft unravel."
     },
     {
       "id": "enemy_dice_roll_spirit",
       "file_stem": "sfx_enemy_dice_roll_spirit",
       "duration_seconds": 1.0,
-      "prompt": "grounded spirit attack windup, dark air swirl and short low whisper movement, tense and restrained, no bright magic shimmer"
+      "prompt": "A spirit readying an attack. Dark air swirl and a short low whisper."
     },
     {
       "id": "enemy_hit_insect",
       "file_stem": "sfx_enemy_hit_insect",
       "duration_seconds": 1.0,
-      "prompt": "realistic insect or spider hit, dry chitin impact with a short twitch and scrape, close grounded combat foley, no exaggerated screech"
+      "prompt": "A weapon striking insect chitin. Dry shell crack and a short leg scrape."
     },
     {
       "id": "enemy_die_insect",
       "file_stem": "sfx_enemy_die_insect",
       "duration_seconds": 1.4,
-      "prompt": "realistic insect or spider death, chitin body dropping with a brittle crack and leg scrape on stone, short and dry, grounded"
+      "prompt": "An insect body dropping onto stone. Brittle chitin crack and leg scrape."
     },
     {
       "id": "enemy_dice_roll_insect",
       "file_stem": "sfx_enemy_dice_roll_insect",
       "duration_seconds": 0.9,
-      "prompt": "realistic insect attack windup, fast leg skitter and dry chitin movement over stone, close tense cue, no horror stinger"
+      "prompt": "Insect attack prep. Fast legs skittering across stone."
     },
     {
       "id": "discover_room_heavy",
       "file_stem": "sfx_discover_room_heavy",
       "duration_seconds": 2.3,
-      "prompt": "realistic heavier room reveal, thick stone door dragging open with low mechanism grind and dense room air, grounded exploration foley, no cinematic swell"
+      "prompt": "A very heavy stone door dragging open. Dense scrape, hinge movement, new room air."
     },
     {
       "id": "stairs_down_long",
       "file_stem": "sfx_stairs_down_long",
       "duration_seconds": 1.8,
-      "prompt": "realistic short descent down several stone steps, boots, cloth movement, restrained low enclosed reverb, grounded dungeon transition"
+      "prompt": "Boots going down several stone steps. Cloth movement and a short stairwell resonance."
     },
     {
       "id": "chest_open_rummage",
       "file_stem": "sfx_chest_open_rummage",
       "duration_seconds": 1.7,
-      "prompt": "realistic wooden chest opening with hinge creak, lid lift, then a brief dry rummage through contents, grounded container foley, no treasure sparkle"
+      "prompt": "A wooden chest opened by hand, then a brief rummage through its contents."
     },
     {
       "id": "barrel_open_rummage",
       "file_stem": "sfx_barrel_open_rummage",
       "duration_seconds": 1.5,
-      "prompt": "realistic barrel lid moved aside with wood scrape and short hollow rummage inside the barrel, close dry foley, grounded"
+      "prompt": "A barrel lid moved aside, then a brief rummage inside the barrel."
     },
     {
       "id": "lockbox_open_snap",
       "file_stem": "sfx_lockbox_open_snap",
       "duration_seconds": 1.2,
-      "prompt": "realistic small lockbox unlatch with a firmer click and short metal lid snap open, close dry foley, grounded, no treasure chime"
+      "prompt": "A small lockbox latch released and the lid snapping open."
     },
     {
       "id": "gold_pickup_small",
       "file_stem": "sfx_gold_pickup_small",
       "duration_seconds": 0.7,
-      "prompt": "realistic few loose coins picked off stone, short muted metal ticks into a palm, close and dry, no bright jingle"
+      "prompt": "A few loose coins lifted from stone into a hand. Short muted coin taps."
     },
     {
       "id": "gold_pickup_pouch",
       "file_stem": "sfx_gold_pickup_pouch",
       "duration_seconds": 0.8,
-      "prompt": "realistic coins slid into a small leather pouch, soft metal clinks and leather movement, close and grounded, no high jingle"
+      "prompt": "A few coins slid into a small leather pouch. Soft coin clinks and leather movement."
     },
     {
       "id": "purchase_counter",
       "file_stem": "sfx_purchase_counter",
       "duration_seconds": 0.9,
-      "prompt": "realistic purchase, coins counted on a wooden counter with one firmer final clink, close merchant foley, dry and grounded"
+      "prompt": "Coins counted on a wooden merchant counter. One firmer final clink."
     },
     {
       "id": "sell_pouch",
       "file_stem": "sfx_sell_pouch",
       "duration_seconds": 0.9,
-      "prompt": "realistic sale payment, a few coins dropped into a leather pouch and settled with soft clinks, close dry trade foley, grounded"
+      "prompt": "Coins dropped into a leather pouch as payment. Soft clinks and pouch movement."
     },
     {
       "id": "item_pickup_leather",
       "file_stem": "sfx_item_pickup_leather",
       "duration_seconds": 0.8,
-      "prompt": "realistic pickup of a small leather or cloth item from stone, hand grab with soft fabric movement and muted contact, close dry foley"
+      "prompt": "A small leather or cloth item picked up from stone by hand."
     },
     {
       "id": "item_pickup_metal",
       "file_stem": "sfx_item_pickup_metal",
       "duration_seconds": 0.8,
-      "prompt": "realistic pickup of a small metal object from stone, short hand grab and muted metal tap, close dry foley, grounded"
+      "prompt": "A small metal item picked up from stone by hand. Short muted metal tap."
     },
     {
       "id": "drink_potion_bitter",
       "file_stem": "sfx_drink_potion_bitter",
       "duration_seconds": 1.2,
-      "prompt": "realistic uncork and quick swallow of a harsh medicinal liquid, glass vial movement and a small bitter exhale, close dry foley, no magic shimmer"
+      "prompt": "A small medicinal vial uncorked and swallowed. Glass movement and a bitter exhale."
     },
     {
       "id": "drink_potion_heavy",
       "file_stem": "sfx_drink_potion_heavy",
       "duration_seconds": 1.3,
-      "prompt": "realistic larger flask drink, cork pull, heavier gulp, glass and leather movement, close grounded foley, no bright tonal tail"
+      "prompt": "A larger flask opened and drunk. Cork pull, heavier gulp, glass and leather movement."
     },
     {
       "id": "heal_bandage",
       "file_stem": "sfx_heal_bandage",
       "duration_seconds": 1.2,
-      "prompt": "realistic bandage use, cloth wrap tightening around an injury with a restrained relieved breath, close dry healing foley, grounded and practical"
+      "prompt": "A bandage wrapped and tightened around an injury. Cloth pull and a restrained relieved breath."
     },
     {
       "id": "heal_herb",
       "file_stem": "sfx_heal_herb",
       "duration_seconds": 1.1,
-      "prompt": "realistic herbal remedy use, leaves crushed or chewed with soft hand movement and a quiet recovering breath, close dry foley, no magical chime"
+      "prompt": "An herbal remedy crushed or chewed by hand. Leaves, hand movement, quiet recovering breath."
     },
     {
       "id": "heal_food",
       "file_stem": "sfx_heal_food",
       "duration_seconds": 1.1,
-      "prompt": "realistic quick ration or tonic recovery cue, small bite or sip with cloth and breath movement, short grounded foley, no UI chime"
+      "prompt": "A quick ration or tonic taken for recovery. Small bite or sip and a steadying breath."
     },
     {
       "id": "buff_tonic",
       "file_stem": "sfx_buff_tonic",
       "duration_seconds": 1.2,
-      "prompt": "realistic strengthening tonic use, cork pull, short swallow, steadier breath and subtle gear settle, close dry foley, no magical sparkle"
+      "prompt": "A strengthening tonic uncorked and swallowed. Bottle movement and a steadier breath."
     },
     {
       "id": "cleanse_tonic",
       "file_stem": "sfx_cleanse_tonic",
       "duration_seconds": 1.2,
-      "prompt": "realistic cleansing draught use, small bottle uncork and swallow with a short clearing breath, grounded and dry, no bright magic tone"
+      "prompt": "A cleansing draught opened and swallowed. Small bottle movement and a clearing breath."
     },
     {
       "id": "use_token",
       "file_stem": "sfx_use_token",
       "duration_seconds": 0.9,
-      "prompt": "realistic small carved token used in hand, short wood or bone click with leather movement, close dry utility sound, grounded"
+      "prompt": "A small carved token used in the hand. Short wood or bone click and leather movement."
     },
     {
       "id": "use_tool",
       "file_stem": "sfx_use_tool",
       "duration_seconds": 1.0,
-      "prompt": "realistic compact tool use, metal pick or lever working a mechanism with a short click and scrape, close dry utility foley, grounded"
+      "prompt": "A small metal tool working a mechanism. Pick or lever click and scrape."
     },
     {
       "id": "repair_kit",
       "file_stem": "sfx_repair_kit",
       "duration_seconds": 1.1,
-      "prompt": "realistic quick field repair, leather strap tighten, buckle cinch, and a short metal adjustment, close dry maintenance foley, grounded"
+      "prompt": "A quick field repair. Strap tighten, buckle cinch, and a small metal adjustment."
     },
     {
       "id": "equip_weapon",
       "file_stem": "sfx_equip_weapon",
       "duration_seconds": 0.9,
-      "prompt": "realistic weapon ready sound, short draw or grip shift with leather and muted metal contact, close dry equipment foley, grounded"
+      "prompt": "A weapon readied in the hand. Grip shift, leather movement, muted metal contact."
     },
     {
       "id": "equip_armor",
       "file_stem": "sfx_equip_armor",
       "duration_seconds": 1.0,
-      "prompt": "realistic armor equip sound, leather straps tightened and plate settling into place, close dry gear foley, grounded and weighty"
+      "prompt": "Armor being fastened into place. Leather straps tightened and metal settling."
     },
     {
       "id": "equip_accessory",
       "file_stem": "sfx_equip_accessory",
       "duration_seconds": 0.8,
-      "prompt": "realistic small accessory equip, short clasp click and light cloth or leather movement, close dry foley, grounded"
+      "prompt": "A small accessory clasped into place. Short clasp click and cloth movement."
     },
     {
       "id": "unequip_item",
       "file_stem": "sfx_unequip_item",
       "duration_seconds": 0.8,
-      "prompt": "realistic gear removal, short unfasten movement with leather and muted metal contact, close dry equipment foley, grounded"
+      "prompt": "A piece of gear removed. Short unfasten movement and muted leather or metal contact."
     },
     {
       "id": "drop_item",
       "file_stem": "sfx_drop_item",
       "duration_seconds": 0.8,
-      "prompt": "realistic small item dropped onto stone, short object thud or tap with close dry room response, grounded and restrained"
+      "prompt": "A small item dropped onto stone. Short thud or tap."
     },
     {
       "id": "read_lore",
       "file_stem": "sfx_read_lore",
       "duration_seconds": 0.9,
-      "prompt": "realistic parchment or note unfolded and handled, short page movement and soft paper settle, close dry reading foley, grounded"
+      "prompt": "An old parchment note unfolded and handled. Thick paper movement and a soft settle."
     },
     {
       "id": "rest_recover",
       "file_stem": "sfx_rest_recover",
       "duration_seconds": 1.4,
-      "prompt": "realistic short rest cue, bedroll or cloth rustle, careful shift of weight, and a relieved slow breath, close dry recovery foley, grounded"
+      "prompt": "A short rest on a bedroll or stone edge. Cloth rustle, weight shift, slow relieved breath."
     },
     {
       "id": "flee_success",
       "file_stem": "sfx_flee_success",
       "duration_seconds": 1.2,
-      "prompt": "realistic successful escape, quick scrambling footsteps on stone with gear clatter and a hard turn away, close dry foley, grounded and urgent"
+      "prompt": "A quick escape across stone. Fast footsteps, gear clatter, hard turn away."
     },
     {
       "id": "flee_fail",
       "file_stem": "sfx_flee_fail",
       "duration_seconds": 1.0,
-      "prompt": "realistic failed escape, abrupt step stop, gear jolt, and a short blocked impact on stone, grounded and dry, no synthetic fail tone"
+      "prompt": "A failed escape. Abrupt stop, gear jolt, and a blocked impact on stone."
     },
     {
       "id": "door_locked_rattle",
       "file_stem": "sfx_door_locked_rattle",
       "duration_seconds": 1.1,
-      "prompt": "realistic locked dungeon door tested, heavy handle or bar pulled against a firm lock with a short metal rattle, close dry foley, grounded"
+      "prompt": "A locked dungeon door tested and stopped by the lock. Heavy handle pull and short rattle."
     },
     {
       "id": "key_turn_small",
       "file_stem": "sfx_key_turn_small",
       "duration_seconds": 0.9,
-      "prompt": "realistic small iron key turning in a lock with one solid click and short bolt release, close dry foley, grounded"
+      "prompt": "A small iron key turning in a lock. One solid click and a short bolt release."
     },
     {
       "id": "shop_enter_counter",
       "file_stem": "sfx_shop_enter_counter",
       "duration_seconds": 1.9,
-      "prompt": "realistic merchant room entry, door open, short footstep onto timber, subtle counter movement in the room, grounded and dry, no music"
+      "prompt": "A merchant room door opening, one step onto timber, quiet room beyond."
     },
     {
       "id": "button_click_soft",
       "file_stem": "sfx_button_click_soft",
       "duration_seconds": 0.5,
-      "prompt": "realistic soft interface click, muted wood or paper tab movement with a tiny latch sound, close and dry, grounded"
+      "prompt": "A soft wood or paper tab click. Small muted interface movement."
     },
     {
       "id": "menu_open_book",
       "file_stem": "sfx_menu_open_book",
       "duration_seconds": 0.8,
-      "prompt": "realistic small book or folio opening, paper and leather movement with a soft hinge, close dry menu foley, grounded"
+      "prompt": "A small book or folio opened by hand. Old paper and leather movement."
     },
     {
       "id": "menu_close_book",
       "file_stem": "sfx_menu_close_book",
       "duration_seconds": 0.8,
-      "prompt": "realistic small book or folio closing, short paper fold and muted cover thump, close dry menu foley, grounded"
+      "prompt": "A small book or folio closed by hand. Paper fold and a muted cover thump."
     },
     {
       "id": "puzzle_success_deep",
       "file_stem": "sfx_puzzle_success_deep",
       "duration_seconds": 2.1,
-      "prompt": "realistic ancient mechanism success, deeper stone movement with low scrape and heavy internal thunk, grounded and dry, no magic rise"
+      "prompt": "A deeper ancient mechanism unlocking. Heavy stone movement and a low final thunk."
     },
     {
       "id": "puzzle_fail_lock",
       "file_stem": "sfx_puzzle_fail_lock",
       "duration_seconds": 1.2,
-      "prompt": "realistic mechanism failure, lock teeth grind and jam with a dull stop, close dry stone and metal foley, no electronic error tone"
+      "prompt": "A lock mechanism catching and failing. Teeth grind and a dull stop."
     },
     {
       "id": "elite_unlock_bolt",
       "file_stem": "sfx_elite_unlock_bolt",
       "duration_seconds": 1.8,
-      "prompt": "realistic reinforced door bolt retracting, thick iron mechanism under tension and a deep final unlock click, grounded low-mid foley, dry"
+      "prompt": "A reinforced door bolt retracting under tension. Thick iron mechanism and a deep click."
     },
     {
       "id": "boss_spawn_gate",
       "file_stem": "sfx_boss_spawn_gate",
       "duration_seconds": 2.9,
-      "prompt": "realistic massive gate opening for a boss entrance, dense stone and iron movement with a low rumble and one heavy step, grounded and ominous, no magic surge"
+      "prompt": "A massive gate opening for a boss entrance. Dense stone and iron movement and one heavy step."
     },
     {
       "id": "boss_defeat_collapse",
       "file_stem": "sfx_boss_defeat_collapse",
       "duration_seconds": 2.7,
-      "prompt": "realistic giant foe collapse, heavy body and debris crashing onto stone with lingering gear scatter, grounded and dry, no explosion, no triumph sting"
+      "prompt": "A giant foe collapsing onto stone. Heavy body fall, debris, and lingering gear scatter."
     },
     {
       "id": "step_stone_leather_medium",
       "file_stem": "sfx_step_stone_leather_medium",
       "duration_seconds": 0.8,
-      "prompt": "single leather boot step on dusty stone floor, heel then toe, soft grit, close dry recording"
+      "prompt": "A leather boot stepping once onto dusty stone. Heel then toe, soft grit."
     },
     {
       "id": "step_stair_stone_down",
       "file_stem": "sfx_step_stair_stone_down",
       "duration_seconds": 1.1,
-      "prompt": "two leather boot steps descending worn stone stairs, close dry recording, short stairwell resonance"
+      "prompt": "Two leather boot steps going down worn stone stairs."
     },
     {
       "id": "room_enter_threshold_stone",
       "file_stem": "sfx_room_enter_threshold_stone",
       "duration_seconds": 1.1,
-      "prompt": "leather boot crossing a low stone threshold into a room, soft step and slight room change, close dry recording"
+      "prompt": "A leather boot crossing a low stone threshold into a new room."
     },
     {
       "id": "blocked_path_stone",
       "file_stem": "sfx_blocked_path_stone",
       "duration_seconds": 0.8,
-      "prompt": "boot stopping against blocked stone with a light hand touch on masonry, dull stone thud, close dry recording"
+      "prompt": "A boot stopping against blocked stone with a dull hand touch on masonry."
     },
     {
       "id": "stairs_found_reveal",
       "file_stem": "sfx_stairs_found_reveal",
       "duration_seconds": 1.8,
-      "prompt": "small section of stone sliding aside, grit and dust, brief hollow opening to stairs, close dry recording"
+      "prompt": "A small stone panel sliding aside to reveal stairs. Grit, dust, hollow opening."
     },
     {
       "id": "dice_roll_player_wood_stone_short",
       "file_stem": "sfx_dice_roll_player_wood_stone_short",
       "duration_seconds": 1.2,
-      "prompt": "three carved wooden dice rolling across a stone tabletop, warm wood clatter, short stop, close dry recording"
+      "prompt": "Three carved wooden dice rolling across a stone tabletop. Short warm clatter."
     },
     {
       "id": "dice_lock_soft_hold",
       "file_stem": "sfx_dice_lock_soft_hold",
       "duration_seconds": 0.7,
-      "prompt": "single carved wooden die set down and held on stone with fingertip contact, soft wood tap, close dry recording"
+      "prompt": "A single carved wooden die set down and held on stone. Soft tap and fingertip contact."
     },
     {
       "id": "dice_unlock_soft_release",
       "file_stem": "sfx_dice_unlock_soft_release",
       "duration_seconds": 0.6,
-      "prompt": "single carved wooden die lightly nudged on stone with fingertip contact, small wood scrape and tap, close dry recording"
+      "prompt": "A single carved wooden die nudged loose on stone. Small scrape and light tap."
     },
     {
       "id": "attack_player_blade_medium",
       "file_stem": "sfx_attack_player_blade_medium",
       "duration_seconds": 0.9,
-      "prompt": "steel blade striking cloth and flesh, firm body impact, close dry recording"
+      "prompt": "A steel blade hit landing in flesh through light gear. Firm close impact."
     },
     {
       "id": "attack_player_critical_heavy",
       "file_stem": "sfx_attack_player_critical_heavy",
       "duration_seconds": 1.2,
-      "prompt": "heavy melee strike landing through cloth and flesh with extra force, deeper body impact, close dry recording"
+      "prompt": "A heavier melee strike landing through flesh with extra force. Deep body impact."
     },
     {
       "id": "player_hit_flesh_armor",
       "file_stem": "sfx_player_hit_flesh_armor",
       "duration_seconds": 1.0,
-      "prompt": "body hit through cloth and leather gear, solid thud with strap jostle, close dry recording"
+      "prompt": "The player taking a hit through cloth and leather armor. Body thud and strap jostle."
     },
     {
       "id": "armor_block_leather_chain_small",
       "file_stem": "sfx_armor_block_leather_chain_small",
       "duration_seconds": 0.8,
-      "prompt": "hit partly absorbed by leather armor and small chain links, muted impact, close dry recording"
+      "prompt": "A hit absorbed by leather armor and a little chain. Muted defended impact."
     },
     {
       "id": "armor_break_or_durability_fail",
       "file_stem": "sfx_armor_break_or_durability_fail",
       "duration_seconds": 1.1,
-      "prompt": "worn leather armor tearing under force, strap snap and leather split, close dry recording"
+      "prompt": "Worn leather armor failing under force. Strap snap and leather tear."
     },
     {
       "id": "enemy_hit_flesh_small",
       "file_stem": "sfx_enemy_hit_flesh_small",
       "duration_seconds": 0.8,
-      "prompt": "small body hit through cloth and flesh, short buckle, close dry recording"
+      "prompt": "A small enemy hit in flesh through cloth. Short body buckle."
     },
     {
       "id": "enemy_hit_chitin",
       "file_stem": "sfx_enemy_hit_chitin",
       "duration_seconds": 0.8,
-      "prompt": "weapon striking insect chitin, dull shell crack with fibrous body underneath, close dry recording"
+      "prompt": "A weapon striking insect chitin. Dry shell crack."
     },
     {
       "id": "enemy_hit_spectral",
       "file_stem": "sfx_enemy_hit_spectral",
       "duration_seconds": 0.9,
-      "prompt": "weapon passing through a spectral body with a short low air pull and soft tear, close dry recording"
+      "prompt": "A weapon passing through a spectral body. Low air pull and a soft tear."
     },
     {
       "id": "enemy_hit_stone_crystal",
       "file_stem": "sfx_enemy_hit_stone_crystal",
       "duration_seconds": 0.9,
-      "prompt": "weapon striking a stone crystal body, dense rock impact with a small mineral crack, close dry recording"
+      "prompt": "A weapon striking a stone crystal creature. Dense rock hit and a small mineral crack."
     },
     {
       "id": "enemy_death_flesh_small",
       "file_stem": "sfx_enemy_death_flesh_small",
       "duration_seconds": 1.2,
-      "prompt": "small body collapsing onto stone with cloth movement, short final drop, close dry recording"
+      "prompt": "A small body collapsing onto stone. Cloth movement and a short final drop."
     },
     {
       "id": "enemy_death_spectral_unravel",
       "file_stem": "sfx_enemy_death_spectral_unravel",
       "duration_seconds": 1.2,
-      "prompt": "spectral body collapsing inward and fading out, short low unravel, close dry recording"
+      "prompt": "A spectral body collapsing inward and fading out. Short low unravel."
     },
     {
       "id": "enemy_death_crystal_break",
       "file_stem": "sfx_enemy_death_crystal_break",
       "duration_seconds": 1.3,
-      "prompt": "crystal body breaking into smaller pieces on stone floor, short mineral breakup, close dry recording"
+      "prompt": "A crystal body breaking into pieces on a stone floor."
     },
     {
       "id": "enemy_split_crystal",
       "file_stem": "sfx_enemy_split_crystal",
       "duration_seconds": 1.6,
-      "prompt": "large crystal body splitting into smaller crystal pieces, hard fracture and shard fall on stone, close dry recording"
+      "prompt": "A large crystal body splitting into smaller crystal pieces. Hard fracture and shard fall."
     },
     {
       "id": "container_old_crate_open",
       "file_stem": "sfx_container_old_crate_open",
       "duration_seconds": 1.3,
-      "prompt": "aged wooden crate panel shifted open by hand, rough dry wood friction and small hinge complaint, close recording"
+      "prompt": "An old wooden crate opened by hand. Rough boards and a small worn hinge."
     },
     {
       "id": "container_dusty_chest_open",
       "file_stem": "sfx_container_dusty_chest_open",
       "duration_seconds": 1.5,
-      "prompt": "dusty wooden chest opened by hand, hinge strain and solid lid weight, close dry recording"
+      "prompt": "A dusty wooden chest opened by hand. Heavy lid, old hinge, hollow body."
     },
     {
       "id": "container_wooden_barrel_open",
       "file_stem": "sfx_container_wooden_barrel_open",
       "duration_seconds": 1.3,
-      "prompt": "oak barrel lid worked loose by hand, dull wood friction and short hollow body resonance, close dry recording"
+      "prompt": "An oak barrel lid worked loose by hand. Wood friction and short hollow body."
     },
     {
       "id": "container_iron_lockbox_open",
       "file_stem": "sfx_container_iron_lockbox_open",
       "duration_seconds": 1.3,
-      "prompt": "old iron lockbox latch released and lid opened, heavy iron movement and short cavity resonance, close dry recording"
+      "prompt": "An old iron lockbox opened by hand. Latch release, heavy lid, short cavity body."
     },
     {
       "id": "container_hidden_nook_reveal",
       "file_stem": "sfx_container_hidden_nook_reveal",
       "duration_seconds": 1.5,
-      "prompt": "loose stone slid aside by hand to reveal a small wall nook, grit and dust fall, close dry recording"
+      "prompt": "A loose stone pulled aside by hand to reveal a small wall nook."
     },
     {
       "id": "pickup_gold_small_handful",
       "file_stem": "sfx_pickup_gold_small_handful",
       "duration_seconds": 0.9,
-      "prompt": "a few old coins gathered off stone into a hand or pouch, muted coin contacts, close dry recording"
+      "prompt": "A few old coins gathered from stone into a hand or pouch."
     },
     {
       "id": "pickup_item_soft_general",
       "file_stem": "sfx_pickup_item_soft_general",
       "duration_seconds": 0.7,
-      "prompt": "small soft item lifted by fingers, cloth or paper handling, close dry recording"
+      "prompt": "A heavy old parchment picked up from stone by hand. Dry paper movement."
     },
     {
       "id": "pickup_item_hard_general",
       "file_stem": "sfx_pickup_item_hard_general",
       "duration_seconds": 0.7,
-      "prompt": "small hard item lifted from stone by fingers, slight floor release and compact body, close dry recording"
+      "prompt": "A small hard item picked up from stone by hand. Short lift and object tap."
     },
     {
       "id": "key_old_iron_turn",
       "file_stem": "sfx_key_old_iron_turn",
       "duration_seconds": 1.1,
-      "prompt": "old iron key turning in a worn lock, gritty resistance and final release, close dry recording"
+      "prompt": "An old iron key turning in a worn lock. Grit, resistance, final release."
     },
     {
       "id": "elite_door_unlock_heavy",
       "file_stem": "sfx_elite_door_unlock_heavy",
       "duration_seconds": 2.0,
-      "prompt": "reinforced timber and iron dungeon door unlocking and easing open, heavy bolt and hinge movement, close recording"
+      "prompt": "A reinforced timber and iron dungeon door unlocking and opening a little."
     },
     {
       "id": "store_enter_door_wood_safe",
       "file_stem": "sfx_store_enter_door_wood_safe",
       "duration_seconds": 1.7,
-      "prompt": "wood door opening into a small merchant room, one soft step inside, faint cloth and shelf detail, close dry recording"
+      "prompt": "A wooden shop door opening into a small merchant room. One soft step inside."
     },
     {
       "id": "store_buy_confirm_coin_pouch",
       "file_stem": "sfx_store_buy_confirm_coin_pouch",
       "duration_seconds": 0.8,
-      "prompt": "small number of coins dropped into a leather pouch, muted coin transfer, close dry recording"
+      "prompt": "A few coins dropped into a leather pouch."
     },
     {
       "id": "store_sell_confirm_coin_return",
       "file_stem": "sfx_store_sell_confirm_coin_return",
       "duration_seconds": 0.8,
-      "prompt": "small number of coins placed into a hand or pouch, soft coin movement, close dry recording"
+      "prompt": "A few coins placed into a hand or pouch."
     },
     {
       "id": "item_potion_glass_pickup",
       "file_stem": "sfx_item_potion_glass_pickup",
       "duration_seconds": 0.7,
-      "prompt": "small glass vial lifted in one hand, light liquid shift and finger contact, close dry recording"
+      "prompt": "A small glass vial picked up in one hand. Light liquid shift."
     },
     {
       "id": "item_potion_drink",
       "file_stem": "sfx_item_potion_drink",
       "duration_seconds": 1.1,
-      "prompt": "small corked vial opened and drunk, glass, liquid, and swallow, close dry recording"
+      "prompt": "A small corked vial opened and drunk. Glass, liquid, swallow."
     },
     {
       "id": "heal_soft_resolve",
       "file_stem": "sfx_heal_soft_resolve",
       "duration_seconds": 1.0,
-      "prompt": "cloth settling and gear easing back into place after recovery, close dry recording"
+      "prompt": "Cloth and gear settling after recovery. A steadier breath."
     },
     {
       "id": "rest_sit_bedroll_or_stone",
       "file_stem": "sfx_rest_sit_bedroll_or_stone",
       "duration_seconds": 1.4,
-      "prompt": "body lowering onto a bedroll or stone edge, cloth and gear settle, close dry recording"
+      "prompt": "A body lowering onto a bedroll or stone edge. Cloth and gear settle."
     },
     {
       "id": "ui_menu_open_parchment_wood",
       "file_stem": "sfx_ui_menu_open_parchment_wood",
       "duration_seconds": 0.7,
-      "prompt": "parchment and wood interface opening by hand, soft material movement, close dry recording"
+      "prompt": "An old parchment folio opened by hand. Thick paper and wood backing."
     },
     {
       "id": "ui_menu_close_parchment_wood",
       "file_stem": "sfx_ui_menu_close_parchment_wood",
       "duration_seconds": 0.6,
-      "prompt": "parchment and wood interface closing and settling shut, close dry recording"
+      "prompt": "An old parchment folio closed by hand. Thick paper fold and a quiet settle."
     },
     {
       "id": "ui_button_press_wood_brass",
       "file_stem": "sfx_ui_button_press_wood_brass",
       "duration_seconds": 0.5,
-      "prompt": "small wood and brass control pressed once, short muted mechanical click, close dry recording"
+      "prompt": "A small wood and brass control pressed once. Short muted click."
     },
     {
       "id": "ui_warning_dull",
       "file_stem": "sfx_ui_warning_dull",
       "duration_seconds": 0.6,
-      "prompt": "short dull stop from a wood control meeting resistance, close dry recording"
+      "prompt": "A dull stop when a wood control meets resistance."
     },
     {
       "id": "save_confirm_secure",
       "file_stem": "sfx_save_confirm_secure",
       "duration_seconds": 0.8,
-      "prompt": "small parchment, leather, and wood settle with a quiet final close, close dry recording"
+      "prompt": "A parchment folio or small ledger closed with a quiet final settle."
     },
     {
       "id": "miniboss_intro_guardian_heavy",
       "file_stem": "sfx_miniboss_intro_guardian_heavy",
       "duration_seconds": 1.9,
-      "prompt": "heavy stone guardian shifting its weight on stone floor, one dense movement, close room recording"
+      "prompt": "A heavy stone guardian shifting its weight on a stone floor."
     },
     {
       "id": "miniboss_defeat_heavy_resolve",
       "file_stem": "sfx_miniboss_defeat_heavy_resolve",
       "duration_seconds": 1.9,
-      "prompt": "heavy stone guardian collapsing onto stone floor, weighty final settle, close dry recording"
+      "prompt": "A heavy stone guardian collapsing onto a stone floor. Weighty final settle."
     }
   ],
   "cue_groups": {
