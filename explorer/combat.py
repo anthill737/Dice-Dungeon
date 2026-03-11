@@ -32,8 +32,8 @@ class CombatManager:
         if self.game.dice_values[idx] == 0:
             return
         
-        # Block toggling during attack sequences
-        if hasattr(self.game, 'combat_state') and self.game.combat_state in ["resolving_player_attack", "resolving_enemy_attack"]:
+        # Block toggling while combat resolution or dice animation is in progress
+        if hasattr(self.game, 'combat_state') and self.game.combat_state in ["rolling_dice", "resolving_player_attack", "resolving_enemy_attack", "enemy_turn"]:
             return
         
         self.game.dice_locked[idx] = not self.game.dice_locked[idx]
@@ -103,8 +103,17 @@ class CombatManager:
             self.debug_logger.warning("COMBAT", "No dice rolled yet")
             return
         
+        current_state = getattr(self.game, 'combat_state', 'idle')
+
+        if current_state == "rolling_dice":
+            self.game.log("Wait for the dice to finish rolling!", 'system')
+            return
+
+        if not getattr(self.game, 'has_rolled', False) or current_state != "player_rolled":
+            return
+
         # Block multiple attacks during sequence
-        if hasattr(self.game, 'combat_state') and self.game.combat_state in ["resolving_player_attack", "resolving_enemy_attack"]:
+        if hasattr(self.game, 'combat_state') and self.game.combat_state in ["resolving_player_attack", "resolving_enemy_attack", "enemy_turn"]:
             return
         
         # Set state and disable all interaction FIRST
@@ -1575,19 +1584,23 @@ class CombatManager:
     # ======================================================================
     def _disable_combat_controls(self):
         """Disable all combat controls during attack sequences"""
-        # Disable attack button
-        if hasattr(self, 'attack_button'):
+        control_updates = (
+            ('roll_button', {'state': tk.DISABLED}),
+            ('current_roll_button', {'state': tk.DISABLED, 'bg': '#666666'}),
+            ('attack_button', {'state': tk.DISABLED, 'bg': '#666666', 'fg': '#333333'}),
+            ('flee_button', {'state': tk.DISABLED, 'bg': '#999999', 'fg': '#555555'}),
+            ('mystic_ring_button', {'state': tk.DISABLED, 'bg': '#555555'})
+        )
+
+        for attr_name, config in control_updates:
+            widget = getattr(self.game, attr_name, None)
+            if not widget:
+                continue
+
             try:
-                self.game.attack_button.config(state=tk.DISABLED, bg='#666666', fg='#333333')
+                widget.config(**config)
             except tk.TclError:
-                pass  # Widget no longer exists
-        
-        # Disable flee button
-        if hasattr(self, 'flee_button'):
-            try:
-                self.game.flee_button.config(state=tk.DISABLED, bg='#999999', fg='#555555')
-            except tk.TclError:
-                pass  # Widget no longer exists
+                pass
     
 
 
@@ -2143,10 +2156,7 @@ class CombatManager:
     def _start_enemy_turn_sequence(self):
         """Begin enemy turn - announce and execute enemy actions"""
         self.game.combat_state = "enemy_turn"  # Prevent player from rolling during enemy turn
-        
-        # Disable roll button during enemy turn
-        if hasattr(self, 'current_roll_button'):
-            self.game.current_roll_button.config(state=tk.DISABLED, bg='#666666')
+        self._disable_combat_controls()
         
         # Trigger enemy_turn boss abilities
         self._check_boss_ability_triggers("enemy_turn")
