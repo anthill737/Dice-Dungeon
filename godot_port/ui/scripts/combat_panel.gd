@@ -52,6 +52,8 @@ var _enemy_roll_anim_active: bool = false
 var _pending_enemy_rolls: Array = []
 var _last_turn_count: int = -1
 var _active_tweens: Array[Tween] = []
+var _turn_sequence_active: bool = false
+var _deferred_refresh_requested: bool = false
 
 const COMBAT_ROLL_COLOR := Color(0.31, 0.80, 0.77)
 const COMBAT_ATTACK_COLOR := Color(0.91, 0.30, 0.24)
@@ -78,7 +80,7 @@ func _process(delta: float) -> void:
 		var max_frames := CombatUIPacing.dice_roll_frames()
 		if max_frames <= 0:
 			_roll_anim_active = false
-			_sync_dice_display()
+			_finish_player_roll_animation()
 			return
 		_roll_anim_timer += delta
 		if _roll_anim_timer >= interval:
@@ -86,7 +88,7 @@ func _process(delta: float) -> void:
 			_roll_anim_frame += 1
 			if _roll_anim_frame >= max_frames:
 				_roll_anim_active = false
-				_sync_dice_display()
+				_finish_player_roll_animation()
 			else:
 				_show_random_dice()
 
@@ -106,8 +108,6 @@ func _process(delta: float) -> void:
 				_reveal_enemy_dice_final()
 			else:
 				_show_random_enemy_dice()
-
-
 func _exit_tree() -> void:
 	_roll_anim_active = false
 	for tw in _active_tweens:
@@ -376,6 +376,8 @@ func _on_die_clicked(event: InputEvent, index: int) -> void:
 		var ce := GameSession.combat
 		if ce == null:
 			return
+		if _combat_controls_locked():
+			return
 		if not ce.dice.has_rolled():
 			return
 		ce.dice.toggle_lock(index)
@@ -384,8 +386,6 @@ func _on_die_clicked(event: InputEvent, index: int) -> void:
 			_SfxService.play_for(self, "dice_lock")
 		_sync_dice_display()
 		_update_damage_preview()
-
-
 # ------------------------------------------------------------------
 # Enemy dice
 # ------------------------------------------------------------------
@@ -453,11 +453,17 @@ func _show_enemy_dice(rolls: Array) -> void:
 # ------------------------------------------------------------------
 
 func _start_roll_animation() -> void:
+	var interval := CombatUIPacing.dice_roll_interval()
+	var max_frames := CombatUIPacing.dice_roll_frames()
+	if interval <= 0.0 or max_frames <= 0:
+		_roll_anim_active = false
+		_roll_anim_frame = 0
+		_roll_anim_timer = 0.0
+		return
 	_roll_anim_active = true
 	_roll_anim_frame = 0
 	_roll_anim_timer = 0.0
-
-
+	_show_random_dice()
 func _show_random_dice() -> void:
 	var ce := GameSession.combat
 	if ce == null:
@@ -514,13 +520,11 @@ func _sync_dice_display() -> void:
 			_apply_die_style(_dice_panels[i], dice.locked[i])
 			_dice_labels[i].add_theme_color_override(
 				"font_color", DungeonTheme.TEXT_GOLD if dice.locked[i] else Color.WHITE)
-			_dice_lock_icons[i].text = "🔒" if dice.locked[i] else ""
+			_dice_lock_icons[i].text = "L" if dice.locked[i] else ""
 		else:
 			_dice_labels[i].text = ""
 			_dice_panels[i].visible = false
 			_dice_lock_icons[i].text = ""
-
-
 func _update_damage_preview() -> void:
 	var ce := GameSession.combat
 	if ce == null:
@@ -636,17 +640,56 @@ func _append_styled_log(_line: String) -> void:
 # State sync
 # ------------------------------------------------------------------
 
+func _combat_controls_locked() -> bool:
+	return _turn_sequence_active or _roll_anim_active or _enemy_roll_anim_active
+
+
+func _sync_combat_controls(combat_over: bool = false) -> void:
+	if _btn_roll == null or _btn_attack == null:
+		return
+	var ce := GameSession.combat
+	if ce == null or combat_over or _combat_controls_locked():
+		_btn_roll.disabled = true
+		_btn_attack.disabled = true
+		return
+	_btn_roll.disabled = ce.dice.rolls_left <= 0
+	_btn_attack.disabled = not ce.dice.has_rolled()
+
+
+func _finish_player_roll_animation() -> void:
+	_deferred_refresh_requested = false
+	if not is_inside_tree():
+		return
+	refresh()
+
+
+func _finish_turn_sequence() -> void:
+	_turn_sequence_active = false
+	_deferred_refresh_requested = false
+	if not is_inside_tree():
+		return
+	refresh()
 func _on_combat_started_reset() -> void:
 	# Clear stale enemy dice from prior encounter
+	_turn_sequence_active = false
+	_deferred_refresh_requested = false
+	_roll_anim_active = false
+	_roll_anim_timer = 0.0
+	_roll_anim_frame = 0
+	_dice_container.visible = true
+	_rolls_label.visible = true
+	_damage_preview_label.visible = true
 	_clear_enemy_dice()
 	_last_turn_count = -1
 	_result_label.text = ""
 	# Load the sprite for the new encounter immediately rather than waiting for
 	# the next state_changed (which may fire before the panel is visible).
 	call_deferred("_refresh_enemy_sprite")
-
-
 func _clear_enemy_dice() -> void:
+	_enemy_roll_anim_active = false
+	_enemy_roll_anim_timer = 0.0
+	_enemy_roll_anim_frame = 0
+	_pending_enemy_rolls.clear()
 	for p in _enemy_dice_panels:
 		if is_instance_valid(p):
 			p.queue_free()
@@ -656,14 +699,13 @@ func _clear_enemy_dice() -> void:
 		for child in _enemy_dice_container.get_children():
 			child.queue_free()
 		_enemy_dice_container.visible = false
-
-
 func _on_state_changed() -> void:
 	if not visible:
 		return
+	if _combat_controls_locked():
+		_deferred_refresh_requested = true
+		return
 	refresh()
-
-
 func _on_enemy_selected(_index: int) -> void:
 	_refresh_enemy_hp_bar()
 
@@ -716,6 +758,10 @@ func refresh() -> void:
 		return
 
 	_result_label.text = ""
+	if not _turn_sequence_active:
+		_dice_container.visible = true
+		_rolls_label.visible = true
+		_damage_preview_label.visible = true
 
 	var gs := GameSession.game_state
 	if gs != null:
@@ -750,10 +796,8 @@ func refresh() -> void:
 	var statuses: Array = GameSession.game_state.flags.get("statuses", [])
 	_status_label.text = "Statuses: %s" % (", ".join(statuses) if not statuses.is_empty() else "none")
 
-	_btn_roll.disabled = ce.dice.rolls_left <= 0
-	_btn_attack.disabled = not ce.dice.has_rolled()
-
 	var combat_over := alive.is_empty() or GameSession.game_state.health <= 0
+	_sync_combat_controls(combat_over)
 	if alive.is_empty():
 		_result_label.text = "⚔ Victory! ⚔"
 		_result_label.add_theme_color_override("font_color", DungeonTheme.TEXT_GOLD)
@@ -766,8 +810,6 @@ func refresh() -> void:
 		_btn_attack.disabled = true
 
 	_sync_close_flee_visibility(combat_over)
-
-
 func _sync_close_flee_visibility(combat_over: bool = false) -> void:
 	var pending := GameSession.is_pending_choice()
 	var active := GameSession.is_combat_active()
@@ -782,28 +824,37 @@ func _on_roll() -> void:
 	var ce := GameSession.combat
 	if ce == null:
 		return
+	if _combat_controls_locked():
+		return
 	if not ce.player_roll():
 		return
 	_SfxService.play_for(self, "dice_roll")
 	GameSession.trace_dice_rolled(ce.dice.values)
 	GameSession.trace_reroll_used(ce.dice.rolls_left)
 	_start_roll_animation()
-	refresh()
-
-
+	if _roll_anim_active:
+		_rolls_label.text = "Rolls: %d/%d" % [ce.dice.rolls_left, ce.dice.max_rolls]
+		_damage_preview_label.text = ""
+		_sync_combat_controls()
+	else:
+		refresh()
 func _on_lock_toggled(index: int) -> void:
 	var ce := GameSession.combat
 	if ce == null:
+		return
+	if _combat_controls_locked():
 		return
 	ce.dice.toggle_lock(index)
 	if ce.dice.locked[index]:
 		GameSession.trace_dice_locked(index, ce.dice.values[index])
 	refresh()
-
-
 func _on_attack() -> void:
 	var ce := GameSession.combat
 	if ce == null:
+		return
+	if _combat_controls_locked():
+		return
+	if not ce.dice.has_rolled():
 		return
 
 	var target_idx := 0
@@ -817,10 +868,11 @@ func _on_attack() -> void:
 	var combo_bonus := ce.dice.calc_combo_bonus()
 
 	# Disable controls for the full duration of the sequence.
-	_btn_roll.disabled = true
-	_btn_attack.disabled = true
+	_turn_sequence_active = true
+	_deferred_refresh_requested = false
+	_sync_combat_controls()
 
-	_append_styled_log("── Round %d ──" % ce.turn_count)
+	_append_styled_log("-- Round %d --" % (ce.turn_count + 1))
 
 	# Engine resolves everything synchronously; we only control when the UI
 	# reveals each phase of the result.
@@ -829,7 +881,7 @@ func _on_attack() -> void:
 	# --- Telemetry ---
 	GameSession.trace_attack_committed(
 		result.target_name, result.player_damage,
-		ce.dice.calc_combo_bonus())
+		combo_bonus)
 	for er in result.enemy_rolls:
 		GameSession.trace_enemy_attack(str(er.get("name", "")), int(er.get("damage", 0)))
 	if result.status_tick_damage > 0:
@@ -955,9 +1007,7 @@ func _on_attack() -> void:
 		GameSession.end_combat(false)
 		_result_label.text = "☠ Defeated... ☠"
 
-	refresh()
-
-
+	_finish_turn_sequence()
 ## Awaitable pause helper. Returns immediately when seconds <= 0 so callers
 ## don't need to guard every await site against the Instant pacing preset.
 func _combat_pause(seconds: float) -> void:
