@@ -105,6 +105,26 @@ func test_main_menu_context_starts_with_dice_dungeon_theme() -> void:
 	await get_tree().process_frame
 
 
+func test_single_track_looping_wav_cues_use_runtime_playlist_loop() -> void:
+	var service = _music_script.new()
+	add_child(service)
+	await get_tree().process_frame
+
+	service.set_context("main_menu", {"immediate": true})
+	await get_tree().process_frame
+
+	var active_playlist: Dictionary = service.get("_active_playlist")
+	assert_eq(active_playlist.get("cue_id", ""), "music_main_menu", "menu cue uses the runtime playlist loop")
+	var players: Array = service.get("_players")
+	var active_index: int = service.get("_active_player_index")
+	var active_player: AudioStreamPlayer = players[active_index]
+	assert_true(active_player.stream is AudioStreamWAV, "menu stream stays a WAV")
+	assert_eq(active_player.stream.loop_mode, AudioStreamWAV.LOOP_DISABLED, "stream loop is disabled because replay is handled by the service")
+
+	service.queue_free()
+	await get_tree().process_frame
+
+
 func test_main_menu_context_requested_before_ready_replays_after_startup() -> void:
 	var service = _music_script.new()
 	service.set_context("main_menu", {"immediate": true})

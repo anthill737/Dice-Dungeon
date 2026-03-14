@@ -303,6 +303,17 @@ func _resolve_cue_request(cue_id: String, options: Dictionary, context_key: Stri
 		"loop_playlist": bool(options.get("loop_playlist", cue.get("loop_playlist", true))),
 	}
 
+	# Godot 4.6.1 can report looping WAV cues as "playing" while their playback
+	# position never advances. Replaying single-track WAV cues as a runtime
+	# playlist keeps the dedicated menu theme audible without changing manifests.
+	if not bool(resolved["playlist"]) and bool(resolved["loop"]) and paths.size() == 1:
+		var only_path := str(paths[0]).to_lower()
+		if only_path.ends_with(".wav"):
+			resolved["playlist"] = true
+			resolved["shuffle"] = false
+			resolved["loop_playlist"] = true
+			resolved["loop"] = false
+
 	if bool(resolved["playlist"]):
 		return resolved
 
