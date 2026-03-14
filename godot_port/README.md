@@ -122,6 +122,12 @@ python scripts/generate_sfx.py --dry-run
 
 # Regenerate everything even if files already exist
 python scripts/generate_sfx.py --overwrite
+
+# Regenerate everything except one cue you want to keep
+python scripts/generate_sfx.py --overwrite --exclude-ids move_room
+
+# Regenerate with stronger prompt adherence, darker PCM cleanup, and edge-click control
+python scripts/generate_sfx.py --overwrite --prompt-influence-override 0.75 --post-mono --post-low-pass-hz 2800 --post-low-pass-passes 4 --post-fade-in-ms 4 --post-fade-out-ms 30
 ```
 
 The generator skips existing sound files by default, logs per-sound success or failure to the console and `logs/sfx_generation.log`, retries rate-limit and transient failures with backoff, and tries `pcm_44100` first so it can produce `.wav` files when the account supports PCM. If ElevenLabs rejects PCM for the account, it automatically falls back to MP3.
@@ -137,6 +143,8 @@ Add another object to `godot_port/assets/audio/sfx_manifest.json` with:
 - `prompt_influence`: optional value between 0 and 1
 
 Then rerun `python scripts/generate_sfx.py`.
+
+If you want one gameplay cue to choose between multiple files, add the new sound ids to the `cue_groups` object in the same manifest. The Godot SFX service will treat that group name as a randomized pool and avoid immediate repeats when there is more than one variant.
 
 ## What's next
 

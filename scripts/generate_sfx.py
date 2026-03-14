@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import logging
+import math
 import os
 import random
 import re
@@ -13,6 +15,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import wave
+from array import array
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -60,11 +63,19 @@ class AppConfig:
     api_key: str | None
     model_id: str
     output_format: str
+    prompt_influence_override: float | None
+    only_ids: frozenset[str] | None
+    exclude_ids: frozenset[str]
     overwrite: bool
     dry_run: bool
     timeout_seconds: float
     max_retries: int
     base_backoff_seconds: float
+    post_mono: bool
+    post_low_pass_hz: float | None
+    post_low_pass_passes: int
+    post_fade_in_ms: float
+    post_fade_out_ms: float
 
 
 def parse_args() -> argparse.Namespace:
@@ -103,6 +114,24 @@ def parse_args() -> argparse.Namespace:
         help="Preferred ElevenLabs output format. Defaults to pcm_44100 with mp3 fallback.",
     )
     parser.add_argument(
+        "--prompt-influence-override",
+        type=float,
+        default=None,
+        help="Override prompt influence for all selected sounds.",
+    )
+    parser.add_argument(
+        "--only-ids",
+        action="append",
+        default=[],
+        help="Comma-separated list of sound ids to process.",
+    )
+    parser.add_argument(
+        "--exclude-ids",
+        action="append",
+        default=[],
+        help="Comma-separated list of sound ids to skip.",
+    )
+    parser.add_argument(
         "--overwrite",
         action="store_true",
         help="Regenerate sounds even if a target file already exists.",
@@ -130,6 +159,35 @@ def parse_args() -> argparse.Namespace:
         default=2.0,
         help="Base backoff in seconds for retries.",
     )
+    parser.add_argument(
+        "--post-mono",
+        action="store_true",
+        help="Fold generated PCM WAV output down to mono after generation.",
+    )
+    parser.add_argument(
+        "--post-low-pass-hz",
+        type=float,
+        default=None,
+        help="Apply a gentle low-pass filter to generated PCM WAV output at this cutoff frequency.",
+    )
+    parser.add_argument(
+        "--post-low-pass-passes",
+        type=int,
+        default=2,
+        help="Number of low-pass passes to apply when --post-low-pass-hz is set.",
+    )
+    parser.add_argument(
+        "--post-fade-in-ms",
+        type=float,
+        default=0.0,
+        help="Apply a short fade-in to generated PCM WAV output.",
+    )
+    parser.add_argument(
+        "--post-fade-out-ms",
+        type=float,
+        default=0.0,
+        help="Apply a short fade-out to generated PCM WAV output.",
+    )
     return parser.parse_args()
 
 
@@ -156,6 +214,18 @@ def load_env_file(path: Path) -> None:
 def build_config(args: argparse.Namespace) -> AppConfig:
     env_file = Path(args.env_file).resolve()
     load_env_file(env_file)
+    only_ids = parse_id_filters(args.only_ids)
+    exclude_ids = parse_id_filters(args.exclude_ids) or frozenset()
+    prompt_influence_override = args.prompt_influence_override
+    if prompt_influence_override is not None and not 0.0 <= prompt_influence_override <= 1.0:
+        raise SystemExit("--prompt-influence-override must be between 0 and 1.")
+    post_low_pass_hz = args.post_low_pass_hz
+    if post_low_pass_hz is not None and post_low_pass_hz <= 0:
+        raise SystemExit("--post-low-pass-hz must be greater than 0.")
+    if args.post_low_pass_passes < 1:
+        raise SystemExit("--post-low-pass-passes must be at least 1.")
+    if args.post_fade_in_ms < 0 or args.post_fade_out_ms < 0:
+        raise SystemExit("--post-fade-in-ms and --post-fade-out-ms must be non-negative.")
 
     return AppConfig(
         env_file=env_file,
@@ -166,12 +236,34 @@ def build_config(args: argparse.Namespace) -> AppConfig:
         api_key=os.getenv("ELEVENLABS_API_KEY"),
         model_id=args.model_id or os.getenv("ELEVENLABS_MODEL_ID") or DEFAULT_MODEL_ID,
         output_format=args.output_format or os.getenv("ELEVENLABS_OUTPUT_FORMAT") or DEFAULT_OUTPUT_FORMAT,
+        prompt_influence_override=prompt_influence_override,
+        only_ids=only_ids,
+        exclude_ids=exclude_ids,
         overwrite=args.overwrite,
         dry_run=args.dry_run,
         timeout_seconds=max(args.timeout, 1.0),
         max_retries=max(args.max_retries, 0),
         base_backoff_seconds=max(args.base_backoff, 0.1),
+        post_mono=args.post_mono,
+        post_low_pass_hz=post_low_pass_hz,
+        post_low_pass_passes=args.post_low_pass_passes,
+        post_fade_in_ms=args.post_fade_in_ms,
+        post_fade_out_ms=args.post_fade_out_ms,
     )
+
+
+def parse_id_filters(raw_values: list[str]) -> frozenset[str] | None:
+    ids: set[str] = set()
+    for raw_value in raw_values:
+        if not isinstance(raw_value, str):
+            continue
+        for token in raw_value.split(","):
+            sound_id = token.strip()
+            if sound_id:
+                ids.add(sound_id)
+    if not ids:
+        return None
+    return frozenset(ids)
 
 
 def setup_logging(log_file: Path) -> None:
@@ -244,6 +336,19 @@ def load_manifest(path: Path) -> list[SoundEffectSpec]:
         )
 
     return specs
+
+
+def filter_sounds(
+    sounds: list[SoundEffectSpec],
+    only_ids: frozenset[str] | None,
+    exclude_ids: frozenset[str],
+) -> list[SoundEffectSpec]:
+    filtered = sounds
+    if only_ids:
+        filtered = [sound for sound in filtered if sound.sound_id in only_ids]
+    if exclude_ids:
+        filtered = [sound for sound in filtered if sound.sound_id not in exclude_ids]
+    return filtered
 
 
 def expect_string(data: dict[str, Any], key: str, index: int) -> str:
@@ -368,8 +473,11 @@ def request_sound_effect(
     }
     if sound.duration_seconds is not None:
         body["duration_seconds"] = sound.duration_seconds
-    if sound.prompt_influence is not None:
-        body["prompt_influence"] = sound.prompt_influence
+    prompt_influence = config.prompt_influence_override
+    if prompt_influence is None:
+        prompt_influence = sound.prompt_influence
+    if prompt_influence is not None:
+        body["prompt_influence"] = prompt_influence
 
     data = json.dumps(body).encode("utf-8")
 
@@ -430,10 +538,125 @@ def request_sound_effect(
     raise ApiRequestError(0, "Unknown request failure", {})
 
 
-def write_audio_file(path: Path, output_format: str, audio_bytes: bytes) -> None:
+def should_postprocess_pcm(config: AppConfig) -> bool:
+    return config.post_mono or config.post_low_pass_hz is not None
+
+
+def decode_pcm_payload(output_format: str, audio_bytes: bytes) -> tuple[int, int, int, bytes]:
+    if audio_bytes.startswith(b"RIFF"):
+        with wave.open(io.BytesIO(audio_bytes), "rb") as wav_file:
+            channels = wav_file.getnchannels()
+            sample_width = wav_file.getsampwidth()
+            sample_rate = wav_file.getframerate()
+            frames = wav_file.readframes(wav_file.getnframes())
+        return sample_rate, channels, sample_width, frames
+
+    match = re.match(r"pcm_(\d+)", output_format)
+    if not match:
+        raise ValueError(f"Unsupported PCM output format: {output_format}")
+    sample_rate = int(match.group(1))
+    return sample_rate, 1, 2, audio_bytes
+
+
+def decode_int16_samples(frames: bytes, channels: int, sample_width: int) -> array:
+    if sample_width != 2:
+        raise ValueError(f"Unsupported PCM sample width: {sample_width}")
+    samples = array("h")
+    samples.frombytes(frames)
+    expected_channels = max(channels, 1)
+    if len(samples) % expected_channels != 0:
+        raise ValueError("PCM frame data does not align with channel count.")
+    return samples
+
+
+def fold_samples_to_mono(samples: array, channels: int) -> array:
+    if channels <= 1:
+        return array("h", samples)
+
+    mono = array("h")
+    for frame_index in range(0, len(samples), channels):
+        frame = samples[frame_index:frame_index + channels]
+        mono.append(int(sum(frame) / channels))
+    return mono
+
+
+def apply_low_pass_filter(samples: array, sample_rate: int, cutoff_hz: float) -> array:
+    if not samples:
+        return array("h")
+
+    rc = 1.0 / (2.0 * math.pi * cutoff_hz)
+    dt = 1.0 / float(sample_rate)
+    alpha = dt / (rc + dt)
+
+    filtered = array("h")
+    current = float(samples[0])
+    filtered.append(int(current))
+    for sample in samples[1:]:
+        current += alpha * (float(sample) - current)
+        clamped = max(min(int(current), 32767), -32768)
+        filtered.append(clamped)
+    return filtered
+
+
+def apply_edge_fades(samples: array, sample_rate: int, fade_in_ms: float, fade_out_ms: float) -> array:
+    if not samples:
+        return array("h")
+
+    faded = array("h", samples)
+    total_samples = len(faded)
+
+    fade_in_samples = min(int(sample_rate * (fade_in_ms / 1000.0)), total_samples)
+    fade_out_samples = min(int(sample_rate * (fade_out_ms / 1000.0)), total_samples)
+
+    if fade_in_samples > 1:
+        for index in range(fade_in_samples):
+            gain = index / float(fade_in_samples - 1)
+            faded[index] = int(faded[index] * gain)
+
+    if fade_out_samples > 1:
+        start_index = total_samples - fade_out_samples
+        for offset, index in enumerate(range(start_index, total_samples)):
+            gain = (fade_out_samples - 1 - offset) / float(fade_out_samples - 1)
+            faded[index] = int(faded[index] * gain)
+
+    return faded
+
+
+def build_processed_pcm_frames(
+    config: AppConfig,
+    output_format: str,
+    audio_bytes: bytes,
+) -> tuple[int, int, int, bytes]:
+    sample_rate, channels, sample_width, frames = decode_pcm_payload(output_format, audio_bytes)
+    samples = decode_int16_samples(frames, channels, sample_width)
+    processed_channels = channels
+
+    if config.post_mono:
+        samples = fold_samples_to_mono(samples, channels)
+        processed_channels = 1
+
+    if config.post_low_pass_hz is not None:
+        if processed_channels != 1:
+            samples = fold_samples_to_mono(samples, processed_channels)
+            processed_channels = 1
+        for _ in range(config.post_low_pass_passes):
+            samples = apply_low_pass_filter(samples, sample_rate, config.post_low_pass_hz)
+
+    if config.post_fade_in_ms > 0 or config.post_fade_out_ms > 0:
+        samples = apply_edge_fades(
+            samples,
+            sample_rate,
+            config.post_fade_in_ms,
+            config.post_fade_out_ms,
+        )
+
+    return sample_rate, processed_channels, sample_width, samples.tobytes()
+
+
+def write_audio_file(config: AppConfig, path: Path, output_format: str, audio_bytes: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if output_format.startswith("pcm_"):
-        write_pcm_as_wav(path, output_format, audio_bytes)
+        write_pcm_as_wav(config, path, output_format, audio_bytes)
         return
     write_bytes(path, audio_bytes)
 
@@ -444,22 +667,23 @@ def write_bytes(path: Path, payload: bytes) -> None:
     tmp_path.replace(path)
 
 
-def write_pcm_as_wav(path: Path, output_format: str, audio_bytes: bytes) -> None:
-    if audio_bytes.startswith(b"RIFF"):
+def write_pcm_as_wav(config: AppConfig, path: Path, output_format: str, audio_bytes: bytes) -> None:
+    if should_postprocess_pcm(config):
+        sample_rate, channels, sample_width, frames = build_processed_pcm_frames(
+            config, output_format, audio_bytes
+        )
+    elif audio_bytes.startswith(b"RIFF"):
         write_bytes(path, audio_bytes)
         return
-
-    match = re.match(r"pcm_(\d+)", output_format)
-    if not match:
-        raise ValueError(f"Unsupported PCM output format: {output_format}")
-    sample_rate = int(match.group(1))
+    else:
+        sample_rate, channels, sample_width, frames = decode_pcm_payload(output_format, audio_bytes)
 
     tmp_path = path.with_suffix(path.suffix + ".tmp")
     with wave.open(str(tmp_path), "wb") as wav_file:
-        wav_file.setnchannels(1)
-        wav_file.setsampwidth(2)
+        wav_file.setnchannels(channels)
+        wav_file.setsampwidth(sample_width)
         wav_file.setframerate(sample_rate)
-        wav_file.writeframes(audio_bytes)
+        wav_file.writeframes(frames)
     tmp_path.replace(path)
 
 
@@ -502,7 +726,7 @@ def process_sound(
         try:
             audio_bytes, headers = request_sound_effect(config, sound, output_format)
             output_path = config.output_dir / f"{sound.file_stem}{extension_for_output_format(output_format)}"
-            write_audio_file(output_path, output_format, audio_bytes)
+            write_audio_file(config, output_path, output_format, audio_bytes)
             cleanup_alternate_outputs(output_path, paths)
             character_cost = headers.get("character-cost")
             if character_cost:
@@ -548,15 +772,38 @@ def main() -> int:
     ensure_api_key(config)
 
     sounds = load_manifest(config.manifest_path)
+    sounds = filter_sounds(sounds, config.only_ids, config.exclude_ids)
     output_format_chain = build_output_format_chain(config.output_format)
+
+    if not sounds:
+        logging.error("No sounds matched the provided manifest and id filters.")
+        return 1
 
     logging.info("Using manifest: %s", config.manifest_path)
     logging.info("Output directory: %s", config.output_dir)
     logging.info("Requested output format chain: %s", ", ".join(output_format_chain))
+    if config.only_ids:
+        logging.info("Only ids: %s", ", ".join(sorted(config.only_ids)))
+    if config.exclude_ids:
+        logging.info("Excluded ids: %s", ", ".join(sorted(config.exclude_ids)))
     if config.overwrite:
         logging.info("Overwrite mode enabled")
     if config.dry_run:
         logging.info("Dry-run mode enabled; no API requests will be sent")
+    if config.prompt_influence_override is not None:
+        logging.info("Prompt influence override: %.2f", config.prompt_influence_override)
+    if config.post_mono:
+        logging.info("PCM post-process: mono fold-down enabled")
+    if config.post_low_pass_hz is not None:
+        logging.info(
+            "PCM post-process: low-pass enabled at %.0f Hz (%d passes)",
+            config.post_low_pass_hz,
+            config.post_low_pass_passes,
+        )
+    if config.post_fade_in_ms > 0:
+        logging.info("PCM post-process: fade-in enabled at %.1f ms", config.post_fade_in_ms)
+    if config.post_fade_out_ms > 0:
+        logging.info("PCM post-process: fade-out enabled at %.1f ms", config.post_fade_out_ms)
 
     results = {"generated": 0, "skipped": 0, "dry-run": 0, "failed": 0}
 

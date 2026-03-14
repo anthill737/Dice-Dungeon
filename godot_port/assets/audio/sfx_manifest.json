@@ -1,211 +1,1133 @@
 {
   "defaults": {
-    "prompt_influence": 0.45
+    "prompt_influence": 0.75
   },
   "sounds": [
     {
       "id": "dice_roll",
       "file_stem": "sfx_dice_roll",
       "duration_seconds": 1.2,
-      "prompt": "three wooden dice rolling quickly across a stone tabletop, sharp clicks, crisp tabletop game sound, short fantasy RPG sound effect, clean and punchy, no ambience"
+      "prompt": "Three wooden dice rolling across a worn stone tabletop. Short warm wood clatter."
     },
     {
       "id": "dice_lock",
       "file_stem": "sfx_dice_lock",
       "duration_seconds": 0.8,
-      "prompt": "single wooden die snapping into place on a stone table with a small magical sparkle chime, crisp tabletop game sound, short clean UI style sound effect"
+      "prompt": "A single wooden die stopping on stone. Small wood tap and scrape."
     },
     {
       "id": "attack",
       "file_stem": "sfx_attack",
       "duration_seconds": 0.9,
-      "prompt": "bright metallic sword strike with sharp impact, fantasy weapon hit, crisp and punchy, short combat sound effect, no ambience"
+      "prompt": "A steel weapon hit landing on armor or a shield. Short heavy impact."
     },
     {
       "id": "crit",
       "file_stem": "sfx_crit",
       "duration_seconds": 1.2,
-      "prompt": "powerful magical critical strike impact with bright crystalline burst and metallic ring, fantasy RPG critical hit sound, sharp and energetic"
+      "prompt": "A heavier weapon strike landing harder than a normal hit. Deep impact and brief gear rattle."
     },
     {
       "id": "enemy_hit",
       "file_stem": "sfx_enemy_hit",
       "duration_seconds": 1.0,
-      "prompt": "monster being struck with weapon impact and brief creature grunt, sharp combat hit sound, fantasy dungeon combat"
+      "prompt": "A weapon hitting flesh through light armor. Body impact and a short pain breath."
     },
     {
       "id": "enemy_die",
       "file_stem": "sfx_enemy_die",
       "duration_seconds": 1.6,
-      "prompt": "monster collapsing and dissolving with dark magical burst and echoing impact, fantasy creature death sound, short dramatic finish"
+      "prompt": "An enemy body collapsing onto stone. Gear rattle and a final thud."
     },
     {
       "id": "shield_block",
       "file_stem": "sfx_shield_block",
       "duration_seconds": 0.9,
-      "prompt": "metal shield blocking weapon strike with ringing metallic clang, sharp fantasy combat defense sound"
+      "prompt": "A shield blocking a weapon hit. Leather strap strain and a muted metal impact."
     },
     {
       "id": "armor_break",
       "file_stem": "sfx_armor_break",
       "duration_seconds": 1.2,
-      "prompt": "metal armor cracking and breaking apart with sharp fragments and impact, fantasy combat armor break sound"
+      "prompt": "Armor giving way under a heavy hit. Strap snap, plate crack, small pieces falling."
     },
     {
       "id": "legendary_hit",
       "file_stem": "sfx_legendary_hit",
       "duration_seconds": 1.5,
-      "prompt": "massive fantasy attack impact with magical energy burst, heavy strike with bright spark effects, powerful critical combat sound"
+      "prompt": "A devastating finishing hit. Very heavy steel and body impact with a little debris."
     },
     {
       "id": "enemy_dice_roll",
       "file_stem": "sfx_enemy_dice_roll",
-      "duration_seconds": 1.2,
-      "prompt": "three rough bone dice rolling across stone with hollow clacking sound, darker tabletop dice roll"
+      "duration_seconds": 1.1,
+      "prompt": "Rough bone dice thrown onto stone. Hollow clatter and a fast stop."
     },
     {
       "id": "move_room",
       "file_stem": "sfx_move",
       "duration_seconds": 0.8,
-      "prompt": "leather boots stepping across stone dungeon floor with subtle echo, grounded fantasy movement sound"
+      "prompt": "Leather boots walking across a stone dungeon floor. One or two grounded steps."
     },
     {
       "id": "discover_room",
       "file_stem": "sfx_discover_room",
       "duration_seconds": 2.2,
-      "prompt": "deep stone door opening with heavy mechanism and faint magical resonance, dungeon exploration reveal sound"
+      "prompt": "A heavy dungeon door opening into another room. Hinge movement and a low wood or stone body."
     },
     {
       "id": "stairs_down",
       "file_stem": "sfx_stairs_down",
       "duration_seconds": 1.5,
-      "prompt": "descending stone stairs footsteps with deep echo, short dungeon transition sound"
+      "prompt": "Boots going down a few stone steps. Close footsteps and a short stairwell resonance."
     },
     {
       "id": "chest_open",
       "file_stem": "sfx_chest_open",
       "duration_seconds": 1.6,
-      "prompt": "heavy wooden chest opening with deep creak and solid thunk, medieval container sound"
+      "prompt": "An old wooden chest opened by hand. Heavy lid lift, hinge creak, hollow chest body."
     },
     {
       "id": "barrel_open",
       "file_stem": "sfx_barrel_open",
       "duration_seconds": 1.4,
-      "prompt": "wooden barrel lid sliding open with hollow wood movement and soft rummaging"
+      "prompt": "A wooden barrel lid worked loose by hand. Wood scrape and short hollow barrel body."
     },
     {
       "id": "lockbox_open",
       "file_stem": "sfx_lockbox_open",
       "duration_seconds": 1.2,
-      "prompt": "iron lock clicking open and metal lid lifting, small treasure container sound"
+      "prompt": "A small metal lockbox opened by hand. Latch click, lid lift, muted iron body."
     },
     {
       "id": "item_pickup",
       "file_stem": "sfx_item_pickup",
       "duration_seconds": 0.8,
-      "prompt": "soft magical pickup chime with light sparkle tone, fantasy item collection sound"
+      "prompt": "A small object picked up from stone by hand. Soft hand contact and a short object tap."
     },
     {
       "id": "gold_pickup",
       "file_stem": "sfx_gold_pickup",
       "duration_seconds": 0.8,
-      "prompt": "small pile of coins clinking together with metallic jingle, fantasy gold pickup sound"
+      "prompt": "A few old coins scooped up from stone into a hand or pouch. Muted coin clinks."
     },
     {
       "id": "inventory_full",
       "file_stem": "sfx_inventory_full",
       "duration_seconds": 0.8,
-      "prompt": "short dull wooden thud with subtle negative tone, game UI warning sound"
+      "prompt": "An overfilled pack refusing one more item. Dull bag thump and strap strain."
     },
     {
       "id": "shop_enter",
       "file_stem": "sfx_shop_enter",
       "duration_seconds": 2.0,
-      "prompt": "wooden tavern door opening with warm room ambience hit and faint coin jingle, fantasy merchant shop sound"
+      "prompt": "A wooden shop door opening and one step onto a timber floor."
     },
     {
       "id": "purchase",
       "file_stem": "sfx_purchase",
       "duration_seconds": 0.8,
-      "prompt": "coins exchanging hands with satisfying metallic clink and small success chime"
+      "prompt": "A few coins counted onto a wooden counter. Short muted coin clinks."
     },
     {
       "id": "sell",
       "file_stem": "sfx_sell",
       "duration_seconds": 0.8,
-      "prompt": "coins dropping into a pouch with soft metallic clinking, fantasy trading sound"
+      "prompt": "A few coins dropped into a leather pouch. Soft coin movement and leather rustle."
     },
     {
       "id": "drink_potion",
       "file_stem": "sfx_drink_potion",
       "duration_seconds": 1.1,
-      "prompt": "glass vial uncorking and liquid drinking with magical shimmer, fantasy potion use sound"
+      "prompt": "A small glass vial uncorked and drunk. Short liquid swig and swallow."
     },
     {
       "id": "heal",
       "file_stem": "sfx_heal",
       "duration_seconds": 1.1,
-      "prompt": "soft magical healing energy pulse with gentle chime, warm fantasy healing sound"
+      "prompt": "A practical recovery cue. Cloth adjustment, steadier breath, gear settling."
     },
     {
       "id": "shield_gain",
       "file_stem": "sfx_shield_gain",
-      "duration_seconds": 1.2,
-      "prompt": "magical barrier forming with metallic resonance and shimmering energy sound"
+      "duration_seconds": 1.1,
+      "prompt": "A shield lifted into guard. Leather straps tighten and metal settles."
     },
     {
       "id": "button_click",
       "file_stem": "sfx_button_click",
       "duration_seconds": 0.5,
-      "prompt": "small wooden button click with subtle magical sparkle, fantasy RPG interface sound"
+      "prompt": "A small wood and brass button pressed once. Short muted mechanical click."
     },
     {
       "id": "menu_open",
       "file_stem": "sfx_menu_open",
       "duration_seconds": 0.7,
-      "prompt": "soft parchment page opening with magical shimmer, fantasy UI menu open sound"
+      "prompt": "A parchment folio opened by hand. Thick old paper and wood backing moving."
     },
     {
       "id": "menu_close",
       "file_stem": "sfx_menu_close",
       "duration_seconds": 0.7,
-      "prompt": "parchment page closing with gentle thud and subtle magical fade"
+      "prompt": "A parchment folio closed by hand. Thick paper fold and a soft cover settle."
     },
     {
       "id": "trap_trigger",
       "file_stem": "sfx_trap_trigger",
       "duration_seconds": 1.0,
-      "prompt": "sudden mechanical trap snap with metal springs and sharp impact, dungeon trap sound"
+      "prompt": "A trap mechanism firing in a stone room. Spring snap and a short metal strike."
     },
     {
       "id": "puzzle_success",
       "file_stem": "sfx_puzzle_success",
       "duration_seconds": 2.0,
-      "prompt": "ancient stone mechanism activating with deep rumble and magical resonance"
+      "prompt": "An ancient lock mechanism disengaging. Heavy internal movement and a final thunk."
     },
     {
       "id": "puzzle_fail",
       "file_stem": "sfx_puzzle_fail",
       "duration_seconds": 1.2,
-      "prompt": "stone mechanism grinding and stopping with dull failure tone"
+      "prompt": "A lock mechanism jamming. Short grind and a dull stop."
     },
     {
       "id": "elite_unlock",
       "file_stem": "sfx_elite_unlock",
       "duration_seconds": 1.8,
-      "prompt": "heavy ornate lock turning and reinforced dungeon door unlocking with deep metallic click"
+      "prompt": "A reinforced dungeon door unlocking. Thick key turn, bolt movement, heavy iron mechanism."
     },
     {
       "id": "boss_spawn",
       "file_stem": "sfx_boss_spawn",
       "duration_seconds": 2.8,
-      "prompt": "deep magical energy surge with rumbling stone and dark fantasy power rising"
+      "prompt": "A massive gate opening and one huge approaching footstep. Heavy stone and iron movement."
     },
     {
       "id": "boss_defeat",
       "file_stem": "sfx_boss_defeat",
       "duration_seconds": 2.6,
-      "prompt": "large monster collapsing with magical explosion and deep echoing victory impact"
+      "prompt": "A huge enemy collapsing onto stone. Heavy body fall, debris, and a final impact."
+    },
+    {
+      "id": "dice_roll_hard",
+      "file_stem": "sfx_dice_roll_hard",
+      "duration_seconds": 1.2,
+      "prompt": "Three wooden dice thrown harder across stone. Denser clatter and a short skid."
+    },
+    {
+      "id": "dice_roll_short",
+      "file_stem": "sfx_dice_roll_short",
+      "duration_seconds": 0.9,
+      "prompt": "A short toss of wooden dice onto stone. Compact clatter and a fast stop."
+    },
+    {
+      "id": "dice_lock_soft",
+      "file_stem": "sfx_dice_lock_soft",
+      "duration_seconds": 0.7,
+      "prompt": "A single wooden die settling softly on stone. Light tap and tiny scrape."
+    },
+    {
+      "id": "dice_lock_heavy",
+      "file_stem": "sfx_dice_lock_heavy",
+      "duration_seconds": 0.8,
+      "prompt": "A single wooden die landing with more weight on stone. Firmer tap and short scrape."
+    },
+    {
+      "id": "attack_heavy",
+      "file_stem": "sfx_attack_heavy",
+      "duration_seconds": 1.0,
+      "prompt": "A heavy blade or axe hit landing on armor. Thick metal body and a heavy impact."
+    },
+    {
+      "id": "attack_blunt",
+      "file_stem": "sfx_attack_blunt",
+      "duration_seconds": 0.9,
+      "prompt": "A blunt weapon hit landing on armor or bone. Dense body impact with almost no ring."
+    },
+    {
+      "id": "crit_blade",
+      "file_stem": "sfx_crit_blade",
+      "duration_seconds": 1.2,
+      "prompt": "A severe blade strike landing cleanly. Deep impact and brief gear rattle."
+    },
+    {
+      "id": "crit_blunt",
+      "file_stem": "sfx_crit_blunt",
+      "duration_seconds": 1.2,
+      "prompt": "A crushing critical hit from a heavy blunt weapon. Dense force and a short debris shake."
+    },
+    {
+      "id": "legendary_hit_heavy",
+      "file_stem": "sfx_legendary_hit_heavy",
+      "duration_seconds": 1.6,
+      "prompt": "A massive finishing blow. Huge steel and body impact with low-end weight."
+    },
+    {
+      "id": "shield_block_heavy",
+      "file_stem": "sfx_shield_block_heavy",
+      "duration_seconds": 1.0,
+      "prompt": "A heavy shield stopping a hard weapon hit. Thick impact and strap strain."
+    },
+    {
+      "id": "armor_break_hard",
+      "file_stem": "sfx_armor_break_hard",
+      "duration_seconds": 1.3,
+      "prompt": "Armor breaking badly under force. Hard buckle failure, plate crack, fragments on stone."
+    },
+    {
+      "id": "enemy_hit_humanoid",
+      "file_stem": "sfx_enemy_hit_humanoid",
+      "duration_seconds": 1.0,
+      "prompt": "A humanoid enemy hit by a weapon. Flesh, cloth, and light gear impact."
+    },
+    {
+      "id": "enemy_die_humanoid",
+      "file_stem": "sfx_enemy_die_humanoid",
+      "duration_seconds": 1.5,
+      "prompt": "A humanoid enemy collapsing onto stone. Light armor settle and a final breath."
+    },
+    {
+      "id": "enemy_dice_roll_humanoid",
+      "file_stem": "sfx_enemy_dice_roll_humanoid",
+      "duration_seconds": 1.1,
+      "prompt": "Humanoid enemy attack prep. Knucklebones rattled in a hand and thrown onto stone."
+    },
+    {
+      "id": "enemy_hit_beast",
+      "file_stem": "sfx_enemy_hit_beast",
+      "duration_seconds": 1.0,
+      "prompt": "A beast hit by a weapon. Hide and muscle impact with a short pain bark."
+    },
+    {
+      "id": "enemy_die_beast",
+      "file_stem": "sfx_enemy_die_beast",
+      "duration_seconds": 1.6,
+      "prompt": "A beast collapsing onto stone. Claw scrape, body fall, final breath."
+    },
+    {
+      "id": "enemy_dice_roll_beast",
+      "file_stem": "sfx_enemy_dice_roll_beast",
+      "duration_seconds": 1.0,
+      "prompt": "A beast readying an attack. Claws skitter on stone and a short low growl."
+    },
+    {
+      "id": "enemy_hit_ooze",
+      "file_stem": "sfx_enemy_hit_ooze",
+      "duration_seconds": 1.0,
+      "prompt": "A weapon hitting a heavy ooze body. Wet splat and dull slap on stone."
+    },
+    {
+      "id": "enemy_die_ooze",
+      "file_stem": "sfx_enemy_die_ooze",
+      "duration_seconds": 1.5,
+      "prompt": "An ooze collapsing and spreading across stone. Thick slosh and a final wet slump."
+    },
+    {
+      "id": "enemy_dice_roll_ooze",
+      "file_stem": "sfx_enemy_dice_roll_ooze",
+      "duration_seconds": 1.0,
+      "prompt": "An ooze attack windup. Sticky wet movement and a heavier slop on stone."
+    },
+    {
+      "id": "enemy_hit_undead",
+      "file_stem": "sfx_enemy_hit_undead",
+      "duration_seconds": 1.0,
+      "prompt": "A weapon striking an undead body. Dry bone rattle and hollow body impact."
+    },
+    {
+      "id": "enemy_die_undead",
+      "file_stem": "sfx_enemy_die_undead",
+      "duration_seconds": 1.5,
+      "prompt": "Undead bones and scraps of gear collapsing onto stone. Brittle clatter."
+    },
+    {
+      "id": "enemy_dice_roll_undead",
+      "file_stem": "sfx_enemy_dice_roll_undead",
+      "duration_seconds": 1.0,
+      "prompt": "Undead attack prep. Bone rattle and scraping movement over stone."
+    },
+    {
+      "id": "enemy_hit_spirit",
+      "file_stem": "sfx_enemy_hit_spirit",
+      "duration_seconds": 1.0,
+      "prompt": "A weapon passing through a dark spirit body. Low air pull and a muted tear."
+    },
+    {
+      "id": "enemy_die_spirit",
+      "file_stem": "sfx_enemy_die_spirit",
+      "duration_seconds": 1.5,
+      "prompt": "A dark spirit collapsing inward and fading out. Low air drop and soft unravel."
+    },
+    {
+      "id": "enemy_dice_roll_spirit",
+      "file_stem": "sfx_enemy_dice_roll_spirit",
+      "duration_seconds": 1.0,
+      "prompt": "A spirit readying an attack. Dark air swirl and a short low whisper."
+    },
+    {
+      "id": "enemy_hit_insect",
+      "file_stem": "sfx_enemy_hit_insect",
+      "duration_seconds": 1.0,
+      "prompt": "A weapon striking insect chitin. Dry shell crack and a short leg scrape."
+    },
+    {
+      "id": "enemy_die_insect",
+      "file_stem": "sfx_enemy_die_insect",
+      "duration_seconds": 1.4,
+      "prompt": "An insect body dropping onto stone. Brittle chitin crack and leg scrape."
+    },
+    {
+      "id": "enemy_dice_roll_insect",
+      "file_stem": "sfx_enemy_dice_roll_insect",
+      "duration_seconds": 0.9,
+      "prompt": "Insect attack prep. Fast legs skittering across stone."
+    },
+    {
+      "id": "discover_room_heavy",
+      "file_stem": "sfx_discover_room_heavy",
+      "duration_seconds": 2.3,
+      "prompt": "A very heavy stone door dragging open. Dense scrape, hinge movement, new room air."
+    },
+    {
+      "id": "stairs_down_long",
+      "file_stem": "sfx_stairs_down_long",
+      "duration_seconds": 1.8,
+      "prompt": "Boots going down several stone steps. Cloth movement and a short stairwell resonance."
+    },
+    {
+      "id": "chest_open_rummage",
+      "file_stem": "sfx_chest_open_rummage",
+      "duration_seconds": 1.7,
+      "prompt": "A wooden chest opened by hand, then a brief rummage through its contents."
+    },
+    {
+      "id": "barrel_open_rummage",
+      "file_stem": "sfx_barrel_open_rummage",
+      "duration_seconds": 1.5,
+      "prompt": "A barrel lid moved aside, then a brief rummage inside the barrel."
+    },
+    {
+      "id": "lockbox_open_snap",
+      "file_stem": "sfx_lockbox_open_snap",
+      "duration_seconds": 1.2,
+      "prompt": "A small lockbox latch released and the lid snapping open."
+    },
+    {
+      "id": "gold_pickup_small",
+      "file_stem": "sfx_gold_pickup_small",
+      "duration_seconds": 0.7,
+      "prompt": "A few loose coins lifted from stone into a hand. Short muted coin taps."
+    },
+    {
+      "id": "gold_pickup_pouch",
+      "file_stem": "sfx_gold_pickup_pouch",
+      "duration_seconds": 0.8,
+      "prompt": "A few coins slid into a small leather pouch. Soft coin clinks and leather movement."
+    },
+    {
+      "id": "purchase_counter",
+      "file_stem": "sfx_purchase_counter",
+      "duration_seconds": 0.9,
+      "prompt": "Coins counted on a wooden merchant counter. One firmer final clink."
+    },
+    {
+      "id": "sell_pouch",
+      "file_stem": "sfx_sell_pouch",
+      "duration_seconds": 0.9,
+      "prompt": "Coins dropped into a leather pouch as payment. Soft clinks and pouch movement."
+    },
+    {
+      "id": "item_pickup_leather",
+      "file_stem": "sfx_item_pickup_leather",
+      "duration_seconds": 0.8,
+      "prompt": "A small leather or cloth item picked up from stone by hand."
+    },
+    {
+      "id": "item_pickup_metal",
+      "file_stem": "sfx_item_pickup_metal",
+      "duration_seconds": 0.8,
+      "prompt": "A small metal item picked up from stone by hand. Short muted metal tap."
+    },
+    {
+      "id": "drink_potion_bitter",
+      "file_stem": "sfx_drink_potion_bitter",
+      "duration_seconds": 1.2,
+      "prompt": "A small medicinal vial uncorked and swallowed. Glass movement and a bitter exhale."
+    },
+    {
+      "id": "drink_potion_heavy",
+      "file_stem": "sfx_drink_potion_heavy",
+      "duration_seconds": 1.3,
+      "prompt": "A larger flask opened and drunk. Cork pull, heavier gulp, glass and leather movement."
+    },
+    {
+      "id": "heal_bandage",
+      "file_stem": "sfx_heal_bandage",
+      "duration_seconds": 1.2,
+      "prompt": "A bandage wrapped and tightened around an injury. Cloth pull and a restrained relieved breath."
+    },
+    {
+      "id": "heal_herb",
+      "file_stem": "sfx_heal_herb",
+      "duration_seconds": 1.1,
+      "prompt": "An herbal remedy crushed or chewed by hand. Leaves, hand movement, quiet recovering breath."
+    },
+    {
+      "id": "heal_food",
+      "file_stem": "sfx_heal_food",
+      "duration_seconds": 1.1,
+      "prompt": "A quick ration or tonic taken for recovery. Small bite or sip and a steadying breath."
+    },
+    {
+      "id": "buff_tonic",
+      "file_stem": "sfx_buff_tonic",
+      "duration_seconds": 1.2,
+      "prompt": "A strengthening tonic uncorked and swallowed. Bottle movement and a steadier breath."
+    },
+    {
+      "id": "cleanse_tonic",
+      "file_stem": "sfx_cleanse_tonic",
+      "duration_seconds": 1.2,
+      "prompt": "A cleansing draught opened and swallowed. Small bottle movement and a clearing breath."
+    },
+    {
+      "id": "use_token",
+      "file_stem": "sfx_use_token",
+      "duration_seconds": 0.9,
+      "prompt": "A small carved token used in the hand. Short wood or bone click and leather movement."
+    },
+    {
+      "id": "use_tool",
+      "file_stem": "sfx_use_tool",
+      "duration_seconds": 1.0,
+      "prompt": "A small metal tool working a mechanism. Pick or lever click and scrape."
+    },
+    {
+      "id": "repair_kit",
+      "file_stem": "sfx_repair_kit",
+      "duration_seconds": 1.1,
+      "prompt": "A quick field repair. Strap tighten, buckle cinch, and a small metal adjustment."
+    },
+    {
+      "id": "equip_weapon",
+      "file_stem": "sfx_equip_weapon",
+      "duration_seconds": 0.9,
+      "prompt": "A weapon readied in the hand. Grip shift, leather movement, muted metal contact."
+    },
+    {
+      "id": "equip_armor",
+      "file_stem": "sfx_equip_armor",
+      "duration_seconds": 1.0,
+      "prompt": "Armor being fastened into place. Leather straps tightened and metal settling."
+    },
+    {
+      "id": "equip_accessory",
+      "file_stem": "sfx_equip_accessory",
+      "duration_seconds": 0.8,
+      "prompt": "A small accessory clasped into place. Short clasp click and cloth movement."
+    },
+    {
+      "id": "unequip_item",
+      "file_stem": "sfx_unequip_item",
+      "duration_seconds": 0.8,
+      "prompt": "A piece of gear removed. Short unfasten movement and muted leather or metal contact."
+    },
+    {
+      "id": "drop_item",
+      "file_stem": "sfx_drop_item",
+      "duration_seconds": 0.8,
+      "prompt": "A small item dropped onto stone. Short thud or tap."
+    },
+    {
+      "id": "read_lore",
+      "file_stem": "sfx_read_lore",
+      "duration_seconds": 0.9,
+      "prompt": "An old parchment note unfolded and handled. Thick paper movement and a soft settle."
+    },
+    {
+      "id": "rest_recover",
+      "file_stem": "sfx_rest_recover",
+      "duration_seconds": 1.4,
+      "prompt": "A short rest on a bedroll or stone edge. Cloth rustle, weight shift, slow relieved breath."
+    },
+    {
+      "id": "flee_success",
+      "file_stem": "sfx_flee_success",
+      "duration_seconds": 1.2,
+      "prompt": "A quick escape across stone. Fast footsteps, gear clatter, hard turn away."
+    },
+    {
+      "id": "flee_fail",
+      "file_stem": "sfx_flee_fail",
+      "duration_seconds": 1.0,
+      "prompt": "A failed escape. Abrupt stop, gear jolt, and a blocked impact on stone."
+    },
+    {
+      "id": "door_locked_rattle",
+      "file_stem": "sfx_door_locked_rattle",
+      "duration_seconds": 1.1,
+      "prompt": "A locked dungeon door tested and stopped by the lock. Heavy handle pull and short rattle."
+    },
+    {
+      "id": "key_turn_small",
+      "file_stem": "sfx_key_turn_small",
+      "duration_seconds": 0.9,
+      "prompt": "A small iron key turning in a lock. One solid click and a short bolt release."
+    },
+    {
+      "id": "shop_enter_counter",
+      "file_stem": "sfx_shop_enter_counter",
+      "duration_seconds": 1.9,
+      "prompt": "A merchant room door opening, one step onto timber, quiet room beyond."
+    },
+    {
+      "id": "button_click_soft",
+      "file_stem": "sfx_button_click_soft",
+      "duration_seconds": 0.5,
+      "prompt": "A soft wood or paper tab click. Small muted interface movement."
+    },
+    {
+      "id": "menu_open_book",
+      "file_stem": "sfx_menu_open_book",
+      "duration_seconds": 0.8,
+      "prompt": "A small book or folio opened by hand. Old paper and leather movement."
+    },
+    {
+      "id": "menu_close_book",
+      "file_stem": "sfx_menu_close_book",
+      "duration_seconds": 0.8,
+      "prompt": "A small book or folio closed by hand. Paper fold and a muted cover thump."
+    },
+    {
+      "id": "puzzle_success_deep",
+      "file_stem": "sfx_puzzle_success_deep",
+      "duration_seconds": 2.1,
+      "prompt": "A deeper ancient mechanism unlocking. Heavy stone movement and a low final thunk."
+    },
+    {
+      "id": "puzzle_fail_lock",
+      "file_stem": "sfx_puzzle_fail_lock",
+      "duration_seconds": 1.2,
+      "prompt": "A lock mechanism catching and failing. Teeth grind and a dull stop."
+    },
+    {
+      "id": "elite_unlock_bolt",
+      "file_stem": "sfx_elite_unlock_bolt",
+      "duration_seconds": 1.8,
+      "prompt": "A reinforced door bolt retracting under tension. Thick iron mechanism and a deep click."
+    },
+    {
+      "id": "boss_spawn_gate",
+      "file_stem": "sfx_boss_spawn_gate",
+      "duration_seconds": 2.9,
+      "prompt": "A massive gate opening for a boss entrance. Dense stone and iron movement and one heavy step."
+    },
+    {
+      "id": "boss_defeat_collapse",
+      "file_stem": "sfx_boss_defeat_collapse",
+      "duration_seconds": 2.7,
+      "prompt": "A giant foe collapsing onto stone. Heavy body fall, debris, and lingering gear scatter."
+    },
+    {
+      "id": "step_stone_leather_medium",
+      "file_stem": "sfx_step_stone_leather_medium",
+      "duration_seconds": 0.8,
+      "prompt": "A leather boot stepping once onto dusty stone. Heel then toe, soft grit."
+    },
+    {
+      "id": "step_stair_stone_down",
+      "file_stem": "sfx_step_stair_stone_down",
+      "duration_seconds": 1.1,
+      "prompt": "Two leather boot steps going down worn stone stairs."
+    },
+    {
+      "id": "room_enter_threshold_stone",
+      "file_stem": "sfx_room_enter_threshold_stone",
+      "duration_seconds": 1.1,
+      "prompt": "A leather boot crossing a low stone threshold into a new room."
+    },
+    {
+      "id": "blocked_path_stone",
+      "file_stem": "sfx_blocked_path_stone",
+      "duration_seconds": 0.8,
+      "prompt": "A boot stopping against blocked stone with a dull hand touch on masonry."
+    },
+    {
+      "id": "stairs_found_reveal",
+      "file_stem": "sfx_stairs_found_reveal",
+      "duration_seconds": 1.8,
+      "prompt": "A small stone panel sliding aside to reveal stairs. Grit, dust, hollow opening."
+    },
+    {
+      "id": "dice_roll_player_wood_stone_short",
+      "file_stem": "sfx_dice_roll_player_wood_stone_short",
+      "duration_seconds": 1.2,
+      "prompt": "Three carved wooden dice rolling across a stone tabletop. Short warm clatter."
+    },
+    {
+      "id": "dice_lock_soft_hold",
+      "file_stem": "sfx_dice_lock_soft_hold",
+      "duration_seconds": 0.7,
+      "prompt": "A single carved wooden die set down and held on stone. Soft tap and fingertip contact."
+    },
+    {
+      "id": "dice_unlock_soft_release",
+      "file_stem": "sfx_dice_unlock_soft_release",
+      "duration_seconds": 0.6,
+      "prompt": "A single carved wooden die nudged loose on stone. Small scrape and light tap."
+    },
+    {
+      "id": "attack_player_blade_medium",
+      "file_stem": "sfx_attack_player_blade_medium",
+      "duration_seconds": 0.9,
+      "prompt": "A steel blade hit landing in flesh through light gear. Firm close impact."
+    },
+    {
+      "id": "attack_player_critical_heavy",
+      "file_stem": "sfx_attack_player_critical_heavy",
+      "duration_seconds": 1.2,
+      "prompt": "A heavier melee strike landing through flesh with extra force. Deep body impact."
+    },
+    {
+      "id": "player_hit_flesh_armor",
+      "file_stem": "sfx_player_hit_flesh_armor",
+      "duration_seconds": 1.0,
+      "prompt": "The player taking a hit through cloth and leather armor. Body thud and strap jostle."
+    },
+    {
+      "id": "armor_block_leather_chain_small",
+      "file_stem": "sfx_armor_block_leather_chain_small",
+      "duration_seconds": 0.8,
+      "prompt": "A hit absorbed by leather armor and a little chain. Muted defended impact."
+    },
+    {
+      "id": "armor_break_or_durability_fail",
+      "file_stem": "sfx_armor_break_or_durability_fail",
+      "duration_seconds": 1.1,
+      "prompt": "Worn leather armor failing under force. Strap snap and leather tear."
+    },
+    {
+      "id": "enemy_hit_flesh_small",
+      "file_stem": "sfx_enemy_hit_flesh_small",
+      "duration_seconds": 0.8,
+      "prompt": "A small enemy hit in flesh through cloth. Short body buckle."
+    },
+    {
+      "id": "enemy_hit_chitin",
+      "file_stem": "sfx_enemy_hit_chitin",
+      "duration_seconds": 0.8,
+      "prompt": "A weapon striking insect chitin. Dry shell crack."
+    },
+    {
+      "id": "enemy_hit_spectral",
+      "file_stem": "sfx_enemy_hit_spectral",
+      "duration_seconds": 0.9,
+      "prompt": "A weapon passing through a spectral body. Low air pull and a soft tear."
+    },
+    {
+      "id": "enemy_hit_stone_crystal",
+      "file_stem": "sfx_enemy_hit_stone_crystal",
+      "duration_seconds": 0.9,
+      "prompt": "A weapon striking a stone crystal creature. Dense rock hit and a small mineral crack."
+    },
+    {
+      "id": "enemy_death_flesh_small",
+      "file_stem": "sfx_enemy_death_flesh_small",
+      "duration_seconds": 1.2,
+      "prompt": "A small body collapsing onto stone. Cloth movement and a short final drop."
+    },
+    {
+      "id": "enemy_death_spectral_unravel",
+      "file_stem": "sfx_enemy_death_spectral_unravel",
+      "duration_seconds": 1.2,
+      "prompt": "A spectral body collapsing inward and fading out. Short low unravel."
+    },
+    {
+      "id": "enemy_death_crystal_break",
+      "file_stem": "sfx_enemy_death_crystal_break",
+      "duration_seconds": 1.3,
+      "prompt": "A crystal body breaking into pieces on a stone floor."
+    },
+    {
+      "id": "enemy_split_crystal",
+      "file_stem": "sfx_enemy_split_crystal",
+      "duration_seconds": 1.6,
+      "prompt": "A large crystal body splitting into smaller crystal pieces. Hard fracture and shard fall."
+    },
+    {
+      "id": "container_old_crate_open",
+      "file_stem": "sfx_container_old_crate_open",
+      "duration_seconds": 1.3,
+      "prompt": "An old wooden crate opened by hand. Rough boards and a small worn hinge."
+    },
+    {
+      "id": "container_dusty_chest_open",
+      "file_stem": "sfx_container_dusty_chest_open",
+      "duration_seconds": 1.5,
+      "prompt": "A dusty wooden chest opened by hand. Heavy lid, old hinge, hollow body."
+    },
+    {
+      "id": "container_wooden_barrel_open",
+      "file_stem": "sfx_container_wooden_barrel_open",
+      "duration_seconds": 1.3,
+      "prompt": "An oak barrel lid worked loose by hand. Wood friction and short hollow body."
+    },
+    {
+      "id": "container_iron_lockbox_open",
+      "file_stem": "sfx_container_iron_lockbox_open",
+      "duration_seconds": 1.3,
+      "prompt": "An old iron lockbox opened by hand. Latch release, heavy lid, short cavity body."
+    },
+    {
+      "id": "container_hidden_nook_reveal",
+      "file_stem": "sfx_container_hidden_nook_reveal",
+      "duration_seconds": 1.5,
+      "prompt": "A loose stone pulled aside by hand to reveal a small wall nook."
+    },
+    {
+      "id": "pickup_gold_small_handful",
+      "file_stem": "sfx_pickup_gold_small_handful",
+      "duration_seconds": 0.9,
+      "prompt": "A few old coins gathered from stone into a hand or pouch."
+    },
+    {
+      "id": "pickup_item_soft_general",
+      "file_stem": "sfx_pickup_item_soft_general",
+      "duration_seconds": 0.7,
+      "prompt": "A heavy old parchment picked up from stone by hand. Dry paper movement."
+    },
+    {
+      "id": "pickup_item_hard_general",
+      "file_stem": "sfx_pickup_item_hard_general",
+      "duration_seconds": 0.7,
+      "prompt": "A small hard item picked up from stone by hand. Short lift and object tap."
+    },
+    {
+      "id": "key_old_iron_turn",
+      "file_stem": "sfx_key_old_iron_turn",
+      "duration_seconds": 1.1,
+      "prompt": "An old iron key turning in a worn lock. Grit, resistance, final release."
+    },
+    {
+      "id": "elite_door_unlock_heavy",
+      "file_stem": "sfx_elite_door_unlock_heavy",
+      "duration_seconds": 2.0,
+      "prompt": "A reinforced timber and iron dungeon door unlocking and opening a little."
+    },
+    {
+      "id": "store_enter_door_wood_safe",
+      "file_stem": "sfx_store_enter_door_wood_safe",
+      "duration_seconds": 1.7,
+      "prompt": "A wooden shop door opening into a small merchant room. One soft step inside."
+    },
+    {
+      "id": "store_buy_confirm_coin_pouch",
+      "file_stem": "sfx_store_buy_confirm_coin_pouch",
+      "duration_seconds": 0.8,
+      "prompt": "A few coins dropped into a leather pouch."
+    },
+    {
+      "id": "store_sell_confirm_coin_return",
+      "file_stem": "sfx_store_sell_confirm_coin_return",
+      "duration_seconds": 0.8,
+      "prompt": "A few coins placed into a hand or pouch."
+    },
+    {
+      "id": "item_potion_glass_pickup",
+      "file_stem": "sfx_item_potion_glass_pickup",
+      "duration_seconds": 0.7,
+      "prompt": "A small glass vial picked up in one hand. Light liquid shift."
+    },
+    {
+      "id": "item_potion_drink",
+      "file_stem": "sfx_item_potion_drink",
+      "duration_seconds": 1.1,
+      "prompt": "A small corked vial opened and drunk. Glass, liquid, swallow."
+    },
+    {
+      "id": "heal_soft_resolve",
+      "file_stem": "sfx_heal_soft_resolve",
+      "duration_seconds": 1.0,
+      "prompt": "Cloth and gear settling after recovery. A steadier breath."
+    },
+    {
+      "id": "rest_sit_bedroll_or_stone",
+      "file_stem": "sfx_rest_sit_bedroll_or_stone",
+      "duration_seconds": 1.4,
+      "prompt": "A body lowering onto a bedroll or stone edge. Cloth and gear settle."
+    },
+    {
+      "id": "ui_menu_open_parchment_wood",
+      "file_stem": "sfx_ui_menu_open_parchment_wood",
+      "duration_seconds": 0.7,
+      "prompt": "An old parchment folio opened by hand. Thick paper and wood backing."
+    },
+    {
+      "id": "ui_menu_close_parchment_wood",
+      "file_stem": "sfx_ui_menu_close_parchment_wood",
+      "duration_seconds": 0.6,
+      "prompt": "An old parchment folio closed by hand. Thick paper fold and a quiet settle."
+    },
+    {
+      "id": "ui_button_press_wood_brass",
+      "file_stem": "sfx_ui_button_press_wood_brass",
+      "duration_seconds": 0.5,
+      "prompt": "A small wood and brass control pressed once. Short muted click."
+    },
+    {
+      "id": "ui_warning_dull",
+      "file_stem": "sfx_ui_warning_dull",
+      "duration_seconds": 0.6,
+      "prompt": "A dull stop when a wood control meets resistance."
+    },
+    {
+      "id": "save_confirm_secure",
+      "file_stem": "sfx_save_confirm_secure",
+      "duration_seconds": 0.8,
+      "prompt": "A parchment folio or small ledger closed with a quiet final settle."
+    },
+    {
+      "id": "miniboss_intro_guardian_heavy",
+      "file_stem": "sfx_miniboss_intro_guardian_heavy",
+      "duration_seconds": 1.9,
+      "prompt": "A heavy stone guardian shifting its weight on a stone floor."
+    },
+    {
+      "id": "miniboss_defeat_heavy_resolve",
+      "file_stem": "sfx_miniboss_defeat_heavy_resolve",
+      "duration_seconds": 1.9,
+      "prompt": "A heavy stone guardian collapsing onto a stone floor. Weighty final settle."
     }
-  ]
+  ],
+  "cue_groups": {
+    "dice_roll": [
+      "dice_roll",
+      "dice_roll_hard",
+      "dice_roll_short"
+    ],
+    "dice_lock": [
+      "dice_lock",
+      "dice_lock_soft",
+      "dice_lock_heavy"
+    ],
+    "attack": [
+      "attack",
+      "attack_heavy",
+      "attack_blunt"
+    ],
+    "crit": [
+      "crit",
+      "crit_blade",
+      "crit_blunt"
+    ],
+    "legendary_hit": [
+      "legendary_hit",
+      "legendary_hit_heavy",
+      "crit_blunt"
+    ],
+    "enemy_hit": [
+      "enemy_hit",
+      "enemy_hit_humanoid",
+      "enemy_hit_beast",
+      "enemy_hit_undead",
+      "enemy_hit_spirit",
+      "enemy_hit_insect",
+      "enemy_hit_ooze"
+    ],
+    "enemy_die": [
+      "enemy_die",
+      "enemy_die_humanoid",
+      "enemy_die_beast",
+      "enemy_die_undead",
+      "enemy_die_spirit",
+      "enemy_die_insect",
+      "enemy_die_ooze"
+    ],
+    "enemy_dice_roll": [
+      "enemy_dice_roll",
+      "enemy_dice_roll_humanoid",
+      "enemy_dice_roll_beast",
+      "enemy_dice_roll_undead",
+      "enemy_dice_roll_spirit",
+      "enemy_dice_roll_insect",
+      "enemy_dice_roll_ooze"
+    ],
+    "enemy_hit_humanoid": [
+      "enemy_hit_humanoid",
+      "enemy_hit"
+    ],
+    "enemy_die_humanoid": [
+      "enemy_die_humanoid",
+      "enemy_die"
+    ],
+    "enemy_dice_roll_humanoid": [
+      "enemy_dice_roll_humanoid",
+      "enemy_dice_roll"
+    ],
+    "enemy_hit_beast": [
+      "enemy_hit_beast",
+      "enemy_hit"
+    ],
+    "enemy_die_beast": [
+      "enemy_die_beast",
+      "enemy_die"
+    ],
+    "enemy_dice_roll_beast": [
+      "enemy_dice_roll_beast",
+      "enemy_dice_roll"
+    ],
+    "enemy_hit_ooze": [
+      "enemy_hit_ooze",
+      "enemy_hit"
+    ],
+    "enemy_die_ooze": [
+      "enemy_die_ooze",
+      "enemy_die"
+    ],
+    "enemy_dice_roll_ooze": [
+      "enemy_dice_roll_ooze",
+      "enemy_dice_roll"
+    ],
+    "enemy_hit_undead": [
+      "enemy_hit_undead",
+      "enemy_hit"
+    ],
+    "enemy_die_undead": [
+      "enemy_die_undead",
+      "enemy_die"
+    ],
+    "enemy_dice_roll_undead": [
+      "enemy_dice_roll_undead",
+      "enemy_dice_roll"
+    ],
+    "enemy_hit_spirit": [
+      "enemy_hit_spirit",
+      "enemy_hit"
+    ],
+    "enemy_die_spirit": [
+      "enemy_die_spirit",
+      "enemy_die"
+    ],
+    "enemy_dice_roll_spirit": [
+      "enemy_dice_roll_spirit",
+      "enemy_dice_roll"
+    ],
+    "enemy_hit_insect": [
+      "enemy_hit_insect",
+      "enemy_hit"
+    ],
+    "enemy_die_insect": [
+      "enemy_die_insect",
+      "enemy_die"
+    ],
+    "enemy_dice_roll_insect": [
+      "enemy_dice_roll_insect",
+      "enemy_dice_roll"
+    ],
+    "shield_block": [
+      "shield_block",
+      "shield_block_heavy"
+    ],
+    "armor_break": [
+      "armor_break",
+      "armor_break_hard"
+    ],
+    "discover_room": [
+      "discover_room",
+      "discover_room_heavy"
+    ],
+    "stairs_down": [
+      "stairs_down",
+      "stairs_down_long"
+    ],
+    "chest_open": [
+      "chest_open",
+      "chest_open_rummage"
+    ],
+    "barrel_open": [
+      "barrel_open",
+      "barrel_open_rummage"
+    ],
+    "lockbox_open": [
+      "lockbox_open",
+      "lockbox_open_snap"
+    ],
+    "item_pickup": [
+      "item_pickup",
+      "item_pickup_leather",
+      "item_pickup_metal"
+    ],
+    "gold_pickup": [
+      "gold_pickup",
+      "gold_pickup_small",
+      "gold_pickup_pouch",
+      "purchase",
+      "purchase_counter",
+      "sell",
+      "sell_pouch"
+    ],
+    "purchase": [
+      "purchase",
+      "purchase_counter",
+      "gold_pickup",
+      "gold_pickup_small",
+      "gold_pickup_pouch",
+      "sell",
+      "sell_pouch"
+    ],
+    "sell": [
+      "sell",
+      "sell_pouch",
+      "gold_pickup",
+      "gold_pickup_small",
+      "gold_pickup_pouch",
+      "purchase",
+      "purchase_counter"
+    ],
+    "shop_enter": [
+      "shop_enter",
+      "shop_enter_counter"
+    ],
+    "drink_potion": [
+      "drink_potion",
+      "drink_potion_bitter",
+      "drink_potion_heavy"
+    ],
+    "heal": [
+      "heal",
+      "rest_recover"
+    ],
+    "button_click": [
+      "button_click",
+      "button_click_soft"
+    ],
+    "menu_open": [
+      "menu_open",
+      "menu_open_book"
+    ],
+    "menu_close": [
+      "menu_close",
+      "menu_close_book"
+    ],
+    "puzzle_success": [
+      "puzzle_success",
+      "puzzle_success_deep"
+    ],
+    "puzzle_fail": [
+      "puzzle_fail",
+      "puzzle_fail_lock"
+    ],
+    "elite_unlock": [
+      "elite_unlock",
+      "elite_unlock_bolt",
+      "key_turn_small"
+    ],
+    "boss_spawn": [
+      "boss_spawn",
+      "boss_spawn_gate"
+    ],
+    "boss_defeat": [
+      "boss_defeat",
+      "boss_defeat_collapse"
+    ]
+  }
 }

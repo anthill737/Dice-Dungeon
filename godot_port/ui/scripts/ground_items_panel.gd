@@ -11,7 +11,7 @@ var _content_vbox: VBoxContainer
 var _scroll: ScrollContainer
 var _btn_close: Button
 var _btn_take_all: Button
-var _container_popup: Control
+var _container_popup: Node
 
 
 func _ready() -> void:
@@ -56,7 +56,12 @@ func _build_ui() -> void:
 
 
 func refresh() -> void:
+	# Guard: _build_ui() must have run first (e.g. panel not yet in tree)
+	if _content_vbox == null:
+		return
+
 	for child in _content_vbox.get_children():
+		_content_vbox.remove_child(child)
 		child.queue_free()
 
 	var room := GameSession.get_current_room()
@@ -191,6 +196,17 @@ func _add_items_section(section_title: String, items: Array, callback_name: Stri
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		_content_vbox.add_child(row)
+
+		# Item icon
+		if GameSession.assets != null:
+			var icon_tex = GameSession.assets.get_item_icon(item_name, 32)
+			if icon_tex != null:
+				var icon_rect := TextureRect.new()
+				icon_rect.texture = icon_tex
+				icon_rect.custom_minimum_size = Vector2(32, 32)
+				icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				row.add_child(icon_rect)
 
 		var item_panel := PanelContainer.new()
 		item_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -337,23 +353,37 @@ func _show_container_contents(room: RoomState) -> void:
 	var cdef: Dictionary = GameSession.container_db.get(cname, {})
 	var cdesc: String = cdef.get("description", "")
 
+	# Use a CanvasLayer above the MenuOverlayManager (layer 100) so this
+	# popup appears on top of the ground-items panel, not behind it.
+	var canvas_layer := CanvasLayer.new()
+	canvas_layer.layer = 110
+	var root_node: Node = get_tree().root if get_tree() != null else self
+	root_node.add_child(canvas_layer)
+	_container_popup = canvas_layer
+
+	# CanvasLayer is a Node, not a Control, so child Controls need a root
+	# Control to anchor against.  Add one that fills the viewport.
+	var popup_root := Control.new()
+	popup_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	popup_root.set_offsets_preset(Control.PRESET_FULL_RECT)
+	popup_root.mouse_filter = Control.MOUSE_FILTER_STOP
+	canvas_layer.add_child(popup_root)
+
 	var overlay := ColorRect.new()
 	overlay.color = Color(0.0, 0.0, 0.0, 0.5)
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	var root_node := get_tree().root if get_tree() != null else self
-	(root_node as Node).add_child(overlay)
-	_container_popup = overlay
+	popup_root.add_child(overlay)
 
 	var panel := PanelContainer.new()
 	var style := DungeonTheme.make_panel_bg(DungeonTheme.BG_PRIMARY, DungeonTheme.BORDER_GOLD)
 	style.set_content_margin_all(24)
 	panel.add_theme_stylebox_override("panel", style)
-	panel.set_anchors_preset(Control.PRESET_CENTER)
 	panel.anchor_left = 0.2
 	panel.anchor_top = 0.15
 	panel.anchor_right = 0.8
 	panel.anchor_bottom = 0.85
-	overlay.add_child(panel)
+	panel.set_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 0)
+	popup_root.add_child(panel)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)

@@ -214,6 +214,8 @@ func move(direction: String) -> RoomState:
 			var revisit_flavor: String = existing.data.get("flavor", "")
 			if not revisit_flavor.is_empty():
 				logs.append(revisit_flavor)
+			# Python parity: describe remaining ground items on revisit too
+			_describe_ground_loot(existing)
 			return existing
 
 		# Room was generated but not entered (was locked, now unlocked).
@@ -468,6 +470,9 @@ func _on_first_visit(room: RoomState) -> void:
 			## Python RNG call: rng.choice(peaceful_messages)
 			logs.append(rng.choice(PEACEFUL_MESSAGES))
 
+	## STEP 7: describe ground loot — Python parity (navigation.py describe_ground_items)
+	_describe_ground_loot(room)
+
 
 # ------------------------------------------------------------------
 # Ground loot — mirrors Python generate_ground_loot() exactly
@@ -508,6 +513,31 @@ func _generate_ground_loot(room: RoomState) -> void:
 				for i in num_items:
 					## Python RNG call: rng.choice(available_items)
 					room.ground_items.append(rng.choice(ExplorationRules.LOOSE_ITEM_POOL))
+
+
+# ------------------------------------------------------------------
+# Describe ground loot — Python parity: navigation.py describe_ground_items()
+# Appends a single "You notice on the ground: …" log line when anything
+# is present. No RNG calls; pure log output only.
+# ------------------------------------------------------------------
+
+func _describe_ground_loot(room: RoomState) -> void:
+	var things: Array = []
+
+	# Container: only if unsearched OR locked OR still has loot
+	var container_has_loot := room.container_gold > 0 or not room.container_item.is_empty()
+	if not room.ground_container.is_empty() and (not room.container_searched or room.container_locked or container_has_loot):
+		var suffix := " [LOCKED]" if room.container_locked else (" [searched]" if room.container_searched else "")
+		things.append("a %s%s" % [room.ground_container, suffix])
+
+	if room.ground_gold > 0:
+		things.append("%d gold coins" % room.ground_gold)
+
+	for item_name in room.ground_items:
+		things.append(item_name)
+
+	if not things.is_empty():
+		logs.append("You notice on the ground: %s" % ", ".join(things))
 
 
 # ------------------------------------------------------------------
@@ -804,6 +834,8 @@ func travel_to_store() -> RoomState:
 # ------------------------------------------------------------------
 
 func _pick_room_for_floor(floor_idx: int) -> Dictionary:
+	if rooms_db.is_empty():
+		return {}
 	var target: String
 	if floor_idx <= 3: target = "Easy"
 	elif floor_idx <= 6: target = "Medium"

@@ -29,11 +29,12 @@ class DiceManager:
     
     def roll_dice(self):
         """Roll all unlocked dice with animation"""
-        self.debug_logger.dice("roll_dice CALLED", rolls_left=self.game.rolls_left, combat_state=getattr(self.game, 'combat_state', 'unknown'))
-        
-        # Don't allow rolling during enemy's turn
-        if hasattr(self.game, 'combat_state') and self.game.combat_state == 'enemy_turn':
-            self.debug_logger.warning("DICE", "Cannot roll during enemy turn")
+        combat_state = getattr(self.game, 'combat_state', 'idle')
+        self.debug_logger.dice("roll_dice CALLED", rolls_left=self.game.rolls_left, combat_state=combat_state)
+
+        # Rolling is only valid during the player's turn, not during any resolution step.
+        if combat_state not in ('idle', 'player_rolled'):
+            self.debug_logger.warning("DICE", f"Cannot roll during combat_state={combat_state}")
             return
         
         if self.game.rolls_left <= 0:
@@ -61,6 +62,16 @@ class DiceManager:
                 # Normal roll
                 final_values[i] = self.game.rng.randint(1, 6)
         
+        # Mark the dice as actively rolling so attack/extra roll input cannot overlap the animation.
+        self.game.combat_state = "rolling_dice"
+
+        if hasattr(self.game, 'roll_button') and self.game.roll_button:
+            self.game.roll_button.config(state=tk.DISABLED)
+        if hasattr(self.game, 'attack_button') and self.game.attack_button:
+            self.game.attack_button.config(state=tk.DISABLED, bg='#666666', fg='#333333')
+        if hasattr(self.game, 'mystic_ring_button') and self.game.mystic_ring_button:
+            self.game.mystic_ring_button.config(state=tk.DISABLED)
+
         # Start animation (15 frames = 375ms total at 25ms per frame, reduced from 20 frames/500ms)
         self._animate_dice_roll(dice_to_roll, final_values, frame=0, max_frames=15)
     
@@ -91,13 +102,17 @@ class DiceManager:
             # Enable attack button once player has rolled at least once
             if hasattr(self.game, 'attack_button') and self.game.has_rolled:
                 self.game.attack_button.config(state='normal', bg='#ff6b6b', fg='#ffffff')
-            
+
             # Re-enable roll button if there are rolls left
             if hasattr(self.game, 'roll_button'):
                 if self.game.rolls_left > 0:
                     self.game.roll_button.config(state=tk.NORMAL)
                 else:
                     self.game.roll_button.config(state=tk.DISABLED)
+
+            if hasattr(self.game, 'mystic_ring_button') and self.game.mystic_ring_button:
+                if self.game.equipped_items.get('accessory') == 'Mystic Ring' and not self.game.mystic_ring_used:
+                    self.game.mystic_ring_button.config(state=tk.NORMAL, bg='#9b59b6', fg='#ffffff')
             
             self.update_dice_display()
             

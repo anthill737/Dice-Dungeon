@@ -163,3 +163,90 @@ func test_combat_pacing_setting_persists() -> void:
 	assert_eq(sm.combat_pacing, "Fast", "Pacing set to Fast")
 	sm.set_combat_pacing("Normal")
 	assert_eq(sm.combat_pacing, "Normal", "Pacing reset to Normal")
+
+func _spawn_combat_panel():
+	var scene = load("res://ui/scenes/CombatPanel.tscn")
+	assert_not_null(scene, "CombatPanel scene must load")
+	var panel = scene.instantiate()
+	add_child_autofree(panel)
+	return panel
+
+
+func test_roll_animation_keeps_attack_locked() -> void:
+	_make_combat_session()
+	var room := GameSession.get_current_room()
+	GameSession._check_combat_pending(room)
+	GameSession.accept_combat()
+
+	var sm = get_node_or_null("/root/SettingsManager")
+	var previous_pacing = ""
+	if sm != null:
+		previous_pacing = sm.combat_pacing
+		sm.combat_pacing = "Normal"
+
+	var panel = _spawn_combat_panel()
+	await get_tree().process_frame
+	panel.refresh()
+	panel._on_roll()
+
+	assert_true(panel._roll_anim_active,
+		"Player roll animation should stay active until the visual roll finishes")
+	assert_true(panel._btn_roll.disabled,
+		"Roll button stays locked during the player roll animation")
+	assert_true(panel._btn_attack.disabled,
+		"Attack button stays locked until the roll animation finishes")
+
+	if sm != null:
+		sm.combat_pacing = previous_pacing
+
+
+func test_attack_blocked_while_roll_animation_active() -> void:
+	_make_combat_session()
+	var room := GameSession.get_current_room()
+	GameSession._check_combat_pending(room)
+	GameSession.accept_combat()
+
+	var panel = _spawn_combat_panel()
+	await get_tree().process_frame
+
+	var ce := GameSession.combat
+	assert_not_null(ce, "Combat engine exists")
+	ce.player_roll()
+	panel.refresh()
+	panel._roll_anim_active = true
+	panel._sync_combat_controls()
+
+	var turn_before := ce.turn_count
+	panel._on_attack()
+
+	assert_eq(ce.turn_count, turn_before,
+		"Attack input is ignored while the player roll animation is active")
+	assert_false(panel._turn_sequence_active,
+		"Enemy turn playback should not start while the roll animation is active")
+
+
+func test_state_refresh_does_not_unlock_buttons_mid_sequence() -> void:
+	_make_combat_session()
+	var room := GameSession.get_current_room()
+	GameSession._check_combat_pending(room)
+	GameSession.accept_combat()
+
+	var panel = _spawn_combat_panel()
+	await get_tree().process_frame
+
+	var ce := GameSession.combat
+	assert_not_null(ce, "Combat engine exists")
+	ce.player_roll()
+	panel.refresh()
+	panel._turn_sequence_active = true
+	panel._sync_combat_controls()
+
+	GameSession.state_changed.emit()
+	await get_tree().process_frame
+
+	assert_true(panel._deferred_refresh_requested,
+		"State refreshes should defer while the staged turn sequence is running")
+	assert_true(panel._btn_roll.disabled,
+		"Roll button remains locked while the staged turn sequence is running")
+	assert_true(panel._btn_attack.disabled,
+		"Attack button remains locked while the staged turn sequence is running")

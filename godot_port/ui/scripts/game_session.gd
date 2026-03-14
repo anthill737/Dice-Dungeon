@@ -220,6 +220,7 @@ func move_direction(direction: String) -> RoomState:
 	var new_pos: Vector2i = exploration.floor.current_pos + delta
 	var gate := exploration.check_room_gating(new_pos)
 	if gate == "has_key_mini_boss" or gate == "has_key_boss":
+		_SfxService.play_for(self, "door_locked_rattle")
 		if gate == "has_key_mini_boss":
 			log_message.emit("⚡ A reinforced door blocks your path! ⚡")
 			log_message.emit("The door is sealed with an ornate lock.")
@@ -238,6 +239,7 @@ func move_direction(direction: String) -> RoomState:
 		# was generated as a mini-boss/boss room during the call.
 		var post_gate := exploration.last_move_gate
 		if post_gate == "has_key_mini_boss" or post_gate == "has_key_boss":
+			_SfxService.play_for(self, "door_locked_rattle")
 			if post_gate == "has_key_mini_boss":
 				log_message.emit("⚡ A reinforced door blocks your path! ⚡")
 				log_message.emit("The door is sealed with an ornate lock.")
@@ -369,6 +371,7 @@ func attempt_flee_pending() -> Dictionary:
 	var room := get_current_room()
 	# Boss/mini-boss check (Python: is_boss_fight blocks flee entirely)
 	if room != null and (room.is_boss_room or room.is_mini_boss_room):
+		_SfxService.play_for(self, "flee_fail")
 		log_message.emit(CombatGatingPolicy.flee_blocked_message())
 		trace.record("flee_attempted", {"context": "pending", "success": false, "reason": "boss_fight"})
 		return {"success": false, "reason": "boss_fight"}
@@ -383,6 +386,7 @@ func attempt_flee_pending() -> Dictionary:
 		var statuses: Array = game_state.flags.get("statuses", [])
 		if not statuses.is_empty():
 			game_state.flags["statuses"] = []
+		_SfxService.play_for(self, "flee_success")
 		log_message.emit("Used Escape Token — fled safely without damage!")
 		trace.record("flee_attempted", {"context": "pending", "success": true, "escape_token": true})
 		combat_pending_changed.emit()
@@ -397,6 +401,7 @@ func attempt_flee_pending() -> Dictionary:
 		game_state.health -= damage
 		if room != null:
 			room.combat_escaped = true
+		_SfxService.play_for(self, "flee_success")
 		if game_state.health <= 0:
 			log_message.emit("[FLEE] You fled! Lost %d HP in the escape." % damage)
 			combat_pending = false
@@ -412,6 +417,7 @@ func attempt_flee_pending() -> Dictionary:
 		state_changed.emit()
 		return {"success": true, "damage": damage}
 	else:
+		_SfxService.play_for(self, "flee_fail")
 		log_message.emit("Can't escape! Enemy blocks the way!")
 		return {"success": false}
 
@@ -424,6 +430,7 @@ func flee_from_combat() -> Dictionary:
 	# Boss/mini-boss check
 	var flee_policy := CombatGatingPolicy.can_flee(combat)
 	if not flee_policy.get("allowed", false):
+		_SfxService.play_for(self, "flee_fail")
 		log_message.emit(CombatGatingPolicy.flee_blocked_message())
 		trace.record("flee_attempted", {"context": "combat", "success": false, "reason": "boss_fight"})
 		return {"success": false, "reason": "boss_fight"}
@@ -438,6 +445,7 @@ func flee_from_combat() -> Dictionary:
 		var statuses: Array = game_state.flags.get("statuses", [])
 		if not statuses.is_empty():
 			game_state.flags["statuses"] = []
+		_SfxService.play_for(self, "flee_success")
 		log_message.emit("Used Escape Token — fled safely without damage!")
 		trace.record("flee_attempted", {"context": "combat", "success": true, "escape_token": true})
 		_end_combat_internal(false)
@@ -452,10 +460,12 @@ func flee_from_combat() -> Dictionary:
 		var room := get_current_room()
 		if room != null:
 			room.combat_escaped = true
+		_SfxService.play_for(self, "flee_success")
 		log_message.emit("[FLEE] You fled! Lost %d HP in the escape." % damage)
 		_end_combat_internal(false)
 		return {"success": true, "damage": damage, "player_died": game_state.health <= 0}
 	else:
+		_SfxService.play_for(self, "flee_fail")
 		log_message.emit("Can't escape! Enemy blocks the way!")
 		return {"success": false}
 
@@ -741,7 +751,7 @@ func attempt_rest() -> void:
 	if heal > 0:
 		game_state.health += heal
 		game_state.rest_cooldown = 3
-		_SfxService.play_for(self, "heal")
+		_SfxService.play_for(self, "rest_recover")
 		log_message.emit("Rested and recovered %d HP. Must explore 3 rooms before resting again." % heal)
 	else:
 		log_message.emit("Already at full health.")

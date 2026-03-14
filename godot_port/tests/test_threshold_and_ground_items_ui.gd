@@ -49,7 +49,7 @@ func test_sign_popup_uses_rich_text_label_for_wrapped_body() -> void:
 	await get_tree().process_frame
 
 	assert_not_null(scene._sign_popup, "Sign popup should be created")
-	var rich_nodes := scene._sign_popup.find_children("*", "RichTextLabel", true, false)
+	var rich_nodes: Array = scene._sign_popup.find_children("*", "RichTextLabel", true, false)
 	assert_eq(rich_nodes.size(), 1, "Sign popup should use a RichTextLabel body")
 	assert_eq(rich_nodes[0].text, sign_data["text"], "Sign popup body text should match the sign content")
 

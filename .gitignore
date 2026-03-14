@@ -79,3 +79,87 @@ godot_port/exports/
 tools/
 outputs/
 regen_icons.py
+
+# Sprite rotation images and generated sprite packs (generated locally, not stored in repo)
+assets/sprites/enemies/*/rotations/
+assets/sprites/enemies/rotations/
+assets/sprites/enemies/*.zip
+assets/sprites/enemies/*/metadata.json
+assets/sprites/enemies/metadata.json
+
+# Game save files, scores, settings, and adventure logs (user-specific local data)
+dice_dungeon_save_slot_*.json
+dice_dungeon_explorer_save.json
+dice_dungeon_explorer_scores.json
+dice_dungeon_scores.json
+dice_dungeon_settings.json
+missing_110_sprite_jobs.json
+adventure_log_*.txt
+
+# Dev/refactoring utility scripts (one-off tooling, not part of the game)
+add_to_combat_manager.py
+check_refactoring.py
+combat_methods_extracted.py
+combat_wrappers.txt
+create_dissolve_animation.py
+download_existing_sprites.py
+download_sprites_from_backblaze.py
+extract_combat_methods.py
+final_replace_wrappers.py
+fix_quotes.py
+generate_110_in_batches.py
+generate_all_256_sprites.py
+generate_all_enemy_sprites.py
+generate_all_sprites_v2.py
+generate_core_10_sprites.py
+generate_missing_110_sprites.py
+generate_sprites_one_by_one.py
+generate_wrappers.py
+migrate_methods.py
+refactor_combat.py
+replace_with_wrappers.py
+verify_sprite_names.py
+test_room_variety.py
+view_logs.py
+
+# Old/backup source files
+dice_dungeon_explorer_old.py
+dice_dungeon_explorer_v1.py
+number_chain_game.py
+
+# AI/Chat session files and GPT working documents
+Copilot Chat Logs/
+GPT/
+
+# Temp and scratch files
+temp_chat_lines*.txt
+recent_messages.txt
+logs/*.docx
+logs/*.txt
+
+# Local documentation and dev notes (not part of the public repo)
+ARCHITECTURE_RULES.md
+BUG_FIXES_UPDATE.md
+CODE_ARCHITECTURE_AUDIT.md
+DATA_REFACTORING_SUMMARY.md
+DEBUG_LOGGING_GUIDE.md
+GAME_TESTING_REFERENCE.md
+HONEST_ASSESSMENT.md
+KEYBINDINGS_UPDATE.md
+LORE_CLEANUP_COMPLETE.md
+LORE_SYSTEM_README.md
+MIGRATION_DECISION.md
+MIGRATION_GUIDE.md
+MODDING_GUIDE.md
+REFACTORING_SUMMARY.md
+ROOM_VARIETY_UPDATE.md
+SETTINGS_ARCHITECTURE.md
+SETTINGS_SYSTEM_GUIDE.md
+UI_IMPROVEMENTS_UPDATE.md
+UPDATE_SUMMARY.md
+
+# VS Code workspace file (local IDE config)
+*.code-workspace
+
+# Nested repo clone (should not live inside the working tree)
+dice-dungeon-github/

@@ -89,6 +89,7 @@ var _btn_tutorial: Button
 var _btn_lore_codex: Button
 var _lore_indicator: Label
 var _last_codex_count: int = 0
+var _game_over_music_context: String = ""
 
 
 func _ready() -> void:
@@ -137,6 +138,7 @@ func _exit_tree() -> void:
 	if is_instance_valid(_game_over_overlay):
 		_game_over_overlay.queue_free()
 		_game_over_overlay = null
+	_game_over_music_context = ""
 
 
 func _consume_pending_run_state() -> void:
@@ -309,10 +311,7 @@ func _build_top_bar(parent: Node) -> void:
 	_btn_pause = DungeonTheme.make_icon_btn(DungeonTheme.ICON_MENU, "Menu")
 	_btn_pause.pressed.connect(_on_pause)
 	btn_box.add_child(_btn_pause)
-
-	_btn_settings = DungeonTheme.make_icon_btn(DungeonTheme.ICON_SETTINGS, "Settings")
-	_btn_settings.pressed.connect(_on_settings)
-	btn_box.add_child(_btn_settings)
+	# Settings are accessible via the Menu button — no separate settings button needed
 
 
 func _build_center_panel(parent: Node) -> void:
@@ -679,6 +678,8 @@ func _connect_signals() -> void:
 	# Panel close_requested signals → close via overlay manager
 	if _combat_panel.has_signal("close_requested"):
 		_combat_panel.close_requested.connect(_on_combat_close_requested)
+	if _combat_panel.has_signal("player_hit"):
+		_combat_panel.player_hit.connect(_on_combat_player_hit)
 	if _inventory_panel.has_signal("close_requested"):
 		_inventory_panel.close_requested.connect(func(): _overlay_manager.close_menu("inventory"))
 	if _store_panel.has_signal("close_requested"):
@@ -691,6 +692,8 @@ func _connect_signals() -> void:
 		_settings_panel.close_requested.connect(func(): _overlay_manager.close_menu("settings"))
 	if _lore_codex_panel.has_signal("close_requested"):
 		_lore_codex_panel.close_requested.connect(func(): _overlay_manager.close_menu("lore_codex"))
+	_overlay_manager.menu_opened.connect(_on_overlay_music_state_changed)
+	_overlay_manager.menu_closed.connect(_on_overlay_music_state_changed)
 
 
 # ==================================================================
@@ -705,12 +708,36 @@ func _on_combat_close_requested() -> void:
 
 func _on_combat_started() -> void:
 	_overlay_manager.open_menu("combat")
+	_sync_music_context()
 
 
 func _on_combat_ended() -> void:
 	_overlay_manager.close_menu("combat")
 	_refresh_ui()
 	GameSession.check_game_over()
+
+
+func _on_combat_player_hit(damage: int, _hp_before: int) -> void:
+	var gs := GameSession.game_state
+	if gs == null:
+		return
+	var hp_ratio: float = float(gs.health) / float(gs.max_health) if gs.max_health > 0 else 0.0
+	_hp_bar.max_value = gs.max_health
+	_hp_bar.value = gs.health
+	_hp_label.text = "%d / %d" % [gs.health, gs.max_health]
+	DungeonTheme.style_hp_bar(_hp_bar, hp_ratio)
+	var duration := CombatUIPacing.hit_flash_duration()
+	if duration > 0.01 and is_inside_tree():
+		var tween := create_tween()
+		tween.tween_method(func(v: float):
+			var flash_color := DungeonTheme.FLASH_RED.lerp(DungeonTheme.HP_BG, v)
+			var s := StyleBoxFlat.new()
+			s.bg_color = flash_color
+			s.set_corner_radius_all(3)
+			s.border_color = DungeonTheme.BORDER
+			s.set_border_width_all(1)
+			_hp_bar.add_theme_stylebox_override("background", s),
+			0.0, 1.0, duration)
 
 
 func _is_combat_locking() -> bool:
@@ -912,6 +939,56 @@ func _on_quit_requested() -> void:
 		tree.change_scene_to_file("res://ui/scenes/MainMenu.tscn")
 
 
+func _on_overlay_music_state_changed(_menu_key: String) -> void:
+	_sync_music_context()
+
+
+func _sync_music_context(immediate: bool = false) -> void:
+	if _game_over_music_context != "":
+		MusicService.set_context(_game_over_music_context, {"immediate": immediate})
+		return
+
+	var room: RoomState = GameSession.get_current_room()
+	var phase: String = "combat" if GameSession.is_pending_choice() or GameSession.is_combat_active() else "exploration"
+	var fallback_context: String = "combat" if phase == "combat" else "exploration"
+	var options := {"immediate": immediate}
+	var top_menu: String = _overlay_manager.get_top_menu_key() if _overlay_manager != null else ""
+
+	match top_menu:
+		"pause":
+			MusicService.set_overlay_context("pause", room, phase, fallback_context, options)
+			return
+		"store":
+			MusicService.set_room_context(room, "store", "shop", options)
+			return
+		"settings":
+			MusicService.set_overlay_context("settings", room, phase, fallback_context, options)
+			return
+		"save_load":
+			MusicService.set_overlay_context("save_load", room, phase, fallback_context, options)
+			return
+		"inventory", "ground_items":
+			MusicService.set_overlay_context("inventory", room, phase, fallback_context, options)
+			return
+		"character_status":
+			MusicService.set_overlay_context("character_status", room, phase, fallback_context, options)
+			return
+		"lore_codex":
+			MusicService.set_overlay_context("lore_codex", room, phase, fallback_context, options)
+			return
+		"tutorial":
+			MusicService.set_overlay_context("tutorial", room, phase, fallback_context, options)
+			return
+		"dev_menu":
+			MusicService.set_overlay_context("pause", room, phase, fallback_context, options)
+			return
+
+	if phase == "combat":
+		MusicService.set_room_context(room, "combat", "combat", options)
+	else:
+		MusicService.set_room_context(room, "exploration", "exploration", options)
+
+
 func _connect_log_bridge() -> void:
 	if _context and _context.log:
 		GameSession.log_message.connect(func(msg: String):
@@ -1031,13 +1108,17 @@ func _on_ground_items() -> void:
 	if room == null:
 		return
 
-	var has_anything := room.ground_gold > 0 or not room.ground_items.is_empty() or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked)) or not room.uncollected_items.is_empty() or not room.dropped_items.is_empty()
+	var container_has_loot := room.container_gold > 0 or not room.container_item.is_empty()
+	var has_anything := room.ground_gold > 0 \
+		or not room.ground_items.is_empty() \
+		or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked or container_has_loot)) \
+		or not room.uncollected_items.is_empty() \
+		or not room.dropped_items.is_empty()
 	if not has_anything:
 		_append_log("Nothing on the ground.")
 		return
 
-	if _ground_items_panel != null and _ground_items_panel.has_method("refresh"):
-		_ground_items_panel.refresh()
+	# open_menu calls refresh() on the panel — no redundant pre-call needed
 	_overlay_manager.open_menu("ground_items")
 
 
@@ -1165,7 +1246,10 @@ func _show_locked_room_dialog(title: String, message: String) -> void:
 var _game_over_overlay: Control
 
 func _on_game_over(summary) -> void:
-	_overlay_manager.close_all()
+	var is_victory: bool = (summary.end_reason == _GameOverResolver.EndReason.VICTORY)
+	_game_over_music_context = "victory" if is_victory else "game_over"
+	_sync_music_context()
+	_overlay_manager.close_all_menus()
 	_show_game_over_screen(summary)
 
 
@@ -1274,6 +1358,7 @@ func _show_game_over_screen(summary) -> void:
 	btn_menu.pressed.connect(func():
 		overlay.queue_free()
 		_game_over_overlay = null
+		_game_over_music_context = ""
 		_quit_to_main_menu()
 	)
 	btn_row.add_child(btn_menu)
@@ -1283,6 +1368,7 @@ func _show_game_over_screen(summary) -> void:
 	btn_new_run.pressed.connect(func():
 		overlay.queue_free()
 		_game_over_overlay = null
+		_game_over_music_context = ""
 		GameSession.start_new_game()
 		_refresh_ui()
 	)
@@ -1336,7 +1422,11 @@ func _refresh_ui() -> void:
 			flags.append("⚔ COMBAT")
 		if room.has_chest and not room.chest_looted:
 			flags.append("📦 CHEST")
-		if room.ground_items.size() > 0 or room.ground_gold > 0:
+		var room_container_loot := room.container_gold > 0 or not room.container_item.is_empty()
+		var room_has_ground := room.ground_items.size() > 0 or room.ground_gold > 0 \
+			or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked or room_container_loot)) \
+			or not room.uncollected_items.is_empty() or not room.dropped_items.is_empty()
+		if room_has_ground:
 			flags.append("🔍 GROUND ITEMS")
 		if room.has_store:
 			flags.append("🏪 STORE")
@@ -1363,6 +1453,7 @@ func _refresh_ui() -> void:
 
 	if _debug_visible:
 		_refresh_debug()
+	_sync_music_context()
 
 
 func _refresh_lore_indicator() -> void:
@@ -1396,7 +1487,10 @@ func _update_button_visibility(room: RoomState) -> void:
 	_btn_attack.visible = show_combat_buttons
 	_btn_flee.visible = pending and not active
 	_btn_chest.visible = room != null and room.has_chest and not room.chest_looted and not blocking
-	var has_ground_content := room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked)) or not room.uncollected_items.is_empty() or not room.dropped_items.is_empty())
+	var gc_loot := room != null and (room.container_gold > 0 or not room.container_item.is_empty())
+	var has_ground_content := room != null and (room.ground_items.size() > 0 or room.ground_gold > 0 \
+		or (not room.ground_container.is_empty() and (not room.container_searched or room.container_locked or gc_loot)) \
+		or not room.uncollected_items.is_empty() or not room.dropped_items.is_empty())
 	_btn_ground.visible = has_ground_content and not blocking
 	_btn_lockpick.visible = room != null and room.container_locked and GameSession.game_state != null and GameSession.game_state.inventory.has("Lockpick Kit") and not blocking
 	_btn_store.visible = room != null and room.has_store and not blocking
