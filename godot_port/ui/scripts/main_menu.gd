@@ -30,7 +30,8 @@ func _ready() -> void:
 	_context.set_menus(_overlay_manager)
 	_connect_signals()
 	_connect_overlay_music_signals()
-	_sync_music_context()
+	_sync_music_context(true)
+	call_deferred("_sync_music_context", true)
 
 
 func _build_ui() -> void:
