@@ -22,7 +22,11 @@ var _players: Array[AudioStreamPlayer] = []
 var _active_player_index: int = 0
 var _active_cue_id: String = ""
 var _active_context_key: String = ""
+var _active_track_path: String = ""
 var _transition_tween: Tween
+
+var _active_playlist: Dictionary = {}
+var _playlist_queue: Array[String] = []
 
 
 func _ready() -> void:
@@ -62,6 +66,11 @@ func has_cue(cue_id: String) -> bool:
 	return not Array(cue.get("paths", [])).is_empty()
 
 
+func is_playlist_cue(cue_id: String) -> bool:
+	var cue: Dictionary = _cue_defs.get(cue_id, {})
+	return bool(cue.get("playlist", false))
+
+
 func get_context_cue(context_key: String) -> String:
 	var context_def: Dictionary = _context_defs.get(context_key, {})
 	return str(context_def.get("cue", "")).strip_edges()
@@ -78,6 +87,20 @@ func get_active_context() -> String:
 
 func get_active_cue() -> String:
 	return _active_cue_id
+
+
+func get_active_track_path() -> String:
+	return _active_track_path
+
+
+func is_playing() -> bool:
+	if _players.is_empty():
+		return false
+	return _players[_active_player_index].playing
+
+
+func set_rng_seed(seed: int) -> void:
+	_rng.seed = seed
 
 
 func set_context(context_key: String, options: Dictionary = {}) -> void:
@@ -107,6 +130,9 @@ func set_overlay_context(
 func stop_music(fade_sec: float = DEFAULT_FADE_SEC) -> void:
 	_active_cue_id = ""
 	_active_context_key = ""
+	_active_track_path = ""
+	_active_playlist = {}
+	_playlist_queue.clear()
 
 	if _players.is_empty():
 		return
@@ -181,18 +207,30 @@ func _resolve_context_request(context_key: String, options: Dictionary, seen: Ar
 
 func _resolve_cue_request(cue_id: String, options: Dictionary, context_key: String) -> Dictionary:
 	var cue: Dictionary = _cue_defs.get(cue_id, {})
-	var path := pick_variant_path(cue_id)
-	if path.is_empty():
+	var paths: Array = cue.get("paths", [])
+	if paths.is_empty():
 		return {}
 
-	return {
+	var resolved := {
 		"context_key": context_key,
 		"cue_id": cue_id,
-		"path": path,
+		"paths": PackedStringArray(paths),
 		"loop": bool(options.get("loop", cue.get("loop", true))),
 		"volume_db": float(options.get("volume_db", cue.get("volume_db", 0.0))),
 		"fade_sec": float(options.get("fade_sec", cue.get("fade_sec", DEFAULT_FADE_SEC))),
+		"playlist": bool(options.get("playlist", cue.get("playlist", false))),
+		"shuffle": bool(options.get("shuffle", cue.get("shuffle", false))),
+		"loop_playlist": bool(options.get("loop_playlist", cue.get("loop_playlist", true))),
 	}
+
+	if bool(resolved["playlist"]):
+		return resolved
+
+	var path := pick_variant_path(cue_id)
+	if path.is_empty():
+		return {}
+	resolved["path"] = path
+	return resolved
 
 
 func pick_variant_path(cue_id: String) -> String:
@@ -218,24 +256,131 @@ func _play_resolved(resolved: Dictionary, immediate: bool) -> void:
 		return
 
 	var cue_id := str(resolved.get("cue_id", "")).strip_edges()
-	if cue_id == _active_cue_id and not cue_id.is_empty():
+	var active_player: AudioStreamPlayer = _players[_active_player_index] if not _players.is_empty() else null
+	if cue_id == _active_cue_id and not cue_id.is_empty() and active_player != null and active_player.playing:
 		_active_context_key = str(resolved.get("context_key", "")).strip_edges()
 		return
 
-	var stream = _load_stream(str(resolved.get("path", "")), bool(resolved.get("loop", true)))
-	if stream == null:
+	if bool(resolved.get("playlist", false)):
+		_start_playlist(resolved, immediate)
 		return
+
+	var path := str(resolved.get("path", "")).strip_edges()
+	if _transition_to_path(
+		path,
+		bool(resolved.get("loop", true)),
+		float(resolved.get("volume_db", 0.0)),
+		float(resolved.get("fade_sec", DEFAULT_FADE_SEC)),
+		immediate
+	):
+		_active_playlist = {}
+		_playlist_queue.clear()
+		_active_cue_id = cue_id
+		_active_context_key = str(resolved.get("context_key", "")).strip_edges()
+		_active_track_path = path
+
+
+func _start_playlist(resolved: Dictionary, immediate: bool) -> void:
+	var paths: Array[String] = []
+	for raw_path in PackedStringArray(resolved.get("paths", PackedStringArray())):
+		var path := str(raw_path).strip_edges()
+		if path.is_empty():
+			continue
+		paths.append(path)
+	if paths.is_empty():
+		stop_music()
+		return
+
+	_active_playlist = {
+		"cue_id": str(resolved.get("cue_id", "")).strip_edges(),
+		"context_key": str(resolved.get("context_key", "")).strip_edges(),
+		"paths": paths.duplicate(),
+		"shuffle": bool(resolved.get("shuffle", true)),
+		"loop_playlist": bool(resolved.get("loop_playlist", true)),
+		"volume_db": float(resolved.get("volume_db", 0.0)),
+		"fade_sec": float(resolved.get("fade_sec", DEFAULT_FADE_SEC)),
+	}
+	_playlist_queue = _make_playlist_queue(paths, _active_track_path)
+	_active_cue_id = str(_active_playlist.get("cue_id", ""))
+	_active_context_key = str(_active_playlist.get("context_key", ""))
+	_play_next_playlist_track(immediate)
+
+
+func _play_next_playlist_track(immediate: bool) -> void:
+	if _active_playlist.is_empty():
+		return
+
+	var paths: Array[String] = []
+	for raw_path in _active_playlist.get("paths", []):
+		paths.append(str(raw_path))
+	if paths.is_empty():
+		stop_music()
+		return
+
+	if _playlist_queue.is_empty():
+		if not bool(_active_playlist.get("loop_playlist", true)):
+			stop_music(0.0)
+			return
+		_playlist_queue = _make_playlist_queue(paths, _active_track_path)
+		if _playlist_queue.is_empty():
+			stop_music()
+			return
+
+	var next_path: String = _playlist_queue.pop_front()
+	var played := _transition_to_path(
+		next_path,
+		false,
+		float(_active_playlist.get("volume_db", 0.0)),
+		float(_active_playlist.get("fade_sec", DEFAULT_FADE_SEC)),
+		immediate
+	)
+	if played:
+		_active_track_path = next_path
+
+
+func _make_playlist_queue(paths: Array[String], avoid_first_path: String) -> Array[String]:
+	var queue := paths.duplicate()
+	if queue.is_empty():
+		return queue
+
+	if bool(_active_playlist.get("shuffle", true)):
+		for i in range(queue.size() - 1, 0, -1):
+			var j := _rng.randi_range(0, i)
+			var temp: String = queue[i]
+			queue[i] = queue[j]
+			queue[j] = temp
+
+	if queue.size() > 1 and not avoid_first_path.is_empty() and queue[0] == avoid_first_path:
+		for i in range(1, queue.size()):
+			if queue[i] == avoid_first_path:
+				continue
+			var swap_value: String = queue[0]
+			queue[0] = queue[i]
+			queue[i] = swap_value
+			break
+
+	return queue
+
+
+func _transition_to_path(
+	path: String,
+	loop_enabled: bool,
+	target_volume_db: float,
+	fade_sec: float,
+	immediate: bool
+) -> bool:
+	var stream = _load_stream(path, loop_enabled)
+	if stream == null:
+		return false
 
 	if _players.size() < 2:
 		_create_players()
 	if _players.size() < 2:
-		return
+		return false
 
 	if _transition_tween != null and is_instance_valid(_transition_tween):
 		_transition_tween.kill()
 
-	var target_volume_db: float = float(resolved.get("volume_db", 0.0))
-	var fade_sec: float = maxf(0.0, float(resolved.get("fade_sec", DEFAULT_FADE_SEC)))
 	var incoming_index: int = (_active_player_index + 1) % 2
 	var incoming: AudioStreamPlayer = _players[incoming_index]
 	var outgoing: AudioStreamPlayer = _players[_active_player_index]
@@ -262,8 +407,7 @@ func _play_resolved(resolved: Dictionary, immediate: bool) -> void:
 		)
 
 	_active_player_index = incoming_index
-	_active_cue_id = cue_id
-	_active_context_key = str(resolved.get("context_key", "")).strip_edges()
+	return true
 
 
 func _load_stream(path: String, loop_enabled: bool):
@@ -309,8 +453,19 @@ func _create_players() -> void:
 		player.bus = MUSIC_BUS_NAME
 		player.volume_db = SILENT_DB
 		player.process_mode = Node.PROCESS_MODE_ALWAYS
+		player.finished.connect(_on_player_finished.bind(player))
 		add_child(player)
 		_players.append(player)
+
+
+func _on_player_finished(player: AudioStreamPlayer) -> void:
+	if _active_playlist.is_empty():
+		return
+	if _players.is_empty():
+		return
+	if player != _players[_active_player_index]:
+		return
+	_play_next_playlist_track(true)
 
 
 func _connect_settings() -> void:

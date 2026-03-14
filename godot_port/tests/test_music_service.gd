@@ -14,12 +14,16 @@ func test_manifest_exposes_core_music_contexts() -> void:
 	assert_true(service.has_context("shop"), "shop context is registered")
 	assert_true(service.has_context("game_over"), "game over context is registered")
 	assert_true(service.has_cue("music_main_menu"), "main menu cue has at least one track")
-	assert_eq(service.get_context_cue("boss_combat"), "music_boss_combat", "boss combat resolves to the boss cue")
+	assert_true(service.has_cue("music_adventure_playlist"), "adventure playlist cue has tracks")
+	assert_eq(service.get_context_cue("boss_combat"), "music_adventure_playlist", "boss combat now uses the shared adventure playlist")
 	assert_eq(
 		service.get_variant_paths("music_main_menu")[0],
 		"res://assets/audio/music/Dice Dungeon.wav",
 		"main menu cue uses Dice Dungeon.wav"
 	)
+	assert_eq(service.get_context_cue("exploration"), "music_adventure_playlist", "exploration uses the shared adventure playlist")
+	assert_true(service.is_playlist_cue("music_adventure_playlist"), "adventure cue is configured as a playlist")
+	assert_eq(service.get_variant_paths("music_adventure_playlist").size(), 7, "playlist includes all seven available tracks")
 
 	service.queue_free()
 	await get_tree().process_frame
@@ -61,3 +65,20 @@ func test_room_context_key_prefers_boss_and_difficulty_specific_music_buckets() 
 	boss_room.is_boss_room = true
 	assert_eq(_music_script.resolve_room_context_key(boss_room, "exploration"), "exploration_boss", "boss room maps to boss exploration")
 	assert_eq(_music_script.resolve_room_context_key(boss_room, "combat"), "boss_combat", "boss combat maps to boss combat")
+
+
+func test_playlist_context_starts_playback_and_selects_a_track() -> void:
+	var service = _music_script.new()
+	add_child(service)
+	await get_tree().process_frame
+
+	service.set_rng_seed(7)
+	service.set_context("exploration", {"immediate": true})
+	await get_tree().process_frame
+
+	assert_eq(service.get_active_cue(), "music_adventure_playlist", "exploration activates the adventure playlist")
+	assert_true(service.is_playing(), "playlist begins playback")
+	assert_ne(service.get_active_track_path(), "", "playlist exposes the active track path")
+
+	service.queue_free()
+	await get_tree().process_frame
