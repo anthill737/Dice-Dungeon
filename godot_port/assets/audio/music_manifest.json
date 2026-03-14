@@ -25,7 +25,7 @@
     "victory": { "cue": "music_victory", "fade_sec": 0.8 }
   },
   "cues": {
-    "music_main_menu": { "paths": [], "loop": true, "volume_db": 0.0 },
+    "music_main_menu": { "paths": ["res://assets/audio/music/Dice Dungeon.wav"], "loop": true, "volume_db": 0.0 },
     "music_start_adventure": { "paths": [], "loop": true, "volume_db": 0.0 },
     "music_intro_cinematic": { "paths": [], "loop": true, "volume_db": 0.0 },
     "music_threshold_area": { "paths": [], "loop": true, "volume_db": 0.0 },

@@ -13,7 +13,13 @@ func test_manifest_exposes_core_music_contexts() -> void:
 	assert_true(service.has_context("combat"), "combat context is registered")
 	assert_true(service.has_context("shop"), "shop context is registered")
 	assert_true(service.has_context("game_over"), "game over context is registered")
+	assert_true(service.has_cue("music_main_menu"), "main menu cue has at least one track")
 	assert_eq(service.get_context_cue("boss_combat"), "music_boss_combat", "boss combat resolves to the boss cue")
+	assert_eq(
+		service.get_variant_paths("music_main_menu")[0],
+		"res://assets/audio/music/Dice Dungeon.wav",
+		"main menu cue uses Dice Dungeon.wav"
+	)
 
 	service.queue_free()
 	await get_tree().process_frame
