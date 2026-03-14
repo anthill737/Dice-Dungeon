@@ -105,6 +105,26 @@ func test_main_menu_context_starts_with_dice_dungeon_theme() -> void:
 	await get_tree().process_frame
 
 
+func test_main_menu_context_requested_before_ready_replays_after_startup() -> void:
+	var service = _music_script.new()
+	service.set_context("main_menu", {"immediate": true})
+	add_child(service)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	assert_eq(service.get_active_context(), "main_menu", "queued startup request restores the main menu context")
+	assert_eq(service.get_active_cue(), "music_main_menu", "queued startup request resolves the dedicated menu cue")
+	assert_true(service.is_playing(), "queued startup request begins playback after ready")
+	assert_eq(
+		service.get_active_track_path(),
+		"res://assets/audio/music/Dice Dungeon.wav",
+		"queued startup request still uses Dice Dungeon.wav"
+	)
+
+	service.queue_free()
+	await get_tree().process_frame
+
+
 func test_overlay_context_keeps_active_playlist_track_when_overlay_has_no_music() -> void:
 	var service = _music_script.new()
 	add_child(service)

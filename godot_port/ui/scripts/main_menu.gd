@@ -20,6 +20,7 @@ var _context: GameContext
 var _settings_scene := preload("res://ui/scenes/SettingsPanel.tscn")
 var _save_load_scene := preload("res://ui/scenes/SaveLoadPanel.tscn")
 var _start_adventure_scene := preload("res://ui/scenes/StartAdventurePanel.tscn")
+const _MENU_THEME_PATH := "res://assets/audio/music/Dice Dungeon.wav"
 
 
 func _ready() -> void:
@@ -31,7 +32,7 @@ func _ready() -> void:
 	_connect_signals()
 	_connect_overlay_music_signals()
 	_sync_music_context(true)
-	call_deferred("_sync_music_context", true)
+	call_deferred("_ensure_menu_music_started")
 
 
 func _build_ui() -> void:
@@ -202,6 +203,29 @@ func _sync_music_context(immediate: bool = false) -> void:
 			MusicService.set_context("settings", options)
 		_:
 			MusicService.set_context("main_menu", options)
+
+
+func _ensure_menu_music_started() -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+
+	for _attempt in 2:
+		if _is_menu_theme_active():
+			return
+		await tree.process_frame
+		if not is_inside_tree():
+			return
+		_sync_music_context(true)
+
+
+func _is_menu_theme_active() -> bool:
+	return (
+		MusicService.get_active_context() == "main_menu"
+		and MusicService.get_active_cue() == "music_main_menu"
+		and MusicService.is_playing()
+		and MusicService.get_active_track_path() == _MENU_THEME_PATH
+	)
 
 
 func _unhandled_input(event: InputEvent) -> void:

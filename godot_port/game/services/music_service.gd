@@ -27,16 +27,15 @@ var _transition_tween: Tween
 
 var _active_playlist: Dictionary = {}
 var _playlist_queue: Array[String] = []
+var _runtime_ready: bool = false
+var _pending_request: Dictionary = {}
 
 
 func _ready() -> void:
-	process_mode = Node.PROCESS_MODE_ALWAYS
-	_rng.randomize()
-	_ensure_music_bus()
-	_create_players()
-	reload_manifest()
+	_ensure_runtime_ready()
 	_connect_settings()
 	_apply_settings()
+	call_deferred("_replay_pending_request")
 
 
 func reload_manifest() -> void:
@@ -104,11 +103,27 @@ func set_rng_seed(seed: int) -> void:
 
 
 func set_context(context_key: String, options: Dictionary = {}) -> void:
+	var request := {
+		"context_key": context_key,
+		"options": options.duplicate(true),
+	}
+	if _queue_request_until_ready("context", request):
+		return
+	_pending_request.clear()
 	var resolved := _resolve_context_request(context_key, options, [])
 	_play_resolved(resolved, bool(options.get("immediate", false)))
 
 
 func set_room_context(room: Variant, phase: String = "exploration", fallback_context: String = "", options: Dictionary = {}) -> void:
+	var request := {
+		"room": room,
+		"phase": phase,
+		"fallback_context": fallback_context,
+		"options": options.duplicate(true),
+	}
+	if _queue_request_until_ready("room", request):
+		return
+	_pending_request.clear()
 	var resolved := _resolve_room_request(room, phase, fallback_context, options)
 	_play_resolved(resolved, bool(options.get("immediate", false)))
 
@@ -120,6 +135,16 @@ func set_overlay_context(
 	fallback_context: String = "",
 	options: Dictionary = {}
 ) -> void:
+	var request := {
+		"context_key": context_key,
+		"room": room,
+		"phase": phase,
+		"fallback_context": fallback_context,
+		"options": options.duplicate(true),
+	}
+	if _queue_request_until_ready("overlay", request):
+		return
+	_pending_request.clear()
 	var overlay_options := options.duplicate()
 	if not fallback_context.strip_edges().is_empty():
 		# Explorer overlays should preserve the active room/combat music unless they
@@ -131,6 +156,55 @@ func set_overlay_context(
 		set_room_context(room, phase, fallback_context, options)
 		return
 	_play_resolved(resolved, bool(overlay_options.get("immediate", false)))
+
+
+func _ensure_runtime_ready() -> void:
+	if _runtime_ready:
+		process_mode = Node.PROCESS_MODE_ALWAYS
+		return
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	_rng.randomize()
+	_ensure_music_bus()
+	_create_players()
+	reload_manifest()
+	_runtime_ready = true
+
+
+func _queue_request_until_ready(kind: String, payload: Dictionary) -> bool:
+	_ensure_runtime_ready()
+	if is_inside_tree() and is_node_ready():
+		return false
+	_pending_request = {
+		"kind": kind,
+		"payload": payload.duplicate(true),
+	}
+	return true
+
+
+func _replay_pending_request() -> void:
+	if _pending_request.is_empty():
+		return
+	var request := _pending_request.duplicate(true)
+	_pending_request.clear()
+	var payload: Dictionary = request.get("payload", {})
+	match str(request.get("kind", "")):
+		"context":
+			set_context(str(payload.get("context_key", "")), Dictionary(payload.get("options", {})))
+		"room":
+			set_room_context(
+				payload.get("room", null),
+				str(payload.get("phase", "exploration")),
+				str(payload.get("fallback_context", "")),
+				Dictionary(payload.get("options", {}))
+			)
+		"overlay":
+			set_overlay_context(
+				str(payload.get("context_key", "")),
+				payload.get("room", null),
+				str(payload.get("phase", "exploration")),
+				str(payload.get("fallback_context", "")),
+				Dictionary(payload.get("options", {}))
+			)
 
 
 func stop_music(fade_sec: float = DEFAULT_FADE_SEC) -> void:
