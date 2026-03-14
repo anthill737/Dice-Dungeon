@@ -16,6 +16,7 @@ func test_main_menu_loads() -> void:
 
 	add_child(scene)
 	await get_tree().process_frame
+	await get_tree().process_frame
 
 	assert_not_null(scene.find_child("BtnStart", true, false), "BtnStart exists")
 	assert_not_null(scene.find_child("BtnLoad", true, false), "BtnLoad exists")

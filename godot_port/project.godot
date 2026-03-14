@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 SettingsManager="*res://game/core/settings/settings_manager.gd"
 GameSession="*res://ui/scripts/game_session.gd"
+MusicService="*res://game/services/music_service.gd"
 
 [display]
 

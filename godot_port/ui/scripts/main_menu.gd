@@ -29,6 +29,9 @@ func _ready() -> void:
 	_setup_overlay_manager()
 	_context.set_menus(_overlay_manager)
 	_connect_signals()
+	_connect_overlay_music_signals()
+	_sync_music_context(true)
+	call_deferred("_sync_music_context", true)
 
 
 func _build_ui() -> void:
@@ -136,6 +139,13 @@ func _connect_signals() -> void:
 	_btn_quit.pressed.connect(_on_quit)
 
 
+func _connect_overlay_music_signals() -> void:
+	if _overlay_manager == null:
+		return
+	_overlay_manager.menu_opened.connect(_on_overlay_menu_state_changed)
+	_overlay_manager.menu_closed.connect(_on_overlay_menu_state_changed)
+
+
 func _on_start() -> void:
 	_overlay_manager.open_menu("start_adventure")
 
@@ -171,6 +181,27 @@ func _on_quit() -> void:
 	var tree := get_tree()
 	if tree != null:
 		tree.quit()
+
+
+func _on_overlay_menu_state_changed(_menu_key: String) -> void:
+	_sync_music_context()
+
+
+func _sync_music_context(immediate: bool = false) -> void:
+	var options := {"immediate": immediate}
+	var top_menu: String = _overlay_manager.get_top_menu_key() if _overlay_manager != null else ""
+	match top_menu:
+		"start_adventure":
+			options["fallback_context"] = "main_menu"
+			MusicService.set_context("start_adventure", options)
+		"save_load":
+			options["fallback_context"] = "main_menu"
+			MusicService.set_context("save_load", options)
+		"settings":
+			options["fallback_context"] = "main_menu"
+			MusicService.set_context("settings", options)
+		_:
+			MusicService.set_context("main_menu", options)
 
 
 func _unhandled_input(event: InputEvent) -> void:
