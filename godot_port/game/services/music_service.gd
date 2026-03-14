@@ -120,11 +120,17 @@ func set_overlay_context(
 	fallback_context: String = "",
 	options: Dictionary = {}
 ) -> void:
-	var resolved := _resolve_context_request(context_key, options, [])
+	var overlay_options := options.duplicate()
+	if not fallback_context.strip_edges().is_empty():
+		# Explorer overlays should preserve the active room/combat music unless they
+		# have their own explicit cue. This lets menu overlays still fall back to the
+		# menu theme while in-game overlays keep the adventure playlist intact.
+		overlay_options["fallback_context"] = fallback_context
+	var resolved := _resolve_context_request(context_key, overlay_options, [])
 	if resolved.is_empty():
 		set_room_context(room, phase, fallback_context, options)
 		return
-	_play_resolved(resolved, bool(options.get("immediate", false)))
+	_play_resolved(resolved, bool(overlay_options.get("immediate", false)))
 
 
 func stop_music(fade_sec: float = DEFAULT_FADE_SEC) -> void:

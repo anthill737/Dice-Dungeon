@@ -82,3 +82,59 @@ func test_playlist_context_starts_playback_and_selects_a_track() -> void:
 
 	service.queue_free()
 	await get_tree().process_frame
+
+
+func test_main_menu_context_starts_with_dice_dungeon_theme() -> void:
+	var service = _music_script.new()
+	add_child(service)
+	await get_tree().process_frame
+
+	service.set_context("main_menu", {"immediate": true})
+	await get_tree().process_frame
+
+	assert_eq(service.get_active_context(), "main_menu", "main menu context stays active")
+	assert_eq(service.get_active_cue(), "music_main_menu", "main menu uses its dedicated cue")
+	assert_true(service.is_playing(), "main menu music begins playing immediately")
+	assert_eq(
+		service.get_active_track_path(),
+		"res://assets/audio/music/Dice Dungeon.wav",
+		"main menu always starts with Dice Dungeon.wav"
+	)
+
+	service.queue_free()
+	await get_tree().process_frame
+
+
+func test_overlay_context_keeps_active_playlist_track_when_overlay_has_no_music() -> void:
+	var service = _music_script.new()
+	add_child(service)
+	await get_tree().process_frame
+
+	var room := {
+		"id": 7,
+		"name": "Music Test Room",
+		"difficulty": "Easy",
+	}
+
+	service.set_rng_seed(7)
+	service.set_room_context(room, "exploration", "exploration", {"immediate": true})
+	await get_tree().process_frame
+	var adventure_track: String = service.get_active_track_path()
+
+	service.set_overlay_context("pause", room, "exploration", "exploration", {"immediate": true})
+	await get_tree().process_frame
+	assert_eq(service.get_active_cue(), "music_adventure_playlist", "pause overlay reuses the adventure playlist")
+	assert_eq(service.get_active_track_path(), adventure_track, "pause overlay does not reshuffle the active track")
+
+	service.set_overlay_context("settings", room, "exploration", "exploration", {"immediate": true})
+	await get_tree().process_frame
+	assert_eq(service.get_active_cue(), "music_adventure_playlist", "settings overlay keeps the adventure playlist")
+	assert_eq(service.get_active_track_path(), adventure_track, "settings overlay does not restart or reshuffle")
+
+	service.set_overlay_context("save_load", room, "exploration", "exploration", {"immediate": true})
+	await get_tree().process_frame
+	assert_eq(service.get_active_cue(), "music_adventure_playlist", "save/load overlay keeps the adventure playlist")
+	assert_eq(service.get_active_track_path(), adventure_track, "save/load overlay does not restart or reshuffle")
+
+	service.queue_free()
+	await get_tree().process_frame
